@@ -184,6 +184,17 @@ export function emptyCells() {
   return new Uint8Array(CELLS);
 }
 
+/** После боя земля мгновенно зарастает: выжженные отметины не храним. */
+export function regrowGround(cells: Uint8Array): Uint8Array {
+  let next: Uint8Array | null = null;
+  for (let i = 0; i < cells.length; i++) {
+    if (cells[i] !== G_SCORCH) continue;
+    if (!next) next = cells.slice();
+    next[i] = G_GROUND;
+  }
+  return next ?? cells;
+}
+
 export function countCells(cells: Uint8Array, value: number) {
   let n = 0;
   for (let i = 0; i < cells.length; i++) if (cells[i] === value) n++;

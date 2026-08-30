@@ -22,7 +22,6 @@ import {
   CELL_COST,
   STARTER_SIDE,
   DRONE_UNIT_COST,
-  DEFENSE_WIN_REWARD,
   DRONE_KILL_REWARD,
   GUN_COST,
   GUN_REFUND,
@@ -34,6 +33,7 @@ import {
   EDGE_NAMES,
   PATTERNS,
   type AttackOrder,
+  type AttackReport,
   type Pattern,
   makeOrder,
 } from "@/lib/attack";
@@ -49,10 +49,7 @@ import {
 import { getRepo } from "@/lib/repo";
 import {
   type Enemy,
-  type RaidOutcome,
-  counterRaid,
   makeEnemy,
-  raid,
   takeDrones,
 } from "@/lib/enemy";
 import type { Account } from "./AuthGate";
@@ -72,6 +69,7 @@ import {
   ConfirmDialog,
   NameDialog,
   Notice,
+  Modal,
   Panel,
   Row,
   SectionTitle,
@@ -112,6 +110,7 @@ export default function Lobby({
   const [naming, setNaming] = useState<"found" | "rename" | null>(null);
   const [confirmWipe, setConfirmWipe] = useState(false);
   const [buyAmount, setBuyAmount] = useState(1);
+  const [reports, setReports] = useState<AttackReport[]>([]);
   const toggleSheet = (id: SheetId) => setSheet((cur) => (cur === id ? null : id));
 
   // заготовка площади
@@ -155,9 +154,10 @@ export default function Lobby({
     let alive = true;
     repo
       .load()
-      .then(({ player, income }) => {
+      .then(({ player, income, reports: loadedReports }) => {
         if (!alive) return;
         playerRef.current = player;
+        setReports(loadedReports);
         setReady(true);
         if (income.credits > 0) {
           setMessage(`Доход за ${income.days} сут: +${fmt(income.credits)} кр`);
@@ -170,6 +170,30 @@ export default function Lobby({
       });
     return () => {
       alive = false;
+    };
+  }, [repo]);
+
+  useEffect(() => {
+    if (repo.mode !== "cloud") return;
+    let alive = true;
+    const sync = async () => {
+      try {
+        const state = await repo.syncAttacks();
+        const cur = playerRef.current;
+        if (!alive || !cur) return;
+        cur.incoming = state.incoming;
+        if (state.credits !== undefined) cur.credits = state.credits;
+        if (state.stats) cur.stats = { ...cur.stats, ...state.stats };
+        setReports(state.reports);
+        forceRender((value) => value + 1);
+      } catch {
+        // Сеть может кратко пропасть — следующий опрос повторит попытку.
+      }
+    };
+    const timer = window.setInterval(() => void sync(), 10_000);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
     };
   }, [repo]);
 
@@ -225,7 +249,7 @@ export default function Lobby({
           p.stats.battles++;
           const killed = o.result.killedByGuns + o.result.killedByMg;
           const killReward = killed * DRONE_KILL_REWARD;
-          const defenseReward = killReward + (o.won ? DEFENSE_WIN_REWARD : 0);
+          const defenseReward = killReward;
           p.stats.dronesKilled += killed;
           p.credits += defenseReward;
           p.stats.cellsBurned += o.result.burned;
@@ -235,14 +259,18 @@ export default function Lobby({
           setBattle(null);
           setMessage(
             o.won
-              ? `Налёт отбит. Победа +${fmt(DEFENSE_WIN_REWARD)} кр, за сбитые +${fmt(killReward)} кр`
+              ? `Налёт отбит. За ${killed} сбитых дронов: +${fmt(killReward)} кр`
               : `Склад выгорел под атакой ${battle.from}. За сбитые: +${fmt(killReward)} кр`
           );
           setVersion((v) => v + 1);
           forceRender((v) => v + 1);
           try {
             // урон пишем отдельной операцией: она умеет только ухудшать карту
-            const patch = await repo.applyBattle(p, o.result);
+            const patch = await repo.applyBattle(
+              p,
+              o.result,
+              battle.remote ? battle.id : undefined
+            );
             if (patch.credits !== undefined) p.credits = patch.credits;
             forceRender((v) => v + 1);
           } catch (e) {
@@ -465,23 +493,32 @@ export default function Lobby({
     }
   };
 
-  const doRaid = (
+  const doRaid = async (
     enemy: Enemy,
     n: number,
     pattern: Pattern,
     direction: number
-  ): RaidOutcome => {
+  ): Promise<string | null> => {
+    const previousDepots = p.depots.map((depot) => ({ ...depot }));
     const sent = takeDrones(p.depots, n);
-    const out = raid(enemy, sent, pattern, direction, account?.name ?? "Ты");
-    p.credits += out.loot;
-    p.stats.raids++;
-    p.stats.looted += out.loot;
-
-    // враг отвечает: чем больше сожжено, тем злее налёт
-    const answer = counterRaid(enemy);
-    if (answer) p.incoming.push(answer); // счёт вражды обновится, когда его отыграют
-    touch();
-    return out;
+    if (sent !== n) {
+      p.depots = previousDepots;
+      return "Не удалось собрать нужное количество дронов";
+    }
+    const seed = (Math.random() * 1e9) | 0;
+    setVersion((value) => value + 1);
+    forceRender((value) => value + 1);
+    try {
+      await repo.sendAttack(p, enemy.email, n, pattern, direction, seed);
+      p.stats.raids++;
+      setMessage(`Налёт отправлен. Итог придёт после того, как ${enemy.email} отыграет защиту.`);
+      return null;
+    } catch (error) {
+      p.depots = previousDepots;
+      setVersion((value) => value + 1);
+      forceRender((value) => value + 1);
+      return `Не удалось отправить налёт: ${(error as Error).message}`;
+    }
   };
 
   const summonAttack = () => {
@@ -1193,6 +1230,21 @@ export default function Lobby({
         />
       )}
 
+      {reports[0] && (
+        <AttackReportDialog
+          report={reports[0]}
+          onClose={async () => {
+            const report = reports[0];
+            try {
+              await repo.acknowledgeReport(report.id);
+              setReports((current) => current.filter((item) => item.id !== report.id));
+            } catch (error) {
+              setMessage(`Не удалось закрыть отчёт: ${(error as Error).message}`);
+            }
+          }}
+        />
+      )}
+
       {naming && (
         <NameDialog
           title={naming === "found" ? "Как назовём склад?" : "Переименовать склад"}
@@ -1266,5 +1318,36 @@ export default function Lobby({
         </div>
       </Sheet>
     </div>
+  );
+}
+
+function AttackReportDialog({
+  report,
+  onClose,
+}: {
+  report: AttackReport;
+  onClose: () => void;
+}) {
+  const result = report.result;
+  return (
+    <Modal
+      title={report.destroyed ? `${report.target} выгорел дотла` : `Итог налёта на ${report.target}`}
+      subtitle="Защитник отыграл атаку — теперь результат окончательный."
+      onClose={onClose}
+    >
+      <dl className="mb-4 space-y-1 font-mono text-sm">
+        <Row label="Запущено дронов" value={String(result.dronesSent)} />
+        <Row label="Сбито ракетами" value={String(result.killedByGuns)} />
+        <Row label="Сбито очередью" value={String(result.killedByMg)} />
+        <Row label="Прорвалось" value={String(result.leaked)} />
+        <Row label="Клеток сожжено" value={String(result.burned)} />
+        <Row label="Уничтожено дронов на складе" value={String(result.dronesLost)} />
+        <Row label="Уничтожено пушек" value={String(result.gunsLost)} />
+        <Row label="За долетевшие дроны" value={`+${fmt(report.loot)} кр`} />
+      </dl>
+      <Button variant="neutral" block onClick={onClose}>
+        Закрыть
+      </Button>
+    </Modal>
   );
 }

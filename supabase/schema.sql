@@ -17,8 +17,8 @@ language sql immutable as $$
     when 'drone'  then 10
     when 'income' then 10
     when 'loot'   then 5
-    when 'kill'   then 5    -- доплата защитнику за сбитый дрон
-    when 'win'    then 5000 -- фиксированная премия за отражённый налёт
+    when 'kill'   then 50   -- защитнику за сбитый дрон
+    when 'leak'   then 50   -- атакующему за долетевший дрон
     when 'free'   then 100   -- стартовая площадь 10×10 достаётся даром
     when 'found'  then 100   -- столько же нужно, чтобы основаться
   end;
@@ -138,6 +138,28 @@ create table if not exists bases (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists attacks (
+  id uuid primary key default gen_random_uuid(),
+  attacker_id uuid not null references profiles on delete cascade,
+  defender_id uuid not null references profiles on delete cascade,
+  drones int not null check (drones between 1 and 300),
+  pattern text not null check (pattern in ('swarm', 'lines', 'random', 'drip')),
+  direction int not null check (direction between 0 and 3),
+  seed int not null,
+  status text not null default 'pending' check (status in ('pending', 'resolved')),
+  result jsonb,
+  loot int not null default 0,
+  destroyed boolean not null default false,
+  created_at timestamptz not null default now(),
+  resolved_at timestamptz,
+  reported_at timestamptz
+);
+
+create index if not exists attacks_defender_pending
+  on attacks (defender_id, created_at) where status = 'pending';
+create index if not exists attacks_attacker_reports
+  on attacks (attacker_id, resolved_at) where status = 'resolved' and reported_at is null;
+
 -- Догоняем схему на уже заведённых профилях: create table if not exists
 -- default существующей таблице не меняет, а клиент ждёт все семь счётчиков.
 alter table profiles add column if not exists base_name text;
@@ -152,6 +174,7 @@ update profiles
 
 alter table profiles enable row level security;
 alter table bases enable row level security;
+alter table attacks enable row level security;
 
 -- свой профиль читаем и заводим; изменения — только через функции ниже
 drop policy if exists "own profile read" on profiles;
@@ -159,6 +182,10 @@ create policy "own profile read" on profiles for select using (auth.uid() = id);
 
 drop policy if exists "own base read" on bases;
 create policy "own base read" on bases for select using (auth.uid() = user_id);
+
+drop policy if exists "participant attack read" on attacks;
+create policy "participant attack read" on attacks for select
+  using (auth.uid() = attacker_id or auth.uid() = defender_id);
 
 -- ---------- заведение игрока ----------
 
@@ -182,6 +209,107 @@ begin
   insert into bases (user_id, cells)
   values (uid, starter_map())
   on conflict (user_id) do nothing;
+end;
+$$;
+
+-- ---------- настоящие налёты между аккаунтами ----------
+
+create or replace function send_attack(
+  target_email text,
+  drone_count int,
+  attack_pattern text,
+  attack_direction int,
+  attack_seed int,
+  new_depots jsonb
+) returns uuid
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  target profiles;
+  cur bytea;
+  cur_guns jsonb;
+  cur_depots jsonb;
+  order_id uuid;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  if drone_count is null or drone_count < 1 or drone_count > 300 then
+    raise exception 'bad drone count';
+  end if;
+  if attack_pattern not in ('swarm', 'lines', 'random', 'drip') then
+    raise exception 'bad attack pattern';
+  end if;
+  if attack_direction < 0 or attack_direction > 3 then raise exception 'bad direction'; end if;
+
+  select p.* into target
+    from profiles p
+   where lower(p.email) = lower(btrim(target_email))
+   limit 1;
+  if not found then raise exception 'player with this email has not joined yet'; end if;
+  if target.id = uid then raise exception 'cannot attack yourself'; end if;
+  if not target.founded then raise exception 'target warehouse is not founded'; end if;
+
+  select b.cells, b.guns, b.drone_cells into cur, cur_guns, cur_depots
+    from bases b where b.user_id = uid for update;
+  if cur is null then raise exception 'no base'; end if;
+  if depot_sum(new_depots) <> depot_sum(cur_depots) - drone_count then
+    raise exception 'sent drones do not match warehouse stock';
+  end if;
+  if not depots_valid(new_depots, cur, cur_guns) then
+    raise exception 'bad depot state';
+  end if;
+
+  update bases set drone_cells = new_depots, updated_at = now() where user_id = uid;
+  update profiles
+     set drones = depot_sum(new_depots),
+         stats = jsonb_set(stats, '{raids}', to_jsonb((stats->>'raids')::int + 1))
+   where id = uid;
+
+  insert into attacks (attacker_id, defender_id, drones, pattern, direction, seed)
+  values (uid, target.id, drone_count, attack_pattern, attack_direction, attack_seed)
+  returning id into order_id;
+  return order_id;
+end;
+$$;
+
+create or replace function pending_attacks()
+returns table (
+  id uuid, from_name text, created_at timestamptz,
+  drones int, pattern text, direction int, seed int
+)
+language sql security definer set search_path = public as $$
+  select a.id,
+         coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)) as from_name,
+         a.created_at, a.drones, a.pattern, a.direction, a.seed
+    from attacks a
+    join profiles p on p.id = a.attacker_id
+   where a.defender_id = auth.uid() and a.status = 'pending'
+   order by a.created_at;
+$$;
+
+create or replace function attack_reports()
+returns table (
+  id uuid, target_name text, resolved_at timestamptz,
+  result jsonb, loot int, destroyed boolean
+)
+language sql security definer set search_path = public as $$
+  select a.id,
+         coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)) as target_name,
+         a.resolved_at, a.result, a.loot, a.destroyed
+    from attacks a
+    join profiles p on p.id = a.defender_id
+   where a.attacker_id = auth.uid()
+     and a.status = 'resolved'
+     and a.reported_at is null
+   order by a.resolved_at;
+$$;
+
+create or replace function ack_attack_report(attack_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'not authenticated'; end if;
+  update attacks set reported_at = now()
+   where id = attack_id and attacker_id = auth.uid() and status = 'resolved';
+  if not found then raise exception 'attack report not found'; end if;
 end;
 $$;
 
@@ -343,6 +471,9 @@ begin
       elsif old_v <> 1 then
         built := built + 1;
       end if;
+    elsif old_v = 4 and new_v = 0 then
+      -- следы падений на земле после боя мгновенно зарастают травой
+      null;
     elsif new_v <> old_v then
       -- вне боя клетка не может стать хуже
       raise exception 'cell % may not degrade outside battle', i;
@@ -482,6 +613,9 @@ begin
   killed := coalesce((result->>'killedByGuns')::int, 0)
           + coalesce((result->>'killedByMg')::int, 0);
   if killed < 0 or killed > 300 then raise exception 'bad killed drone count'; end if;
+  if burned <> coalesce((result->>'burned')::int, -1) then
+    raise exception 'burned cell count does not match map';
+  end if;
 
   update bases
      set cells = bin, guns = new_guns, drone_cells = new_depots,
@@ -493,8 +627,7 @@ begin
          -- сгорело всё до последней клетки — сразу поднимаем кассу
          credits = greatest(
            profiles.credits
-             + killed * price('kill')
-             + case when intact_now > 0 then price('win') else 0 end,
+             + killed * price('kill'),
            case when intact_now = 0 then 10000 else 0 end
          ),
          stats = profiles.stats
@@ -507,6 +640,63 @@ begin
 
   intact := intact_now;
   return next;
+end;
+$$;
+
+-- Защитник завершает конкретный входящий налёт. В одной транзакции сохраняем
+-- его склад, закрываем очередь и начисляем добычу отправителю.
+create or replace function complete_attack(
+  attack_id uuid,
+  new_cells text,
+  new_guns jsonb,
+  new_depots jsonb,
+  result jsonb
+) returns table (credits int, intact int)
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  order_row attacks;
+  defender_credits int;
+  defender_intact int;
+  earned int;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  select a.* into order_row from attacks a where a.id = attack_id for update;
+  if not found or order_row.defender_id <> uid then raise exception 'attack not found'; end if;
+  if order_row.status <> 'pending' then raise exception 'attack already resolved'; end if;
+  if coalesce((result->>'dronesSent')::int, -1) <> order_row.drones then
+    raise exception 'attack drone count mismatch';
+  end if;
+  if coalesce((result->>'leaked')::int, -1) < 0
+     or coalesce((result->>'leaked')::int, -1) > order_row.drones then
+    raise exception 'bad leaked drone count';
+  end if;
+  if coalesce((result->>'killedByGuns')::int, 0)
+       + coalesce((result->>'killedByMg')::int, 0)
+       + coalesce((result->>'leaked')::int, 0) > order_row.drones then
+    raise exception 'attack result exceeds sent drones';
+  end if;
+
+  select applied.credits, applied.intact
+    into defender_credits, defender_intact
+    from apply_battle(new_cells, new_guns, new_depots, result) applied;
+
+  earned := coalesce((result->>'leaked')::int, 0) * price('leak');
+  update profiles
+     set credits = profiles.credits + earned,
+         stats = jsonb_set(
+           profiles.stats,
+           '{looted}',
+           to_jsonb((profiles.stats->>'looted')::int + earned)
+         )
+   where id = order_row.attacker_id;
+
+  update attacks
+     set status = 'resolved', result = $5, loot = earned,
+         destroyed = defender_intact = 0, resolved_at = now()
+   where id = attack_id;
+
+  return query select defender_credits, defender_intact;
 end;
 $$;
 
@@ -533,4 +723,5 @@ end;
 $$;
 
 grant execute on function ensure_player, collect_income, save_base,
-  buy_drones, apply_battle, wipe_base, rename_base, save_enemies to authenticated;
+  buy_drones, apply_battle, complete_attack, wipe_base, rename_base, save_enemies,
+  send_attack, pending_attacks, attack_reports, ack_attack_report to authenticated;

@@ -1,6 +1,7 @@
 // Атака: заказ и превращение его в расписание вылетов.
 
 import { GRID } from "./base";
+import type { BattleResult } from "./engine";
 
 export type Pattern = "swarm" | "lines" | "random" | "drip";
 
@@ -12,6 +13,17 @@ export interface AttackOrder {
   pattern: Pattern;
   direction: number; // 0 верх, 1 низ, 2 слева, 3 справа — для lines
   seed: number;
+  remote?: boolean; // настоящий налёт из серверной очереди, а не локальный бот
+}
+
+/** Итог исходящего налёта, который приходит только после боя защитника. */
+export interface AttackReport {
+  id: string;
+  target: string;
+  resolvedAt: number;
+  result: BattleResult;
+  loot: number;
+  destroyed: boolean;
 }
 
 export interface SpawnTicket {

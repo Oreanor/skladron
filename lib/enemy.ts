@@ -14,7 +14,7 @@ import {
   encodeCells,
   normRect,
 } from "./base";
-import { LOOT_PER_CELL } from "./economy";
+import { ATTACK_LEAK_REWARD } from "./economy";
 import { type AttackOrder, type Pattern, buildPlan, makeOrder, mulberry32 } from "./attack";
 import { type BattleResult, createBattle, extinguish, update } from "./engine";
 
@@ -178,7 +178,7 @@ export function raid(
 
   return {
     result: s.result,
-    loot: s.result.burned * LOOT_PER_CELL,
+    loot: s.result.leaked * ATTACK_LEAK_REWARD,
     destroyed: s.baseOk <= 0,
     order,
   };

@@ -13,6 +13,7 @@ import {
   decodeCells,
   emptyCells,
   encodeCells,
+  regrowGround,
   starterCells,
 } from "./base";
 import type { AttackOrder } from "./attack";
@@ -133,7 +134,7 @@ export function load(): Player {
     if (!raw) return newPlayer();
     const s = JSON.parse(raw) as Stored;
     if (s.v !== 1) return newPlayer();
-    const cells = decodeCells(s.cells);
+    const cells = regrowGround(decodeCells(s.cells));
     if (cells.length !== CELLS) return newPlayer();
     return {
       name: s.name ?? "",

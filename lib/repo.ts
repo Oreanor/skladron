@@ -1,9 +1,10 @@
 // Хранилище состояния игрока. Одна и та же игра работает поверх localStorage
 // и поверх Supabase — Lobby знает только этот интерфейс.
 
-import { CELLS, type Depot, decodeCells, encodeRle, type Gun } from "./base";
+import { CELLS, type Depot, decodeCells, encodeRle, regrowGround, type Gun } from "./base";
 
 import { CREDITS_START } from "./economy";
+import type { AttackOrder, AttackReport, Pattern } from "./attack";
 import type { BattleResult } from "./engine";
 import {
   collectIncome as localIncome,
@@ -24,15 +25,30 @@ export interface Income {
 export interface Repo {
   mode: "local" | "cloud";
   /** Профиль плюс доход, начисленный при входе. */
-  load(): Promise<{ player: Player; income: Income }>;
+  load(): Promise<{ player: Player; income: Income; reports: AttackReport[] }>;
+  syncAttacks(): Promise<{
+    incoming: AttackOrder[];
+    reports: AttackReport[];
+    credits?: number;
+    stats?: Player["stats"];
+  }>;
   /** Склад после правок в лобби. Возвращает авторитетные цифры сервера. */
   saveBase(p: Player): Promise<Partial<Player>>;
   /** Список добавленных по e-mail соперников и их текущее состояние. */
   saveEnemies(p: Player): Promise<void>;
   buyDrones(p: Player, amount: number): Promise<Partial<Player>>;
+  sendAttack(
+    p: Player,
+    targetEmail: string,
+    drones: number,
+    pattern: Pattern,
+    direction: number,
+    seed: number
+  ): Promise<void>;
+  acknowledgeReport(id: string): Promise<void>;
   /** Переименование склада — отдельная операция, карты не касается. */
   rename(p: Player, name: string): Promise<void>;
-  applyBattle(p: Player, result: BattleResult): Promise<Partial<Player>>;
+  applyBattle(p: Player, result: BattleResult, attackId?: string): Promise<Partial<Player>>;
   wipe(p: Player): Promise<Player>;
 }
 
@@ -46,7 +62,11 @@ class LocalRepo implements Repo {
     const income = localIncome(player, Date.now());
     insure(player);
     localSave(player);
-    return { player, income };
+    return { player, income, reports: [] };
+  }
+
+  async syncAttacks() {
+    return { incoming: [], reports: [] };
   }
 
   async saveBase(p: Player) {
@@ -62,6 +82,12 @@ class LocalRepo implements Repo {
     localSave(p);
     return {};
   }
+
+  async sendAttack() {
+    throw new Error("Атаки на друзей доступны после входа через Google");
+  }
+
+  async acknowledgeReport() {}
 
   async applyBattle(p: Player) {
     localSave(p);
@@ -104,16 +130,35 @@ interface BaseRow {
   drone_cells: Depot[];
 }
 
+interface IncomingAttackRow {
+  id: string;
+  from_name: string;
+  created_at: string;
+  drones: number;
+  pattern: Pattern;
+  direction: number;
+  seed: number;
+}
+
+interface AttackReportRow {
+  id: string;
+  target_name: string;
+  resolved_at: string;
+  result: BattleResult;
+  loot: number;
+  destroyed: boolean;
+}
+
 /** Postgres отдаёт bytea в hex-виде «\x00ff…». */
 function fromPgBytea(text: string): Uint8Array {
   const out = new Uint8Array(CELLS);
   if (!text) return out;
-  if (!text.startsWith("\\x")) return decodeCells(text);
+  if (!text.startsWith("\\x")) return regrowGround(decodeCells(text));
   const hex = text.slice(2);
   for (let i = 0; i < CELLS && i * 2 + 1 < hex.length; i++) {
     out[i] = parseInt(hex.substr(i * 2, 2), 16);
   }
-  return out;
+  return regrowGround(out);
 }
 
 class CloudRepo implements Repo {
@@ -131,9 +176,10 @@ class CloudRepo implements Repo {
     const inc = await db.rpc("collect_income");
     if (inc.error) throw inc.error;
 
-    const [{ data: prof, error: e1 }, { data: base, error: e2 }] = await Promise.all([
+    const [{ data: prof, error: e1 }, { data: base, error: e2 }, attacks] = await Promise.all([
       db.from("profiles").select("*").single(),
       db.from("bases").select("cells, guns, drone_cells").single(),
+      this.syncAttacks(),
     ]);
     if (e1) throw e1;
     if (e2) throw e2;
@@ -144,16 +190,16 @@ class CloudRepo implements Repo {
     const player: Player = {
       ...fresh,
       name: row.base_name ?? "",
-      credits: row.credits,
+      credits: attacks.credits ?? row.credits,
       founded: row.founded,
       lastIncomeAt: Date.parse(row.last_income_at),
       createdAt: Date.parse(row.created_at),
       // недостающие счётчики берём нулями: иначе fmt() падает на undefined
-      stats: { ...fresh.stats, ...(row.stats ?? {}) },
+      stats: { ...fresh.stats, ...(row.stats ?? {}), ...(attacks.stats ?? {}) },
       cells: fromPgBytea(b.cells),
       guns: b.guns ?? [],
       depots: b.drone_cells ?? [],
-      incoming: [], // очередь атак появится на этапе 3
+      incoming: attacks.incoming,
       enemies: row.enemies ?? [],
     };
 
@@ -161,6 +207,44 @@ class CloudRepo implements Repo {
     return {
       player,
       income: { credits: first?.credits_added ?? 0, days: first?.days ?? 0 },
+      reports: attacks.reports,
+    };
+  }
+
+  async syncAttacks() {
+    const db = this.db();
+    const [incomingResult, reportResult, profileResult] = await Promise.all([
+      db.rpc("pending_attacks"),
+      db.rpc("attack_reports"),
+      db.from("profiles").select("credits, stats").single(),
+    ]);
+    if (incomingResult.error) throw incomingResult.error;
+    if (reportResult.error) throw reportResult.error;
+    if (profileResult.error) throw profileResult.error;
+
+    const incoming = ((incomingResult.data ?? []) as IncomingAttackRow[]).map((row) => ({
+      id: row.id,
+      from: row.from_name,
+      createdAt: Date.parse(row.created_at),
+      drones: row.drones,
+      pattern: row.pattern,
+      direction: row.direction,
+      seed: row.seed,
+      remote: true,
+    }));
+    const reports = ((reportResult.data ?? []) as AttackReportRow[]).map((row) => ({
+      id: row.id,
+      target: row.target_name,
+      resolvedAt: Date.parse(row.resolved_at),
+      result: row.result,
+      loot: row.loot,
+      destroyed: row.destroyed,
+    }));
+    return {
+      incoming,
+      reports,
+      credits: profileResult.data.credits as number,
+      stats: profileResult.data.stats as Player["stats"],
     };
   }
 
@@ -199,13 +283,40 @@ class CloudRepo implements Repo {
     return row ? { credits: row.credits } : {};
   }
 
-  async applyBattle(p: Player, result: BattleResult) {
-    const { data, error } = await this.db().rpc("apply_battle", {
+  async sendAttack(
+    p: Player,
+    targetEmail: string,
+    drones: number,
+    pattern: Pattern,
+    direction: number,
+    seed: number
+  ) {
+    const { error } = await this.db().rpc("send_attack", {
+      target_email: targetEmail,
+      drone_count: drones,
+      attack_pattern: pattern,
+      attack_direction: direction,
+      attack_seed: seed,
+      new_depots: p.depots,
+    });
+    if (error) throw error;
+  }
+
+  async acknowledgeReport(id: string) {
+    const { error } = await this.db().rpc("ack_attack_report", { attack_id: id });
+    if (error) throw error;
+  }
+
+  async applyBattle(p: Player, result: BattleResult, attackId?: string) {
+    const rpc = attackId ? "complete_attack" : "apply_battle";
+    const args = {
       new_cells: encodeRle(p.cells),
       new_guns: p.guns,
       new_depots: p.depots,
       result,
-    });
+      ...(attackId ? { attack_id: attackId } : {}),
+    };
+    const { data, error } = await this.db().rpc(rpc, args);
     if (error) throw error;
     const row = (data as { credits: number }[] | null)?.[0];
     return row ? { credits: row.credits } : {};

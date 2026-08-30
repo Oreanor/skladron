@@ -555,6 +555,9 @@ export function update(s: GameState, dt: number) {
 /** Итоговая карта для склада: то, что горело, считается сгоревшим. */
 export function settle(s: GameState) {
   const cells = s.cells.slice();
+  for (let i = 0; i < cells.length; i++) {
+    if (cells[i] === G_SCORCH) cells[i] = G_GROUND;
+  }
   for (const i of s.fire.keys()) cells[i] = 3; // G_BURNT
   return {
     cells,

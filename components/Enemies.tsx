@@ -3,14 +3,19 @@
 import { useState } from "react";
 import { PATTERNS, type Pattern, EDGE_NAMES } from "@/lib/attack";
 import { fmt } from "@/lib/economy";
-import { MAX_ATTACK_DRONES, type Enemy, type RaidOutcome } from "@/lib/enemy";
-import { Button, Card, Modal, Row, inputClass } from "./ui";
+import { MAX_ATTACK_DRONES, type Enemy } from "@/lib/enemy";
+import { Button, Card, Modal, inputClass } from "./ui";
 
 interface Props {
   enemies: Enemy[];
   drones: number;
   onAdd: (email: string) => Promise<string | null>; // текст ошибки или null
-  onRaid: (enemy: Enemy, drones: number, pattern: Pattern, direction: number) => RaidOutcome;
+  onRaid: (
+    enemy: Enemy,
+    drones: number,
+    pattern: Pattern,
+    direction: number
+  ) => Promise<string | null>;
   onChanged: () => void;
 }
 
@@ -18,7 +23,6 @@ export default function Enemies({ enemies, drones, onAdd, onRaid, onChanged }: P
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [target, setTarget] = useState<Enemy | null>(null);
-  const [outcome, setOutcome] = useState<{ enemy: Enemy; out: RaidOutcome } | null>(null);
   const [adding, setAdding] = useState(false);
 
   const add = async () => {
@@ -90,20 +94,14 @@ export default function Enemies({ enemies, drones, onAdd, onRaid, onChanged }: P
           enemy={target}
           drones={drones}
           onCancel={() => setTarget(null)}
-          onSend={(n, pattern, dir) => {
-            const out = onRaid(target, n, pattern, dir);
-            setTarget(null);
-            setOutcome({ enemy: target, out });
-            onChanged();
+          onSend={async (n, pattern, dir) => {
+            const error = await onRaid(target, n, pattern, dir);
+            if (!error) {
+              setTarget(null);
+              onChanged();
+            }
+            return error;
           }}
-        />
-      )}
-
-      {outcome && (
-        <RaidReport
-          name={outcome.enemy.name}
-          out={outcome.out}
-          onClose={() => setOutcome(null)}
         />
       )}
     </>
@@ -119,17 +117,28 @@ function RaidDialog({
   enemy: Enemy;
   drones: number;
   onCancel: () => void;
-  onSend: (n: number, p: Pattern, dir: number) => void;
+  onSend: (n: number, p: Pattern, dir: number) => Promise<string | null>;
 }) {
   const max = Math.min(drones, MAX_ATTACK_DRONES);
   const [n, setN] = useState(Math.min(50, max));
   const [pattern, setPattern] = useState<Pattern>("swarm");
   const [dir, setDir] = useState(0);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+
+  const send = async () => {
+    if (sending) return;
+    setSending(true);
+    setSendError(null);
+    const error = await onSend(n, pattern, dir);
+    setSending(false);
+    setSendError(error);
+  };
 
   return (
     <Modal
       title={`Налёт на ${enemy.name}`}
-      subtitle="Дроны спишутся сразу и не вернутся, чем бы дело ни кончилось."
+      subtitle="Дроны спишутся сразу. Итог придёт только после того, как друг отыграет защиту."
       onClose={onCancel}
     >
       <label className="mb-1 block text-xs uppercase tracking-wider text-neutral-400">
@@ -182,44 +191,12 @@ function RaidDialog({
       )}
 
       <div className="flex gap-2">
-        <Button variant="danger" className="flex-1" onClick={() => onSend(n, pattern, dir)}>
-          Отправить {n} дронов
+        <Button variant="danger" className="flex-1" onClick={() => void send()} disabled={sending}>
+          {sending ? "Отправляю…" : `Отправить ${n} дронов`}
         </Button>
         <Button onClick={onCancel}>Отмена</Button>
       </div>
-    </Modal>
-  );
-}
-
-function RaidReport({
-  name,
-  out,
-  onClose,
-}: {
-  name: string;
-  out: RaidOutcome;
-  onClose: () => void;
-}) {
-  const r = out.result;
-  return (
-    <Modal
-      title={out.destroyed ? `${name} выгорел дотла` : `Налёт на ${name}`}
-      subtitle="Сводка одна и та же у обеих сторон — он видит ровно эти цифры."
-      onClose={onClose}
-    >
-      <dl className="mb-4 space-y-1 font-mono text-sm">
-        <Row label="Запущено дронов" value={String(r.dronesSent)} />
-        <Row label="Сбито ракетами" value={String(r.killedByGuns)} />
-        <Row label="Сбито очередью" value={String(r.killedByMg)} />
-        <Row label="Прорвалось" value={String(r.leaked)} />
-        <Row label="Клеток сожжено" value={String(r.burned)} />
-        <Row label="Уничтожено дронов на складе" value={String(r.dronesLost)} />
-        <Row label="Уничтожено пушек" value={String(r.gunsLost)} />
-        <Row label="Добыча" value={`+${fmt(out.loot)} кр`} />
-      </dl>
-      <Button variant="neutral" block onClick={onClose}>
-        Закрыть
-      </Button>
+      {sendError && <p className="mt-2 text-xs text-red-400">{sendError}</p>}
     </Modal>
   );
 }
