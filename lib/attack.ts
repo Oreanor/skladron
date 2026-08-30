@@ -5,10 +5,15 @@ import type { BattleResult } from "./engine";
 
 export type Pattern = "swarm" | "lines" | "random" | "drip";
 
+/** Сколько атака ждёт живого защитника, прежде чем пройти сама. */
+export const RAID_TTL_MS = 30 * 60 * 1000;
+
 export interface AttackOrder {
   id: string;
   from: string; // кто прислал
   createdAt: number;
+  /** Когда атака встала первой в очереди и пошли часы. Пока null — ждёт. */
+  activatedAt?: number | null;
   drones: number;
   pattern: Pattern;
   direction: number; // 0 верх, 1 низ, 2 слева, 3 справа — для lines

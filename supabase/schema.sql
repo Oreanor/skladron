@@ -19,6 +19,7 @@ language sql immutable as $$
     when 'loot'   then 5
     when 'kill'   then 50   -- защитнику за сбитый дрон
     when 'leak'   then 50   -- атакующему за долетевший дрон
+    when 'raid_ttl' then 1800  -- полчаса на то, чтобы отбить атаку вручную
     when 'free'   then 100   -- стартовая площадь 10×10 достаётся даром
     when 'found'  then 100   -- столько же нужно, чтобы основаться
   end;
@@ -137,6 +138,9 @@ create table if not exists bases (
   intact_cells int not null default 0,
   updated_at timestamptz not null default now()
 );
+
+-- очередь налётов: у первой атаки идут часы, остальные ждут
+alter table attacks add column if not exists activated_at timestamptz;
 
 create table if not exists attacks (
   id uuid primary key default gen_random_uuid(),
@@ -284,17 +288,39 @@ $$;
 
 create or replace function pending_attacks()
 returns table (
-  id uuid, from_name text, created_at timestamptz,
+  id uuid, from_name text, created_at timestamptz, activated_at timestamptz,
   drones int, pattern text, direction int, seed int
 )
-language sql security definer set search_path = public as $$
-  select a.id,
-         coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)) as from_name,
-         a.created_at, a.drones, a.pattern, a.direction, a.seed
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  head uuid;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+
+  -- Часы идут только у первой атаки в очереди: пропускать нельзя, а у тех,
+  -- что ждут позади, время ещё не начиналось. Отметку ставим при первой же
+  -- выдаче списка — это и есть «первый показ».
+  select a.id into head
     from attacks a
-    join profiles p on p.id = a.attacker_id
-   where a.defender_id = auth.uid() and a.status = 'pending'
-   order by a.created_at;
+   where a.defender_id = uid and a.status = 'pending'
+   order by a.created_at
+   limit 1;
+
+  if head is not null then
+    update attacks set activated_at = now()
+     where attacks.id = head and attacks.activated_at is null;
+  end if;
+
+  return query
+    select a.id,
+           coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
+           a.created_at, a.activated_at, a.drones, a.pattern, a.direction, a.seed
+      from attacks a
+      join profiles p on p.id = a.attacker_id
+     where a.defender_id = uid and a.status = 'pending'
+     order by a.created_at;
+end;
 $$;
 
 create or replace function attack_reports()

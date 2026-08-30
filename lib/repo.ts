@@ -143,6 +143,7 @@ interface IncomingAttackRow {
   id: string;
   from_name: string;
   created_at: string;
+  activated_at: string | null;
   drones: number;
   pattern: Pattern;
   direction: number;
@@ -246,6 +247,7 @@ class CloudRepo implements Repo {
       id: row.id,
       from: row.from_name,
       createdAt: Date.parse(row.created_at),
+      activatedAt: row.activated_at ? Date.parse(row.activated_at) : null,
       drones: row.drones,
       pattern: row.pattern,
       direction: row.direction,

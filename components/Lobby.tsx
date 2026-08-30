@@ -32,6 +32,7 @@ import {
 import {
   EDGE_NAMES,
   PATTERNS,
+  RAID_TTL_MS,
   type AttackOrder,
   type AttackReport,
   type Pattern,
@@ -57,6 +58,7 @@ import Enemies from "./Enemies";
 import { drawCoverage, drawDepots } from "@/lib/render";
 import Battle, { type BattleOutcome } from "./Battle";
 import MapCanvas, { type Pt } from "./MapCanvas";
+import { autoDefend, type UnattendedOutcome } from "@/lib/unattended";
 import {
   Button,
   Card,
@@ -109,6 +111,14 @@ export default function Lobby({
   const [sheet, setSheet] = useState<SheetId | null>(null);
   const [naming, setNaming] = useState<"found" | "rename" | null>(null);
   const [confirmWipe, setConfirmWipe] = useState(false);
+  /** Итог налёта, который прошёл без игрока. */
+  const [autoReport, setAutoReport] = useState<
+    { from: string; outcome: UnattendedOutcome } | null
+  >(null);
+  const [now, setNow] = useState(() => Date.now());
+  /** Атаки, которые уже прошли автоматом: опрос не должен их воскрешать. */
+  const resolvedRef = useRef(new Set<string>());
+  const autoBusyRef = useRef(false);
   const [buyAmount, setBuyAmount] = useState(1);
   const [reports, setReports] = useState<AttackReport[]>([]);
   const toggleSheet = (id: SheetId) => setSheet((cur) => (cur === id ? null : id));
@@ -181,7 +191,7 @@ export default function Lobby({
         const state = await repo.syncAttacks();
         const cur = playerRef.current;
         if (!alive || !cur) return;
-        cur.incoming = state.incoming;
+        cur.incoming = state.incoming.filter((a) => !resolvedRef.current.has(a.id));
         if (state.credits !== undefined) cur.credits = state.credits;
         if (state.stats) cur.stats = { ...cur.stats, ...state.stats };
         setReports(state.reports);
@@ -195,6 +205,64 @@ export default function Lobby({
       alive = false;
       window.clearInterval(timer);
     };
+  }, [repo]);
+
+  /**
+   * Атаки отбиваются строго по очереди. У первой в списке идут часы: не успел
+   * за RAID_TTL_MS — налёт проходит сам, без брандспойта и пулемёта, и очередь
+   * двигается дальше. Тикаем раз в секунду, но только когда есть что считать.
+   */
+  useEffect(() => {
+    const tick = async () => {
+      const cur = playerRef.current;
+      const head = cur?.incoming[0];
+      if (!cur || !head) return;
+      if (!head.activatedAt) {
+        // сервер отметит своим временем при ближайшем опросе, а бот-атаки
+        // живут только на клиенте — часы им заводим здесь
+        head.activatedAt = Date.now();
+        forceRender((v) => v + 1);
+        return;
+      }
+      setNow(Date.now());
+      if (Date.now() < head.activatedAt + RAID_TTL_MS) return;
+      if (autoBusyRef.current) return;
+
+      autoBusyRef.current = true;
+      try {
+        const o = autoDefend(cur.cells, cur.guns, cur.depots, head);
+        resolvedRef.current.add(head.id);
+        cur.cells = o.cells;
+        cur.guns = o.guns;
+        cur.depots = o.depots;
+        cur.incoming = cur.incoming.filter((a) => a.id !== head.id);
+        cur.stats.battles++;
+        const killed = o.result.killedByGuns + o.result.killedByMg;
+        cur.stats.dronesKilled += killed;
+        cur.credits += killed * DRONE_KILL_REWARD;
+        cur.stats.cellsBurned += o.result.burned;
+        const foe = cur.enemies.find((e) => e.name === head.from);
+        if (foe) foe.burnedByThem += o.result.burned;
+        setAutoReport({ from: head.from, outcome: o });
+        setVersion((v) => v + 1);
+        forceRender((v) => v + 1);
+        try {
+          const patch = await repo.applyBattle(
+            cur,
+            o.result,
+            head.remote ? head.id : undefined
+          );
+          if (patch.credits !== undefined) cur.credits = patch.credits;
+          forceRender((v) => v + 1);
+        } catch (e) {
+          setMessage(`Итог автобоя не сохранён: ${(e as Error).message}`);
+        }
+      } finally {
+        autoBusyRef.current = false;
+      }
+    };
+    const timer = window.setInterval(() => void tick(), 1000);
+    return () => window.clearInterval(timer);
   }, [repo]);
 
   const p = playerRef.current;
@@ -938,6 +1006,13 @@ export default function Lobby({
     </>
   );
 
+  const head = p.incoming[0] ?? null;
+  const headLeft = head?.activatedAt ? head.activatedAt + RAID_TTL_MS - now : null;
+  const countdown = (ms: number) => {
+    const total = Math.max(0, Math.ceil(ms / 1000));
+    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+  };
+
   const attacksBody =
     p.incoming.length === 0 ? (
       <p className="text-neutral-500">
@@ -945,21 +1020,33 @@ export default function Lobby({
       </p>
     ) : (
       <ul className="space-y-2">
-        {p.incoming.map((a) => {
+        {p.incoming.map((a, i) => {
           const pat = PATTERNS.find((x) => x.id === a.pattern);
+          const first = i === 0;
           return (
-            <Card key={a.id} className="flex items-center justify-between gap-2">
+            <Card
+              key={a.id}
+              className={`flex items-center justify-between gap-2 ${first ? "" : "opacity-60"}`}
+            >
               <div className="min-w-0">
                 <div className="truncate font-medium text-neutral-200">{a.from}</div>
                 <div className="font-mono text-xs text-neutral-500">
                   {a.drones} дронов · {pat?.name.toLowerCase()}
                   {a.pattern === "lines" ? ` ${EDGE_NAMES[a.direction]}` : ""}
                 </div>
+                <div className="font-mono text-xs text-neutral-500">
+                  {first
+                    ? headLeft !== null
+                      ? `осталось ${countdown(headLeft)}`
+                      : "часы вот-вот пойдут"
+                    : `${i + 1}-я в очереди`}
+                </div>
               </div>
               <Button
                 variant="danger"
                 size="sm"
-                disabled={intact === 0}
+                disabled={!first || intact === 0}
+                title={first ? undefined : "Сначала отбей предыдущую"}
                 onClick={() => {
                   setSheet(null);
                   setBattle(a);
@@ -1175,7 +1262,7 @@ export default function Lobby({
             <Notice tone="danger" className="order-2 flex-wrap lg:order-3">
               <span className="min-w-0">
                 Склад выгорел дотла. «Ремонт» поднимает клетку за {REPAIR_COST} кр,
-                «Снести» расчищает пепелище и ставит стартовые {STARTER_SIDE}×{STARTER_SIDE}
+                «Снести» расчищает пепелище и ставит стартовые {STARTER_SIDE}×{STARTER_SIDE}{" "}
                 заново.
               </span>
               <div className="ml-auto flex gap-2">
@@ -1195,6 +1282,7 @@ export default function Lobby({
               <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-500" />
               <span className="min-w-0 truncate">
                 Налёт: {p.incoming[0].from} · {p.incoming[0].drones} дронов
+                {headLeft !== null ? ` · ${countdown(headLeft)}` : ""}
               </span>
               <Button
                 variant="danger"
@@ -1227,6 +1315,32 @@ export default function Lobby({
       </div>
 
       {/* мобильные шторки */}
+      {autoReport && (
+        <Modal
+          title={
+            autoReport.outcome.won
+              ? `Налёт ${autoReport.from} прошёл без тебя`
+              : `Склад выгорел: ${autoReport.from}`
+          }
+          subtitle="Полчаса на ответ истекли. Пушки отстрелялись сами, тушить и бить очередью было некому."
+          onClose={() => setAutoReport(null)}
+        >
+          <dl className="mb-4 space-y-1 font-mono text-sm">
+            <Row
+              label="Сбито ракетами"
+              value={String(autoReport.outcome.result.killedByGuns)}
+            />
+            <Row label="Прорвалось" value={String(autoReport.outcome.result.leaked)} />
+            <Row label="Клеток сгорело" value={String(autoReport.outcome.result.burned)} />
+            <Row label="Потеряно дронов" value={String(autoReport.outcome.result.dronesLost)} />
+            <Row label="Потеряно пушек" value={String(autoReport.outcome.result.gunsLost)} />
+          </dl>
+          <Button variant="neutral" block onClick={() => setAutoReport(null)}>
+            Понятно
+          </Button>
+        </Modal>
+      )}
+
       {confirmWipe && (
         <ConfirmDialog
           title="Снести пепелище?"
