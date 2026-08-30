@@ -1,7 +1,7 @@
 // Хранилище состояния игрока. Одна и та же игра работает поверх localStorage
 // и поверх Supabase — Lobby знает только этот интерфейс.
 
-import { CELLS, type Depot, decodeCells, encodeRle, regrowGround, type Gun } from "./base";
+import { type DroneKind, CELLS, type Depot, decodeCells, encodeRle, regrowGround, type Gun } from "./base";
 
 import { CREDITS_START } from "./economy";
 import type { AttackOrder, AttackReport, Pattern } from "./attack";
@@ -46,14 +46,15 @@ export interface Repo {
   /** Закупка разведчиков и списание при вылете. */
   buyScouts(p: Player, n: number): Promise<Partial<Player>>;
   spendScouts(p: Player, n: number): Promise<Partial<Player>>;
-  buyDrones(p: Player, amount: number): Promise<Partial<Player>>;
+  buyDrones(p: Player, amount: number, kind?: DroneKind): Promise<Partial<Player>>;
   sendAttack(
     p: Player,
     targetEmail: string,
     drones: number,
     pattern: Pattern,
     direction: number,
-    seed: number
+    seed: number,
+    plus?: number
   ): Promise<void>;
   acknowledgeReport(id: string): Promise<void>;
   /** Переименование склада — отдельная операция, карты не касается. */
@@ -107,7 +108,7 @@ class LocalRepo implements Repo {
     return { cells: new Uint8Array(CELLS), guns: [] as Gun[] };
   }
 
-  async buyDrones(p: Player, _amount: number) {
+  async buyDrones(p: Player, _amount: number, _kind?: DroneKind) {
     localSave(p);
     return {};
   }
@@ -166,6 +167,7 @@ interface IncomingAttackRow {
   created_at: string;
   activated_at: string | null;
   drones: number;
+  plus: number | null;
   pattern: Pattern;
   direction: number;
   seed: number;
@@ -271,6 +273,7 @@ class CloudRepo implements Repo {
       createdAt: Date.parse(row.created_at),
       activatedAt: row.activated_at ? Date.parse(row.activated_at) : null,
       drones: row.drones,
+      plus: row.plus ?? 0,
       pattern: row.pattern,
       direction: row.direction,
       seed: row.seed,
@@ -348,12 +351,13 @@ class CloudRepo implements Repo {
 
 
 
-  async buyDrones(p: Player, amount: number) {
+  async buyDrones(p: Player, amount: number, kind: DroneKind = "basic") {
     const { data, error } = await this.db().rpc("buy_drones", {
       // Имя SQL-параметра оставлено для совместимости со старой функцией,
       // но теперь это точное количество дронов, а не число пачек.
       packs: amount,
       new_depots: p.depots,
+      kind,
     });
     if (error) throw error;
     const row = (data as { credits: number }[] | null)?.[0];
@@ -366,7 +370,8 @@ class CloudRepo implements Repo {
     drones: number,
     pattern: Pattern,
     direction: number,
-    seed: number
+    seed: number,
+    plus = 0
   ) {
     const { error } = await this.db().rpc("send_attack", {
       target_email: targetEmail,
@@ -375,6 +380,7 @@ class CloudRepo implements Repo {
       attack_direction: direction,
       attack_seed: seed,
       new_depots: p.depots,
+      plus_count: plus,
     });
     if (error) throw error;
   }

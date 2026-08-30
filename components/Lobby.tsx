@@ -23,6 +23,7 @@ import {
 import {
   CELL_COST,
   STARTER_SIDE,
+  DRONE_PLUS_COST,
   DRONE_UNIT_COST,
   DRONE_KILL_REWARD,
   GUN_COST,
@@ -64,9 +65,9 @@ import MapCanvas, { type Pt } from "./MapCanvas";
 import AccountMenu, { SettingsList } from "./AccountMenu";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
-import { LayoutGrid, Package, Plane, Rocket, Wrench } from "lucide-react";
+import { LayoutGrid, Plane, Rocket, Wrench } from "lucide-react";
 import { autoDefend, type UnattendedOutcome } from "@/lib/unattended";
-import { decodeCells, decodeRle, encodeRle, type Gun } from "@/lib/base";
+import { decodeCells, decodeRle, depotKind, encodeRle, type DroneKind, type Gun } from "@/lib/base";
 import {
   Button,
   Card,
@@ -88,11 +89,12 @@ import {
   TOAST_MS,
   Toast,
   ToolButton,
+  IconDrone,
 } from "./ui";
 
-type Tool = "area" | "repair" | "gun" | "drones" | "scouts";
+type Tool = "area" | "repair" | "gun" | "drones" | "plus" | "scouts";
 /** Панели, которые на телефоне открываются шторкой снизу. */
-type SheetId = "found" | "arsenal" | "scouts" | "attacks" | "enemies" | "menu";
+type SheetId = "found" | "arsenal" | "plus" | "scouts" | "attacks" | "enemies" | "menu";
 
 const ICON = "h-5 w-5";
 
@@ -130,7 +132,14 @@ const TOOLS: {
     label: "tool.drones",
     hint: "tool.dronesHint",
     vars: { cost: DRONE_UNIT_COST },
-    icon: <Package className={ICON} />,
+    icon: <IconDrone />,
+  },
+  {
+    id: "plus",
+    label: "tool.plus",
+    hint: "tool.dronesHint",
+    vars: { cost: DRONE_PLUS_COST },
+    icon: <IconDrone plus />,
   },
   {
     id: "scouts",
@@ -349,24 +358,27 @@ export default function Lobby({
   const burnt = burntCells(p);
   const hasBuilding = intact + burnt > 0;
   const doomed = isDoomed(p);
-  const drones = droneCount(p.depots);
+  const drones = droneCount(p.depots, "basic");
+  const dronesPlus = droneCount(p.depots, "plus");
+  // магазин один, вид берём из выбранного инструмента
+  const buyKind: DroneKind = tool === "plus" ? "plus" : "basic";
+  const unitCost = buyKind === "plus" ? DRONE_PLUS_COST : DRONE_UNIT_COST;
   const free = freeCells(p.cells, p.guns, p.depots).length;
+  // место есть только в неполных ящиках того же вида: смешивать нельзя
   const roomInPartialDepots = p.depots.reduce(
-    (sum, depot) => sum + Math.max(0, DRONES_PER_CELL - depot.n),
+    (sum, depot) =>
+      depotKind(depot) === buyKind ? sum + Math.max(0, DRONES_PER_CELL - depot.n) : sum,
     0
   );
   // Магазин ограничивает ползунок и кошельком, и реальной вместимостью:
   // свободными местами в неполных контейнерах плюс новыми белыми клетками.
   const maxBySpace = roomInPartialDepots + free * DRONES_PER_CELL;
-  const maxBuyAmount = Math.min(
-    Math.floor(p.credits / DRONE_UNIT_COST),
-    maxBySpace
-  );
+  const maxBuyAmount = Math.min(Math.floor(p.credits / unitCost), maxBySpace);
   const selectedBuyAmount =
     maxBuyAmount > 0
       ? Math.max(1, Math.min(Math.floor(buyAmount) || 1, maxBuyAmount))
       : 0;
-  const selectedBuyCost = selectedBuyAmount * DRONE_UNIT_COST;
+  const selectedBuyCost = selectedBuyAmount * unitCost;
 
   // ---------- бой ----------
 
@@ -567,7 +579,8 @@ export default function Lobby({
       p.cells,
       p.guns,
       p.depots,
-      selectedBuyAmount
+      selectedBuyAmount,
+      buyKind
     );
     if (!nextDepots) {
       setMessage(t("arsenal.needSpace"));
@@ -586,7 +599,7 @@ export default function Lobby({
     setVersion((v) => v + 1);
     forceRender((v) => v + 1);
     try {
-      const patch = await repo.buyDrones(p, selectedBuyAmount);
+      const patch = await repo.buyDrones(p, selectedBuyAmount, buyKind);
       if (patch.credits !== undefined) p.credits = patch.credits;
       forceRender((v) => v + 1);
     } catch (e) {
@@ -755,11 +768,14 @@ export default function Lobby({
     enemy: Enemy,
     n: number,
     pattern: Pattern,
-    direction: number
+    direction: number,
+    plus = 0
   ): Promise<string | null> => {
     const previousDepots = p.depots.map((depot) => ({ ...depot }));
-    const sent = takeDrones(p.depots, n);
-    if (sent !== n) {
+    const basic = n - plus;
+    const tookBasic = basic > 0 ? takeDrones(p.depots, basic, "basic") : 0;
+    const tookPlus = plus > 0 ? takeDrones(p.depots, plus, "plus") : 0;
+    if (tookBasic !== basic || tookPlus !== plus) {
       p.depots = previousDepots;
       return t("raid.notEnough");
     }
@@ -767,7 +783,7 @@ export default function Lobby({
     setVersion((value) => value + 1);
     forceRender((value) => value + 1);
     try {
-      await repo.sendAttack(p, enemy.email, n, pattern, direction, seed);
+      await repo.sendAttack(p, enemy.email, n, pattern, direction, seed, plus);
       p.stats.raids++;
       setMessage(t("raid.sent", { email: enemy.email }));
       return null;
@@ -821,7 +837,7 @@ export default function Lobby({
   const onDown = (pt: Pt, button: number) => {
     if (button !== 0) return;
     const c = cellOf(pt);
-    if (tool === "drones") {
+    if ((tool === "drones" || tool === "plus")) {
       const d = p.depots.find((q) => q.cx === c.x && q.cy === c.y);
       if (d) {
         dragDepotRef.current = { cx: d.cx, cy: d.cy };
@@ -929,7 +945,7 @@ export default function Lobby({
       }
       return;
     }
-    if (tool === "drones") {
+    if ((tool === "drones" || tool === "plus")) {
       const from = dragDepotRef.current;
       dragDepotRef.current = null;
       forceRender((v) => v + 1);
@@ -972,7 +988,7 @@ export default function Lobby({
   const overlay = (ctx: CanvasRenderingContext2D) => {
     const cell = 7;
     drawCoverage(ctx, p.guns, cell);
-    const dragged = tool === "drones" ? dragDepotRef.current : null;
+    const dragged = (tool === "drones" || tool === "plus") ? dragDepotRef.current : null;
     drawDepots(
       ctx,
       dragged
@@ -1039,7 +1055,7 @@ export default function Lobby({
     }
 
     // раскладка: подсвечиваем свободные клетки и тащим контейнер за курсором
-    if (tool === "drones") {
+    if ((tool === "drones" || tool === "plus")) {
       ctx.fillStyle = "rgba(214, 168, 92, 0.18)";
       for (const i of freeCells(p.cells, p.guns, p.depots)) {
         ctx.fillRect((i % GRID) * cell, ((i / GRID) | 0) * cell, cell, cell);
@@ -1140,6 +1156,7 @@ export default function Lobby({
     draftRef.current = null;
     // на телефоне арсенал живёт в шторке, на десктопе — в боковой колонке
     if (id === "drones") setSheet("arsenal");
+    if (id === "plus") setSheet("plus");
     if (id === "scouts") setSheet("scouts");
   };
 
@@ -1175,10 +1192,13 @@ export default function Lobby({
   const arsenalBody = (
     <>
       <p className="mb-3 text-neutral-400">
-        {t("arsenal.explain", { perCell: DRONES_PER_CELL })}
+        {buyKind === "plus"
+          ? t("arsenal.plusExplain", { perCell: DRONES_PER_CELL })
+          : t("arsenal.explain", { perCell: DRONES_PER_CELL })}
       </p>
       <dl className="mb-3 space-y-1 font-mono text-sm">
         <Row label={t("arsenal.drones")} value={fmt(drones)} />
+        <Row label={t("arsenal.dronesPlus")} value={fmt(dronesPlus)} />
         <Row label={t("arsenal.containers")} value={String(p.depots.length)} />
         <Row label={t("arsenal.freeCells")} value={String(free)} />
       </dl>
@@ -1337,6 +1357,7 @@ export default function Lobby({
     <Enemies
       enemies={p.enemies}
       drones={drones}
+      dronesPlus={dronesPlus}
       scouts={p.scouts}
       onAdd={addEnemy}
       onRaid={doRaid}
@@ -1424,7 +1445,7 @@ export default function Lobby({
         */}
         <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
 
-          <div className="order-3 grid shrink-0 grid-cols-5 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(5,5.5rem)] lg:gap-2">
+          <div className="order-3 grid shrink-0 grid-cols-6 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(6,5.5rem)] lg:gap-2">
             {TOOLS.map((item) => (
               <ToolButton
                 key={item.id}
@@ -1453,7 +1474,7 @@ export default function Lobby({
               paintingRef.current = false;
             }}
             cursor={
-              tool === "drones"
+              (tool === "drones" || tool === "plus")
                 ? dragDepotRef.current
                   ? "grabbing"
                   : "grab"
@@ -1578,6 +1599,7 @@ export default function Lobby({
             <>
               <Panel title={t("panel.base")}>{baseNameBody}</Panel>
               {tool === "drones" && <Panel title={t("panel.arsenal")}>{arsenalBody}</Panel>}
+              {tool === "plus" && <Panel title={t("panel.plus")}>{arsenalBody}</Panel>}
               {tool === "scouts" && <Panel title={t("scout.panel")}>{scoutsBody}</Panel>}
               <Panel title={t("panel.attacks")} action={summonButton}>
                 {attacksBody}
@@ -1659,6 +1681,9 @@ export default function Lobby({
         {foundBody}
       </Sheet>
       <Sheet open={sheet === "arsenal"} title={t("panel.arsenal")} onClose={() => setSheet(null)}>
+        {p.founded ? arsenalBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}
+      </Sheet>
+      <Sheet open={sheet === "plus"} title={t("panel.plus")} onClose={() => setSheet(null)}>
         {p.founded ? arsenalBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}
       </Sheet>
       <Sheet open={sheet === "scouts"} title={t("scout.panel")} onClose={() => setSheet(null)}>

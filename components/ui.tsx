@@ -482,3 +482,28 @@ export function Toast({ text, onClose }: { text: string; onClose: () => void }) 
     </div>
   );
 }
+
+/**
+ * Квадрокоптер: четыре луча с винтами и корпус. В lucide такого нет, а
+ * коробка на кнопке дронов сбивала с толку — коробка это контейнер, не дрон.
+ */
+export function IconDrone({ plus = false }: { plus?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.6} className="h-5 w-5 stroke-current">
+      <path d="M8.5 8.5 6 6M15.5 8.5 18 6M8.5 15.5 6 18M15.5 15.5 18 18" strokeLinecap="round" />
+      <circle cx="5" cy="5" r="2.4" />
+      <circle cx="19" cy="5" r="2.4" />
+      <circle cx="5" cy="19" r="2.4" />
+      <circle cx="19" cy="19" r="2.4" />
+      {plus && (
+        <>
+          <circle cx="5" cy="5" r="1.1" />
+          <circle cx="19" cy="5" r="1.1" />
+          <circle cx="5" cy="19" r="1.1" />
+          <circle cx="19" cy="19" r="1.1" />
+        </>
+      )}
+      <rect x="9" y="9" width="6" height="6" rx="1.6" />
+    </svg>
+  );
+}

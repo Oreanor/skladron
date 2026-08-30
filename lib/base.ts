@@ -19,16 +19,23 @@ export interface Gun {
 }
 
 /** Контейнер с дронами: занимает клетку склада, вмещает DRONES_PER_CELL штук. */
+/** Что лежит в контейнере: обычные дроны или быстрые. */
+export type DroneKind = "basic" | "plus";
+
 export interface Depot {
   cx: number;
   cy: number;
   n: number;
+  /** Отсутствует — значит обычные: так старые сохранения читаются как есть. */
+  kind?: DroneKind;
 }
+
+export const depotKind = (d: Depot): DroneKind => d.kind ?? "basic";
 
 export const DRONES_PER_CELL = 10;
 
-export const droneCount = (depots: Depot[]) =>
-  depots.reduce((sum, d) => sum + d.n, 0);
+export const droneCount = (depots: Depot[], kind?: DroneKind) =>
+  depots.reduce((sum, d) => (kind && depotKind(d) !== kind ? sum : sum + d.n), 0);
 
 /** Клетки, куда можно поставить контейнер: целые, без пушки и без склада. */
 export function freeCells(cells: Uint8Array, guns: Gun[], depots: Depot[]) {
@@ -148,7 +155,8 @@ export function storeDrones(
   cells: Uint8Array,
   guns: Gun[],
   depots: Depot[],
-  amount: number
+  amount: number,
+  kind: DroneKind = "basic"
 ): Depot[] | null {
   if (!Number.isInteger(amount) || amount < 1) return null;
   const next = depots.map((depot) => ({ ...depot }));
@@ -156,6 +164,7 @@ export function storeDrones(
 
   for (const depot of next) {
     if (left <= 0) break;
+    if (depotKind(depot) !== kind) continue; // в один ящик кладём один вид
     const add = Math.min(left, DRONES_PER_CELL - depot.n);
     if (add <= 0) continue;
     depot.n += add;
@@ -167,6 +176,7 @@ export function storeDrones(
   const added = placeDepots(cells, guns, next, cellsNeeded);
   if (added.length < cellsNeeded) return null;
   for (const depot of added) {
+    depot.kind = kind;
     depot.n = Math.min(left, DRONES_PER_CELL);
     left -= depot.n;
   }

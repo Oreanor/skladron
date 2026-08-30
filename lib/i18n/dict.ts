@@ -16,6 +16,14 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 };
 
 const en = {
+  "tool.plus": "Drones+",
+  "panel.plus": "Fast drones",
+  "arsenal.plusExplain": "Fast drones fly 50% quicker and go in their own containers — they never share a crate with the plain ones. Same {perCell} per cell.",
+  "arsenal.dronesPlus": "Fast drones",
+  "raid.basic": "Plain: {n} of {max}",
+  "raid.plus": "Fast: {n} of {max}",
+  "raid.mixHint": "Both kinds go in the same wave, mixed at random.",
+  "raid.total": "Send {n} drones",
   "tool.scouts": "Recon",
   "scout.panel": "Recon planes",
   "scout.explain": "Recon planes sit in the hangar as a plain count — they take no warehouse space and cannot burn. Each flight spends the planes you send.",
@@ -308,6 +316,14 @@ export type Key = keyof typeof en;
 type Dict = Record<Key, string>;
 
 const ru: Dict = {
+  "tool.plus": "Дроны+",
+  "panel.plus": "Быстрые дроны",
+  "arsenal.plusExplain": "Быстрые дроны летят на 50% резвее и лежат в своих контейнерах — с обычными в одном ящике не смешиваются. Те же {perCell} на клетку.",
+  "arsenal.dronesPlus": "Быстрых дронов",
+  "raid.basic": "Обычных: {n} из {max}",
+  "raid.plus": "Быстрых: {n} из {max}",
+  "raid.mixHint": "Оба вида идут одной волной вперемешку, как выйдет.",
+  "raid.total": "Отправить {n} дронов",
   "tool.scouts": "Разведка",
   "scout.panel": "Разведдроны",
   "scout.explain": "Разведчики лежат в ангаре простым счётчиком — места на складе не занимают и сгореть не могут. Вылет тратит столько, сколько послал.",
@@ -600,6 +616,14 @@ const ru: Dict = {
 };
 
 const es: Dict = {
+  "tool.plus": "Drones+",
+  "panel.plus": "Drones rápidos",
+  "arsenal.plusExplain": "Los drones rápidos vuelan un 50% más y van en sus propios contenedores: nunca comparten caja con los normales. Los mismos {perCell} por celda.",
+  "arsenal.dronesPlus": "Drones rápidos",
+  "raid.basic": "Normales: {n} de {max}",
+  "raid.plus": "Rápidos: {n} de {max}",
+  "raid.mixHint": "Los dos tipos van en la misma oleada, mezclados al azar.",
+  "raid.total": "Enviar {n} drones",
   "tool.scouts": "Exploración",
   "scout.panel": "Drones de reconocimiento",
   "scout.explain": "Los aviones de reconocimiento están en el hangar como un simple contador: no ocupan sitio en el almacén ni pueden arder. Cada vuelo gasta los que envíes.",
@@ -892,6 +916,14 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+  "tool.plus": "Drones+",
+  "panel.plus": "Drones rápidos",
+  "arsenal.plusExplain": "Os drones rápidos voam 50% mais depressa e ficam nos seus próprios contentores — nunca partilham caixa com os normais. Os mesmos {perCell} por célula.",
+  "arsenal.dronesPlus": "Drones rápidos",
+  "raid.basic": "Normais: {n} de {max}",
+  "raid.plus": "Rápidos: {n} de {max}",
+  "raid.mixHint": "Os dois tipos vão na mesma vaga, misturados ao acaso.",
+  "raid.total": "Enviar {n} drones",
   "tool.scouts": "Reconhecimento",
   "scout.panel": "Drones de reconhecimento",
   "scout.explain": "Os aviões de reconhecimento ficam no hangar como um simples contador: não ocupam espaço no armazém nem podem arder. Cada voo gasta os que enviares.",
@@ -1184,6 +1216,14 @@ const pt: Dict = {
 };
 
 const fr: Dict = {
+  "tool.plus": "Drones+",
+  "panel.plus": "Drones rapides",
+  "arsenal.plusExplain": "Les drones rapides volent 50 % plus vite et tiennent dans leurs propres conteneurs : jamais dans la même caisse que les ordinaires. Toujours {perCell} par case.",
+  "arsenal.dronesPlus": "Drones rapides",
+  "raid.basic": "Ordinaires : {n} sur {max}",
+  "raid.plus": "Rapides : {n} sur {max}",
+  "raid.mixHint": "Les deux types partent dans la même vague, mélangés au hasard.",
+  "raid.total": "Envoyer {n} drones",
   "tool.scouts": "Reconnaissance",
   "scout.panel": "Drones de reconnaissance",
   "scout.explain": "Les avions de reconnaissance tiennent au hangar sous forme de simple compteur : ils ne prennent pas de place et ne peuvent pas brûler. Chaque vol consomme ceux que tu envoies.",
@@ -1476,6 +1516,14 @@ const fr: Dict = {
 };
 
 const de: Dict = {
+  "tool.plus": "Drohnen+",
+  "panel.plus": "Schnelle Drohnen",
+  "arsenal.plusExplain": "Schnelle Drohnen fliegen 50 % zügiger und liegen in eigenen Containern — nie zusammen mit den einfachen in einer Kiste. Dieselben {perCell} pro Feld.",
+  "arsenal.dronesPlus": "Schnelle Drohnen",
+  "raid.basic": "Einfache: {n} von {max}",
+  "raid.plus": "Schnelle: {n} von {max}",
+  "raid.mixHint": "Beide Sorten fliegen in derselben Welle, zufällig gemischt.",
+  "raid.total": "{n} Drohnen schicken",
   "tool.scouts": "Aufklärung",
   "scout.panel": "Aufklärungsdrohnen",
   "scout.explain": "Aufklärer liegen im Hangar als einfacher Zähler — sie brauchen keinen Lagerplatz und können nicht abbrennen. Jeder Flug verbraucht so viele, wie du schickst.",
@@ -1768,6 +1816,14 @@ const de: Dict = {
 };
 
 const it: Dict = {
+  "tool.plus": "Droni+",
+  "panel.plus": "Droni veloci",
+  "arsenal.plusExplain": "I droni veloci volano il 50% più svelti e stanno in container propri: mai nella stessa cassa di quelli normali. Sempre {perCell} per cella.",
+  "arsenal.dronesPlus": "Droni veloci",
+  "raid.basic": "Normali: {n} su {max}",
+  "raid.plus": "Veloci: {n} su {max}",
+  "raid.mixHint": "I due tipi partono nella stessa ondata, mescolati a caso.",
+  "raid.total": "Manda {n} droni",
   "tool.scouts": "Ricognizione",
   "scout.panel": "Droni da ricognizione",
   "scout.explain": "I ricognitori stanno nell’hangar come semplice contatore: non occupano spazio nel magazzino e non possono bruciare. Ogni volo consuma quelli che mandi.",

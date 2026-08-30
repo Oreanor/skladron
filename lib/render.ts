@@ -34,24 +34,59 @@ export interface Scene {
 }
 
 /** Контейнеры с дронами — их видит только хозяин склада. */
+/**
+ * Контейнеры на складе. На крышке рисуем то, что внутри: четыре винта
+ * квадрокоптера, у быстрых — плюс между ними. Иначе на карте не отличить,
+ * где какой ящик.
+ */
 export function drawDepots(
   ctx: CanvasRenderingContext2D,
-  depots: { cx: number; cy: number; n: number }[],
+  depots: { cx: number; cy: number; n: number; kind?: "basic" | "plus" }[],
   cell: number,
   dim = false
 ) {
   for (const d of depots) {
     const x = d.cx * cell;
     const y = d.cy * cell;
-    ctx.fillStyle = dim ? "rgba(122, 90, 46, 0.5)" : "#7a5a2e";
+    const plus = d.kind === "plus";
+    ctx.fillStyle = plus
+      ? dim
+        ? "rgba(58, 92, 110, 0.5)"
+        : "#3a5c6e"
+      : dim
+      ? "rgba(122, 90, 46, 0.5)"
+      : "#7a5a2e";
     ctx.fillRect(x, y, cell, cell);
-    ctx.strokeStyle = dim ? "rgba(214, 168, 92, 0.5)" : "#d6a85c";
+    ctx.strokeStyle = plus
+      ? dim
+        ? "rgba(142, 202, 230, 0.5)"
+        : "#8ecae6"
+      : dim
+      ? "rgba(214, 168, 92, 0.5)"
+      : "#d6a85c";
     ctx.lineWidth = 1;
     ctx.strokeRect(x + 0.5, y + 0.5, cell - 1, cell - 1);
+
+    // винты по углам и корпус между ними — клетка всего 7 px, так что это
+    // не рисунок, а узнаваемое пятно
+    const r = plus ? cell * 0.17 : cell * 0.13;
+    const off = cell * 0.28;
+    const rotors: [number, number][] = [
+      [off, off],
+      [cell - off, off],
+      [off, cell - off],
+      [cell - off, cell - off],
+    ];
     ctx.beginPath();
-    ctx.moveTo(x + cell * 0.5, y + 1);
-    ctx.lineTo(x + cell * 0.5, y + cell - 1);
+    for (const [ox, oy] of rotors) {
+      ctx.moveTo(x + ox + r, y + oy);
+      ctx.arc(x + ox, y + oy, r, 0, Math.PI * 2);
+    }
+    // у соосных винтов кольцо залито: в семь пикселей это единственное,
+    // что отличимо на глаз, кроме цвета ящика
+    if (plus) ctx.fill();
     ctx.stroke();
+    ctx.fillRect(x + cell * 0.4, y + cell * 0.4, cell * 0.2, cell * 0.2);
   }
 }
 

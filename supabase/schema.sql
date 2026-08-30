@@ -14,6 +14,7 @@ language sql immutable as $$
     when 'gun'    then 100
     when 'refund' then 50
     when 'drones' then 1000
+    when 'plus'   then 25    -- быстрый дрон
     when 'scout'  then 25    -- разведчик дороже ударного дрона, но дешевле пушки
     when 'drone'  then 10
     when 'income' then 10
@@ -140,9 +141,6 @@ create table if not exists bases (
   updated_at timestamptz not null default now()
 );
 
--- очередь налётов: у первой атаки идут часы, остальные ждут
-alter table attacks add column if not exists activated_at timestamptz;
-
 create table if not exists attacks (
   id uuid primary key default gen_random_uuid(),
   attacker_id uuid not null references profiles on delete cascade,
@@ -169,6 +167,9 @@ create index if not exists attacks_attacker_reports
 -- default существующей таблице не меняет, а клиент ждёт все семь счётчиков.
 alter table profiles add column if not exists base_name text;
 alter table profiles add column if not exists scouts int not null default 0;
+-- очередь налётов: у первой атаки идут часы, остальные ждут
+alter table attacks add column if not exists activated_at timestamptz;
+alter table attacks add column if not exists plus int not null default 0;
 alter table profiles add column if not exists enemies jsonb not null default '[]'::jsonb;
 
 alter table profiles alter column stats set default
@@ -226,7 +227,8 @@ create or replace function send_attack(
   attack_pattern text,
   attack_direction int,
   attack_seed int,
-  new_depots jsonb
+  new_depots jsonb,
+  plus_count int default 0
 ) returns uuid
 language plpgsql security definer set search_path = public as $$
 declare
@@ -270,8 +272,12 @@ begin
          stats = jsonb_set(stats, '{raids}', to_jsonb((stats->>'raids')::int + 1))
    where id = uid;
 
-  insert into attacks (attacker_id, defender_id, drones, pattern, direction, seed)
-  values (uid, target.id, drone_count, attack_pattern, attack_direction, attack_seed)
+  if plus_count is null or plus_count < 0 or plus_count > drone_count then
+    raise exception 'bad fast drone count';
+  end if;
+
+  insert into attacks (attacker_id, defender_id, drones, plus, pattern, direction, seed)
+  values (uid, target.id, drone_count, plus_count, attack_pattern, attack_direction, attack_seed)
   returning id into order_id;
   return order_id;
 end;
@@ -353,7 +359,7 @@ $$;
 create or replace function pending_attacks()
 returns table (
   id uuid, from_name text, created_at timestamptz, activated_at timestamptz,
-  drones int, pattern text, direction int, seed int
+  drones int, plus int, pattern text, direction int, seed int
 )
 language plpgsql security definer set search_path = public as $$
 declare
@@ -379,7 +385,7 @@ begin
   return query
     select a.id,
            coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
-           a.created_at, a.activated_at, a.drones, a.pattern, a.direction, a.seed
+           a.created_at, a.activated_at, a.drones, a.plus, a.pattern, a.direction, a.seed
       from attacks a
       join profiles p on p.id = a.attacker_id
      where a.defender_id = uid and a.status = 'pending'
@@ -623,7 +629,7 @@ $$;
 
 -- Параметр packs сохранён по имени для бесшовного обновления старой RPC,
 -- но его значение теперь означает точное количество дронов.
-create or replace function buy_drones(packs int, new_depots jsonb)
+create or replace function buy_drones(packs int, new_depots jsonb, kind text default 'basic')
 returns table (credits int, drones int)
 language plpgsql security definer set search_path = public as $$
 declare
@@ -637,7 +643,8 @@ begin
   if packs is null or packs < 1 or packs > 100000 then
     raise exception 'bad drone amount';
   end if;
-  cost := packs * price('drone');
+  if kind not in ('basic', 'plus') then raise exception 'bad drone kind'; end if;
+  cost := packs * price(case when kind = 'plus' then 'plus' else 'drone' end);
 
   select b.cells, b.guns, b.drone_cells into cur, cur_guns, cur_depots
     from bases b where b.user_id = uid for update;
