@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { GRID } from "@/lib/base";
 import {
   MAX_ZOOM,
@@ -35,6 +35,8 @@ export interface MapCanvasProps {
   onLeave?: () => void;
   cursor?: string;
   className?: string;
+  /** Накладки поверх карты: например всплывающее сообщение. */
+  children?: ReactNode;
 }
 
 /** Масштаб, при котором вся карта влезает в окно (по короткой стороне). */
@@ -53,6 +55,7 @@ export default function MapCanvas({
   onLeave,
   cursor = "crosshair",
   className = "",
+  children,
 }: MapCanvasProps) {
   const t = useT();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -344,6 +347,7 @@ export default function MapCanvas({
           {t("map.wholeMap")}
         </Button>
       )}
+      {children}
     </div>
   );
 }

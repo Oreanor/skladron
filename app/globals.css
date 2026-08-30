@@ -109,3 +109,19 @@ body {
     cursor: not-allowed;
   }
 }
+
+/* всплывающее сообщение выезжает из-под шапки, не двигая вёрстку */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.toast-in {
+  animation: toast-in 0.18s ease-out;
+}

@@ -455,3 +455,30 @@ export function ToolButton({
     </button>
   );
 }
+
+/** Сколько сообщение висит, если его не закрыли и не сменило другое. */
+export const TOAST_MS = 30_000;
+
+/**
+ * Сообщение поверх карты. Раньше оно стояло в потоке и на каждое событие
+ * поджимало карту — теперь всплывает absolute и вёрстку не трогает.
+ */
+export function Toast({ text, onClose }: { text: string; onClose: () => void }) {
+  const t = useT();
+  return (
+    <div className="toast-in absolute left-1/2 top-2 z-20 w-[min(28rem,calc(100%-1rem))] -translate-x-1/2">
+      <div className="flex items-center justify-between gap-2 rounded-md border border-neutral-700 bg-neutral-900/95 px-3 py-2 text-sm text-neutral-200 shadow-2xl backdrop-blur">
+        <span className="min-w-0">{text}</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={t("common.close")}
+          className="-mr-2 shrink-0"
+          onClick={onClose}
+        >
+          ✕
+        </Button>
+      </div>
+    </div>
+  );
+}

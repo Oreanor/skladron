@@ -82,6 +82,8 @@ import {
   SectionTitle,
   Sheet,
   StatRow,
+  TOAST_MS,
+  Toast,
   ToolButton,
 } from "./ui";
 
@@ -305,6 +307,12 @@ export default function Lobby({
     const timer = window.setInterval(() => void tick(), 1000);
     return () => window.clearInterval(timer);
   }, [repo]);
+
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(() => setMessage(null), TOAST_MS);
+    return () => window.clearTimeout(timer);
+  }, [message]);
 
   const p = playerRef.current;
   // Сцена собирается на каждом React-обновлении. Это важно для ремонта и
@@ -1212,21 +1220,13 @@ export default function Lobby({
         {accountLine}
       </div>
 
-      {message && (
-        <Notice className="justify-between">
-          <span className="min-w-0 truncate lg:whitespace-normal">{message}</span>
-          <Button variant="ghost" size="sm" className="-mr-2" onClick={() => setMessage(null)}>
-            ✕
-          </Button>
-        </Notice>
-      )}
-
       <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-4">
         {/*
           Левая колонка. На телефоне порядок задаём через order-*: карта наверху
           забирает всю свободную высоту, инструменты прижаты к низу под большой палец.
         */}
         <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
+
           <div className="order-3 grid shrink-0 grid-cols-4 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(4,5.5rem)] lg:gap-2">
             {TOOLS.map((item) => (
               <ToolButton
@@ -1256,7 +1256,9 @@ export default function Lobby({
               paintingRef.current = false;
             }}
             cursor={tool === "drones" ? (dragDepotRef.current ? "grabbing" : "grab") : "crosshair"}
-          />
+          >
+            {message && <Toast key={message} text={message} onClose={() => setMessage(null)} />}
+          </MapCanvas>
 
           {drafting && draftRect && draftRect.w > 0 && draftRect.h > 0 && (
             <Notice tone="warn" className="order-2 flex-wrap lg:order-3">
