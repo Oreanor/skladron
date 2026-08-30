@@ -42,7 +42,44 @@ export function freeCells(cells: Uint8Array, guns: Gun[], depots: Depot[]) {
   return out;
 }
 
-/** Раскладывает новые контейнеры по первым свободным клеткам. */
+/** Манхэттеново расстояние от каждой клетки до ближайшей клетки из sources. */
+function distanceField(sources: number[]) {
+  const far = GRID * 2;
+  const distance = new Int16Array(CELLS);
+  distance.fill(far);
+  if (sources.length === 0) return distance;
+
+  const queue = new Int32Array(CELLS);
+  let head = 0;
+  let tail = 0;
+  for (const i of sources) {
+    if (i < 0 || i >= CELLS || distance[i] === 0) continue;
+    distance[i] = 0;
+    queue[tail++] = i;
+  }
+
+  while (head < tail) {
+    const i = queue[head++];
+    const x = i % GRID;
+    const next = distance[i] + 1;
+    const visit = (n: number) => {
+      if (distance[n] <= next) return;
+      distance[n] = next;
+      queue[tail++] = n;
+    };
+    if (x > 0) visit(i - 1);
+    if (x < GRID - 1) visit(i + 1);
+    if (i >= GRID) visit(i - GRID);
+    if (i < CELLS - GRID) visit(i + GRID);
+  }
+  return distance;
+}
+
+/**
+ * Раскладывает новые контейнеры по целым свободным клеткам. Сначала выбирает
+ * места подальше от разрушенных клеток, затем разносит контейнеры по доступной
+ * площади, а не складывает их подряд в первый ряд.
+ */
 export function placeDepots(
   cells: Uint8Array,
   guns: Gun[],
@@ -50,9 +87,54 @@ export function placeDepots(
   count: number
 ): Depot[] {
   const free = freeCells(cells, guns, depots);
+  if (count <= 0 || free.length === 0) return [];
+
+  const burnt: number[] = [];
+  for (let i = 0; i < cells.length; i++) {
+    if (cells[i] === G_BURNT) burnt.push(i);
+  }
+  const safety = distanceField(burnt);
+  const occupied = depots.map((d) => idx(d.cx, d.cy));
+  const separation = distanceField(occupied);
+  let hasAnchor = occupied.length > 0;
+  const used = new Set<number>();
+  const centerX = free.reduce((sum, i) => sum + (i % GRID), 0) / free.length;
+  const centerY = free.reduce((sum, i) => sum + ((i / GRID) | 0), 0) / free.length;
   const added: Depot[] = [];
+
   for (let k = 0; k < count && k < free.length; k++) {
-    added.push({ cx: free[k] % GRID, cy: (free[k] / GRID) | 0, n: DRONES_PER_CELL });
+    let best = -1;
+    let bestScore = -Infinity;
+    for (const i of free) {
+      if (used.has(i)) continue;
+      const x = i % GRID;
+      const y = (i / GRID) | 0;
+      const centerDistance = (x - centerX) ** 2 + (y - centerY) ** 2;
+      // Одна ступень безопасности от пепелища важнее разницы в расстоянии
+      // между контейнерами. Когда пепелища нет, safety у всех одинаковая.
+      const score =
+        Math.min(safety[i], GRID) * 1000 +
+        (hasAnchor ? separation[i] * 10 : 0) -
+        centerDistance / CELLS;
+      if (score > bestScore) {
+        best = i;
+        bestScore = score;
+      }
+    }
+    if (best < 0) break;
+
+    used.add(best);
+    const bx = best % GRID;
+    const by = (best / GRID) | 0;
+    added.push({ cx: bx, cy: by, n: DRONES_PER_CELL });
+
+    // После каждого выбора обновляем расстояние до ближайшего уже занятого
+    // места; так следующая коробка уходит в другую часть склада.
+    for (const i of free) {
+      const d = Math.abs((i % GRID) - bx) + Math.abs(((i / GRID) | 0) - by);
+      if (!hasAnchor || d < separation[i]) separation[i] = d;
+    }
+    hasAnchor = true;
   }
   return added;
 }

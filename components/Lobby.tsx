@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   GRID,
   G_BASE,
@@ -173,13 +173,12 @@ export default function Lobby({
   }, [repo]);
 
   const p = playerRef.current;
-  const scene = useMemo(
-    () =>
-      p
-        ? { cells: p.cells, guns: p.guns, depots: p.depots }
-        : { cells: new Uint8Array(0), guns: [], depots: [] },
-    [p]
-  );
+  // Сцена собирается на каждом React-обновлении. Это важно для ремонта и
+  // drag-and-drop: там массив клеток/контейнеров заменяется целиком, чтобы
+  // canvas гарантированно получил новое состояние, а не старую ссылку.
+  const scene = p
+    ? { cells: p.cells, guns: p.guns, depots: p.depots }
+    : { cells: new Uint8Array(0), guns: [], depots: [] };
 
   if (!ready || !p) {
     return <div className="p-6 text-sm text-neutral-500">Загрузка склада…</div>;
@@ -295,7 +294,9 @@ export default function Lobby({
       setMessage("Не хватает кредитов на ремонт");
       return;
     }
-    p.cells[i] = G_BASE;
+    const cells = p.cells.slice();
+    cells[i] = G_BASE;
+    p.cells = cells;
     p.credits -= REPAIR_COST;
     p.stats.cellsRepaired++;
     touch();
@@ -362,14 +363,20 @@ export default function Lobby({
       setMessage("Клетка занята пушкой");
       return;
     }
-    if (p.depots.some((d) => d.cx === x && d.cy === y)) {
+    if (
+      p.depots.some(
+        (d) =>
+          (d.cx !== from.cx || d.cy !== from.cy) && d.cx === x && d.cy === y
+      )
+    ) {
       setMessage("Здесь уже стоит контейнер");
       return;
     }
-    const d = p.depots.find((q) => q.cx === from.cx && q.cy === from.cy);
-    if (!d) return;
-    d.cx = x;
-    d.cy = y;
+    const depotIndex = p.depots.findIndex((q) => q.cx === from.cx && q.cy === from.cy);
+    if (depotIndex < 0) return;
+    p.depots = p.depots.map((depot, index) =>
+      index === depotIndex ? { ...depot, cx: x, cy: y } : depot
+    );
     touch();
   };
 
