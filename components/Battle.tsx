@@ -13,7 +13,7 @@ import {
   type GameState,
 } from "@/lib/engine";
 import { drawFrame } from "@/lib/render";
-import { DRONE_KILL_REWARD, fmt } from "@/lib/economy";
+import { DEFENSE_WIN_REWARD, DRONE_KILL_REWARD, fmt } from "@/lib/economy";
 import MapCanvas, { type Pt } from "./MapCanvas";
 import { Button, Chip, ChipBar, IconButton, Panel, Row, SectionTitle } from "./ui";
 
@@ -150,7 +150,7 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
             tone="text-emerald-300"
           />
           <Chip
-            label="награда"
+            label="за сбитые"
             value={`+${fmt(
               ((hud?.killedByGuns ?? 0) + (hud?.killedByMg ?? 0)) * DRONE_KILL_REWARD
             )}`}
@@ -209,9 +209,21 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
                 <Row label="Сбито ракетами" value={String(done.result.killedByGuns)} />
                 <Row label="Сбито очередью" value={String(done.result.killedByMg)} />
                 <Row
-                  label="Награда за сбитые"
+                  label="За сбитые дроны"
                   value={`+${fmt(
                     (done.result.killedByGuns + done.result.killedByMg) * DRONE_KILL_REWARD
+                  )} кр`}
+                />
+                <Row
+                  label="Премия за победу"
+                  value={done.won ? `+${fmt(DEFENSE_WIN_REWARD)} кр` : "—"}
+                />
+                <Row
+                  label="Итого награда"
+                  value={`+${fmt(
+                    (done.result.killedByGuns + done.result.killedByMg) *
+                      DRONE_KILL_REWARD +
+                      (done.won ? DEFENSE_WIN_REWARD : 0)
                   )} кр`}
                 />
                 <Row label="Прорвалось" value={String(done.result.leaked)} />
@@ -244,7 +256,7 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
             <Row label="Сбито ракетами" value={String(hud?.killedByGuns ?? 0)} />
             <Row label="Сбито очередью" value={String(hud?.killedByMg ?? 0)} />
             <Row
-              label="Награда"
+              label="За сбитые"
               value={`+${fmt(
                 ((hud?.killedByGuns ?? 0) + (hud?.killedByMg ?? 0)) * DRONE_KILL_REWARD
               )} кр`}

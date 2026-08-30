@@ -14,15 +14,15 @@ import {
   isBuilding,
   newCellsIn,
   normRect,
-  placeDepots,
   rectConnects,
+  storeDrones,
   touchesBuilding,
 } from "@/lib/base";
 import {
   CELL_COST,
   STARTER_SIDE,
-  DRONE_PACK,
-  DRONE_PACK_COST,
+  DRONE_UNIT_COST,
+  DEFENSE_WIN_REWARD,
   DRONE_KILL_REWARD,
   GUN_COST,
   GUN_REFUND,
@@ -87,7 +87,7 @@ const TOOLS: { id: Tool; name: string; hint: string }[] = [
   { id: "area", name: "Площадь", hint: `${CELL_COST} кр за новую клетку` },
   { id: "repair", name: "Ремонт", hint: `${REPAIR_COST} кр за клетку` },
   { id: "gun", name: "Пушка", hint: `${GUN_COST} кр, снять — вернёт ${GUN_REFUND}` },
-  { id: "drones", name: "Дроны", hint: `${fmt(DRONE_PACK_COST)} кр за ${DRONE_PACK} шт` },
+  { id: "drones", name: "Дроны", hint: `${DRONE_UNIT_COST} кр за штуку` },
 ];
 
 const ENEMY_NAMES = ["Сосед", "Конкурент", "Бывший партнёр", "Аноним"];
@@ -111,6 +111,7 @@ export default function Lobby({
   const [sheet, setSheet] = useState<SheetId | null>(null);
   const [naming, setNaming] = useState<"found" | "rename" | null>(null);
   const [confirmWipe, setConfirmWipe] = useState(false);
+  const [buyAmount, setBuyAmount] = useState(1);
   const toggleSheet = (id: SheetId) => setSheet((cur) => (cur === id ? null : id));
 
   // заготовка площади
@@ -190,12 +191,22 @@ export default function Lobby({
   const doomed = isDoomed(p);
   const drones = droneCount(p.depots);
   const free = freeCells(p.cells, p.guns, p.depots).length;
-  // магазин сам ограничивает покупку: и кошельком, и свободной площадью
-  const cellsPerPack = DRONE_PACK / DRONES_PER_CELL;
-  const packsAvailable = Math.min(
-    Math.floor(p.credits / DRONE_PACK_COST),
-    Math.floor(free / cellsPerPack)
+  const roomInPartialDepots = p.depots.reduce(
+    (sum, depot) => sum + Math.max(0, DRONES_PER_CELL - depot.n),
+    0
   );
+  // Магазин ограничивает ползунок и кошельком, и реальной вместимостью:
+  // свободными местами в неполных контейнерах плюс новыми белыми клетками.
+  const maxBySpace = roomInPartialDepots + free * DRONES_PER_CELL;
+  const maxBuyAmount = Math.min(
+    Math.floor(p.credits / DRONE_UNIT_COST),
+    maxBySpace
+  );
+  const selectedBuyAmount =
+    maxBuyAmount > 0
+      ? Math.max(1, Math.min(Math.floor(buyAmount) || 1, maxBuyAmount))
+      : 0;
+  const selectedBuyCost = selectedBuyAmount * DRONE_UNIT_COST;
 
   // ---------- бой ----------
 
@@ -213,7 +224,8 @@ export default function Lobby({
           p.incoming = p.incoming.filter((a) => a.id !== battle.id);
           p.stats.battles++;
           const killed = o.result.killedByGuns + o.result.killedByMg;
-          const defenseReward = killed * DRONE_KILL_REWARD;
+          const killReward = killed * DRONE_KILL_REWARD;
+          const defenseReward = killReward + (o.won ? DEFENSE_WIN_REWARD : 0);
           p.stats.dronesKilled += killed;
           p.credits += defenseReward;
           p.stats.cellsBurned += o.result.burned;
@@ -223,8 +235,8 @@ export default function Lobby({
           setBattle(null);
           setMessage(
             o.won
-              ? `Налёт отбит. Сбито: ${killed}, награда: +${fmt(defenseReward)} кр`
-              : `Склад выгорел под атакой ${battle.from}. За сбитые: +${fmt(defenseReward)} кр`
+              ? `Налёт отбит. Победа +${fmt(DEFENSE_WIN_REWARD)} кр, за сбитые +${fmt(killReward)} кр`
+              : `Склад выгорел под атакой ${battle.from}. За сбитые: +${fmt(killReward)} кр`
           );
           setVersion((v) => v + 1);
           forceRender((v) => v + 1);
@@ -329,25 +341,40 @@ export default function Lobby({
   };
 
   const buyDrones = async () => {
-    if (packsAvailable < 1) return;
-    const added = placeDepots(p.cells, p.guns, p.depots, DRONE_PACK / DRONES_PER_CELL);
-    if (added.length < DRONE_PACK / DRONES_PER_CELL) {
+    if (selectedBuyAmount < 1) return;
+    const previousDepots = p.depots;
+    const previousCredits = p.credits;
+    const nextDepots = storeDrones(
+      p.cells,
+      p.guns,
+      p.depots,
+      selectedBuyAmount
+    );
+    if (!nextDepots) {
       setMessage("Не хватает свободных клеток под контейнеры");
       return;
     }
-    p.depots.push(...added);
-    p.credits -= DRONE_PACK_COST;
-    setMessage(`Закуплено ${DRONE_PACK} дронов — ${added.length} контейнеров на складе`);
+    const newContainers = nextDepots.length - p.depots.length;
+    p.depots = nextDepots;
+    p.credits -= selectedBuyCost;
+    setMessage(
+      `Закуплено ${selectedBuyAmount} дронов за ${fmt(selectedBuyCost)} кр` +
+        (newContainers > 0 ? ` · новых контейнеров: ${newContainers}` : "")
+    );
     // На телефоне арсенал закрывает карту; после покупки сразу отдаём место
     // раскладке, потому что режим «Дроны» уже выбран.
     setSheet(null);
     setVersion((v) => v + 1);
     forceRender((v) => v + 1);
     try {
-      const patch = await repo.buyDrones(p, 1);
+      const patch = await repo.buyDrones(p, selectedBuyAmount);
       if (patch.credits !== undefined) p.credits = patch.credits;
       forceRender((v) => v + 1);
     } catch (e) {
+      p.depots = previousDepots;
+      p.credits = previousCredits;
+      setVersion((v) => v + 1);
+      forceRender((v) => v + 1);
       setMessage(`Закупка не прошла: ${(e as Error).message}`);
     }
   };
@@ -817,17 +844,47 @@ export default function Lobby({
         <Row label="Контейнеров" value={String(p.depots.length)} />
         <Row label="Свободных клеток" value={String(free)} />
       </dl>
-      <Button variant="neutral" block onClick={buyDrones} disabled={packsAvailable < 1}>
-        Купить {DRONE_PACK} за {fmt(DRONE_PACK_COST)} кр
+      <div className="mb-3">
+        <div className="mb-1 flex items-center justify-between text-xs text-neutral-400">
+          <span>Купить дронов</span>
+          <input
+            type="number"
+            min={1}
+            max={Math.max(1, maxBuyAmount)}
+            value={selectedBuyAmount}
+            disabled={maxBuyAmount < 1}
+            onChange={(event) => setBuyAmount(Number(event.target.value))}
+            className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-right font-mono text-neutral-100 outline-none focus:border-amber-500 disabled:opacity-40"
+            aria-label="Точное количество дронов"
+          />
+        </div>
+        <input
+          type="range"
+          min={1}
+          max={Math.max(1, maxBuyAmount)}
+          step={1}
+          value={Math.max(1, selectedBuyAmount)}
+          disabled={maxBuyAmount < 1}
+          onChange={(event) => setBuyAmount(Number(event.target.value))}
+          className="h-8 w-full cursor-pointer accent-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Количество дронов для покупки"
+        />
+        <div className="flex justify-between font-mono text-[11px] text-neutral-500">
+          <span>1</span>
+          <span>макс. {maxBuyAmount}</span>
+        </div>
+      </div>
+      <Button variant="neutral" block onClick={buyDrones} disabled={selectedBuyAmount < 1}>
+        Купить {selectedBuyAmount} за {fmt(selectedBuyCost)} кр
       </Button>
       <p className="mt-2 text-xs text-neutral-500">
-        {packsAvailable >= 1
-          ? `Можно закупить ещё ${packsAvailable} ${packsAvailable === 1 ? "пачку" : "пачек"}`
+        {maxBuyAmount > 0
+          ? `${DRONE_UNIT_COST} кр за штуку · доступно мест: ${fmt(maxBySpace)}`
           : intact === 0
           ? "Дронам негде лежать: сначала почини клетки склада"
-          : free < cellsPerPack
-          ? `Нужно ещё ${cellsPerPack - free} свободных клеток под контейнеры`
-          : "Не хватает кредитов"}
+          : maxBySpace < 1
+          ? "Нет свободного места под дроны"
+          : "Не хватает кредитов даже на одного дрона"}
       </p>
       {p.depots.length > 0 && (
         <p className="mt-2 text-xs text-neutral-500">

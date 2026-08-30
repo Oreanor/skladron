@@ -14,9 +14,11 @@ language sql immutable as $$
     when 'gun'    then 100
     when 'refund' then 50
     when 'drones' then 1000
+    when 'drone'  then 10
     when 'income' then 10
     when 'loot'   then 5
-    when 'kill'   then 100  -- награда защитнику за сбитый дрон
+    when 'kill'   then 5    -- доплата защитнику за сбитый дрон
+    when 'win'    then 5000 -- фиксированная премия за отражённый налёт
     when 'free'   then 100   -- стартовая площадь 10×10 достаётся даром
     when 'found'  then 100   -- столько же нужно, чтобы основаться
   end;
@@ -387,6 +389,8 @@ $$;
 
 -- ---------- закупка дронов ----------
 
+-- Параметр packs сохранён по имени для бесшовного обновления старой RPC,
+-- но его значение теперь означает точное количество дронов.
 create or replace function buy_drones(packs int, new_depots jsonb)
 returns table (credits int, drones int)
 language plpgsql security definer set search_path = public as $$
@@ -398,15 +402,17 @@ declare
   cur_depots jsonb;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
-  if packs is null or packs < 1 then raise exception 'bad pack count'; end if;
-  cost := packs * price('drones');
+  if packs is null or packs < 1 or packs > 100000 then
+    raise exception 'bad drone amount';
+  end if;
+  cost := packs * price('drone');
 
   select b.cells, b.guns, b.drone_cells into cur, cur_guns, cur_depots
     from bases b where b.user_id = uid for update;
   if cur is null then raise exception 'no base'; end if;
 
-  -- купленное обязано лечь на склад: ровно packs*100 новых дронов и не больше
-  if depot_sum(new_depots) <> depot_sum(cur_depots) + packs * 100 then
+  -- купленное обязано лечь на склад: ровно запрошенное число новых дронов
+  if depot_sum(new_depots) <> depot_sum(cur_depots) + packs then
     raise exception 'depots must hold exactly the purchased drones';
   end if;
   if not depots_valid(new_depots, cur, cur_guns) then
@@ -486,7 +492,9 @@ begin
      set drones = depot_sum(new_depots),
          -- сгорело всё до последней клетки — сразу поднимаем кассу
          credits = greatest(
-           profiles.credits + killed * price('kill'),
+           profiles.credits
+             + killed * price('kill')
+             + case when intact_now > 0 then price('win') else 0 end,
            case when intact_now = 0 then 10000 else 0 end
          ),
          stats = profiles.stats

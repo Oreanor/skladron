@@ -139,6 +139,40 @@ export function placeDepots(
   return added;
 }
 
+/**
+ * Добавляет точное количество дронов: сперва заполняет неполные контейнеры,
+ * затем создаёт столько новых контейнеров, сколько действительно нужно.
+ * Исходный массив не меняется; null означает, что свободного места не хватило.
+ */
+export function storeDrones(
+  cells: Uint8Array,
+  guns: Gun[],
+  depots: Depot[],
+  amount: number
+): Depot[] | null {
+  if (!Number.isInteger(amount) || amount < 1) return null;
+  const next = depots.map((depot) => ({ ...depot }));
+  let left = amount;
+
+  for (const depot of next) {
+    if (left <= 0) break;
+    const add = Math.min(left, DRONES_PER_CELL - depot.n);
+    if (add <= 0) continue;
+    depot.n += add;
+    left -= add;
+  }
+
+  if (left <= 0) return next;
+  const cellsNeeded = Math.ceil(left / DRONES_PER_CELL);
+  const added = placeDepots(cells, guns, next, cellsNeeded);
+  if (added.length < cellsNeeded) return null;
+  for (const depot of added) {
+    depot.n = Math.min(left, DRONES_PER_CELL);
+    left -= depot.n;
+  }
+  return [...next, ...added];
+}
+
 export interface Rect {
   x: number;
   y: number;

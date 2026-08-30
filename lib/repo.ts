@@ -29,7 +29,7 @@ export interface Repo {
   saveBase(p: Player): Promise<Partial<Player>>;
   /** Список добавленных по e-mail соперников и их текущее состояние. */
   saveEnemies(p: Player): Promise<void>;
-  buyDrones(p: Player, packs: number): Promise<Partial<Player>>;
+  buyDrones(p: Player, amount: number): Promise<Partial<Player>>;
   /** Переименование склада — отдельная операция, карты не касается. */
   rename(p: Player, name: string): Promise<void>;
   applyBattle(p: Player, result: BattleResult): Promise<Partial<Player>>;
@@ -58,7 +58,7 @@ class LocalRepo implements Repo {
     localSave(p);
   }
 
-  async buyDrones(p: Player, _packs: number) {
+  async buyDrones(p: Player, _amount: number) {
     localSave(p);
     return {};
   }
@@ -187,9 +187,11 @@ class CloudRepo implements Repo {
     if (error) throw error;
   }
 
-  async buyDrones(p: Player, packs: number) {
+  async buyDrones(p: Player, amount: number) {
     const { data, error } = await this.db().rpc("buy_drones", {
-      packs,
+      // Имя SQL-параметра оставлено для совместимости со старой функцией,
+      // но теперь это точное количество дронов, а не число пачек.
+      packs: amount,
       new_depots: p.depots,
     });
     if (error) throw error;
