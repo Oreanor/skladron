@@ -16,6 +16,9 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 };
 
 const en = {
+  "repair.done": "Repaired {cells} cells for {cost} cr",
+  "repair.summary": "{w}×{h} · {cells} burnt cells · {cost} cr",
+  "repair.nothing": "no burnt cells inside",
   "bot.0": "Neighbour",
   "bot.1": "Competitor",
   "bot.2": "Former partner",
@@ -269,6 +272,9 @@ export type Key = keyof typeof en;
 type Dict = Record<Key, string>;
 
 const ru: Dict = {
+  "repair.done": "Починено {cells} клеток за {cost} кр",
+  "repair.summary": "{w}×{h} · сгоревших клеток: {cells} · {cost} кр",
+  "repair.nothing": "внутри нет сгоревших клеток",
   "bot.0": "Сосед",
   "bot.1": "Конкурент",
   "bot.2": "Бывший партнёр",
@@ -522,6 +528,9 @@ const ru: Dict = {
 };
 
 const es: Dict = {
+  "repair.done": "Reparadas {cells} celdas por {cost} cr",
+  "repair.summary": "{w}×{h} · celdas quemadas: {cells} · {cost} cr",
+  "repair.nothing": "dentro no hay celdas quemadas",
   "bot.0": "Vecino",
   "bot.1": "Competidor",
   "bot.2": "Antiguo socio",
@@ -775,6 +784,9 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+  "repair.done": "Reparadas {cells} células por {cost} cr",
+  "repair.summary": "{w}×{h} · células queimadas: {cells} · {cost} cr",
+  "repair.nothing": "não há células queimadas lá dentro",
   "bot.0": "Vizinho",
   "bot.1": "Concorrente",
   "bot.2": "Antigo sócio",
@@ -1028,6 +1040,9 @@ const pt: Dict = {
 };
 
 const fr: Dict = {
+  "repair.done": "{cells} cases réparées pour {cost} cr",
+  "repair.summary": "{w}×{h} · cases brûlées : {cells} · {cost} cr",
+  "repair.nothing": "aucune case brûlée à l’intérieur",
   "bot.0": "Voisin",
   "bot.1": "Concurrent",
   "bot.2": "Ancien associé",
@@ -1281,6 +1296,9 @@ const fr: Dict = {
 };
 
 const de: Dict = {
+  "repair.done": "{cells} Felder für {cost} Cr repariert",
+  "repair.summary": "{w}×{h} · verbrannte Felder: {cells} · {cost} Cr",
+  "repair.nothing": "keine verbrannten Felder darin",
   "bot.0": "Nachbar",
   "bot.1": "Konkurrent",
   "bot.2": "Ehemaliger Partner",
@@ -1534,6 +1552,9 @@ const de: Dict = {
 };
 
 const it: Dict = {
+  "repair.done": "Riparate {cells} celle per {cost} cr",
+  "repair.summary": "{w}×{h} · celle bruciate: {cells} · {cost} cr",
+  "repair.nothing": "dentro non ci sono celle bruciate",
   "bot.0": "Vicino",
   "bot.1": "Concorrente",
   "bot.2": "Ex socio",

@@ -12,9 +12,11 @@ import {
   freeCells,
   idx,
   isBuilding,
+  burntCellsIn,
   newCellsIn,
   normRect,
   rectConnects,
+  repairRect,
   storeDrones,
   touchesBuilding,
 } from "@/lib/base";
@@ -390,11 +392,20 @@ export default function Lobby({
 
   // ---------- инструменты ----------
 
+  // Рамкой работают и «Площадь», и «Ремонт»: выделил, подправил, утвердил.
+  // Разница только в том, что считается внутри рамки и почём.
+  const drafting = tool === "area" || tool === "repair";
   const draft = draftRef.current;
   const draftRect = draft ? normRect(draft) : null;
-  const draftNew = draftRect ? newCellsIn(p.cells, draftRect) : 0;
-  const draftCost = draftNew * CELL_COST;
-  const draftConnects = draftRect ? rectConnects(p.cells, draftRect, hasBuilding) : false;
+  const draftCells = draftRect
+    ? tool === "repair"
+      ? burntCellsIn(p.cells, draftRect)
+      : newCellsIn(p.cells, draftRect)
+    : 0;
+  const draftCost = draftCells * (tool === "repair" ? REPAIR_COST : CELL_COST);
+  // ремонт ничего не пристраивает, поэтому разрывов создать не может
+  const draftConnects =
+    tool === "repair" || (draftRect ? rectConnects(p.cells, draftRect, hasBuilding) : false);
   const draftAfford = draftCost <= p.credits;
 
   const commitDraft = () => {
@@ -407,11 +418,26 @@ export default function Lobby({
       setMessage(t("draft.needCredits", { cost: fmt(draftCost) }));
       return;
     }
-    applyRect(p.cells, draftRect);
+    if (draftCells === 0) {
+      draftRef.current = null;
+      dragRef.current = null;
+      forceRender((v) => v + 1);
+      return;
+    }
+
+    const cells = p.cells.slice();
+    if (tool === "repair") {
+      repairRect(cells, draftRect);
+      p.stats.cellsRepaired += draftCells;
+      setMessage(t("repair.done", { cells: draftCells, cost: fmt(draftCost) }));
+    } else {
+      applyRect(cells, draftRect);
+      setMessage(t("draft.built", { cells: draftCells, cost: fmt(draftCost) }));
+    }
+    p.cells = cells;
     p.credits -= draftCost;
     draftRef.current = null;
     dragRef.current = null;
-    setMessage(t("draft.built", { cells: draftNew, cost: fmt(draftCost) }));
     touch();
   };
 
@@ -685,16 +711,11 @@ export default function Lobby({
       }
       return;
     }
-    if (tool === "repair") {
-      paintingRef.current = true;
-      repairAt(c.x, c.y);
-      return;
-    }
     if (tool === "gun") {
       gunAt(c.x, c.y);
       return;
     }
-    if (tool !== "area") return;
+    if (!drafting) return;
 
     const cur = draftRef.current ? normRect(draftRef.current) : null;
     if (cur) {
@@ -735,13 +756,8 @@ export default function Lobby({
 
   const onMove = (pt: Pt) => {
     hoverRef.current = pt;
-    if (tool === "repair" && paintingRef.current) {
-      const c = cellOf(pt);
-      repairAt(c.x, c.y);
-      return;
-    }
     const drag = dragRef.current;
-    if (!drag || tool !== "area") return;
+    if (!drag || !drafting) return;
     const dx = pt.x - drag.startX;
     const dy = pt.y - drag.startY;
     if (Math.abs(dx) > 0.4 || Math.abs(dy) > 0.4) drag.moved = true;
@@ -789,14 +805,15 @@ export default function Lobby({
       return;
     }
     const drag = dragRef.current;
-    if (!drag || tool !== "area") return;
+    if (!drag || !drafting) return;
     dragRef.current = null;
 
     if (drag.mode === "create" && !drag.moved) {
-      // одиночный клик по смежной клетке — застраиваем одну
+      // одиночный тап: достраиваем или чиним ровно одну клетку
       draftRef.current = null;
       const c = cellOf(pt);
-      buildOne(c.x, c.y);
+      if (tool === "repair") repairAt(c.x, c.y);
+      else buildOne(c.x, c.y);
       return;
     }
     if (drag.mode !== "create" && !drag.moved) {
@@ -807,7 +824,7 @@ export default function Lobby({
   };
 
   const onRightClick = () => {
-    if (tool === "area" && draftRef.current) {
+    if (drafting && draftRef.current) {
       draftRef.current = null;
       dragRef.current = null;
       forceRender((v) => v + 1);
@@ -829,6 +846,16 @@ export default function Lobby({
     );
 
     const d = draftRef.current ? normRect(draftRef.current) : null;
+    if (d && d.w > 0 && d.h > 0 && tool === "repair") {
+      // закрашиваем именно те клетки, за которые спишутся деньги
+      ctx.fillStyle = draftAfford ? "rgba(140, 215, 255, 0.55)" : "rgba(229, 56, 59, 0.5)";
+      for (let y = d.y; y < d.y + d.h; y++) {
+        for (let x = d.x; x < d.x + d.w; x++) {
+          if (x < 0 || y < 0 || x >= GRID || y >= GRID) continue;
+          if (p.cells[idx(x, y)] === G_BURNT) ctx.fillRect(x * cell, y * cell, cell, cell);
+        }
+      }
+    }
     if (d && d.w > 0 && d.h > 0) {
       const bad = !draftConnects || !draftAfford;
       ctx.fillStyle = bad ? "rgba(229, 56, 59, 0.28)" : "rgba(229, 90, 43, 0.3)";
@@ -1231,13 +1258,13 @@ export default function Lobby({
             cursor={tool === "drones" ? (dragDepotRef.current ? "grabbing" : "grab") : "crosshair"}
           />
 
-          {tool === "area" && draftRect && draftRect.w > 0 && draftRect.h > 0 && (
+          {drafting && draftRect && draftRect.w > 0 && draftRect.h > 0 && (
             <Notice tone="warn" className="order-2 flex-wrap lg:order-3">
               <span className="font-mono">
-                {t("draft.summary", {
+                {t(tool === "repair" ? "repair.summary" : "draft.summary", {
                   w: draftRect.w,
                   h: draftRect.h,
-                  cells: draftNew,
+                  cells: draftCells,
                   cost: fmt(draftCost),
                 })}
               </span>
@@ -1245,12 +1272,15 @@ export default function Lobby({
               {draftConnects && !draftAfford && (
                 <span className="text-red-400">{t("draft.tooExpensive")}</span>
               )}
+              {tool === "repair" && draftCells === 0 && (
+                <span className="text-neutral-400">{t("repair.nothing")}</span>
+              )}
               <div className="ml-auto flex gap-2">
                 <Button
                   variant="build"
                   size="sm"
                   onClick={commitDraft}
-                  disabled={!draftConnects || !draftAfford}
+                  disabled={!draftConnects || !draftAfford || draftCells === 0}
                 >
                   {t("draft.confirm")}
                 </Button>

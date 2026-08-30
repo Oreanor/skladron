@@ -313,3 +313,24 @@ export function decodeCells(text: string): Uint8Array {
   out.set(buf.subarray(0, CELLS));
   return out;
 }
+
+/** Сколько сгоревших клеток попало в рамку — по ним и считается ремонт. */
+export function burntCellsIn(cells: Uint8Array, r: Rect) {
+  let n = 0;
+  forEachCell(r, (_x, _y, i) => {
+    if (cells[i] === G_BURNT) n++;
+  });
+  return n;
+}
+
+/** Чинит все сгоревшие клетки внутри рамки. Возвращает, сколько починил. */
+export function repairRect(cells: Uint8Array, r: Rect) {
+  let n = 0;
+  forEachCell(r, (_x, _y, i) => {
+    if (cells[i] === G_BURNT) {
+      cells[i] = G_BASE;
+      n++;
+    }
+  });
+  return n;
+}
