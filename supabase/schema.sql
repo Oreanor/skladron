@@ -31,7 +31,7 @@ $$;
 -- set_byte в цикле: bytea неизменяемый, посимвольная запись была бы
 -- квадратичной по времени.
 create or replace function rle_decode(src text) returns bytea
-language plpgsql immutable as $
+language plpgsql immutable as $$
 declare
   part text;
   v int;
@@ -58,7 +58,7 @@ begin
   end if;
   return decode(hex, 'hex');
 end;
-$;
+$$;
 
 -- контейнеры обязаны стоять на целых клетках, по одному на клетку, не поверх пушек
 create or replace function depots_valid(d jsonb, map bytea, guns jsonb)
