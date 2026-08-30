@@ -13,6 +13,7 @@ import {
   type GameState,
 } from "@/lib/engine";
 import { drawFrame } from "@/lib/render";
+import { DRONE_KILL_REWARD, fmt } from "@/lib/economy";
 import MapCanvas, { type Pt } from "./MapCanvas";
 import { Button, Chip, ChipBar, IconButton, Panel, Row, SectionTitle } from "./ui";
 
@@ -149,6 +150,13 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
             tone="text-emerald-300"
           />
           <Chip
+            label="награда"
+            value={`+${fmt(
+              ((hud?.killedByGuns ?? 0) + (hud?.killedByMg ?? 0)) * DRONE_KILL_REWARD
+            )}`}
+            tone="text-emerald-300"
+          />
+          <Chip
             label="огонь"
             value={String(hud?.fires ?? 0)}
             tone={hud?.fires ? "text-orange-300" : undefined}
@@ -200,6 +208,12 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
                 <Row label="Запущено дронов" value={String(order.drones)} />
                 <Row label="Сбито ракетами" value={String(done.result.killedByGuns)} />
                 <Row label="Сбито очередью" value={String(done.result.killedByMg)} />
+                <Row
+                  label="Награда за сбитые"
+                  value={`+${fmt(
+                    (done.result.killedByGuns + done.result.killedByMg) * DRONE_KILL_REWARD
+                  )} кр`}
+                />
                 <Row label="Прорвалось" value={String(done.result.leaked)} />
                 <Row
                   label="Разрушено склада"
@@ -229,6 +243,12 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
             <Row label="На подходе" value={String(hud?.left ?? 0)} />
             <Row label="Сбито ракетами" value={String(hud?.killedByGuns ?? 0)} />
             <Row label="Сбито очередью" value={String(hud?.killedByMg ?? 0)} />
+            <Row
+              label="Награда"
+              value={`+${fmt(
+                ((hud?.killedByGuns ?? 0) + (hud?.killedByMg ?? 0)) * DRONE_KILL_REWARD
+              )} кр`}
+            />
             <Row label="Очагов огня" value={String(hud?.fires ?? 0)} />
             <Row label="Пушек живо" value={`${hud?.gunsAlive ?? 0}/${hud?.gunsTotal ?? 0}`} />
             <Row label="Целостность" value={`${hud?.integrity ?? 100}%`} />

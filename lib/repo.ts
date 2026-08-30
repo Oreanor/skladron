@@ -27,6 +27,8 @@ export interface Repo {
   load(): Promise<{ player: Player; income: Income }>;
   /** Склад после правок в лобби. Возвращает авторитетные цифры сервера. */
   saveBase(p: Player): Promise<Partial<Player>>;
+  /** Список добавленных по e-mail соперников и их текущее состояние. */
+  saveEnemies(p: Player): Promise<void>;
   buyDrones(p: Player, packs: number): Promise<Partial<Player>>;
   /** Переименование склада — отдельная операция, карты не касается. */
   rename(p: Player, name: string): Promise<void>;
@@ -50,6 +52,10 @@ class LocalRepo implements Repo {
   async saveBase(p: Player) {
     localSave(p);
     return {};
+  }
+
+  async saveEnemies(p: Player) {
+    localSave(p);
   }
 
   async buyDrones(p: Player, _packs: number) {
@@ -83,6 +89,7 @@ interface ProfileRow {
   created_at: string;
   // в базе может лежать статистика более старого образца, чем знает клиент
   stats: Partial<Player["stats"]> | null;
+  enemies: Player["enemies"] | null;
 }
 
 /** collect_income отдаёт именно credits_added — имя колонки, а не поля Income. */
@@ -147,6 +154,7 @@ class CloudRepo implements Repo {
       guns: b.guns ?? [],
       depots: b.drone_cells ?? [],
       incoming: [], // очередь атак появится на этапе 3
+      enemies: row.enemies ?? [],
     };
 
     const first = (inc.data as IncomeRow[] | null)?.[0];
@@ -157,14 +165,26 @@ class CloudRepo implements Repo {
   }
 
   async saveBase(p: Player) {
-    const { data, error } = await this.db().rpc("save_base", {
-      new_cells: encodeRle(p.cells),
-      new_guns: p.guns,
-      new_depots: p.depots,
-    });
+    const db = this.db();
+    const [{ data, error }, enemyResult] = await Promise.all([
+      db.rpc("save_base", {
+        new_cells: encodeRle(p.cells),
+        new_guns: p.guns,
+        new_depots: p.depots,
+      }),
+      db.rpc("save_enemies", { new_enemies: p.enemies }),
+    ]);
     if (error) throw error;
+    if (enemyResult.error) throw enemyResult.error;
     const row = (data as { credits: number }[] | null)?.[0];
     return row ? { credits: row.credits } : {};
+  }
+
+  async saveEnemies(p: Player) {
+    const { error } = await this.db().rpc("save_enemies", {
+      new_enemies: p.enemies,
+    });
+    if (error) throw error;
   }
 
   async buyDrones(p: Player, packs: number) {
@@ -199,8 +219,9 @@ class CloudRepo implements Repo {
     if (error) throw error;
     const fresh = newPlayer();
     fresh.name = p.name;
-    fresh.credits = CREDITS_START;
+    fresh.credits = Math.max(p.credits, CREDITS_START);
     fresh.stats = { ...p.stats, wipes: p.stats.wipes + 1 };
+    fresh.enemies = p.enemies;
     return fresh;
   }
 }

@@ -129,6 +129,20 @@ export function applyRect(cells: Uint8Array, r: Rect) {
   });
 }
 
+/**
+ * Карта нового игрока: стартовый склад STARTER_SIDE×STARTER_SIDE уже стоит
+ * посреди поля. Дальше игрок пристраивает за свои.
+ */
+export function starterCells(side: number): Uint8Array {
+  const cells = emptyCells();
+  const x0 = ((GRID - side) / 2) | 0;
+  const y0 = ((GRID - side) / 2) | 0;
+  for (let y = y0; y < y0 + side; y++) {
+    for (let x = x0; x < x0 + side; x++) cells[idx(x, y)] = G_BASE;
+  }
+  return cells;
+}
+
 // --- хранение ---
 
 /**

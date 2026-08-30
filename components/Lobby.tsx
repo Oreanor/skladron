@@ -20,8 +20,10 @@ import {
 } from "@/lib/base";
 import {
   CELL_COST,
+  STARTER_SIDE,
   DRONE_PACK,
   DRONE_PACK_COST,
+  DRONE_KILL_REWARD,
   GUN_COST,
   GUN_REFUND,
   MIN_BASE_CELLS,
@@ -67,6 +69,7 @@ import {
   IconMenu,
   IconTarget,
   IconUsers,
+  ConfirmDialog,
   NameDialog,
   Notice,
   Panel,
@@ -107,6 +110,7 @@ export default function Lobby({
   const [version, setVersion] = useState(0);
   const [sheet, setSheet] = useState<SheetId | null>(null);
   const [naming, setNaming] = useState<"found" | "rename" | null>(null);
+  const [confirmWipe, setConfirmWipe] = useState(false);
   const toggleSheet = (id: SheetId) => setSheet((cur) => (cur === id ? null : id));
 
   // заготовка площади
@@ -122,7 +126,6 @@ export default function Lobby({
   const hoverRef = useRef<Pt | null>(null);
   const paintingRef = useRef(false);
   // раскладка контейнеров
-  const [arranging, setArranging] = useState(false);
   const dragDepotRef = useRef<{ cx: number; cy: number } | null>(null);
 
   /** Пишем склад с задержкой: на сервере это одна проверяемая операция. */
@@ -210,7 +213,10 @@ export default function Lobby({
           p.depots = o.depots;
           p.incoming = p.incoming.filter((a) => a.id !== battle.id);
           p.stats.battles++;
-          p.stats.dronesKilled += o.result.killedByGuns + o.result.killedByMg;
+          const killed = o.result.killedByGuns + o.result.killedByMg;
+          const defenseReward = killed * DRONE_KILL_REWARD;
+          p.stats.dronesKilled += killed;
+          p.credits += defenseReward;
           p.stats.cellsBurned += o.result.burned;
           // счёт вражды: записываем, сколько он у нас сжёг
           const foe = p.enemies.find((e) => e.name === battle.from);
@@ -218,8 +224,8 @@ export default function Lobby({
           setBattle(null);
           setMessage(
             o.won
-              ? `Налёт отбит. Потеряно клеток: ${o.result.burned}`
-              : `Склад выгорел под атакой ${battle.from}`
+              ? `Налёт отбит. Сбито: ${killed}, награда: +${fmt(defenseReward)} кр`
+              : `Склад выгорел под атакой ${battle.from}. За сбитые: +${fmt(defenseReward)} кр`
           );
           setVersion((v) => v + 1);
           forceRender((v) => v + 1);
@@ -271,12 +277,13 @@ export default function Lobby({
       setMessage("Здание должно быть без разрывов");
       return;
     }
-    if (p.credits < CELL_COST) {
+    const cost = CELL_COST;
+    if (p.credits < cost) {
       setMessage("Не хватает кредитов");
       return;
     }
     p.cells[i] = G_BASE;
-    p.credits -= CELL_COST;
+    p.credits -= cost;
     touch();
   };
 
@@ -330,6 +337,9 @@ export default function Lobby({
     p.depots.push(...added);
     p.credits -= DRONE_PACK_COST;
     setMessage(`Закуплено ${DRONE_PACK} дронов — ${added.length} контейнеров на складе`);
+    // На телефоне арсенал закрывает карту; после покупки сразу отдаём место
+    // раскладке, потому что режим «Дроны» уже выбран.
+    setSheet(null);
     setVersion((v) => v + 1);
     forceRender((v) => v + 1);
     try {
@@ -401,14 +411,24 @@ export default function Lobby({
     }
   };
 
-  const addEnemy = (email: string): string | null => {
+  const addEnemy = async (email: string): Promise<string | null> => {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return "Похоже, это не почта";
     if (p.enemies.some((e) => e.email.toLowerCase() === email.toLowerCase())) {
       return "Этот враг уже в списке";
     }
-    p.enemies.push(makeEnemy(email));
-    touch();
-    return null;
+    const enemy = makeEnemy(email);
+    p.enemies.push(enemy);
+    forceRender((v) => v + 1);
+    try {
+      // Адрес должен оказаться в профиле до того, как поле очистится: тогда
+      // даже немедленное обновление страницы не потеряет добавленного друга.
+      await repo.saveEnemies(p);
+      return null;
+    } catch (e) {
+      p.enemies = p.enemies.filter((item) => item.id !== enemy.id);
+      forceRender((v) => v + 1);
+      return `Не удалось сохранить: ${(e as Error).message}`;
+    }
   };
 
   const doRaid = (
@@ -451,7 +471,6 @@ export default function Lobby({
     (window as unknown as { __lobby: unknown }).__lobby = {
       player: p,
       tool,
-      arranging,
       dragDepot: dragDepotRef,
       moveDepot,
     };
@@ -474,9 +493,11 @@ export default function Lobby({
     if (button !== 0) return;
     const c = cellOf(pt);
     if (tool === "drones") {
-      if (!arranging) return;
       const d = p.depots.find((q) => q.cx === c.x && q.cy === c.y);
-      if (d) dragDepotRef.current = { cx: d.cx, cy: d.cy };
+      if (d) {
+        dragDepotRef.current = { cx: d.cx, cy: d.cy };
+        forceRender((v) => v + 1);
+      }
       return;
     }
     if (tool === "repair") {
@@ -574,6 +595,7 @@ export default function Lobby({
     if (tool === "drones") {
       const from = dragDepotRef.current;
       dragDepotRef.current = null;
+      forceRender((v) => v + 1);
       if (from) {
         const c = cellOf(pt);
         if (c.x !== from.cx || c.y !== from.cy) moveDepot(from, c.x, c.y);
@@ -612,7 +634,14 @@ export default function Lobby({
   const overlay = (ctx: CanvasRenderingContext2D) => {
     const cell = 7;
     drawCoverage(ctx, p.guns, cell);
-    drawDepots(ctx, p.depots, cell);
+    const dragged = tool === "drones" ? dragDepotRef.current : null;
+    drawDepots(
+      ctx,
+      dragged
+        ? p.depots.filter((item) => item.cx !== dragged.cx || item.cy !== dragged.cy)
+        : p.depots,
+      cell
+    );
 
     const d = draftRef.current ? normRect(draftRef.current) : null;
     if (d && d.w > 0 && d.h > 0) {
@@ -635,7 +664,7 @@ export default function Lobby({
     }
 
     // раскладка: подсвечиваем свободные клетки и тащим контейнер за курсором
-    if (tool === "drones" && arranging) {
+    if (tool === "drones") {
       ctx.fillStyle = "rgba(214, 168, 92, 0.18)";
       for (const i of freeCells(p.cells, p.guns, p.depots)) {
         ctx.fillRect((i % GRID) * cell, ((i / GRID) | 0) * cell, cell, cell);
@@ -643,11 +672,26 @@ export default function Lobby({
       const from = dragDepotRef.current;
       const h2 = hoverRef.current;
       if (from && h2) {
-        ctx.strokeStyle = "#d6a85c";
+        const cx = Math.floor(h2.x);
+        const cy = Math.floor(h2.y);
+        const targetOk =
+          cx >= 0 &&
+          cy >= 0 &&
+          cx < GRID &&
+          cy < GRID &&
+          p.cells[idx(cx, cy)] === G_BASE &&
+          !p.guns.some((g) => g.cx === cx && g.cy === cy) &&
+          !p.depots.some(
+            (item) =>
+              (item.cx !== from.cx || item.cy !== from.cy) && item.cx === cx && item.cy === cy
+          );
+        const source = p.depots.find((item) => item.cx === from.cx && item.cy === from.cy);
+        if (source) drawDepots(ctx, [{ ...source, cx, cy }], cell, !targetOk);
+        ctx.strokeStyle = targetOk ? "#f5c56f" : "#ff6b6b";
         ctx.lineWidth = 1.5;
         ctx.strokeRect(
-          Math.floor(h2.x) * cell,
-          Math.floor(h2.y) * cell,
+          cx * cell,
+          cy * cell,
           cell,
           cell
         );
@@ -703,6 +747,18 @@ export default function Lobby({
     );
   }
 
+  const razeBase = async () => {
+    setConfirmWipe(false);
+    try {
+      playerRef.current = await repo.wipe(p);
+      setMessage(`Пепелище расчищено. Стартовый склад ${STARTER_SIDE}×${STARTER_SIDE} на месте`);
+      setVersion((v) => v + 1);
+      forceRender((v) => v + 1);
+    } catch (e) {
+      setMessage(`Не удалось снести: ${(e as Error).message}`);
+    }
+  };
+
   const income = dailyIncome(p);
   const pickTool = (id: Tool) => {
     setTool(id);
@@ -717,6 +773,10 @@ export default function Lobby({
 
   const foundBody = (
     <>
+      <p className="mb-3 text-neutral-300">
+        Стартовый склад {STARTER_SIDE}×{STARTER_SIDE} уже стоит посреди поля — он твой даром.
+        Пристройка дальше — {CELL_COST} кр за клетку.
+      </p>
       <p className="mb-3 text-neutral-300">
         Потяни по карте — появится красная заготовка. Её можно двигать и тянуть за углы, клик по
         ней утверждает постройку, кнопка «Убрать» отменяет. Одиночный тап по клетке рядом со
@@ -762,24 +822,9 @@ export default function Lobby({
           ? `Нужно ещё ${cellsPerPack - free} свободных клеток под контейнеры`
           : "Не хватает кредитов"}
       </p>
-      <Button
-        block
-        active={arranging}
-        tone="amber"
-        className="mt-3"
-        disabled={p.depots.length === 0}
-        onClick={() => {
-          // раскладывать контейнеры надо по карте — шторка тут только мешает
-          if (!arranging) setSheet(null);
-          setArranging((v) => !v);
-        }}
-      >
-        {arranging ? "Готово" : "Разместить на складе"}
-      </Button>
-      {arranging && (
+      {p.depots.length > 0 && (
         <p className="mt-2 text-xs text-neutral-500">
-          Перетаскивай контейнеры на подсвеченные клетки. Кучно — удобно, но один пожар съест всё
-          разом.
+          Выбери «Дроны» и перетаскивай контейнеры прямо по карте на подсвеченные клетки.
         </p>
       )}
     </>
@@ -961,7 +1006,7 @@ export default function Lobby({
               hoverRef.current = null;
               paintingRef.current = false;
             }}
-            cursor={tool === "drones" && !arranging ? "default" : tool === "drones" ? "grab" : "crosshair"}
+            cursor={tool === "drones" ? (dragDepotRef.current ? "grabbing" : "grab") : "crosshair"}
           />
 
           {tool === "area" && draftRect && draftRect.w > 0 && draftRect.h > 0 && (
@@ -1021,17 +1066,18 @@ export default function Lobby({
           {p.founded && intact === 0 && (
             <Notice tone="danger" className="order-2 flex-wrap lg:order-3">
               <span className="min-w-0">
-                Склад выгорел дотла. Инструмент «Ремонт» поднимает клетку за{" "}
-                {REPAIR_COST} кр — пока целых клеток нет, ни дохода, ни места под дронов.
+                Склад выгорел дотла. «Ремонт» поднимает клетку за {REPAIR_COST} кр,
+                «Снести» расчищает пепелище и ставит стартовые {STARTER_SIDE}×{STARTER_SIDE}
+                заново.
               </span>
-              <Button
-                size="sm"
-                active={tool === "repair"}
-                className="ml-auto"
-                onClick={() => pickTool("repair")}
-              >
-                Ремонт
-              </Button>
+              <div className="ml-auto flex gap-2">
+                <Button size="sm" active={tool === "repair"} onClick={() => pickTool("repair")}>
+                  Ремонт
+                </Button>
+                <Button variant="danger" size="sm" onClick={() => setConfirmWipe(true)}>
+                  Снести
+                </Button>
+              </div>
             </Notice>
           )}
 
@@ -1073,6 +1119,16 @@ export default function Lobby({
       </div>
 
       {/* мобильные шторки */}
+      {confirmWipe && (
+        <ConfirmDialog
+          title="Снести пепелище?"
+          subtitle={`Сгоревшие клетки исчезнут, а посреди поля снова встанет стартовый склад ${STARTER_SIDE}×${STARTER_SIDE}. Кредиты и статистика останутся.`}
+          confirm="Снести"
+          onCancel={() => setConfirmWipe(false)}
+          onConfirm={razeBase}
+        />
+      )}
+
       {naming && (
         <NameDialog
           title={naming === "found" ? "Как назовём склад?" : "Переименовать склад"}
@@ -1082,7 +1138,7 @@ export default function Lobby({
               : "Старое имя нигде не останется — враги сразу увидят новое."
           }
           confirm={naming === "found" ? "Основать" : "Переименовать"}
-          initial={naming === "rename" ? p.name : ""}
+          initial={p.name}
           maxLength={MAX_BASE_NAME}
           onCancel={() => setNaming(null)}
           onSubmit={naming === "found" ? found : rename}

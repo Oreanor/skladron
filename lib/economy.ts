@@ -10,9 +10,13 @@ export const DRONE_PACK_COST = 1000;
 export const INCOME_PER_CELL = 10; // за целую клетку за сутки
 export const INCOME_CAP_DAYS = 14; // потолок накопления
 export const LOOT_PER_CELL = 5; // добыча атакующему за сожжённую клетку
-export const MIN_BASE_CELLS = 60; // минимум для старта (эквивалент 10×6)
+export const DRONE_KILL_REWARD = 100; // защита склада: награда за каждый сбитый дрон
+export const STARTER_SIDE = 10; // стартовый склад 10×10 уже стоит в центре
+export const STARTER_CELLS = STARTER_SIDE * STARTER_SIDE;
+export const MIN_BASE_CELLS = STARTER_CELLS; // меньше стартового склада не основываемся
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
+
 
 /**
  * Сколько кредитов накопилось с прошлого начисления.

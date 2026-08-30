@@ -384,3 +384,29 @@ export function NameDialog({
     </Modal>
   );
 }
+
+/** Подтверждение необратимого действия. */
+export function ConfirmDialog({
+  title,
+  subtitle,
+  confirm,
+  onCancel,
+  onConfirm,
+}: {
+  title: string;
+  subtitle?: string;
+  confirm: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Modal title={title} subtitle={subtitle} onClose={onCancel}>
+      <div className="flex gap-2">
+        <Button variant="danger" className="flex-1" onClick={onConfirm}>
+          {confirm}
+        </Button>
+        <Button onClick={onCancel}>Отмена</Button>
+      </div>
+    </Modal>
+  );
+}

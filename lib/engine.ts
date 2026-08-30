@@ -27,9 +27,9 @@ export const GUN_HIT_CHANCE = 0.15; // шанс случайно врезать�
 
 // прицел игрока
 export const MG_INTERVAL = 0.09; // с между выстрелами
-export const MG_RADIUS = 1.4; // клеток — зона поражения очереди
+export const MG_RADIUS = 1.8; // клеток — зона захвата дрона прицелом
 export const MG_SPREAD = 1.2; // клеток — разброс пуль
-export const MG_HIT = 0.2; // шанс попадания одним выстрелом
+export const MG_HIT = 0.35; // шанс попадания одним выстрелом; одного попадания достаточно
 export const MAX_HOLES = 2500;
 export const HIT_GLIDE = 3; // клеток планирования подбитого дрона
 export const FALL_SPEED = 3.4;

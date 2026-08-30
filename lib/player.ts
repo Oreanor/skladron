@@ -1,7 +1,7 @@
 // Состояние игрока и его хранение. Сейчас localStorage; на этапе 2 за тем же
 // интерфейсом окажется Supabase — игровая логика об этом знать не должна.
 
-import { CREDITS_START, accrue } from "./economy";
+import { CREDITS_START, STARTER_SIDE, accrue } from "./economy";
 import {
   CELLS,
   type Depot,
@@ -13,6 +13,7 @@ import {
   decodeCells,
   emptyCells,
   encodeCells,
+  starterCells,
 } from "./base";
 import type { AttackOrder } from "./attack";
 import type { Enemy } from "./enemy";
@@ -70,7 +71,7 @@ export function newPlayer(now = Date.now()): Player {
   return {
     name: "",
     credits: CREDITS_START,
-    cells: emptyCells(),
+    cells: starterCells(STARTER_SIDE),
     guns: [],
     depots: [],
     lastIncomeAt: now,
@@ -94,7 +95,9 @@ export function newPlayer(now = Date.now()): Player {
 export function wipe(p: Player, now = Date.now()): Player {
   const fresh = newPlayer(now);
   fresh.name = p.name;
+  fresh.credits = Math.max(p.credits, CREDITS_START);
   fresh.stats = { ...p.stats, wipes: p.stats.wipes + 1 };
+  fresh.enemies = p.enemies;
   return fresh;
 }
 
@@ -175,6 +178,7 @@ export function save(p: Player) {
 
 /** Начисляет доход за прошедшие сутки. Возвращает, сколько накапало. */
 export function collectIncome(p: Player, now = Date.now()) {
+  if (!p.founded) return { credits: 0, days: 0 };
   const { credits, days, nextAt } = accrue(intactCells(p), p.lastIncomeAt, now);
   p.lastIncomeAt = nextAt;
   p.credits += credits;

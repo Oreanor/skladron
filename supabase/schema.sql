@@ -16,6 +16,9 @@ language sql immutable as $$
     when 'drones' then 1000
     when 'income' then 10
     when 'loot'   then 5
+    when 'kill'   then 100  -- награда защитнику за сбитый дрон
+    when 'free'   then 100   -- стартовая площадь 10×10 достаётся даром
+    when 'found'  then 100   -- столько же нужно, чтобы основаться
   end;
 $$;
 
@@ -60,6 +63,25 @@ begin
 end;
 $$;
 
+-- Бесплатный стартовый склад: белый квадрат 10×10 точно в центре карты.
+-- Одна функция используется и для новых аккаунтов, и после сноса пепелища,
+-- чтобы клиентская и серверная карты всегда совпадали.
+create or replace function starter_map() returns bytea
+language sql immutable as $$
+  select decode(
+    string_agg(
+      case
+        when (n / 100) between 45 and 54 and (n % 100) between 45 and 54
+          then '01'
+        else '00'
+      end,
+      '' order by n
+    ),
+    'hex'
+  )
+  from generate_series(0, 9999) as cells(n);
+$$;
+
 -- контейнеры обязаны стоять на целых клетках, по одному на клетку, не поверх пушек
 create or replace function depots_valid(d jsonb, map bytea, guns jsonb)
 returns boolean language plpgsql immutable as $$
@@ -99,6 +121,7 @@ create table if not exists profiles (
   drones int not null default 0,
   founded boolean not null default false,
   last_income_at timestamptz not null default now(),
+  enemies jsonb not null default '[]'::jsonb,
   stats jsonb not null default
     '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,"wipes":0,"raids":0,"looted":0}'::jsonb,
   created_at timestamptz not null default now()
@@ -116,6 +139,7 @@ create table if not exists bases (
 -- Догоняем схему на уже заведённых профилях: create table if not exists
 -- default существующей таблице не меняет, а клиент ждёт все семь счётчиков.
 alter table profiles add column if not exists base_name text;
+alter table profiles add column if not exists enemies jsonb not null default '[]'::jsonb;
 
 alter table profiles alter column stats set default
   '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,"wipes":0,"raids":0,"looted":0}'::jsonb;
@@ -154,8 +178,46 @@ begin
   on conflict (id) do nothing;
 
   insert into bases (user_id, cells)
-  values (uid, decode(repeat('00', 10000), 'hex'))
+  values (uid, starter_map())
   on conflict (user_id) do nothing;
+end;
+$$;
+
+-- Старые аккаунты, которые ещё не основали и не начали строить склад,
+-- тоже получают бесплатный центральный квадрат после обновления схемы.
+update bases b
+   set cells = starter_map(), intact_cells = 100, updated_at = now()
+  from profiles p
+ where p.id = b.user_id
+   and not p.founded
+   and b.intact_cells = 0
+   and jsonb_array_length(b.guns) = 0
+   and jsonb_array_length(b.drone_cells) = 0;
+
+-- ---------- добавленные по e-mail соперники ----------
+
+create or replace function save_enemies(new_enemies jsonb)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  item jsonb;
+  seen text[] := '{}';
+  clean_email text;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  if jsonb_typeof(new_enemies) <> 'array' then raise exception 'enemies must be an array'; end if;
+  if jsonb_array_length(new_enemies) > 100 then raise exception 'too many enemies'; end if;
+
+  for item in select * from jsonb_array_elements(new_enemies) loop
+    clean_email := lower(btrim(item->>'email'));
+    if clean_email is null or clean_email !~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' then
+      raise exception 'bad enemy email';
+    end if;
+    if seen @> array[clean_email] then raise exception 'duplicate enemy email'; end if;
+    seen := seen || clean_email;
+  end loop;
+
+  update profiles set enemies = new_enemies where id = uid;
 end;
 $$;
 
@@ -245,6 +307,9 @@ declare
   built int := 0;
   repaired int := 0;
   intact_now int := 0;
+  claimed int := 0;   -- клетки, уже занятые зданием: от них считается лимит
+  free_left int;
+  paid int;
   guns_added int;
   guns_removed int;
   cost int;
@@ -268,6 +333,7 @@ begin
   for i in 0..9999 loop
     old_v := get_byte(cur, i);
     new_v := get_byte(bin, i);
+    if old_v in (1, 2, 3) then claimed := claimed + 1; end if;
     if new_v = 1 then
       intact_now := intact_now + 1;
       if old_v = 3 then
@@ -284,7 +350,11 @@ begin
   guns_added := greatest(0, jsonb_array_length(new_guns) - jsonb_array_length(cur_guns));
   guns_removed := greatest(0, jsonb_array_length(cur_guns) - jsonb_array_length(new_guns));
 
-  cost := built * price('cell')
+  -- первые price('free') клеток склада бесплатны, считаем от того, что уже стоит
+  free_left := greatest(0, price('free') - claimed);
+  paid := greatest(0, built - free_left);
+
+  cost := paid * price('cell')
         + repaired * price('repair')
         + guns_added * price('gun')
         - guns_removed * price('refund');
@@ -304,7 +374,7 @@ begin
   update profiles
      set credits = profiles.credits - cost,
          drones = depot_sum(new_depots),
-         founded = profiles.founded or intact_now >= 60,
+         founded = profiles.founded or intact_now >= price('found'),
          stats = jsonb_set(profiles.stats, '{cellsRepaired}',
                  to_jsonb((profiles.stats->>'cellsRepaired')::int + repaired))
    where profiles.id = uid
@@ -405,6 +475,7 @@ begin
 
   killed := coalesce((result->>'killedByGuns')::int, 0)
           + coalesce((result->>'killedByMg')::int, 0);
+  if killed < 0 or killed > 300 then raise exception 'bad killed drone count'; end if;
 
   update bases
      set cells = bin, guns = new_guns, drone_cells = new_depots,
@@ -414,10 +485,10 @@ begin
   update profiles
      set drones = depot_sum(new_depots),
          -- сгорело всё до последней клетки — сразу поднимаем кассу
-         credits = case
-           when intact_now = 0 and profiles.credits < 10000 then 10000
-           else profiles.credits
-         end,
+         credits = greatest(
+           profiles.credits + killed * price('kill'),
+           case when intact_now = 0 then 10000 else 0 end
+         ),
          stats = profiles.stats
        || jsonb_build_object(
             'battles', (profiles.stats->>'battles')::int + 1,
@@ -440,16 +511,18 @@ begin
   if uid is null then raise exception 'not authenticated'; end if;
 
   update bases
-     set cells = decode(repeat('00', 10000), 'hex'),
-         guns = '[]'::jsonb, intact_cells = 0, updated_at = now()
+     set cells = starter_map(),
+         guns = '[]'::jsonb, drone_cells = '[]'::jsonb,
+         intact_cells = 100, updated_at = now()
    where user_id = uid;
 
   update profiles
-     set credits = 10000, drones = 0, founded = false, last_income_at = now(),
+     set credits = greatest(profiles.credits, 10000),
+         drones = 0, founded = false, last_income_at = now(),
          stats = jsonb_set(stats, '{wipes}', to_jsonb((stats->>'wipes')::int + 1))
    where id = uid;
 end;
 $$;
 
 grant execute on function ensure_player, collect_income, save_base,
-  buy_drones, apply_battle, wipe_base, rename_base to authenticated;
+  buy_drones, apply_battle, wipe_base, rename_base, save_enemies to authenticated;

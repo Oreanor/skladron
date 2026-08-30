@@ -9,7 +9,7 @@ import { Button, Card, Modal, Row, inputClass } from "./ui";
 interface Props {
   enemies: Enemy[];
   drones: number;
-  onAdd: (email: string) => string | null; // текст ошибки или null
+  onAdd: (email: string) => Promise<string | null>; // текст ошибки или null
   onRaid: (enemy: Enemy, drones: number, pattern: Pattern, direction: number) => RaidOutcome;
   onChanged: () => void;
 }
@@ -19,9 +19,13 @@ export default function Enemies({ enemies, drones, onAdd, onRaid, onChanged }: P
   const [error, setError] = useState<string | null>(null);
   const [target, setTarget] = useState<Enemy | null>(null);
   const [outcome, setOutcome] = useState<{ enemy: Enemy; out: RaidOutcome } | null>(null);
+  const [adding, setAdding] = useState(false);
 
-  const add = () => {
-    const e = onAdd(email.trim());
+  const add = async () => {
+    if (adding) return;
+    setAdding(true);
+    const e = await onAdd(email.trim());
+    setAdding(false);
     setError(e);
     if (!e) {
       setEmail("");
@@ -35,7 +39,9 @@ export default function Enemies({ enemies, drones, onAdd, onRaid, onChanged }: P
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && add()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void add();
+          }}
           placeholder="почта врага"
           type="email"
           inputMode="email"
@@ -43,8 +49,8 @@ export default function Enemies({ enemies, drones, onAdd, onRaid, onChanged }: P
           autoCorrect="off"
           className={inputClass}
         />
-        <Button size="sm" onClick={add}>
-          Добавить
+        <Button size="sm" onClick={() => void add()} disabled={adding}>
+          {adding ? "Сохраняю…" : "Добавить"}
         </Button>
       </div>
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
