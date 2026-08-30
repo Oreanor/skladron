@@ -65,7 +65,7 @@ create table if not exists profiles (
   founded boolean not null default false,
   last_income_at timestamptz not null default now(),
   stats jsonb not null default
-    '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,"wipes":0}'::jsonb,
+    '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,"wipes":0,"raids":0,"looted":0}'::jsonb,
   created_at timestamptz not null default now()
 );
 
@@ -77,6 +77,15 @@ create table if not exists bases (
   intact_cells int not null default 0,
   updated_at timestamptz not null default now()
 );
+
+-- Догоняем схему на уже заведённых профилях: create table if not exists
+-- default существующей таблице не меняет, а клиент ждёт все семь счётчиков.
+alter table profiles alter column stats set default
+  '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,"wipes":0,"raids":0,"looted":0}'::jsonb;
+
+update profiles
+   set stats = '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,
+                 "wipes":0,"raids":0,"looted":0}'::jsonb || stats;
 
 alter table profiles enable row level security;
 alter table bases enable row level security;

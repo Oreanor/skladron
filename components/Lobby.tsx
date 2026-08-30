@@ -57,12 +57,18 @@ import { drawCoverage, drawDepots } from "@/lib/render";
 import Battle, { type BattleOutcome } from "./Battle";
 import MapCanvas, { type Pt } from "./MapCanvas";
 import {
+  Button,
+  Card,
+  Chip,
+  ChipBar,
   IconButton,
   IconMenu,
   IconTarget,
   IconUsers,
+  Notice,
   Panel,
   Row,
+  SectionTitle,
   Sheet,
   StatRow,
 } from "./ui";
@@ -643,7 +649,9 @@ export default function Lobby({
           Целых клеток не осталось, а на ремонт нет кредитов. Придётся начинать сначала —
           статистика и вражда сохранятся.
         </p>
-        <button
+        <Button
+          variant="neutral"
+          size="lg"
           onClick={async () => {
             try {
               playerRef.current = await repo.wipe(p);
@@ -654,10 +662,9 @@ export default function Lobby({
               setMessage(`Не удалось начать заново: ${(e as Error).message}`);
             }
           }}
-          className="rounded bg-neutral-100 px-5 py-2 text-sm font-semibold text-neutral-900 hover:bg-white"
         >
           Начать заново
-        </button>
+        </Button>
       </div>
     );
   }
@@ -681,19 +688,15 @@ export default function Lobby({
         ней утверждает постройку, кнопка «Убрать» отменяет. Одиночный тап по клетке рядом со
         зданием достраивает её сразу.
       </p>
-      <div className="mb-1 flex items-center justify-between font-mono">
+      <div className="mb-3 flex items-center justify-between font-mono">
         <span className="text-neutral-400">Площадь</span>
         <span className={intact >= MIN_BASE_CELLS ? "text-emerald-400" : "text-neutral-100"}>
           {intact}/{MIN_BASE_CELLS}
         </span>
       </div>
-      <button
-        onClick={found}
-        disabled={intact < MIN_BASE_CELLS}
-        className="mt-3 w-full rounded bg-emerald-500 px-4 py-2 font-semibold text-neutral-950 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500"
-      >
+      <Button variant="build" block onClick={found} disabled={intact < MIN_BASE_CELLS}>
         Основать склад
-      </button>
+      </Button>
     </>
   );
 
@@ -708,13 +711,9 @@ export default function Lobby({
         <Row label="Контейнеров" value={String(p.depots.length)} />
         <Row label="Свободных клеток" value={String(free)} />
       </dl>
-      <button
-        onClick={buyDrones}
-        disabled={packsAvailable < 1}
-        className="w-full rounded bg-neutral-100 px-4 py-3 text-sm font-semibold text-neutral-900 hover:bg-white disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500 lg:py-2"
-      >
+      <Button variant="neutral" block onClick={buyDrones} disabled={packsAvailable < 1}>
         Купить {DRONE_PACK} за {fmt(DRONE_PACK_COST)} кр
-      </button>
+      </Button>
       <p className="mt-2 text-xs text-neutral-500">
         {packsAvailable >= 1
           ? `Можно закупить ещё ${packsAvailable} ${packsAvailable === 1 ? "пачку" : "пачек"}`
@@ -722,21 +721,20 @@ export default function Lobby({
           ? `Нужно ещё ${cellsPerPack - free} свободных клеток под контейнеры`
           : "Не хватает кредитов"}
       </p>
-      <button
+      <Button
+        block
+        active={arranging}
+        tone="amber"
+        className="mt-3"
+        disabled={p.depots.length === 0}
         onClick={() => {
           // раскладывать контейнеры надо по карте — шторка тут только мешает
           if (!arranging) setSheet(null);
           setArranging((v) => !v);
         }}
-        disabled={p.depots.length === 0}
-        className={`mt-3 w-full rounded border px-4 py-3 text-sm lg:py-2 ${
-          arranging
-            ? "border-amber-500 bg-amber-500/15 text-amber-300"
-            : "border-neutral-700 text-neutral-300 hover:bg-neutral-800"
-        } disabled:cursor-not-allowed disabled:opacity-40`}
       >
         {arranging ? "Готово" : "Разместить на складе"}
-      </button>
+      </Button>
       {arranging && (
         <p className="mt-2 text-xs text-neutral-500">
           Перетаскивай контейнеры на подсвеченные клетки. Кучно — удобно, но один пожар съест всё
@@ -756,10 +754,7 @@ export default function Lobby({
         {p.incoming.map((a) => {
           const pat = PATTERNS.find((x) => x.id === a.pattern);
           return (
-            <li
-              key={a.id}
-              className="flex items-center justify-between gap-2 rounded border border-neutral-800 bg-neutral-950/60 p-2"
-            >
+            <Card key={a.id} className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <div className="truncate font-medium text-neutral-200">{a.from}</div>
                 <div className="font-mono text-xs text-neutral-500">
@@ -767,29 +762,27 @@ export default function Lobby({
                   {a.pattern === "lines" ? ` ${EDGE_NAMES[a.direction]}` : ""}
                 </div>
               </div>
-              <button
+              <Button
+                variant="danger"
+                size="sm"
+                disabled={intact === 0}
                 onClick={() => {
                   setSheet(null);
                   setBattle(a);
                 }}
-                disabled={intact === 0}
-                className="shrink-0 rounded bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-neutral-700 lg:py-1"
               >
                 Отбить
-              </button>
-            </li>
+              </Button>
+            </Card>
           );
         })}
       </ul>
     );
 
   const summonButton = (
-    <button
-      onClick={summonAttack}
-      className="shrink-0 rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-300 hover:bg-neutral-800"
-    >
+    <Button size="sm" onClick={summonAttack}>
       + налёт
-    </button>
+    </Button>
   );
 
   const enemiesBody = (
@@ -814,35 +807,33 @@ export default function Lobby({
     </div>
   );
 
-  const toolButtons = TOOLS.map((t) => (
-    <button
-      key={t.id}
-      onClick={() => pickTool(t.id)}
-      disabled={!p.founded && t.id !== "area"}
-      title={t.hint}
-      className={`min-w-0 rounded border px-2 py-2.5 text-sm transition lg:px-3 lg:py-2 ${
-        tool === t.id
-          ? "border-emerald-500 bg-emerald-500/15 text-emerald-300"
-          : "border-neutral-700 text-neutral-300 active:bg-neutral-800 lg:hover:bg-neutral-800"
-      } disabled:cursor-not-allowed disabled:opacity-40`}
-    >
-      <span className="truncate">{t.name}</span>
-      <span className="ml-2 hidden font-mono text-[11px] text-neutral-500 lg:inline">{t.hint}</span>
-    </button>
-  ));
+  const signOutButton = (
+    <Button size="sm" onClick={onSignOut}>
+      Выйти
+    </Button>
+  );
+
+  const accountLine = account ? (
+    <div className="flex shrink-0 items-center gap-2 text-xs text-neutral-400">
+      <span className="max-w-[14rem] truncate">{account.name ?? account.email}</span>
+      {signOutButton}
+    </div>
+  ) : (
+    <span className="shrink-0 font-mono text-xs text-neutral-600">локальный режим</span>
+  );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:h-auto lg:flex-none lg:gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:gap-4">
       {/* шапка телефона: счётчики одной строкой плюс кнопки панелей */}
       <div className="flex shrink-0 items-center gap-2 lg:hidden">
-        <div className="flex min-w-0 flex-1 gap-3 overflow-x-auto rounded-md border border-neutral-800 bg-neutral-900/60 px-3 py-2 font-mono text-xs [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ChipBar className="min-w-0 flex-1">
           <Chip label="кр" value={fmt(p.credits)} tone="text-emerald-300" />
           <Chip label="дроны" value={fmt(drones)} />
           <Chip label="клетки" value={fmt(intact)} />
           {burnt > 0 && <Chip label="горело" value={fmt(burnt)} tone="text-orange-300" />}
           <Chip label="пушки" value={fmt(p.guns.length)} />
           <Chip label="/сут" value={`+${fmt(income)}`} tone="text-emerald-300" />
-        </div>
+        </ChipBar>
         <IconButton label="Налёты" badge={p.incoming.length} onClick={() => toggleSheet("attacks")}>
           <IconTarget />
         </IconButton>
@@ -854,57 +845,55 @@ export default function Lobby({
         </IconButton>
       </div>
 
-      {/* шапка десктопа */}
-      <div className="hidden flex-wrap items-center gap-3 lg:flex">
-        <div className="min-w-0 flex-1">
-          <StatusBar
-            credits={p.credits}
-            drones={drones}
-            intact={intact}
-            burnt={burnt}
-            guns={p.guns.length}
-            income={income}
-          />
-        </div>
-        {account ? (
-          <div className="flex items-center gap-2 text-xs text-neutral-400">
-            <span className="max-w-[14rem] truncate">{account.name ?? account.email}</span>
-            <button
-              onClick={onSignOut}
-              className="rounded border border-neutral-700 px-2 py-1 hover:bg-neutral-800"
-            >
-              Выйти
-            </button>
-          </div>
-        ) : (
-          <span className="font-mono text-xs text-neutral-600">локальный режим</span>
-        )}
+      {/* шапка десктопа: логотип, счётчики и аккаунт одной строкой */}
+      <div className="hidden items-center gap-4 lg:flex">
+        <h1 className="shrink-0 text-2xl font-black uppercase tracking-tight">Skladron</h1>
+        <ChipBar className="min-w-0 flex-1 flex-wrap px-4 py-3 text-sm">
+          <Chip label="кредиты" value={fmt(p.credits)} tone="text-emerald-300" />
+          <Chip label="дроны" value={fmt(drones)} />
+          <Chip label="целых клеток" value={fmt(intact)} />
+          <Chip label="сгорело" value={fmt(burnt)} tone={burnt ? "text-orange-300" : undefined} />
+          <Chip label="пушек" value={fmt(p.guns.length)} />
+          <Chip label="доход/сут" value={`+${fmt(income)}`} tone="text-emerald-300" />
+        </ChipBar>
+        {accountLine}
       </div>
 
       {message && (
-        <div className="flex shrink-0 items-center justify-between gap-2 rounded border border-neutral-700 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-300">
+        <Notice className="justify-between">
           <span className="min-w-0 truncate lg:whitespace-normal">{message}</span>
-          <button
-            onClick={() => setMessage(null)}
-            className="shrink-0 text-neutral-500 hover:text-neutral-200"
-          >
+          <Button variant="ghost" size="sm" className="-mr-2" onClick={() => setMessage(null)}>
             ✕
-          </button>
-        </div>
+          </Button>
+        </Notice>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:flex-none lg:grid-cols-[minmax(0,700px)_20rem] lg:gap-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,700px)_20rem] lg:gap-4">
         {/*
           Левая колонка. На телефоне порядок задаём через order-*: карта наверху
           забирает всю свободную высоту, инструменты прижаты к низу под большой палец.
         */}
-        <div className="flex min-h-0 flex-1 flex-col gap-2 lg:block lg:space-y-3">
-          <div className="order-3 grid shrink-0 grid-cols-4 gap-1.5 lg:flex lg:flex-wrap lg:gap-2">
-            {toolButtons}
+        <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
+          <div className="order-3 grid shrink-0 grid-cols-4 gap-1.5 lg:order-1 lg:flex lg:flex-wrap lg:gap-2">
+            {TOOLS.map((t) => (
+              <Button
+                key={t.id}
+                active={tool === t.id}
+                title={t.hint}
+                disabled={!p.founded && t.id !== "area"}
+                onClick={() => pickTool(t.id)}
+                className="min-w-0 px-2 lg:px-3"
+              >
+                <span className="truncate">{t.name}</span>
+                <span className="hidden font-mono text-[11px] font-normal text-neutral-500 lg:inline">
+                  {t.hint}
+                </span>
+              </Button>
+            ))}
           </div>
 
           <MapCanvas
-            className="order-1 min-h-0 flex-1 lg:aspect-square lg:w-full lg:flex-none"
+            className="order-1 min-h-0 flex-1 lg:order-2"
             scene={scene}
             sceneVersion={version}
             overlay={overlay}
@@ -920,8 +909,8 @@ export default function Lobby({
           />
 
           {tool === "area" && draftRect && draftRect.w > 0 && draftRect.h > 0 && (
-            <div className="order-2 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 rounded border border-orange-800/60 bg-orange-950/30 px-3 py-2 text-sm">
-              <span className="font-mono text-orange-200">
+            <Notice tone="warn" className="order-2 flex-wrap lg:order-3">
+              <span className="font-mono">
                 {draftRect.w}×{draftRect.h} · +{draftNew} клеток · {fmt(draftCost)} кр
               </span>
               {!draftConnects && <span className="text-red-400">разрыв со зданием</span>}
@@ -929,68 +918,71 @@ export default function Lobby({
                 <span className="text-red-400">не хватает кредитов</span>
               )}
               <div className="ml-auto flex gap-2">
-                <button
+                <Button
+                  variant="build"
+                  size="sm"
                   onClick={commitDraft}
                   disabled={!draftConnects || !draftAfford}
-                  className="rounded bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-neutral-950 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500"
                 >
                   Утвердить
-                </button>
-                <button
-                  onClick={onRightClick}
-                  className="rounded border border-neutral-700 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800"
-                >
+                </Button>
+                <Button size="sm" onClick={onRightClick}>
                   Убрать
-                </button>
+                </Button>
               </div>
-            </div>
+            </Notice>
           )}
 
           {/* пока склад не основан, счётчик площади держим на виду */}
           {!p.founded && (
-            <div className="order-2 flex shrink-0 items-center gap-3 rounded border border-neutral-700 bg-neutral-900/70 px-3 py-2 lg:hidden">
-              <button
+            <Notice className="order-2 lg:order-3 lg:hidden">
+              <IconButton
+                label="Как размечать склад"
+                round
+                className="h-7 w-7 text-xs"
                 onClick={() => setSheet("found")}
-                aria-label="Как размечать склад"
-                className="h-6 w-6 shrink-0 rounded-full border border-neutral-700 text-xs text-neutral-400"
               >
                 ?
-              </button>
-              <span className="font-mono text-sm">
+              </IconButton>
+              <span className="font-mono">
                 <span className="text-neutral-400">площадь </span>
                 <span className={intact >= MIN_BASE_CELLS ? "text-emerald-400" : "text-neutral-100"}>
                   {intact}/{MIN_BASE_CELLS}
                 </span>
               </span>
-              <button
+              <Button
+                variant="build"
+                size="sm"
+                className="ml-auto"
                 onClick={found}
                 disabled={intact < MIN_BASE_CELLS}
-                className="ml-auto shrink-0 rounded bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 disabled:bg-neutral-700 disabled:text-neutral-500"
               >
                 Основать
-              </button>
-            </div>
+              </Button>
+            </Notice>
           )}
 
           {/* входящий налёт не должен теряться в шторке */}
           {p.founded && p.incoming.length > 0 && (
-            <button
-              onClick={() => setSheet("attacks")}
-              className="order-2 flex shrink-0 items-center gap-2 rounded border border-red-800 bg-red-950/50 px-3 py-2 text-left text-sm lg:hidden"
-            >
+            <Notice tone="danger" className="order-2 lg:order-3 lg:hidden">
               <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-500" />
-              <span className="min-w-0 truncate text-red-200">
+              <span className="min-w-0 truncate">
                 Налёт: {p.incoming[0].from} · {p.incoming[0].drones} дронов
               </span>
-              <span className="ml-auto shrink-0 rounded bg-red-600 px-3 py-1 text-xs font-semibold text-white">
+              <Button
+                variant="danger"
+                size="sm"
+                className="ml-auto"
+                onClick={() => setSheet("attacks")}
+              >
                 {p.incoming.length > 1 ? `Отбить (${p.incoming.length})` : "Отбить"}
-              </span>
-            </button>
+              </Button>
+            </Notice>
           )}
         </div>
 
         {/* боковая колонка десктопа */}
-        <aside className="hidden space-y-4 text-sm lg:block">
+        <aside className="hidden min-h-0 space-y-4 overflow-y-auto text-sm lg:block">
           {!p.founded ? (
             <Panel title="Разметка склада">{foundBody}</Panel>
           ) : (
@@ -1023,14 +1015,14 @@ export default function Lobby({
       <Sheet open={sheet === "menu"} title="Склад" onClose={() => setSheet(null)}>
         <div className="space-y-5">
           <div>
-            <div className="mb-2 text-xs uppercase tracking-widest text-neutral-500">
-              Статистика
+            <div className="mb-2">
+              <SectionTitle>Статистика</SectionTitle>
             </div>
             {statsBody}
           </div>
           <div>
-            <div className="mb-2 text-xs uppercase tracking-widest text-neutral-500">
-              Управление
+            <div className="mb-2">
+              <SectionTitle>Управление</SectionTitle>
             </div>
             <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-neutral-400">
               <li>Тап по клетке рядом со зданием — достроить её.</li>
@@ -1039,18 +1031,15 @@ export default function Lobby({
             </ul>
           </div>
           <div>
-            <div className="mb-2 text-xs uppercase tracking-widest text-neutral-500">Аккаунт</div>
+            <div className="mb-2">
+              <SectionTitle>Аккаунт</SectionTitle>
+            </div>
             {account ? (
               <div className="flex items-center gap-3">
                 <span className="min-w-0 flex-1 truncate text-neutral-300">
                   {account.name ?? account.email}
                 </span>
-                <button
-                  onClick={onSignOut}
-                  className="shrink-0 rounded border border-neutral-700 px-3 py-2 text-xs text-neutral-300"
-                >
-                  Выйти
-                </button>
+                {signOutButton}
               </div>
             ) : (
               <span className="font-mono text-xs text-neutral-600">локальный режим</span>
@@ -1058,44 +1047,6 @@ export default function Lobby({
           </div>
         </div>
       </Sheet>
-    </div>
-  );
-}
-
-function StatusBar({
-  credits,
-  drones,
-  intact,
-  burnt,
-  guns,
-  income,
-}: {
-  credits: number;
-  drones: number;
-  intact: number;
-  burnt: number;
-  guns: number;
-  income: number;
-}) {
-  return (
-    <div className="flex flex-wrap gap-x-6 gap-y-2 rounded-md border border-neutral-700 bg-neutral-900/60 px-4 py-3 font-mono text-sm">
-      <Chip label="кредиты" value={fmt(credits)} tone="text-emerald-300" />
-      <Chip label="дроны" value={fmt(drones)} />
-      <Chip label="целых клеток" value={fmt(intact)} />
-      <Chip label="сгорело" value={fmt(burnt)} tone={burnt ? "text-orange-300" : undefined} />
-      <Chip label="пушек" value={fmt(guns)} />
-      <Chip label="доход/сут" value={`+${fmt(income)}`} tone="text-emerald-300" />
-    </div>
-  );
-}
-
-function Chip({ label, value, tone }: { label: string; value: string; tone?: string }) {
-  return (
-    <div className="flex shrink-0 items-baseline gap-1.5 lg:gap-2">
-      <span className="text-[10px] uppercase tracking-wider text-neutral-500 lg:text-xs">
-        {label}
-      </span>
-      <span className={tone ?? "text-neutral-100"}>{value}</span>
     </div>
   );
 }

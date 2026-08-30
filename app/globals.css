@@ -16,8 +16,24 @@ body {
   overscroll-behavior: none;
 }
 
-@media (max-width: 1023px) {
-  body {
-    overflow: hidden;
+/* игра занимает ровно экран: прокручиваются только панели внутри */
+body {
+  overflow: hidden;
+}
+
+/*
+ * В Tailwind v4 preflight ставит кнопкам cursor: default. Игра — не документ,
+ * кликабельное должно выглядеть кликабельным, поэтому возвращаем указатель
+ * централизованно, а не классом на каждой кнопке.
+ */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
   }
 }

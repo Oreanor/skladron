@@ -10,6 +10,7 @@ import {
   type Scene,
   type View,
 } from "@/lib/render";
+import { Button } from "./ui";
 
 export const CELL = 7; // px на клетку в логических координатах
 export const SIZE = GRID * CELL;
@@ -333,12 +334,13 @@ export default function MapCanvas({
         {shown.toFixed(1)}×
       </div>
       {shown > 1.01 && (
-        <button
+        <Button
+          size="sm"
           onClick={resetView}
-          className="absolute right-2 top-2 rounded bg-black/50 px-3 py-1.5 text-xs text-neutral-200 hover:bg-black/70"
+          className="absolute right-2 top-2 border-transparent bg-black/50 font-normal text-neutral-200 hover:bg-black/70"
         >
           Вся карта
-        </button>
+        </Button>
       )}
     </div>
   );

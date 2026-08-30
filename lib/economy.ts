@@ -30,4 +30,5 @@ export function accrue(intactCells: number, lastIncomeAt: number, now: number) {
   };
 }
 
-export const fmt = (n: number) => n.toLocaleString("ru-RU");
+/** Числа для интерфейса. Кривое значение показываем нулём, а не роняем экран. */
+export const fmt = (n: number) => (Number.isFinite(n) ? n : 0).toLocaleString("ru-RU");

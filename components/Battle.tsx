@@ -14,7 +14,7 @@ import {
 } from "@/lib/engine";
 import { drawFrame } from "@/lib/render";
 import MapCanvas, { type Pt } from "./MapCanvas";
-import { Row } from "./ui";
+import { Button, Chip, ChipBar, IconButton, Panel, Row, SectionTitle } from "./ui";
 
 export interface BattleOutcome {
   cells: Uint8Array;
@@ -113,10 +113,10 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
   const pattern = PATTERNS.find((p) => p.id === order.pattern);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:flex-none lg:grid-cols-[minmax(0,700px)_18rem] lg:gap-4">
-      <div className="relative flex min-h-0 flex-1 flex-col lg:block">
+    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,700px)_18rem] lg:gap-4">
+      <div className="relative flex min-h-0 flex-1 flex-col gap-2">
         <MapCanvas
-          className="min-h-0 flex-1 lg:aspect-square lg:w-full lg:flex-none"
+          className="min-h-0 flex-1"
           scene={scene}
           sceneVersion={version}
           cursor="none"
@@ -140,36 +140,37 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
         />
 
         {/* компактный HUD телефона: под картой, одной прокручиваемой строкой */}
-        <div className="flex shrink-0 gap-3 overflow-x-auto rounded-md border border-neutral-800 bg-neutral-900/60 px-3 py-2 font-mono text-xs [-ms-overflow-style:none] [scrollbar-width:none] lg:hidden [&::-webkit-scrollbar]:hidden">
-          <HudChip label="в небе" value={String(hud?.inAir ?? 0)} tone="text-red-300" />
-          <HudChip label="на подходе" value={String(hud?.left ?? 0)} />
-          <HudChip
+        <ChipBar className="lg:hidden">
+          <Chip label="в небе" value={String(hud?.inAir ?? 0)} tone="text-red-300" />
+          <Chip label="на подходе" value={String(hud?.left ?? 0)} />
+          <Chip
             label="сбито"
             value={String((hud?.killedByGuns ?? 0) + (hud?.killedByMg ?? 0))}
             tone="text-emerald-300"
           />
-          <HudChip
+          <Chip
             label="огонь"
             value={String(hud?.fires ?? 0)}
             tone={hud?.fires ? "text-orange-300" : undefined}
           />
-          <HudChip label="пушки" value={`${hud?.gunsAlive ?? 0}/${hud?.gunsTotal ?? 0}`} />
-          <HudChip
+          <Chip label="пушки" value={`${hud?.gunsAlive ?? 0}/${hud?.gunsTotal ?? 0}`} />
+          <Chip
             label="целость"
             value={`${hud?.integrity ?? 100}%`}
             tone={(hud?.integrity ?? 100) < 60 ? "text-orange-300" : "text-emerald-300"}
           />
-          <HudChip label="время" value={`${Math.floor(hud?.time ?? 0)} c`} />
-        </div>
+          <Chip label="время" value={`${Math.floor(hud?.time ?? 0)} c`} />
+        </ChipBar>
 
         {/* подсказка по управлению: на телефоне разворачивается по кнопке */}
-        <button
+        <IconButton
+          label="Управление"
+          round
           onClick={() => setHints((v) => !v)}
-          className="absolute right-2 top-12 z-10 h-8 w-8 rounded-full border border-neutral-700 bg-black/60 text-sm text-neutral-300 lg:hidden"
-          aria-label="Управление"
+          className="absolute right-2 top-12 z-10 h-8 w-8 bg-black/60 lg:hidden"
         >
           ?
-        </button>
+        </IconButton>
         {hints && (
           <div className="absolute inset-x-2 top-12 z-10 rounded-md border border-neutral-700 bg-neutral-950/95 p-3 text-xs leading-relaxed text-neutral-400 lg:hidden">
             <p className="mb-2 font-semibold text-neutral-300">Управление</p>
@@ -210,20 +211,16 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
                 <Row label="Потеряно дронов" value={String(done.result.dronesLost)} />
                 <Row label="Потеряно пушек" value={String(done.result.gunsLost)} />
               </dl>
-              <button
-                onClick={() => onFinish(done)}
-                className="w-full rounded bg-neutral-100 px-4 py-3 text-sm font-semibold text-neutral-900 hover:bg-white sm:py-2"
-              >
+              <Button variant="neutral" block onClick={() => onFinish(done)}>
                 Вернуться на склад
-              </button>
+              </Button>
             </div>
           </div>
         )}
       </div>
 
-      <aside className="hidden space-y-4 text-sm lg:block">
-        <div className="rounded-md border border-neutral-700 bg-neutral-900/60 p-4">
-          <div className="mb-2 text-xs uppercase tracking-widest text-neutral-400">Налёт</div>
+      <aside className="hidden min-h-0 space-y-4 overflow-y-auto text-sm lg:block">
+        <Panel title="Налёт">
           <p className="mb-3 text-neutral-300">
             {order.from} · {order.drones} дронов · {pattern?.name.toLowerCase()}
           </p>
@@ -237,27 +234,17 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
             <Row label="Целостность" value={`${hud?.integrity ?? 100}%`} />
             <Row label="Время" value={`${Math.floor(hud?.time ?? 0)} c`} />
           </dl>
-        </div>
+        </Panel>
 
-        <div className="rounded-md border border-neutral-800 bg-neutral-900/40 p-4 text-xs leading-relaxed text-neutral-400">
-          <p className="mb-2 font-semibold text-neutral-300">Управление</p>
-          <ul className="list-disc space-y-1 pl-4">
+        <Panel title="Управление">
+          <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-neutral-400">
             <li>Над землёй зажатая ЛКМ — пулемётная очередь.</li>
             <li>Над зданием зажатая ЛКМ — струя воды, тушит клетку.</li>
             <li>Подбитый дрон падает через 3 клетки — не сбивай над складом.</li>
             <li>Колесо или щипок — зум, ПКМ — тащить карту.</li>
           </ul>
-        </div>
+        </Panel>
       </aside>
-    </div>
-  );
-}
-
-function HudChip({ label, value, tone }: { label: string; value: string; tone?: string }) {
-  return (
-    <div className="flex shrink-0 items-baseline gap-1.5">
-      <span className="text-[10px] uppercase tracking-wider text-neutral-500">{label}</span>
-      <span className={tone ?? "text-neutral-100"}>{value}</span>
     </div>
   );
 }

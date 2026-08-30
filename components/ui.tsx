@@ -1,9 +1,123 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { fmt } from "@/lib/economy";
 
-/** Карточка боковой панели на десктопе. В мобильных шторках не используется. */
+/*
+ * Общая мелочь интерфейса. Правило простое: цвет означает смысл, а не вкус.
+ *   emerald — постройка и подтверждение,
+ *   red     — атака и опасность,
+ *   amber   — временный режим (раскладка контейнеров),
+ *   светлый — нейтральное завершение (купить, закрыть, вернуться),
+ *   обводка — второстепенное.
+ * Размеры на телефоне крупнее, чем на десктопе: это зашито в сами размеры,
+ * чтобы каждая кнопка не дописывала себе lg:py-*.
+ */
+
+type Variant = "build" | "danger" | "neutral" | "outline" | "ghost";
+type Size = "sm" | "md" | "lg";
+type Tone = "emerald" | "red" | "amber";
+
+const BASE =
+  "inline-flex cursor-pointer select-none items-center justify-center gap-2 rounded-md " +
+  "font-semibold transition focus-visible:outline-none focus-visible:ring-2 " +
+  "focus-visible:ring-neutral-400 disabled:cursor-not-allowed";
+
+const VARIANTS: Record<Variant, string> = {
+  build:
+    "bg-emerald-500 text-neutral-950 hover:bg-emerald-400 " +
+    "disabled:bg-neutral-800 disabled:text-neutral-500",
+  danger:
+    "bg-red-600 text-white hover:bg-red-500 " +
+    "disabled:bg-neutral-800 disabled:text-neutral-500",
+  neutral:
+    "bg-neutral-100 text-neutral-900 hover:bg-white " +
+    "disabled:bg-neutral-800 disabled:text-neutral-500",
+  outline:
+    "border border-neutral-700 text-neutral-300 hover:bg-neutral-800 " +
+    "active:bg-neutral-800 disabled:opacity-40",
+  ghost: "text-neutral-500 hover:text-neutral-200 disabled:opacity-40",
+};
+
+const SIZES: Record<Size, string> = {
+  sm: "px-3 py-2 text-xs lg:py-1.5",
+  md: "px-4 py-3 text-sm lg:py-2",
+  lg: "px-5 py-3.5 text-sm lg:py-3",
+};
+
+/** Включённое состояние кнопки-переключателя. */
+const ACTIVE: Record<Tone, string> = {
+  emerald: "border-emerald-500 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20",
+  red: "border-red-500 bg-red-500/15 text-red-200 hover:bg-red-500/20",
+  amber: "border-amber-500 bg-amber-500/15 text-amber-300 hover:bg-amber-500/20",
+};
+
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: Variant;
+  size?: Size;
+  /** Кнопка-переключатель во включённом состоянии (поверх outline). */
+  active?: boolean;
+  tone?: Tone;
+  block?: boolean;
+}
+
+export function Button({
+  variant = "outline",
+  size = "md",
+  active = false,
+  tone = "emerald",
+  block = false,
+  className = "",
+  ...rest
+}: ButtonProps) {
+  const look = active ? `border ${ACTIVE[tone]}` : VARIANTS[variant];
+  return (
+    <button
+      {...rest}
+      className={`${BASE} ${SIZES[size]} ${look} ${block ? "w-full" : ""} ${className}`}
+    />
+  );
+}
+
+/** Квадратная кнопка с иконкой — шапка телефона, углы карты. */
+export function IconButton({
+  label,
+  badge,
+  round = false,
+  className = "",
+  children,
+  ...rest
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  label: string;
+  badge?: number;
+  round?: boolean;
+}) {
+  return (
+    <button
+      {...rest}
+      aria-label={label}
+      className={`relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center border border-neutral-700 bg-neutral-900/60 text-neutral-300 transition hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 ${
+        round ? "rounded-full" : "rounded-md"
+      } ${className}`}
+    >
+      {children}
+      {badge ? (
+        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 font-mono text-[10px] font-bold text-white">
+          {badge}
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
+/** Заголовок секции — один и тот же в панелях, шторках и меню. */
+export function SectionTitle({ children }: { children: ReactNode }) {
+  return (
+    <span className="text-xs uppercase tracking-widest text-neutral-400">{children}</span>
+  );
+}
+
+/** Карточка боковой панели на десктопе. */
 export function Panel({
   title,
   action,
@@ -19,9 +133,7 @@ export function Panel({
     <div className={`rounded-md border border-neutral-700 bg-neutral-900/60 p-4 ${className}`}>
       {(title || action) && (
         <div className="mb-3 flex items-center justify-between gap-2">
-          {title && (
-            <span className="text-xs uppercase tracking-widest text-neutral-400">{title}</span>
-          )}
+          {title && <SectionTitle>{title}</SectionTitle>}
           {action}
         </div>
       )}
@@ -30,9 +142,49 @@ export function Panel({
   );
 }
 
+/** Строка списка внутри панели: входящая атака, враг. */
+export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <li className={`rounded-md border border-neutral-800 bg-neutral-950/60 p-2 ${className}`}>
+      {children}
+    </li>
+  );
+}
+
+const NOTICE: Record<"info" | "warn" | "danger", string> = {
+  info: "border-neutral-700 bg-neutral-900/70 text-neutral-300",
+  warn: "border-orange-800/60 bg-orange-950/30 text-orange-200",
+  danger: "border-red-800 bg-red-950/50 text-red-200",
+};
+
+/** Полоса-уведомление над доком инструментов. */
+export function Notice({
+  tone = "info",
+  className = "",
+  children,
+}: {
+  tone?: "info" | "warn" | "danger";
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={`flex shrink-0 items-center gap-x-3 gap-y-2 rounded-md border px-3 py-2 text-sm ${NOTICE[tone]} ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+export const inputClass =
+  "min-w-0 flex-1 rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2.5 text-base " +
+  "text-neutral-200 placeholder:text-neutral-600 focus-visible:outline-none " +
+  "focus-visible:ring-2 focus-visible:ring-neutral-500 lg:py-1.5 lg:text-sm";
+
 /**
  * Мобильная шторка снизу. Живёт только под lg — на десктопе то же содержимое
- * лежит в боковой колонке, поэтому дублировать его на экране незачем.
+ * лежит в боковой колонке. Затемнение не доходит до шапки, чтобы переключаться
+ * между панелями одним тапом, а не двумя.
  */
 export function Sheet({
   open,
@@ -65,13 +217,10 @@ export function Sheet({
       />
       <div className="relative max-h-[82dvh] overflow-y-auto overscroll-contain rounded-t-2xl border-t border-neutral-700 bg-neutral-900 shadow-2xl">
         <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-neutral-800 bg-neutral-900/95 px-4 py-3 backdrop-blur">
-          <span className="text-xs uppercase tracking-widest text-neutral-400">{title}</span>
-          <button
-            onClick={onClose}
-            className="-my-1 rounded px-3 py-1 text-lg leading-none text-neutral-500 hover:bg-neutral-800 hover:text-neutral-200"
-          >
+          <SectionTitle>{title}</SectionTitle>
+          <Button variant="ghost" size="sm" onClick={onClose} className="-my-1 text-lg leading-none">
             ✕
-          </button>
+          </Button>
         </div>
         <div className="px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 text-sm">
           {children}
@@ -99,31 +248,26 @@ export function StatRow({ label, value }: { label: string; value: number }) {
   );
 }
 
-/** Кнопка-иконка в мобильной шапке. */
-export function IconButton({
-  label,
-  badge,
-  onClick,
-  children,
-}: {
-  label: string;
-  badge?: number;
-  onClick: () => void;
-  children: ReactNode;
-}) {
+/** Счётчик «подпись + значение» — строка состояния и HUD боя. */
+export function Chip({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
-    <button
-      aria-label={label}
-      onClick={onClick}
-      className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-neutral-700 bg-neutral-900/60 text-neutral-300 active:bg-neutral-800"
+    <div className="flex shrink-0 items-baseline gap-1.5 lg:gap-2">
+      <span className="text-[10px] uppercase tracking-wider text-neutral-500 lg:text-xs">
+        {label}
+      </span>
+      <span className={tone ?? "text-neutral-100"}>{value}</span>
+    </div>
+  );
+}
+
+/** Горизонтальная лента счётчиков, которая прокручивается на узком экране. */
+export function ChipBar({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={`flex shrink-0 gap-3 overflow-x-auto rounded-md border border-neutral-800 bg-neutral-900/60 px-3 py-2 font-mono text-xs [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
     >
       {children}
-      {badge ? (
-        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 font-mono text-[10px] font-bold text-white">
-          {badge}
-        </span>
-      ) : null}
-    </button>
+    </div>
   );
 }
 
@@ -154,5 +298,37 @@ export function IconMenu() {
     <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.8} className={svg}>
       <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
     </svg>
+  );
+}
+
+/** Модальное окно поверх всего: диалог налёта и его сводка. */
+export function Modal({
+  title,
+  subtitle,
+  onClose,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  onClose?: () => void;
+  children: ReactNode;
+}) {
+  useEffect(() => {
+    if (!onClose) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/70 sm:items-center sm:p-4">
+      <div className="max-h-[92dvh] w-full max-w-sm overflow-y-auto overscroll-contain rounded-t-2xl border border-neutral-700 bg-neutral-900 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-md sm:pb-5">
+        <h3 className="mb-1 text-lg font-bold">{title}</h3>
+        {subtitle && <p className="mb-4 text-xs text-neutral-500">{subtitle}</p>}
+        {children}
+      </div>
+    </div>
   );
 }

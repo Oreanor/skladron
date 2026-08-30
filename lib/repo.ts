@@ -72,7 +72,14 @@ interface ProfileRow {
   founded: boolean;
   last_income_at: string;
   created_at: string;
-  stats: Player["stats"];
+  // в базе может лежать статистика более старого образца, чем знает клиент
+  stats: Partial<Player["stats"]> | null;
+}
+
+/** collect_income отдаёт именно credits_added — имя колонки, а не поля Income. */
+interface IncomeRow {
+  credits_added: number;
+  days: number;
 }
 
 interface BaseRow {
@@ -117,23 +124,25 @@ class CloudRepo implements Repo {
 
     const row = prof as ProfileRow;
     const b = base as BaseRow;
+    const fresh = newPlayer();
     const player: Player = {
-      ...newPlayer(),
+      ...fresh,
       credits: row.credits,
       founded: row.founded,
       lastIncomeAt: Date.parse(row.last_income_at),
       createdAt: Date.parse(row.created_at),
-      stats: row.stats,
+      // недостающие счётчики берём нулями: иначе fmt() падает на undefined
+      stats: { ...fresh.stats, ...(row.stats ?? {}) },
       cells: fromPgBytea(b.cells),
       guns: b.guns ?? [],
       depots: b.drone_cells ?? [],
       incoming: [], // очередь атак появится на этапе 3
     };
 
-    const first = (inc.data as Income[] | null)?.[0];
+    const first = (inc.data as IncomeRow[] | null)?.[0];
     return {
       player,
-      income: { credits: first?.credits ?? 0, days: first?.days ?? 0 },
+      income: { credits: first?.credits_added ?? 0, days: first?.days ?? 0 },
     };
   }
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { cloudEnabled, supabase } from "@/lib/supabase";
 import Lobby from "./Lobby";
+import { Button } from "./ui";
 
 export interface Account {
   email: string | null;
@@ -68,7 +69,7 @@ export default function AuthGate() {
 
   if (cloudEnabled && state === "anon") {
     return (
-      <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border border-neutral-700 lg:flex-none">
+      <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border border-neutral-700">
         {/*
           Заставка нарисована в четырёх пропорциях, логотип в каждой врисован
           под свой кроп. Выбираем по пропорциям экрана, а не по ширине: планшет
@@ -84,7 +85,7 @@ export default function AuthGate() {
             // Логотип врисован в арт у нижнего края, поэтому кроп якорим по
             // низу. В альбомных вариантах он ещё и справа — там якорь правый,
             // иначе object-cover срезает ему край.
-            className="h-full w-full object-cover object-bottom [@media(min-aspect-ratio:7/8)]:object-right-bottom lg:h-auto lg:max-h-[80vh]"
+            className="h-full w-full object-cover object-bottom [@media(min-aspect-ratio:7/8)]:object-right-bottom"
           />
         </picture>
 
@@ -97,12 +98,14 @@ export default function AuthGate() {
         </div>
 
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/75 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-10 text-center sm:px-6 sm:pt-16 lg:pb-6 [@media(min-aspect-ratio:7/8)]:text-left">
-          <button
+          <Button
+            variant="danger"
+            size="lg"
             onClick={signIn}
-            className="w-full rounded bg-red-600 px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-white shadow-lg transition hover:bg-red-500 sm:w-auto sm:py-3"
+            className="w-full uppercase tracking-wider shadow-lg sm:w-auto"
           >
             Войти через Google
-          </button>
+          </Button>
           {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
         </div>
       </div>
