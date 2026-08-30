@@ -94,6 +94,7 @@ create table if not exists profiles (
   id uuid primary key references auth.users on delete cascade,
   email text,
   display_name text,
+  base_name text,
   credits int not null default 10000,
   drones int not null default 0,
   founded boolean not null default false,
@@ -114,6 +115,8 @@ create table if not exists bases (
 
 -- Догоняем схему на уже заведённых профилях: create table if not exists
 -- default существующей таблице не меняет, а клиент ждёт все семь счётчиков.
+alter table profiles add column if not exists base_name text;
+
 alter table profiles alter column stats set default
   '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,"wipes":0,"raids":0,"looted":0}'::jsonb;
 
@@ -156,6 +159,26 @@ begin
 end;
 $$;
 
+-- ---------- имя склада ----------
+-- Своё имя игрок задаёт при основании и может менять; враги видят именно его.
+
+create or replace function rename_base(new_name text)
+returns text
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  clean text;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  clean := btrim(regexp_replace(coalesce(new_name, ''), '\s+', ' ', 'g'));
+  if clean = '' then raise exception 'empty base name'; end if;
+  if length(clean) > 24 then raise exception 'base name too long'; end if;
+
+  update profiles set base_name = clean where profiles.id = uid;
+  return clean;
+end;
+$$;
+
 -- ---------- доход ----------
 -- 10 кр за целую клетку за сутки, потолок накопления 14 суток
 
@@ -175,6 +198,13 @@ begin
   if not found then raise exception 'no profile'; end if;
 
   select b.intact_cells into intact from bases b where b.user_id = uid;
+
+  -- страховка: от склада ничего не осталось, а на подъём нет денег
+  if prof.founded and coalesce(intact, 0) = 0 and prof.credits < 10000 then
+    update profiles set credits = 10000 where profiles.id = uid;
+    prof.credits := 10000;
+  end if;
+
   passed := floor(extract(epoch from (now() - prof.last_income_at)) / 86400);
   if passed <= 0 then
     return query select 0, 0;
@@ -383,6 +413,11 @@ begin
 
   update profiles
      set drones = depot_sum(new_depots),
+         -- сгорело всё до последней клетки — сразу поднимаем кассу
+         credits = case
+           when intact_now = 0 and profiles.credits < 10000 then 10000
+           else profiles.credits
+         end,
          stats = profiles.stats
        || jsonb_build_object(
             'battles', (profiles.stats->>'battles')::int + 1,
@@ -417,4 +452,4 @@ end;
 $$;
 
 grant execute on function ensure_player, collect_income, save_base,
-  buy_drones, apply_battle, wipe_base to authenticated;
+  buy_drones, apply_battle, wipe_base, rename_base to authenticated;

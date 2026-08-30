@@ -36,10 +36,12 @@ import {
   makeOrder,
 } from "@/lib/attack";
 import {
+  MAX_BASE_NAME,
   burntCells,
   dailyIncome,
   intactCells,
   isDoomed,
+  normName,
   type Player,
 } from "@/lib/player";
 import { getRepo } from "@/lib/repo";
@@ -65,6 +67,7 @@ import {
   IconMenu,
   IconTarget,
   IconUsers,
+  NameDialog,
   Notice,
   Panel,
   Row,
@@ -103,6 +106,7 @@ export default function Lobby({
   const [ready, setReady] = useState(false);
   const [version, setVersion] = useState(0);
   const [sheet, setSheet] = useState<SheetId | null>(null);
+  const [naming, setNaming] = useState<"found" | "rename" | null>(null);
   const toggleSheet = (id: SheetId) => setSheet((cur) => (cur === id ? null : id));
 
   // заготовка площади
@@ -359,12 +363,42 @@ export default function Lobby({
     touch();
   };
 
-  const found = () => {
+  /** Основание идёт следом за именем: безымянных складов не заводим. */
+  const found = async (rawName: string) => {
     if (intact < MIN_BASE_CELLS) return;
+    const name = normName(rawName);
+    if (!name) return;
+    p.name = name;
     p.founded = true;
     p.lastIncomeAt = Date.now();
-    setMessage("Склад основан. Доход пошёл.");
+    setNaming(null);
+    setMessage(`Склад «${name}» основан. Доход пошёл.`);
     touch();
+    try {
+      await repo.rename(p, name);
+    } catch (e) {
+      setMessage(`Имя не сохранилось: ${(e as Error).message}`);
+    }
+  };
+
+  const rename = async (rawName: string) => {
+    const name = normName(rawName);
+    if (!name || name === p.name) {
+      setNaming(null);
+      return;
+    }
+    const prev = p.name;
+    p.name = name;
+    setNaming(null);
+    forceRender((v) => v + 1);
+    try {
+      await repo.rename(p, name);
+      setMessage(`Теперь это «${name}»`);
+    } catch (e) {
+      p.name = prev; // сервер не принял — возвращаем как было
+      setMessage(`Переименовать не вышло: ${(e as Error).message}`);
+      forceRender((v) => v + 1);
+    }
   };
 
   const addEnemy = (email: string): string | null => {
@@ -694,7 +728,12 @@ export default function Lobby({
           {intact}/{MIN_BASE_CELLS}
         </span>
       </div>
-      <Button variant="build" block onClick={found} disabled={intact < MIN_BASE_CELLS}>
+      <Button
+        variant="build"
+        block
+        onClick={() => setNaming("found")}
+        disabled={intact < MIN_BASE_CELLS}
+      >
         Основать склад
       </Button>
     </>
@@ -717,6 +756,8 @@ export default function Lobby({
       <p className="mt-2 text-xs text-neutral-500">
         {packsAvailable >= 1
           ? `Можно закупить ещё ${packsAvailable} ${packsAvailable === 1 ? "пачку" : "пачек"}`
+          : intact === 0
+          ? "Дронам негде лежать: сначала почини клетки склада"
           : free < cellsPerPack
           ? `Нужно ещё ${cellsPerPack - free} свободных клеток под контейнеры`
           : "Не хватает кредитов"}
@@ -804,6 +845,21 @@ export default function Lobby({
       <StatRow label="Складов потеряно" value={p.stats.wipes} />
       <StatRow label="Налётов совершено" value={p.stats.raids} />
       <StatRow label="Добыто кредитов" value={p.stats.looted} />
+    </div>
+  );
+
+  const baseNameBody = (
+    <div className="flex items-center gap-3">
+      <span
+        className={`min-w-0 flex-1 truncate font-semibold ${
+          p.name ? "text-neutral-100" : "text-neutral-500"
+        }`}
+      >
+        {p.name || "без названия"}
+      </span>
+      <Button size="sm" onClick={() => setNaming("rename")}>
+        Переименовать
+      </Button>
     </div>
   );
 
@@ -954,10 +1010,27 @@ export default function Lobby({
                 variant="build"
                 size="sm"
                 className="ml-auto"
-                onClick={found}
+                onClick={() => setNaming("found")}
                 disabled={intact < MIN_BASE_CELLS}
               >
                 Основать
+              </Button>
+            </Notice>
+          )}
+
+          {p.founded && intact === 0 && (
+            <Notice tone="danger" className="order-2 flex-wrap lg:order-3">
+              <span className="min-w-0">
+                Склад выгорел дотла. Инструмент «Ремонт» поднимает клетку за{" "}
+                {REPAIR_COST} кр — пока целых клеток нет, ни дохода, ни места под дронов.
+              </span>
+              <Button
+                size="sm"
+                active={tool === "repair"}
+                className="ml-auto"
+                onClick={() => pickTool("repair")}
+              >
+                Ремонт
               </Button>
             </Notice>
           )}
@@ -987,6 +1060,7 @@ export default function Lobby({
             <Panel title="Разметка склада">{foundBody}</Panel>
           ) : (
             <>
+              <Panel title="Склад">{baseNameBody}</Panel>
               {tool === "drones" && <Panel title="Арсенал">{arsenalBody}</Panel>}
               <Panel title="Входящие атаки" action={summonButton}>
                 {attacksBody}
@@ -999,6 +1073,22 @@ export default function Lobby({
       </div>
 
       {/* мобильные шторки */}
+      {naming && (
+        <NameDialog
+          title={naming === "found" ? "Как назовём склад?" : "Переименовать склад"}
+          subtitle={
+            naming === "found"
+              ? "Под этим именем тебя увидят враги. Поменять можно будет в любой момент."
+              : "Старое имя нигде не останется — враги сразу увидят новое."
+          }
+          confirm={naming === "found" ? "Основать" : "Переименовать"}
+          initial={naming === "rename" ? p.name : ""}
+          maxLength={MAX_BASE_NAME}
+          onCancel={() => setNaming(null)}
+          onSubmit={naming === "found" ? found : rename}
+        />
+      )}
+
       <Sheet open={sheet === "found"} title="Разметка склада" onClose={() => setSheet(null)}>
         {foundBody}
       </Sheet>
@@ -1014,6 +1104,14 @@ export default function Lobby({
       </Sheet>
       <Sheet open={sheet === "menu"} title="Склад" onClose={() => setSheet(null)}>
         <div className="space-y-5">
+          {p.founded && (
+            <div>
+              <div className="mb-2">
+                <SectionTitle>Склад</SectionTitle>
+              </div>
+              {baseNameBody}
+            </div>
+          )}
           <div>
             <div className="mb-2">
               <SectionTitle>Статистика</SectionTitle>

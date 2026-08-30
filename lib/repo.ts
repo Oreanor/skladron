@@ -7,6 +7,7 @@ import { CREDITS_START } from "./economy";
 import type { BattleResult } from "./engine";
 import {
   collectIncome as localIncome,
+  insure,
   load as localLoad,
   newPlayer,
   save as localSave,
@@ -27,6 +28,8 @@ export interface Repo {
   /** Склад после правок в лобби. Возвращает авторитетные цифры сервера. */
   saveBase(p: Player): Promise<Partial<Player>>;
   buyDrones(p: Player, packs: number): Promise<Partial<Player>>;
+  /** Переименование склада — отдельная операция, карты не касается. */
+  rename(p: Player, name: string): Promise<void>;
   applyBattle(p: Player, result: BattleResult): Promise<Partial<Player>>;
   wipe(p: Player): Promise<Player>;
 }
@@ -39,6 +42,7 @@ class LocalRepo implements Repo {
   async load() {
     const player = localLoad();
     const income = localIncome(player, Date.now());
+    insure(player);
     localSave(player);
     return { player, income };
   }
@@ -58,6 +62,10 @@ class LocalRepo implements Repo {
     return {};
   }
 
+  async rename(p: Player, _name: string) {
+    localSave(p);
+  }
+
   async wipe(p: Player) {
     const fresh = localWipe(p);
     localSave(fresh);
@@ -68,6 +76,7 @@ class LocalRepo implements Repo {
 // ---------- Supabase ----------
 
 interface ProfileRow {
+  base_name: string | null;
   credits: number;
   founded: boolean;
   last_income_at: string;
@@ -127,6 +136,7 @@ class CloudRepo implements Repo {
     const fresh = newPlayer();
     const player: Player = {
       ...fresh,
+      name: row.base_name ?? "",
       credits: row.credits,
       founded: row.founded,
       lastIncomeAt: Date.parse(row.last_income_at),
@@ -179,10 +189,16 @@ class CloudRepo implements Repo {
     return row ? { credits: row.credits } : {};
   }
 
+  async rename(_p: Player, name: string) {
+    const { error } = await this.db().rpc("rename_base", { new_name: name });
+    if (error) throw error;
+  }
+
   async wipe(p: Player) {
     const { error } = await this.db().rpc("wipe_base");
     if (error) throw error;
     const fresh = newPlayer();
+    fresh.name = p.name;
     fresh.credits = CREDITS_START;
     fresh.stats = { ...p.stats, wipes: p.stats.wipes + 1 };
     return fresh;

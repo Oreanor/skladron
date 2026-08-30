@@ -27,7 +27,16 @@ export interface PlayerStats {
   looted: number;
 }
 
+/** Как склад зовут: видно врагам, задаётся при основании. */
+export const MAX_BASE_NAME = 24;
+
+/** Приводит введённое имя к тому, что можно хранить и показывать. */
+export function normName(raw: string) {
+  return raw.replace(/\s+/g, " ").trim().slice(0, MAX_BASE_NAME);
+}
+
 export interface Player {
+  name: string;
   credits: number;
   cells: Uint8Array;
   guns: Gun[];
@@ -42,6 +51,7 @@ export interface Player {
 
 interface Stored {
   v: 1;
+  name?: string;
   credits: number;
   cells: string;
   guns: Gun[];
@@ -58,6 +68,7 @@ const KEY = "wb.player.v1";
 
 export function newPlayer(now = Date.now()): Player {
   return {
+    name: "",
     credits: CREDITS_START,
     cells: emptyCells(),
     guns: [],
@@ -79,9 +90,10 @@ export function newPlayer(now = Date.now()): Player {
   };
 }
 
-/** Вайп после полного выгорания: база и казна с нуля, история остаётся. */
+/** Вайп после полного выгорания: база и казна с нуля, история и имя остаются. */
 export function wipe(p: Player, now = Date.now()): Player {
   const fresh = newPlayer(now);
+  fresh.name = p.name;
   fresh.stats = { ...p.stats, wipes: p.stats.wipes + 1 };
   return fresh;
 }
@@ -90,6 +102,19 @@ export const drones = (p: Player) => droneCount(p.depots);
 export const intactCells = (p: Player) => countCells(p.cells, G_BASE);
 export const burntCells = (p: Player) => countCells(p.cells, G_BURNT);
 export const dailyIncome = (p: Player) => intactCells(p) * 10;
+
+/**
+ * Склад выгорел дотла — доводим кассу до стартовых 10 000. Без этого игрок
+ * остаётся с горстью кредитов, нулевым доходом и без единой целой клетки:
+ * дронам негде лежать, а на ремонт всей площади денег не хватает.
+ */
+export function insure(p: Player) {
+  if (!p.founded) return false;
+  if (intactCells(p) > 0) return false;
+  if (p.credits >= CREDITS_START) return false;
+  p.credits = CREDITS_START;
+  return true;
+}
 
 /** Склад выгорел полностью и чинить не на что — дальше только заново. */
 export function isDoomed(p: Player) {
@@ -108,6 +133,7 @@ export function load(): Player {
     const cells = decodeCells(s.cells);
     if (cells.length !== CELLS) return newPlayer();
     return {
+      name: s.name ?? "",
       credits: s.credits,
       cells,
       guns: s.guns ?? [],
@@ -128,6 +154,7 @@ export function save(p: Player) {
   if (typeof window === "undefined") return;
   const s: Stored = {
     v: 1,
+    name: p.name,
     credits: p.credits,
     cells: encodeCells(p.cells),
     guns: p.guns,

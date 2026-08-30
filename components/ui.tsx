@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { fmt } from "@/lib/economy";
 
 /*
@@ -330,5 +330,57 @@ export function Modal({
         {children}
       </div>
     </div>
+  );
+}
+
+/** Диалог с одним полем: назвать склад или переименовать его. */
+export function NameDialog({
+  title,
+  subtitle,
+  confirm,
+  initial = "",
+  maxLength,
+  onCancel,
+  onSubmit,
+}: {
+  title: string;
+  subtitle?: string;
+  confirm: string;
+  initial?: string;
+  maxLength: number;
+  onCancel: () => void;
+  onSubmit: (name: string) => void;
+}) {
+  const [value, setValue] = useState(initial);
+  const ready = value.trim().length > 0;
+
+  return (
+    <Modal title={title} subtitle={subtitle} onClose={onCancel}>
+      <input
+        autoFocus
+        value={value}
+        maxLength={maxLength}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && ready) onSubmit(value);
+        }}
+        placeholder="Северный терминал"
+        className={`${inputClass} mb-1 w-full`}
+      />
+      <p className="mb-4 text-right font-mono text-[11px] text-neutral-600">
+        {value.length}/{maxLength}
+      </p>
+      <div className="flex gap-2">
+        <Button
+          variant="build"
+          className="flex-1"
+          disabled={!ready}
+          onClick={() => onSubmit(value)}
+        >
+          {confirm}
+        </Button>
+        <Button onClick={onCancel}>Отмена</Button>
+      </div>
+    </Modal>
   );
 }
