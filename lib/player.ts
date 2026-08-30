@@ -40,6 +40,8 @@ export function normName(raw: string) {
 export interface Player {
   name: string;
   credits: number;
+  /** Разведчики лежат на складе счётчиком: на карте они не стоят и не горят. */
+  scouts: number;
   cells: Uint8Array;
   guns: Gun[];
   depots: Depot[];
@@ -55,6 +57,7 @@ interface Stored {
   v: 1;
   name?: string;
   credits: number;
+  scouts?: number;
   cells: string;
   guns: Gun[];
   depots: Depot[];
@@ -72,6 +75,7 @@ export function newPlayer(now = Date.now()): Player {
   return {
     name: "",
     credits: CREDITS_START,
+    scouts: 0,
     cells: starterCells(STARTER_SIDE),
     guns: [],
     depots: [],
@@ -96,6 +100,7 @@ export function newPlayer(now = Date.now()): Player {
 export function wipe(p: Player, now = Date.now()): Player {
   const fresh = newPlayer(now);
   fresh.name = p.name;
+  fresh.scouts = p.scouts;
   fresh.credits = Math.max(p.credits, CREDITS_START);
   fresh.stats = { ...p.stats, wipes: p.stats.wipes + 1 };
   fresh.enemies = p.enemies;
@@ -139,6 +144,7 @@ export function load(): Player {
     return {
       name: s.name ?? "",
       credits: s.credits,
+      scouts: s.scouts ?? 0,
       cells,
       guns: s.guns ?? [],
       depots: s.depots ?? [],
@@ -160,6 +166,7 @@ export function save(p: Player) {
     v: 1,
     name: p.name,
     credits: p.credits,
+    scouts: p.scouts,
     cells: encodeCells(p.cells),
     guns: p.guns,
     depots: p.depots,

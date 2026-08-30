@@ -295,6 +295,21 @@ export function encodeRle(cells: Uint8Array): string {
   return runs.join(",");
 }
 
+/** Обратная к encodeRle: разворачивает «значение:сколько» в массив клеток. */
+export function decodeRle(src: string, size = CELLS): Uint8Array {
+  const out = new Uint8Array(size);
+  let at = 0;
+  for (const part of src.split(",")) {
+    const [v, n] = part.split(":").map(Number);
+    if (!Number.isFinite(v) || !Number.isFinite(n) || n < 1) break;
+    const end = Math.min(size, at + n);
+    if (v !== 0) out.fill(v, at, end);
+    at = end;
+    if (at >= size) break;
+  }
+  return out;
+}
+
 export function encodeCells(cells: Uint8Array): string {
   let s = "";
   for (let i = 0; i < cells.length; i++) s += String.fromCharCode(cells[i]);

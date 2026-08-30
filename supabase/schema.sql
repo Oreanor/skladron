@@ -14,6 +14,7 @@ language sql immutable as $$
     when 'gun'    then 100
     when 'refund' then 50
     when 'drones' then 1000
+    when 'scout'  then 25    -- разведчик дороже ударного дрона, но дешевле пушки
     when 'drone'  then 10
     when 'income' then 10
     when 'loot'   then 5
@@ -167,6 +168,7 @@ create index if not exists attacks_attacker_reports
 -- Догоняем схему на уже заведённых профилях: create table if not exists
 -- default существующей таблице не меняет, а клиент ждёт все семь счётчиков.
 alter table profiles add column if not exists base_name text;
+alter table profiles add column if not exists scouts int not null default 0;
 alter table profiles add column if not exists enemies jsonb not null default '[]'::jsonb;
 
 alter table profiles alter column stats set default
@@ -284,6 +286,68 @@ language sql security definer set search_path = public as $$
          coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1))
     from profiles p
    where lower(p.email) = any (select lower(e) from unnest(emails) e);
+$$;
+
+-- Карта противника для разведки. Отдаём целиком: туман войны и всё, что
+-- разведчик успел снять, считает клиент. Прятать карту от него по-настоящему
+-- можно только просчитывая полёт на сервере — до этого этап не дошёл.
+-- ---------- разведчики ----------
+-- Лежат счётчиком: на карте их нет, гореть им негде.
+
+create or replace function buy_scouts(n int)
+returns table (credits int, scouts int)
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  cost int;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  if n is null or n < 1 then raise exception 'bad scout count'; end if;
+  cost := n * price('scout');
+
+  update profiles
+     set credits = profiles.credits - cost,
+         scouts = profiles.scouts + n
+   where profiles.id = uid and profiles.credits >= cost
+   returning profiles.credits, profiles.scouts into credits, scouts;
+
+  if not found then raise exception 'not enough credits'; end if;
+  return next;
+end;
+$$;
+
+create or replace function spend_scouts(n int)
+returns table (scouts int)
+language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  if n is null or n < 1 then raise exception 'bad scout count'; end if;
+
+  update profiles
+     set scouts = profiles.scouts - n
+   where profiles.id = uid and profiles.scouts >= n
+   returning profiles.scouts into scouts;
+
+  if not found then raise exception 'not enough scouts'; end if;
+  return next;
+end;
+$$;
+
+create or replace function enemy_base(target_email text)
+returns table (cells text, guns jsonb)
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  tid uuid;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  select p.id into tid from profiles p where lower(p.email) = lower(target_email);
+  if tid is null then raise exception 'no such player'; end if;
+
+  return query
+    select encode(b.cells, 'base64'), b.guns from bases b where b.user_id = tid;
+end;
 $$;
 
 create or replace function pending_attacks()
@@ -761,5 +825,5 @@ $$;
 
 grant execute on function ensure_player, collect_income, save_base,
   buy_drones, apply_battle, complete_attack, wipe_base, rename_base, save_enemies,
-  base_names,
+  base_names, enemy_base, buy_scouts, spend_scouts,
   send_attack, pending_attacks, attack_reports, ack_attack_report to authenticated;

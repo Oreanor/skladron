@@ -10,6 +10,7 @@ export const INCOME_PER_CELL = 10; // за целую клетку за сутк
 export const INCOME_CAP_DAYS = 14; // потолок накопления
 export const ATTACK_LEAK_REWARD = 50; // атакующему за дрон, долетевший до склада
 export const DRONE_KILL_REWARD = 50; // защитнику за каждый сбитый дрон
+export const SCOUT_UNIT_COST = 25; // разведчик дороже ударного дрона, но дешевле пушки
 export const STARTER_SIDE = 10; // стартовый склад 10×10 уже стоит в центре
 export const STARTER_CELLS = STARTER_SIDE * STARTER_SIDE;
 export const MIN_BASE_CELLS = STARTER_CELLS; // меньше стартового склада не основываемся

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { EDGES, PATTERNS, type Pattern } from "@/lib/attack";
 import { fmt } from "@/lib/economy";
 import { MAX_ATTACK_DRONES, type Enemy } from "@/lib/enemy";
+import { MAX_SCOUTS } from "@/lib/scout";
 import { Button, Card, Modal, inputClass } from "./ui";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
@@ -11,6 +12,8 @@ import type { Key } from "@/lib/i18n/dict";
 interface Props {
   enemies: Enemy[];
   drones: number;
+  /** Сколько разведчиков в ангаре: больше не отправить. */
+  scouts: number;
   onAdd: (email: string) => Promise<string | null>; // текст ошибки или null
   onRaid: (
     enemy: Enemy,
@@ -18,14 +21,25 @@ interface Props {
     pattern: Pattern,
     direction: number
   ) => Promise<string | null>;
+  /** Разведка: сколько самолётов послать. Вернёт текст ошибки или null. */
+  onScout: (enemy: Enemy, planes: number) => Promise<string | null>;
   onChanged: () => void;
 }
 
-export default function Enemies({ enemies, drones, onAdd, onRaid, onChanged }: Props) {
+export default function Enemies({
+  enemies,
+  drones,
+  scouts,
+  onAdd,
+  onRaid,
+  onScout,
+  onChanged,
+}: Props) {
   const t = useT();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [target, setTarget] = useState<Enemy | null>(null);
+  const [scoutTarget, setScoutTarget] = useState<Enemy | null>(null);
   const [adding, setAdding] = useState(false);
 
   const add = async () => {
@@ -75,14 +89,19 @@ export default function Enemies({ enemies, drones, onAdd, onRaid, onChanged }: P
                   <div className="truncate font-medium text-neutral-200">{e.name}</div>
                   <div className="truncate font-mono text-[11px] text-neutral-500">{e.email}</div>
                 </div>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  disabled={drones < 10}
-                  onClick={() => setTarget(e)}
-                >
-                  {t("enemies.attack")}
-                </Button>
+                <div className="flex shrink-0 gap-2">
+                  <Button size="sm" onClick={() => setScoutTarget(e)}>
+                    {t("scout.button")}
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    disabled={drones < 10}
+                    onClick={() => setTarget(e)}
+                  >
+                    {t("enemies.attack")}
+                  </Button>
+                </div>
               </div>
               <div className="mt-1 font-mono text-[11px] text-neutral-500">
                 {t("enemies.score", { mine: fmt(e.burnedByMe), theirs: fmt(e.burnedByThem) })}
@@ -90,6 +109,19 @@ export default function Enemies({ enemies, drones, onAdd, onRaid, onChanged }: P
             </Card>
           ))}
         </ul>
+      )}
+
+      {scoutTarget && (
+        <ScoutDialog
+          enemy={scoutTarget}
+          stock={scouts}
+          onCancel={() => setScoutTarget(null)}
+          onSend={async (n) => {
+            const error = await onScout(scoutTarget, n);
+            if (!error) setScoutTarget(null);
+            return error;
+          }}
+        />
       )}
 
       {target && (
@@ -108,6 +140,64 @@ export default function Enemies({ enemies, drones, onAdd, onRaid, onChanged }: P
         />
       )}
     </>
+  );
+}
+
+function ScoutDialog({
+  enemy,
+  stock,
+  onCancel,
+  onSend,
+}: {
+  enemy: Enemy;
+  stock: number;
+  onCancel: () => void;
+  onSend: (planes: number) => Promise<string | null>;
+}) {
+  const t = useT();
+  const max = Math.min(stock, MAX_SCOUTS);
+  const [n, setN] = useState(Math.min(3, Math.max(1, max)));
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const send = async () => {
+    if (sending) return;
+    setSending(true);
+    setError(await onSend(n));
+    setSending(false);
+  };
+
+  return (
+    <Modal
+      title={t("scout.title", { name: enemy.name })}
+      subtitle={t("scout.subtitle")}
+      onClose={onCancel}
+    >
+      <label className="mb-1 block text-xs uppercase tracking-wider text-neutral-400">
+        {t("scout.planes", { n, max })}
+      </label>
+      <input
+        type="range"
+        min={1}
+        max={Math.max(1, max)}
+        step={1}
+        value={n}
+        onChange={(e) => setN(Number(e.target.value))}
+        className="mb-4 h-8 w-full cursor-pointer accent-sky-400"
+      />
+      <div className="flex gap-2">
+        <Button
+          variant="build"
+          className="flex-1"
+          disabled={sending || max < 1}
+          onClick={() => void send()}
+        >
+          {max < 1 ? t("scout.needPlanes") : t("scout.send", { n })}
+        </Button>
+        <Button onClick={onCancel}>{t("common.cancel")}</Button>
+      </div>
+      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+    </Modal>
   );
 }
 

@@ -21,6 +21,16 @@ import { type BattleResult, createBattle, extinguish, update } from "./engine";
 export const MAX_ATTACK_DRONES = 300; // рой больше этого кладёт браузер жертвы
 export const DEFENDER_HOSE = 1.6; // клеток в секунду тушит враг-бот
 
+/** Что удалось снять разведкой: карта врага и маска того, что мы видели. */
+export interface ScoutSnapshot {
+  /** Маска снятого, RLE по клеткам: 1 — видели, 0 — туман. */
+  seen: string;
+  /** Карта врага на момент съёмки, RLE. */
+  cells: string;
+  guns: Gun[];
+  at: number;
+}
+
 export interface Enemy {
   id: string;
   name: string;
@@ -31,6 +41,8 @@ export interface Enemy {
   burnedByMe: number; // счёт вражды
   burnedByThem: number;
   lastRaidAt: number; // когда он присылал последнюю атаку
+  /** Последняя разведка. Держится, пока не слетаешь заново. */
+  scout?: ScoutSnapshot;
 }
 
 /** Склад врага: несколько сросшихся прямоугольников вокруг центра. */

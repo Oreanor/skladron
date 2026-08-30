@@ -29,6 +29,7 @@ import {
   GUN_REFUND,
   MIN_BASE_CELLS,
   REPAIR_COST,
+  SCOUT_UNIT_COST,
   fmt,
 } from "@/lib/economy";
 import {
@@ -58,12 +59,14 @@ import type { Account } from "./AuthGate";
 import Enemies from "./Enemies";
 import { drawCoverage, drawDepots } from "@/lib/render";
 import Battle, { type BattleOutcome } from "./Battle";
+import Scout, { type ScoutOutcome } from "./Scout";
 import MapCanvas, { type Pt } from "./MapCanvas";
 import AccountMenu, { SettingsList } from "./AccountMenu";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
-import { LayoutGrid, Package, Rocket, Wrench } from "lucide-react";
+import { LayoutGrid, Package, Plane, Rocket, Wrench } from "lucide-react";
 import { autoDefend, type UnattendedOutcome } from "@/lib/unattended";
+import { decodeCells, decodeRle, encodeRle, type Gun } from "@/lib/base";
 import {
   Button,
   Card,
@@ -87,9 +90,9 @@ import {
   ToolButton,
 } from "./ui";
 
-type Tool = "area" | "repair" | "gun" | "drones";
+type Tool = "area" | "repair" | "gun" | "drones" | "scouts";
 /** Панели, которые на телефоне открываются шторкой снизу. */
-type SheetId = "found" | "arsenal" | "attacks" | "enemies" | "menu";
+type SheetId = "found" | "arsenal" | "scouts" | "attacks" | "enemies" | "menu";
 
 const ICON = "h-5 w-5";
 
@@ -129,6 +132,13 @@ const TOOLS: {
     vars: { cost: DRONE_UNIT_COST },
     icon: <Package className={ICON} />,
   },
+  {
+    id: "scouts",
+    label: "tool.scouts",
+    hint: "tool.dronesHint",
+    vars: { cost: SCOUT_UNIT_COST },
+    icon: <Plane className={ICON} />,
+  },
 ];
 
 /** Имена ботов для отладочной кнопки «+ налёт»: настоящие атаки приходят с именем склада. */
@@ -154,6 +164,14 @@ export default function Lobby({
   const [sheet, setSheet] = useState<SheetId | null>(null);
   const [naming, setNaming] = useState<"found" | "rename" | null>(null);
   const [confirmWipe, setConfirmWipe] = useState(false);
+  const [scoutBuy, setScoutBuy] = useState(5);
+  /** Идущий разведвылет: карта врага, его пушки и сколько самолётов послали. */
+  const [scout, setScout] = useState<{
+    enemy: Enemy;
+    cells: Uint8Array;
+    guns: Gun[];
+    planes: number;
+  } | null>(null);
   /** Итог налёта, который прошёл без игрока. */
   const [autoReport, setAutoReport] = useState<
     { from: string; outcome: UnattendedOutcome } | null
@@ -393,6 +411,37 @@ export default function Lobby({
             forceRender((v) => v + 1);
           } catch (e) {
             setMessage(t("battle.notSaved", { error: (e as Error).message }));
+          }
+        }}
+      />
+    );
+  }
+
+  if (scout) {
+    const known = scout.enemy.scout ? decodeRle(scout.enemy.scout.seen) : null;
+    return (
+      <Scout
+        name={scout.enemy.name}
+        cells={scout.cells}
+        guns={scout.guns}
+        planes={scout.planes}
+        known={known}
+        onFinish={async (o: ScoutOutcome) => {
+          const foe = p.enemies.find((e) => e.id === scout.enemy.id);
+          if (foe) {
+            foe.scout = {
+              seen: encodeRle(o.seen),
+              cells: encodeRle(o.cells),
+              guns: o.guns.filter((g) => o.seen[g.cy * GRID + g.cx]),
+              at: Date.now(),
+            };
+          }
+          setScout(null);
+          forceRender((v) => v + 1);
+          try {
+            await repo.saveEnemies(p);
+          } catch (e) {
+            setMessage(t("enemies.notSaved", { error: (e as Error).message }));
           }
         }}
       />
@@ -660,6 +709,45 @@ export default function Lobby({
       p.enemies = p.enemies.filter((item) => item.id !== enemy.id);
       forceRender((v) => v + 1);
       return t("enemies.notSaved", { error: (e as Error).message });
+    }
+  };
+
+  const buyScouts = async () => {
+    const n = Math.min(scoutBuy, maxScoutBuy);
+    if (n < 1) return;
+    const cost = n * SCOUT_UNIT_COST;
+    p.scouts += n;
+    p.credits -= cost;
+    setMessage(t("scout.bought", { count: n, cost: fmt(cost) }));
+    forceRender((v) => v + 1);
+    try {
+      const patch = await repo.buyScouts(p, n);
+      if (patch.credits !== undefined) p.credits = patch.credits;
+      if (patch.scouts !== undefined) p.scouts = patch.scouts;
+      forceRender((v) => v + 1);
+    } catch (e) {
+      p.scouts -= n;
+      p.credits += cost;
+      setMessage(t("scout.buyFailed", { error: (e as Error).message }));
+      forceRender((v) => v + 1);
+    }
+  };
+
+  const doScout = async (enemy: Enemy, planes: number): Promise<string | null> => {
+    if (p.scouts < planes) return t("scout.needPlanes");
+    try {
+      const base =
+        repo.mode === "cloud"
+          ? await repo.enemyBase(enemy.email)
+          : { cells: decodeCells(enemy.cells), guns: enemy.guns };
+      // списываем до вылета: улетели — значит потрачены, чем бы ни кончилось
+      const patch = await repo.spendScouts(p, planes);
+      p.scouts = patch.scouts ?? p.scouts - planes;
+      setScout({ enemy, cells: base.cells, guns: base.guns, planes });
+      forceRender((v) => v + 1);
+      return null;
+    } catch (e) {
+      return t("scout.failed", { error: (e as Error).message });
     }
   };
 
@@ -1045,12 +1133,14 @@ export default function Lobby({
     }
   };
 
+  const maxScoutBuy = Math.max(0, Math.floor(p.credits / SCOUT_UNIT_COST));
   const income = dailyIncome(p);
   const pickTool = (id: Tool) => {
     setTool(id);
     draftRef.current = null;
     // на телефоне арсенал живёт в шторке, на десктопе — в боковой колонке
     if (id === "drones") setSheet("arsenal");
+    if (id === "scouts") setSheet("scouts");
   };
 
   // ---------- содержимое панелей ----------
@@ -1149,6 +1239,44 @@ export default function Lobby({
     return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
   };
 
+  const scoutsBody = (
+    <>
+      <p className="mb-3 text-neutral-400">{t("scout.explain")}</p>
+      <dl className="mb-3 space-y-1 font-mono text-sm">
+        <Row label={t("scout.inStock")} value={fmt(p.scouts)} />
+      </dl>
+      <div className="mb-2 flex items-center gap-2">
+        <input
+          type="range"
+          min={1}
+          max={Math.max(1, Math.min(50, maxScoutBuy))}
+          value={Math.min(scoutBuy, Math.max(1, maxScoutBuy))}
+          onChange={(e) => setScoutBuy(Number(e.target.value))}
+          disabled={maxScoutBuy < 1}
+          aria-label={t("scout.panel")}
+          className="h-8 min-w-0 flex-1 cursor-pointer accent-sky-400"
+        />
+        <span className="shrink-0 font-mono text-xs text-neutral-500">
+          {t("scout.buyMax", { count: Math.min(50, maxScoutBuy) })}
+        </span>
+      </div>
+      <Button
+        variant="neutral"
+        block
+        disabled={maxScoutBuy < 1}
+        onClick={() => void buyScouts()}
+      >
+        {t("scout.buy", {
+          count: Math.min(scoutBuy, Math.max(1, maxScoutBuy)),
+          cost: fmt(Math.min(scoutBuy, Math.max(1, maxScoutBuy)) * SCOUT_UNIT_COST),
+        })}
+      </Button>
+      {maxScoutBuy < 1 && (
+        <p className="mt-2 text-xs text-neutral-500">{t("arsenal.noCredits")}</p>
+      )}
+    </>
+  );
+
   const attacksBody =
     p.incoming.length === 0 ? (
       <p className="text-neutral-500">
@@ -1209,8 +1337,10 @@ export default function Lobby({
     <Enemies
       enemies={p.enemies}
       drones={drones}
+      scouts={p.scouts}
       onAdd={addEnemy}
       onRaid={doRaid}
+      onScout={doScout}
       onChanged={() => forceRender((v) => v + 1)}
     />
   );
@@ -1294,7 +1424,7 @@ export default function Lobby({
         */}
         <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
 
-          <div className="order-3 grid shrink-0 grid-cols-4 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(4,5.5rem)] lg:gap-2">
+          <div className="order-3 grid shrink-0 grid-cols-5 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(5,5.5rem)] lg:gap-2">
             {TOOLS.map((item) => (
               <ToolButton
                 key={item.id}
@@ -1448,6 +1578,7 @@ export default function Lobby({
             <>
               <Panel title={t("panel.base")}>{baseNameBody}</Panel>
               {tool === "drones" && <Panel title={t("panel.arsenal")}>{arsenalBody}</Panel>}
+              {tool === "scouts" && <Panel title={t("scout.panel")}>{scoutsBody}</Panel>}
               <Panel title={t("panel.attacks")} action={summonButton}>
                 {attacksBody}
               </Panel>
@@ -1529,6 +1660,9 @@ export default function Lobby({
       </Sheet>
       <Sheet open={sheet === "arsenal"} title={t("panel.arsenal")} onClose={() => setSheet(null)}>
         {p.founded ? arsenalBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}
+      </Sheet>
+      <Sheet open={sheet === "scouts"} title={t("scout.panel")} onClose={() => setSheet(null)}>
+        {scoutsBody}
       </Sheet>
       <Sheet open={sheet === "attacks"} title={t("panel.attacks")} onClose={() => setSheet(null)}>
         <div className="mb-3 flex justify-end">{summonButton}</div>

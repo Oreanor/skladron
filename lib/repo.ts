@@ -41,6 +41,11 @@ export interface Repo {
    * а не выдумкой клиента, поэтому имя всегда спрашиваем у сервера.
    */
   baseNames(emails: string[]): Promise<Map<string, string>>;
+  /** Карта противника для разведывательного вылета. */
+  enemyBase(email: string): Promise<{ cells: Uint8Array; guns: Gun[] }>;
+  /** Закупка разведчиков и списание при вылете. */
+  buyScouts(p: Player, n: number): Promise<Partial<Player>>;
+  spendScouts(p: Player, n: number): Promise<Partial<Player>>;
   buyDrones(p: Player, amount: number): Promise<Partial<Player>>;
   sendAttack(
     p: Player,
@@ -87,6 +92,21 @@ class LocalRepo implements Repo {
     return new Map<string, string>();
   }
 
+  async buyScouts(p: Player, n: number) {
+    localSave(p);
+    return {};
+  }
+
+  async spendScouts(p: Player, n: number) {
+    localSave(p);
+    return {};
+  }
+
+  async enemyBase(_email: string) {
+    // локально настоящих противников нет — карту берём из сгенерированного бота
+    return { cells: new Uint8Array(CELLS), guns: [] as Gun[] };
+  }
+
   async buyDrones(p: Player, _amount: number) {
     localSave(p);
     return {};
@@ -118,6 +138,7 @@ class LocalRepo implements Repo {
 
 interface ProfileRow {
   base_name: string | null;
+  scouts: number | null;
   credits: number;
   founded: boolean;
   last_income_at: string;
@@ -200,6 +221,7 @@ class CloudRepo implements Repo {
     const player: Player = {
       ...fresh,
       name: row.base_name ?? "",
+      scouts: row.scouts ?? 0,
       credits: attacks.credits ?? row.credits,
       founded: row.founded,
       lastIncomeAt: Date.parse(row.last_income_at),
@@ -303,6 +325,28 @@ class CloudRepo implements Repo {
     }
     return out;
   }
+  async enemyBase(email: string) {
+    const { data, error } = await this.db().rpc("enemy_base", { target_email: email });
+    if (error) throw error;
+    const row = (data as { cells: string; guns: Gun[] }[] | null)?.[0];
+    if (!row) throw new Error("no base");
+    return { cells: decodeCells(row.cells), guns: row.guns ?? [] };
+  }
+  async buyScouts(_p: Player, n: number) {
+    const { data, error } = await this.db().rpc("buy_scouts", { n });
+    if (error) throw error;
+    const row = (data as { credits: number; scouts: number }[] | null)?.[0];
+    return row ? { credits: row.credits, scouts: row.scouts } : {};
+  }
+
+  async spendScouts(_p: Player, n: number) {
+    const { data, error } = await this.db().rpc("spend_scouts", { n });
+    if (error) throw error;
+    const row = (data as { scouts: number }[] | null)?.[0];
+    return row ? { scouts: row.scouts } : {};
+  }
+
+
 
   async buyDrones(p: Player, amount: number) {
     const { data, error } = await this.db().rpc("buy_drones", {
