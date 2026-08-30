@@ -360,9 +360,12 @@ export default function Lobby({
   const doomed = isDoomed(p);
   const drones = droneCount(p.depots, "basic");
   const dronesPlus = droneCount(p.depots, "plus");
+  const scouts = droneCount(p.depots, "scout");
   // магазин один, вид берём из выбранного инструмента
-  const buyKind: DroneKind = tool === "plus" ? "plus" : "basic";
-  const unitCost = buyKind === "plus" ? DRONE_PLUS_COST : DRONE_UNIT_COST;
+  const buyKind: DroneKind =
+    tool === "plus" ? "plus" : tool === "scouts" ? "scout" : "basic";
+  const unitCost =
+    buyKind === "plus" ? DRONE_PLUS_COST : buyKind === "scout" ? SCOUT_UNIT_COST : DRONE_UNIT_COST;
   const free = freeCells(p.cells, p.guns, p.depots).length;
   // место есть только в неполных ящиках того же вида: смешивать нельзя
   const roomInPartialDepots = p.depots.reduce(
@@ -725,41 +728,29 @@ export default function Lobby({
     }
   };
 
-  const buyScouts = async () => {
-    const n = Math.min(scoutBuy, maxScoutBuy);
-    if (n < 1) return;
-    const cost = n * SCOUT_UNIT_COST;
-    p.scouts += n;
-    p.credits -= cost;
-    setMessage(t("scout.bought", { count: n, cost: fmt(cost) }));
-    forceRender((v) => v + 1);
-    try {
-      const patch = await repo.buyScouts(p, n);
-      if (patch.credits !== undefined) p.credits = patch.credits;
-      if (patch.scouts !== undefined) p.scouts = patch.scouts;
-      forceRender((v) => v + 1);
-    } catch (e) {
-      p.scouts -= n;
-      p.credits += cost;
-      setMessage(t("scout.buyFailed", { error: (e as Error).message }));
-      forceRender((v) => v + 1);
-    }
-  };
-
   const doScout = async (enemy: Enemy, planes: number): Promise<string | null> => {
-    if (p.scouts < planes) return t("scout.needPlanes");
+    if (scouts < planes) return t("scout.needPlanes");
+    const previousDepots = p.depots.map((depot) => ({ ...depot }));
     try {
       const base =
         repo.mode === "cloud"
           ? await repo.enemyBase(enemy.email)
           : { cells: decodeCells(enemy.cells), guns: enemy.guns };
-      // списываем до вылета: улетели — значит потрачены, чем бы ни кончилось
-      const patch = await repo.spendScouts(p, planes);
-      p.scouts = patch.scouts ?? p.scouts - planes;
+      // разведчики уходят из ящиков до вылета: взлетели — значит потрачены
+      const took = takeDrones(p.depots, planes, "scout");
+      if (took !== planes) {
+        p.depots = previousDepots;
+        return t("scout.needPlanes");
+      }
+      await repo.spendScouts(p, planes);
       setScout({ enemy, cells: base.cells, guns: base.guns, planes });
+      setVersion((v) => v + 1);
       forceRender((v) => v + 1);
       return null;
     } catch (e) {
+      p.depots = previousDepots;
+      setVersion((v) => v + 1);
+      forceRender((v) => v + 1);
       return t("scout.failed", { error: (e as Error).message });
     }
   };
@@ -1199,6 +1190,7 @@ export default function Lobby({
       <dl className="mb-3 space-y-1 font-mono text-sm">
         <Row label={t("arsenal.drones")} value={fmt(drones)} />
         <Row label={t("arsenal.dronesPlus")} value={fmt(dronesPlus)} />
+      <Row label={t("scout.inStock")} value={fmt(scouts)} />
         <Row label={t("arsenal.containers")} value={String(p.depots.length)} />
         <Row label={t("arsenal.freeCells")} value={String(free)} />
       </dl>
@@ -1261,39 +1253,10 @@ export default function Lobby({
 
   const scoutsBody = (
     <>
-      <p className="mb-3 text-neutral-400">{t("scout.explain")}</p>
-      <dl className="mb-3 space-y-1 font-mono text-sm">
-        <Row label={t("scout.inStock")} value={fmt(p.scouts)} />
-      </dl>
-      <div className="mb-2 flex items-center gap-2">
-        <input
-          type="range"
-          min={1}
-          max={Math.max(1, Math.min(50, maxScoutBuy))}
-          value={Math.min(scoutBuy, Math.max(1, maxScoutBuy))}
-          onChange={(e) => setScoutBuy(Number(e.target.value))}
-          disabled={maxScoutBuy < 1}
-          aria-label={t("scout.panel")}
-          className="h-8 min-w-0 flex-1 cursor-pointer accent-sky-400"
-        />
-        <span className="shrink-0 font-mono text-xs text-neutral-500">
-          {t("scout.buyMax", { count: Math.min(50, maxScoutBuy) })}
-        </span>
-      </div>
-      <Button
-        variant="neutral"
-        block
-        disabled={maxScoutBuy < 1}
-        onClick={() => void buyScouts()}
-      >
-        {t("scout.buy", {
-          count: Math.min(scoutBuy, Math.max(1, maxScoutBuy)),
-          cost: fmt(Math.min(scoutBuy, Math.max(1, maxScoutBuy)) * SCOUT_UNIT_COST),
-        })}
-      </Button>
-      {maxScoutBuy < 1 && (
-        <p className="mt-2 text-xs text-neutral-500">{t("arsenal.noCredits")}</p>
-      )}
+      <p className="mb-3 text-neutral-400">
+        {t("scout.explain", { perCell: DRONES_PER_CELL })}
+      </p>
+      {arsenalBody}
     </>
   );
 
@@ -1358,7 +1321,7 @@ export default function Lobby({
       enemies={p.enemies}
       drones={drones}
       dronesPlus={dronesPlus}
-      scouts={p.scouts}
+      scouts={scouts}
       onAdd={addEnemy}
       onRaid={doRaid}
       onScout={doScout}

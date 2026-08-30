@@ -87,6 +87,27 @@ language sql immutable as $$
   from generate_series(0, 9999) as cells(n);
 $$;
 
+-- Сколько в контейнерах лежит именно этого вида. Вид не указан — считается
+-- обычным: так читаются ящики, заведённые до появления «Дронов+».
+create or replace function depot_sum_kind(d jsonb, want text) returns int
+language sql immutable as $$
+  select coalesce(sum((e->>'n')::int), 0)::int
+    from jsonb_array_elements(coalesce(d, '[]'::jsonb)) e
+   where coalesce(e->>'kind', 'basic') = want;
+$$;
+
+-- Никакой вид не должен меняться, кроме одного разрешённого: иначе покупкой
+-- дронов можно было бы завести себе разведчиков.
+create or replace function depots_only_changed(
+  before jsonb, after jsonb, kind text, delta int
+) returns boolean language sql immutable as $$
+  select bool_and(
+    depot_sum_kind(after, k) =
+      depot_sum_kind(before, k) + case when k = kind then delta else 0 end
+  )
+  from unnest(array['basic', 'plus', 'scout']) as k;
+$$;
+
 -- контейнеры обязаны стоять на целых клетках, по одному на клетку, не поверх пушек
 create or replace function depots_valid(d jsonb, map bytea, guns jsonb)
 returns boolean language plpgsql immutable as $$
@@ -259,7 +280,8 @@ begin
   select b.cells, b.guns, b.drone_cells into cur, cur_guns, cur_depots
     from bases b where b.user_id = uid for update;
   if cur is null then raise exception 'no base'; end if;
-  if depot_sum(new_depots) <> depot_sum(cur_depots) - drone_count then
+  if depot_sum_kind(new_depots, 'scout') <> depot_sum_kind(cur_depots, 'scout')
+     or depot_sum(new_depots) <> depot_sum(cur_depots) - drone_count then
     raise exception 'sent drones do not match warehouse stock';
   end if;
   if not depots_valid(new_depots, cur, cur_guns) then
@@ -300,42 +322,31 @@ $$;
 -- ---------- разведчики ----------
 -- Лежат счётчиком: на карте их нет, гореть им негде.
 
-create or replace function buy_scouts(n int)
-returns table (credits int, scouts int)
+create or replace function spend_scouts(n int, new_depots jsonb)
+returns table (scouts int)
 language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
-  cost int;
-begin
-  if uid is null then raise exception 'not authenticated'; end if;
-  if n is null or n < 1 then raise exception 'bad scout count'; end if;
-  cost := n * price('scout');
-
-  update profiles
-     set credits = profiles.credits - cost,
-         scouts = profiles.scouts + n
-   where profiles.id = uid and profiles.credits >= cost
-   returning profiles.credits, profiles.scouts into credits, scouts;
-
-  if not found then raise exception 'not enough credits'; end if;
-  return next;
-end;
-$$;
-
-create or replace function spend_scouts(n int)
-returns table (scouts int)
-language plpgsql security definer set search_path = public as $$
-declare uid uuid := auth.uid();
+  cur bytea;
+  cur_guns jsonb;
+  cur_depots jsonb;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   if n is null or n < 1 then raise exception 'bad scout count'; end if;
 
-  update profiles
-     set scouts = profiles.scouts - n
-   where profiles.id = uid and profiles.scouts >= n
-   returning profiles.scouts into scouts;
+  select b.cells, b.guns, b.drone_cells into cur, cur_guns, cur_depots
+    from bases b where b.user_id = uid for update;
+  if cur is null then raise exception 'no base'; end if;
 
-  if not found then raise exception 'not enough scouts'; end if;
+  if not depots_only_changed(cur_depots, new_depots, 'scout', -n) then
+    raise exception 'scouts must come out of their containers';
+  end if;
+  if not depots_valid(new_depots, cur, cur_guns) then
+    raise exception 'bad depot state';
+  end if;
+
+  update bases set drone_cells = new_depots, updated_at = now() where user_id = uid;
+  scouts := depot_sum_kind(new_depots, 'scout');
   return next;
 end;
 $$;
@@ -560,7 +571,8 @@ begin
   if cur is null then raise exception 'no base'; end if;
 
   -- вне боя дронов не прибавляется: контейнеры можно только переставлять
-  if depot_sum(new_depots) <> depot_sum(cur_depots) then
+  -- вне покупки ни один вид не меняется: ящики можно только переставлять
+  if not depots_only_changed(cur_depots, new_depots, 'basic', 0) then
     raise exception 'drone count may only change on purchase';
   end if;
   if not depots_valid(new_depots, bin, new_guns) then
@@ -643,15 +655,17 @@ begin
   if packs is null or packs < 1 or packs > 100000 then
     raise exception 'bad drone amount';
   end if;
-  if kind not in ('basic', 'plus') then raise exception 'bad drone kind'; end if;
-  cost := packs * price(case when kind = 'plus' then 'plus' else 'drone' end);
+  if kind not in ('basic', 'plus', 'scout') then raise exception 'bad drone kind'; end if;
+  cost := packs * price(
+    case kind when 'plus' then 'plus' when 'scout' then 'scout' else 'drone' end
+  );
 
   select b.cells, b.guns, b.drone_cells into cur, cur_guns, cur_depots
     from bases b where b.user_id = uid for update;
   if cur is null then raise exception 'no base'; end if;
 
   -- купленное обязано лечь на склад: ровно запрошенное число новых дронов
-  if depot_sum(new_depots) <> depot_sum(cur_depots) + packs then
+  if not depots_only_changed(cur_depots, new_depots, kind, packs) then
     raise exception 'depots must hold exactly the purchased drones';
   end if;
   if not depots_valid(new_depots, cur, cur_guns) then
@@ -832,5 +846,5 @@ $$;
 
 grant execute on function ensure_player, collect_income, save_base,
   buy_drones, apply_battle, complete_attack, wipe_base, rename_base, save_enemies,
-  base_names, enemy_base, buy_scouts, spend_scouts,
+  base_names, enemy_base, spend_scouts,
   send_attack, pending_attacks, attack_reports, ack_attack_report to authenticated;

@@ -41,31 +41,36 @@ export interface Scene {
  */
 export function drawDepots(
   ctx: CanvasRenderingContext2D,
-  depots: { cx: number; cy: number; n: number; kind?: "basic" | "plus" }[],
+  depots: { cx: number; cy: number; n: number; kind?: "basic" | "plus" | "scout" }[],
   cell: number,
   dim = false
 ) {
   for (const d of depots) {
     const x = d.cx * cell;
     const y = d.cy * cell;
-    const plus = d.kind === "plus";
-    ctx.fillStyle = plus
-      ? dim
-        ? "rgba(58, 92, 110, 0.5)"
-        : "#3a5c6e"
-      : dim
-      ? "rgba(122, 90, 46, 0.5)"
-      : "#7a5a2e";
+    const kind = d.kind ?? "basic";
+    const plus = kind === "plus";
+    const scout = kind === "scout";
+    const fill = scout ? "58, 74, 46" : plus ? "58, 92, 110" : "122, 90, 46";
+    const line = scout ? "168, 200, 130" : plus ? "142, 202, 230" : "214, 168, 92";
+    ctx.fillStyle = `rgba(${fill}, ${dim ? 0.5 : 1})`;
     ctx.fillRect(x, y, cell, cell);
-    ctx.strokeStyle = plus
-      ? dim
-        ? "rgba(142, 202, 230, 0.5)"
-        : "#8ecae6"
-      : dim
-      ? "rgba(214, 168, 92, 0.5)"
-      : "#d6a85c";
+    ctx.strokeStyle = `rgba(${line}, ${dim ? 0.5 : 1})`;
     ctx.lineWidth = 1;
     ctx.strokeRect(x + 0.5, y + 0.5, cell - 1, cell - 1);
+
+    // у разведчиков вместо винтов силуэт самолёта
+    if (scout) {
+      ctx.beginPath();
+      ctx.moveTo(x + cell * 0.5, y + cell * 0.15);
+      ctx.lineTo(x + cell * 0.5, y + cell * 0.85);
+      ctx.moveTo(x + cell * 0.18, y + cell * 0.52);
+      ctx.lineTo(x + cell * 0.82, y + cell * 0.52);
+      ctx.moveTo(x + cell * 0.34, y + cell * 0.8);
+      ctx.lineTo(x + cell * 0.66, y + cell * 0.8);
+      ctx.stroke();
+      continue;
+    }
 
     // винты по углам и корпус между ними — клетка всего 7 px, так что это
     // не рисунок, а узнаваемое пятно
