@@ -180,6 +180,7 @@ export default function Lobby({
   const paintingRef = useRef(false);
   // раскладка контейнеров
   const dragDepotRef = useRef<{ cx: number; cy: number } | null>(null);
+  const dragGunRef = useRef<{ cx: number; cy: number } | null>(null);
 
   /** Пишем склад с задержкой: на сервере это одна проверяемая операция. */
   const persist = () => {
@@ -576,6 +577,27 @@ export default function Lobby({
     touch();
   };
 
+  /** Перетаскивание пушки на другую целую клетку. Деньги при этом не трогаем. */
+  const moveGun = (from: { cx: number; cy: number }, x: number, y: number) => {
+    if (x < 0 || y < 0 || x >= GRID || y >= GRID) return;
+    if (p.cells[idx(x, y)] !== G_BASE) {
+      setMessage(t("gun.onlyIntact"));
+      return;
+    }
+    if (p.guns.some((g) => (g.cx !== from.cx || g.cy !== from.cy) && g.cx === x && g.cy === y)) {
+      setMessage(t("gun.gunThere"));
+      return;
+    }
+    if (p.depots.some((d) => d.cx === x && d.cy === y)) {
+      setMessage(t("gun.cellBusy"));
+      return;
+    }
+    const at = p.guns.findIndex((g) => g.cx === from.cx && g.cy === from.cy);
+    if (at < 0) return;
+    p.guns = p.guns.map((g, i) => (i === at ? { cx: x, cy: y } : g));
+    touch();
+  };
+
   /** Основание идёт следом за именем: безымянных складов не заводим. */
   const found = async (rawName: string) => {
     if (intact < MIN_BASE_CELLS) return;
@@ -720,7 +742,13 @@ export default function Lobby({
       return;
     }
     if (tool === "gun") {
-      gunAt(c.x, c.y);
+      const g = p.guns.find((q) => q.cx === c.x && q.cy === c.y);
+      if (g) {
+        dragGunRef.current = { cx: g.cx, cy: g.cy };
+        forceRender((v) => v + 1);
+      } else {
+        gunAt(c.x, c.y);
+      }
       return;
     }
     if (!drafting) return;
@@ -801,6 +829,18 @@ export default function Lobby({
 
   const onUp = (pt: Pt) => {
     paintingRef.current = false;
+    if (tool === "gun") {
+      const from = dragGunRef.current;
+      dragGunRef.current = null;
+      forceRender((v) => v + 1);
+      if (from) {
+        const c = cellOf(pt);
+        // отпустил там же, откуда взял — значит просто снял пушку
+        if (c.x === from.cx && c.y === from.cy) gunAt(c.x, c.y);
+        else moveGun(from, c.x, c.y);
+      }
+      return;
+    }
     if (tool === "drones") {
       const from = dragDepotRef.current;
       dragDepotRef.current = null;
@@ -880,6 +920,33 @@ export default function Lobby({
         [d.x + d.w, d.y + d.h],
       ]) {
         ctx.fillRect(hx * cell - hs / 2, hy * cell - hs / 2, hs, hs);
+      }
+    }
+
+    // пушки переставляются так же, как контейнеры: тянем и роняем
+    if (tool === "gun") {
+      ctx.fillStyle = "rgba(140, 215, 255, 0.16)";
+      for (const i of freeCells(p.cells, p.guns, p.depots)) {
+        ctx.fillRect((i % GRID) * cell, ((i / GRID) | 0) * cell, cell, cell);
+      }
+      const from = dragGunRef.current;
+      const hg = hoverRef.current;
+      if (from && hg) {
+        const cx = Math.floor(hg.x);
+        const cy = Math.floor(hg.y);
+        const sameCell = cx === from.cx && cy === from.cy;
+        const targetOk =
+          sameCell ||
+          (cx >= 0 &&
+            cy >= 0 &&
+            cx < GRID &&
+            cy < GRID &&
+            p.cells[idx(cx, cy)] === G_BASE &&
+            !p.guns.some((g) => (g.cx !== from.cx || g.cy !== from.cy) && g.cx === cx && g.cy === cy) &&
+            !p.depots.some((d) => d.cx === cx && d.cy === cy));
+        ctx.strokeStyle = targetOk ? "#8ecae6" : "#ff6b6b";
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(cx * cell, cy * cell, cell, cell);
       }
     }
 
@@ -1255,7 +1322,17 @@ export default function Lobby({
               hoverRef.current = null;
               paintingRef.current = false;
             }}
-            cursor={tool === "drones" ? (dragDepotRef.current ? "grabbing" : "grab") : "crosshair"}
+            cursor={
+              tool === "drones"
+                ? dragDepotRef.current
+                  ? "grabbing"
+                  : "grab"
+                : tool === "gun"
+                ? dragGunRef.current
+                  ? "grabbing"
+                  : "crosshair"
+                : "crosshair"
+            }
           >
             {message && <Toast key={message} text={message} onClose={() => setMessage(null)} />}
           </MapCanvas>
@@ -1483,6 +1560,7 @@ export default function Lobby({
             <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-neutral-400">
               <li>{t("controls.tapCell")}</li>
               <li>{t("controls.dragDraft")}</li>
+              <li>{t("gun.dragTip")}</li>
               <li>{t("controls.zoomTouch")}</li>
             </ul>
           </div>

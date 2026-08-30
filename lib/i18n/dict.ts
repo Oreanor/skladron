@@ -16,6 +16,8 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 };
 
 const en = {
+  "gun.gunThere": "There is already a gun here",
+  "gun.dragTip": "Pick «Gun» and drag guns across the warehouse onto the highlighted cells.",
   "repair.done": "Repaired {cells} cells for {cost} cr",
   "repair.summary": "{w}×{h} · {cells} burnt cells · {cost} cr",
   "repair.nothing": "no burnt cells inside",
@@ -272,6 +274,8 @@ export type Key = keyof typeof en;
 type Dict = Record<Key, string>;
 
 const ru: Dict = {
+  "gun.gunThere": "Здесь уже стоит пушка",
+  "gun.dragTip": "Выбери «Пушку» и перетаскивай пушки по складу на подсвеченные клетки.",
   "repair.done": "Починено {cells} клеток за {cost} кр",
   "repair.summary": "{w}×{h} · сгоревших клеток: {cells} · {cost} кр",
   "repair.nothing": "внутри нет сгоревших клеток",
@@ -528,6 +532,8 @@ const ru: Dict = {
 };
 
 const es: Dict = {
+  "gun.gunThere": "Aquí ya hay un cañón",
+  "gun.dragTip": "Elige «Cañón» y arrastra los cañones por el almacén a las celdas resaltadas.",
   "repair.done": "Reparadas {cells} celdas por {cost} cr",
   "repair.summary": "{w}×{h} · celdas quemadas: {cells} · {cost} cr",
   "repair.nothing": "dentro no hay celdas quemadas",
@@ -784,6 +790,8 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+  "gun.gunThere": "Já está aqui um canhão",
+  "gun.dragTip": "Escolhe «Canhão» e arrasta os canhões pelo armazém até às células realçadas.",
   "repair.done": "Reparadas {cells} células por {cost} cr",
   "repair.summary": "{w}×{h} · células queimadas: {cells} · {cost} cr",
   "repair.nothing": "não há células queimadas lá dentro",
@@ -1040,6 +1048,8 @@ const pt: Dict = {
 };
 
 const fr: Dict = {
+  "gun.gunThere": "Il y a déjà un canon ici",
+  "gun.dragTip": "Choisis « Canon » et fais glisser les canons dans l’entrepôt vers les cases surlignées.",
   "repair.done": "{cells} cases réparées pour {cost} cr",
   "repair.summary": "{w}×{h} · cases brûlées : {cells} · {cost} cr",
   "repair.nothing": "aucune case brûlée à l’intérieur",
@@ -1296,6 +1306,8 @@ const fr: Dict = {
 };
 
 const de: Dict = {
+  "gun.gunThere": "Hier steht schon ein Geschütz",
+  "gun.dragTip": "Wähle «Geschütz» und zieh die Geschütze übers Lager auf die markierten Felder.",
   "repair.done": "{cells} Felder für {cost} Cr repariert",
   "repair.summary": "{w}×{h} · verbrannte Felder: {cells} · {cost} Cr",
   "repair.nothing": "keine verbrannten Felder darin",
@@ -1552,6 +1564,8 @@ const de: Dict = {
 };
 
 const it: Dict = {
+  "gun.gunThere": "Qui c’è già un cannone",
+  "gun.dragTip": "Scegli «Cannone» e trascina i cannoni per il magazzino sulle celle evidenziate.",
   "repair.done": "Riparate {cells} celle per {cost} cr",
   "repair.summary": "{w}×{h} · celle bruciate: {cells} · {cost} cr",
   "repair.nothing": "dentro non ci sono celle bruciate",
