@@ -99,7 +99,7 @@ export function drawStatic(
   }
 
   // на приближении показываем сетку клеток — по ней целишься
-  if (zoom >= 2) {
+  if (cell * zoom >= 14) {
     ctx.strokeStyle = "rgba(0, 0, 0, 0.12)";
     ctx.lineWidth = 0.5 / zoom;
     ctx.beginPath();

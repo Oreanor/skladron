@@ -56,8 +56,20 @@ import Enemies from "./Enemies";
 import { drawCoverage, drawDepots } from "@/lib/render";
 import Battle, { type BattleOutcome } from "./Battle";
 import MapCanvas, { type Pt } from "./MapCanvas";
+import {
+  IconButton,
+  IconMenu,
+  IconTarget,
+  IconUsers,
+  Panel,
+  Row,
+  Sheet,
+  StatRow,
+} from "./ui";
 
 type Tool = "area" | "repair" | "gun" | "drones";
+/** Панели, которые на телефоне открываются шторкой снизу. */
+type SheetId = "found" | "arsenal" | "attacks" | "enemies" | "menu";
 
 const TOOLS: { id: Tool; name: string; hint: string }[] = [
   { id: "area", name: "Площадь", hint: `${CELL_COST} кр за новую клетку` },
@@ -84,6 +96,8 @@ export default function Lobby({
   const [battle, setBattle] = useState<AttackOrder | null>(null);
   const [ready, setReady] = useState(false);
   const [version, setVersion] = useState(0);
+  const [sheet, setSheet] = useState<SheetId | null>(null);
+  const toggleSheet = (id: SheetId) => setSheet((cur) => (cur === id ? null : id));
 
   // заготовка площади
   const draftRef = useRef<Rect | null>(null);
@@ -618,11 +632,12 @@ export default function Lobby({
     }
   };
 
+
   // ---------- экраны ----------
 
   if (doomed) {
     return (
-      <div className="mx-auto max-w-md rounded-md border border-red-900/60 bg-neutral-900/70 p-8 text-center">
+      <div className="mx-auto max-w-md rounded-md border border-red-900/60 bg-neutral-900/70 p-6 text-center sm:p-8">
         <h2 className="mb-2 text-2xl font-bold text-red-400">Склад выгорел дотла</h2>
         <p className="mb-6 text-sm text-neutral-400">
           Целых клеток не осталось, а на ремонт нет кредитов. Придётся начинать сначала —
@@ -647,9 +662,200 @@ export default function Lobby({
     );
   }
 
+  const income = dailyIncome(p);
+  const pickTool = (id: Tool) => {
+    setTool(id);
+    draftRef.current = null;
+    // на телефоне арсенал живёт в шторке, на десктопе — в боковой колонке
+    if (id === "drones") setSheet("arsenal");
+  };
+
+  // ---------- содержимое панелей ----------
+  // Одни и те же куски разметки идут и в боковую колонку (десктоп),
+  // и в шторки (телефон), поэтому собраны здесь один раз.
+
+  const foundBody = (
+    <>
+      <p className="mb-3 text-neutral-300">
+        Потяни по карте — появится красная заготовка. Её можно двигать и тянуть за углы, клик по
+        ней утверждает постройку, кнопка «Убрать» отменяет. Одиночный тап по клетке рядом со
+        зданием достраивает её сразу.
+      </p>
+      <div className="mb-1 flex items-center justify-between font-mono">
+        <span className="text-neutral-400">Площадь</span>
+        <span className={intact >= MIN_BASE_CELLS ? "text-emerald-400" : "text-neutral-100"}>
+          {intact}/{MIN_BASE_CELLS}
+        </span>
+      </div>
+      <button
+        onClick={found}
+        disabled={intact < MIN_BASE_CELLS}
+        className="mt-3 w-full rounded bg-emerald-500 px-4 py-2 font-semibold text-neutral-950 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500"
+      >
+        Основать склад
+      </button>
+    </>
+  );
+
+  const arsenalBody = (
+    <>
+      <p className="mb-3 text-neutral-400">
+        Дроны лежат контейнерами прямо на складе — по {DRONES_PER_CELL} штук на клетку. Клетка
+        сгорела — дроны в ней пропали.
+      </p>
+      <dl className="mb-3 space-y-1 font-mono text-sm">
+        <Row label="Дронов" value={fmt(drones)} />
+        <Row label="Контейнеров" value={String(p.depots.length)} />
+        <Row label="Свободных клеток" value={String(free)} />
+      </dl>
+      <button
+        onClick={buyDrones}
+        disabled={packsAvailable < 1}
+        className="w-full rounded bg-neutral-100 px-4 py-3 text-sm font-semibold text-neutral-900 hover:bg-white disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500 lg:py-2"
+      >
+        Купить {DRONE_PACK} за {fmt(DRONE_PACK_COST)} кр
+      </button>
+      <p className="mt-2 text-xs text-neutral-500">
+        {packsAvailable >= 1
+          ? `Можно закупить ещё ${packsAvailable} ${packsAvailable === 1 ? "пачку" : "пачек"}`
+          : free < cellsPerPack
+          ? `Нужно ещё ${cellsPerPack - free} свободных клеток под контейнеры`
+          : "Не хватает кредитов"}
+      </p>
+      <button
+        onClick={() => {
+          // раскладывать контейнеры надо по карте — шторка тут только мешает
+          if (!arranging) setSheet(null);
+          setArranging((v) => !v);
+        }}
+        disabled={p.depots.length === 0}
+        className={`mt-3 w-full rounded border px-4 py-3 text-sm lg:py-2 ${
+          arranging
+            ? "border-amber-500 bg-amber-500/15 text-amber-300"
+            : "border-neutral-700 text-neutral-300 hover:bg-neutral-800"
+        } disabled:cursor-not-allowed disabled:opacity-40`}
+      >
+        {arranging ? "Готово" : "Разместить на складе"}
+      </button>
+      {arranging && (
+        <p className="mt-2 text-xs text-neutral-500">
+          Перетаскивай контейнеры на подсвеченные клетки. Кучно — удобно, но один пожар съест всё
+          разом.
+        </p>
+      )}
+    </>
+  );
+
+  const attacksBody =
+    p.incoming.length === 0 ? (
+      <p className="text-neutral-500">
+        Пока тихо. Кнопка «+ налёт» присылает атаку от бота — на этапе 1 так проверяем баланс.
+      </p>
+    ) : (
+      <ul className="space-y-2">
+        {p.incoming.map((a) => {
+          const pat = PATTERNS.find((x) => x.id === a.pattern);
+          return (
+            <li
+              key={a.id}
+              className="flex items-center justify-between gap-2 rounded border border-neutral-800 bg-neutral-950/60 p-2"
+            >
+              <div className="min-w-0">
+                <div className="truncate font-medium text-neutral-200">{a.from}</div>
+                <div className="font-mono text-xs text-neutral-500">
+                  {a.drones} дронов · {pat?.name.toLowerCase()}
+                  {a.pattern === "lines" ? ` ${EDGE_NAMES[a.direction]}` : ""}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setSheet(null);
+                  setBattle(a);
+                }}
+                disabled={intact === 0}
+                className="shrink-0 rounded bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-neutral-700 lg:py-1"
+              >
+                Отбить
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    );
+
+  const summonButton = (
+    <button
+      onClick={summonAttack}
+      className="shrink-0 rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-300 hover:bg-neutral-800"
+    >
+      + налёт
+    </button>
+  );
+
+  const enemiesBody = (
+    <Enemies
+      enemies={p.enemies}
+      drones={drones}
+      onAdd={addEnemy}
+      onRaid={doRaid}
+      onChanged={() => forceRender((v) => v + 1)}
+    />
+  );
+
+  const statsBody = (
+    <div className="space-y-1 font-mono text-xs text-neutral-400">
+      <StatRow label="Боёв" value={p.stats.battles} />
+      <StatRow label="Дронов сбито" value={p.stats.dronesKilled} />
+      <StatRow label="Клеток сгорело" value={p.stats.cellsBurned} />
+      <StatRow label="Клеток починено" value={p.stats.cellsRepaired} />
+      <StatRow label="Складов потеряно" value={p.stats.wipes} />
+      <StatRow label="Налётов совершено" value={p.stats.raids} />
+      <StatRow label="Добыто кредитов" value={p.stats.looted} />
+    </div>
+  );
+
+  const toolButtons = TOOLS.map((t) => (
+    <button
+      key={t.id}
+      onClick={() => pickTool(t.id)}
+      disabled={!p.founded && t.id !== "area"}
+      title={t.hint}
+      className={`min-w-0 rounded border px-2 py-2.5 text-sm transition lg:px-3 lg:py-2 ${
+        tool === t.id
+          ? "border-emerald-500 bg-emerald-500/15 text-emerald-300"
+          : "border-neutral-700 text-neutral-300 active:bg-neutral-800 lg:hover:bg-neutral-800"
+      } disabled:cursor-not-allowed disabled:opacity-40`}
+    >
+      <span className="truncate">{t.name}</span>
+      <span className="ml-2 hidden font-mono text-[11px] text-neutral-500 lg:inline">{t.hint}</span>
+    </button>
+  ));
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:h-auto lg:flex-none lg:gap-4">
+      {/* шапка телефона: счётчики одной строкой плюс кнопки панелей */}
+      <div className="flex shrink-0 items-center gap-2 lg:hidden">
+        <div className="flex min-w-0 flex-1 gap-3 overflow-x-auto rounded-md border border-neutral-800 bg-neutral-900/60 px-3 py-2 font-mono text-xs [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <Chip label="кр" value={fmt(p.credits)} tone="text-emerald-300" />
+          <Chip label="дроны" value={fmt(drones)} />
+          <Chip label="клетки" value={fmt(intact)} />
+          {burnt > 0 && <Chip label="горело" value={fmt(burnt)} tone="text-orange-300" />}
+          <Chip label="пушки" value={fmt(p.guns.length)} />
+          <Chip label="/сут" value={`+${fmt(income)}`} tone="text-emerald-300" />
+        </div>
+        <IconButton label="Налёты" badge={p.incoming.length} onClick={() => toggleSheet("attacks")}>
+          <IconTarget />
+        </IconButton>
+        <IconButton label="Враги" onClick={() => toggleSheet("enemies")}>
+          <IconUsers />
+        </IconButton>
+        <IconButton label="Меню" onClick={() => toggleSheet("menu")}>
+          <IconMenu />
+        </IconButton>
+      </div>
+
+      {/* шапка десктопа */}
+      <div className="hidden flex-wrap items-center gap-3 lg:flex">
         <div className="min-w-0 flex-1">
           <StatusBar
             credits={p.credits}
@@ -657,7 +863,7 @@ export default function Lobby({
             intact={intact}
             burnt={burnt}
             guns={p.guns.length}
-            income={dailyIncome(p)}
+            income={income}
           />
         </div>
         {account ? (
@@ -676,39 +882,29 @@ export default function Lobby({
       </div>
 
       {message && (
-        <div className="flex items-center justify-between rounded border border-neutral-700 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-300">
-          <span>{message}</span>
-          <button onClick={() => setMessage(null)} className="text-neutral-500 hover:text-neutral-200">
+        <div className="flex shrink-0 items-center justify-between gap-2 rounded border border-neutral-700 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-300">
+          <span className="min-w-0 truncate lg:whitespace-normal">{message}</span>
+          <button
+            onClick={() => setMessage(null)}
+            className="shrink-0 text-neutral-500 hover:text-neutral-200"
+          >
             ✕
           </button>
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,700px)_20rem]">
-        <div className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            {TOOLS.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => {
-                  setTool(t.id);
-                  draftRef.current = null;
-                }}
-                disabled={!p.founded && t.id !== "area"}
-                title={t.hint}
-                className={`rounded border px-3 py-2 text-sm transition ${
-                  tool === t.id
-                    ? "border-emerald-500 bg-emerald-500/15 text-emerald-300"
-                    : "border-neutral-700 text-neutral-300 hover:bg-neutral-800"
-                } disabled:cursor-not-allowed disabled:opacity-40`}
-              >
-                {t.name}
-                <span className="ml-2 font-mono text-[11px] text-neutral-500">{t.hint}</span>
-              </button>
-            ))}
+      <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:flex-none lg:grid-cols-[minmax(0,700px)_20rem] lg:gap-4">
+        {/*
+          Левая колонка. На телефоне порядок задаём через order-*: карта наверху
+          забирает всю свободную высоту, инструменты прижаты к низу под большой палец.
+        */}
+        <div className="flex min-h-0 flex-1 flex-col gap-2 lg:block lg:space-y-3">
+          <div className="order-3 grid shrink-0 grid-cols-4 gap-1.5 lg:flex lg:flex-wrap lg:gap-2">
+            {toolButtons}
           </div>
 
           <MapCanvas
+            className="order-1 min-h-0 flex-1 lg:aspect-square lg:w-full lg:flex-none"
             scene={scene}
             sceneVersion={version}
             overlay={overlay}
@@ -724,177 +920,144 @@ export default function Lobby({
           />
 
           {tool === "area" && draftRect && draftRect.w > 0 && draftRect.h > 0 && (
-            <div className="flex flex-wrap items-center gap-3 rounded border border-orange-800/60 bg-orange-950/30 px-3 py-2 text-sm">
+            <div className="order-2 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 rounded border border-orange-800/60 bg-orange-950/30 px-3 py-2 text-sm">
               <span className="font-mono text-orange-200">
                 {draftRect.w}×{draftRect.h} · +{draftNew} клеток · {fmt(draftCost)} кр
               </span>
               {!draftConnects && <span className="text-red-400">разрыв со зданием</span>}
-              {draftConnects && !draftAfford && <span className="text-red-400">не хватает кредитов</span>}
+              {draftConnects && !draftAfford && (
+                <span className="text-red-400">не хватает кредитов</span>
+              )}
               <div className="ml-auto flex gap-2">
                 <button
                   onClick={commitDraft}
                   disabled={!draftConnects || !draftAfford}
-                  className="rounded bg-emerald-500 px-3 py-1 text-xs font-semibold text-neutral-950 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500"
+                  className="rounded bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-neutral-950 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500"
                 >
                   Утвердить
                 </button>
                 <button
                   onClick={onRightClick}
-                  className="rounded border border-neutral-700 px-3 py-1 text-xs text-neutral-300 hover:bg-neutral-800"
+                  className="rounded border border-neutral-700 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800"
                 >
                   Убрать
                 </button>
               </div>
             </div>
           )}
-        </div>
 
-        <aside className="space-y-4 text-sm">
-          {!p.founded ? (
-            <div className="rounded-md border border-neutral-700 bg-neutral-900/60 p-4">
-              <div className="mb-2 text-xs uppercase tracking-widest text-neutral-400">
-                Разметка склада
-              </div>
-              <p className="mb-3 text-neutral-300">
-                Потяни мышью по карте — появится красная заготовка. Её можно двигать и тянуть за
-                углы, клик по ней утверждает постройку, ПКМ убирает. Одиночный клик по клетке
-                рядом со зданием достраивает её сразу.
-              </p>
-              <div className="mb-1 flex items-center justify-between font-mono">
-                <span className="text-neutral-400">Площадь</span>
+          {/* пока склад не основан, счётчик площади держим на виду */}
+          {!p.founded && (
+            <div className="order-2 flex shrink-0 items-center gap-3 rounded border border-neutral-700 bg-neutral-900/70 px-3 py-2 lg:hidden">
+              <button
+                onClick={() => setSheet("found")}
+                aria-label="Как размечать склад"
+                className="h-6 w-6 shrink-0 rounded-full border border-neutral-700 text-xs text-neutral-400"
+              >
+                ?
+              </button>
+              <span className="font-mono text-sm">
+                <span className="text-neutral-400">площадь </span>
                 <span className={intact >= MIN_BASE_CELLS ? "text-emerald-400" : "text-neutral-100"}>
                   {intact}/{MIN_BASE_CELLS}
                 </span>
-              </div>
+              </span>
               <button
                 onClick={found}
                 disabled={intact < MIN_BASE_CELLS}
-                className="mt-3 w-full rounded bg-emerald-500 px-4 py-2 font-semibold text-neutral-950 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500"
+                className="ml-auto shrink-0 rounded bg-emerald-500 px-4 py-2 text-sm font-semibold text-neutral-950 disabled:bg-neutral-700 disabled:text-neutral-500"
               >
-                Основать склад
+                Основать
               </button>
             </div>
+          )}
+
+          {/* входящий налёт не должен теряться в шторке */}
+          {p.founded && p.incoming.length > 0 && (
+            <button
+              onClick={() => setSheet("attacks")}
+              className="order-2 flex shrink-0 items-center gap-2 rounded border border-red-800 bg-red-950/50 px-3 py-2 text-left text-sm lg:hidden"
+            >
+              <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-500" />
+              <span className="min-w-0 truncate text-red-200">
+                Налёт: {p.incoming[0].from} · {p.incoming[0].drones} дронов
+              </span>
+              <span className="ml-auto shrink-0 rounded bg-red-600 px-3 py-1 text-xs font-semibold text-white">
+                {p.incoming.length > 1 ? `Отбить (${p.incoming.length})` : "Отбить"}
+              </span>
+            </button>
+          )}
+        </div>
+
+        {/* боковая колонка десктопа */}
+        <aside className="hidden space-y-4 text-sm lg:block">
+          {!p.founded ? (
+            <Panel title="Разметка склада">{foundBody}</Panel>
           ) : (
             <>
-              {tool === "drones" && (
-                <div className="rounded-md border border-neutral-700 bg-neutral-900/60 p-4">
-                  <div className="mb-2 text-xs uppercase tracking-widest text-neutral-400">
-                    Арсенал
-                  </div>
-                  <p className="mb-3 text-neutral-400">
-                    Дроны лежат контейнерами прямо на складе — по {DRONES_PER_CELL} штук на
-                    клетку. Клетка сгорела — дроны в ней пропали.
-                  </p>
-                  <dl className="mb-3 space-y-1 font-mono text-sm">
-                    <Row label="Дронов" value={fmt(drones)} />
-                    <Row label="Контейнеров" value={String(p.depots.length)} />
-                    <Row label="Свободных клеток" value={String(free)} />
-                  </dl>
-                  <button
-                    onClick={buyDrones}
-                    disabled={packsAvailable < 1}
-                    className="w-full rounded bg-neutral-100 px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-white disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500"
-                  >
-                    Купить {DRONE_PACK} за {fmt(DRONE_PACK_COST)} кр
-                  </button>
-                  <p className="mt-2 text-xs text-neutral-500">
-                    {packsAvailable >= 1
-                      ? `Можно закупить ещё ${packsAvailable} ${
-                          packsAvailable === 1 ? "пачку" : "пачек"
-                        }`
-                      : free < cellsPerPack
-                      ? `Нужно ещё ${cellsPerPack - free} свободных клеток под контейнеры`
-                      : "Не хватает кредитов"}
-                  </p>
-                  <button
-                    onClick={() => setArranging((v) => !v)}
-                    disabled={p.depots.length === 0}
-                    className={`mt-3 w-full rounded border px-4 py-2 text-sm ${
-                      arranging
-                        ? "border-amber-500 bg-amber-500/15 text-amber-300"
-                        : "border-neutral-700 text-neutral-300 hover:bg-neutral-800"
-                    } disabled:cursor-not-allowed disabled:opacity-40`}
-                  >
-                    {arranging ? "Готово" : "Разместить на складе"}
-                  </button>
-                  {arranging && (
-                    <p className="mt-2 text-xs text-neutral-500">
-                      Перетаскивай контейнеры на подсвеченные клетки. Кучно — удобно, но один
-                      пожар съест всё разом.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div className="rounded-md border border-neutral-700 bg-neutral-900/60 p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-widest text-neutral-400">
-                    Входящие атаки
-                  </span>
-                  <button
-                    onClick={summonAttack}
-                    className="rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-300 hover:bg-neutral-800"
-                  >
-                    + налёт
-                  </button>
-                </div>
-                {p.incoming.length === 0 ? (
-                  <p className="text-neutral-500">
-                    Пока тихо. Кнопка «+ налёт» присылает атаку от бота — на этапе 1 так
-                    проверяем баланс.
-                  </p>
-                ) : (
-                  <ul className="space-y-2">
-                    {p.incoming.map((a) => {
-                      const pat = PATTERNS.find((x) => x.id === a.pattern);
-                      return (
-                        <li
-                          key={a.id}
-                          className="flex items-center justify-between gap-2 rounded border border-neutral-800 bg-neutral-950/60 p-2"
-                        >
-                          <div className="min-w-0">
-                            <div className="truncate font-medium text-neutral-200">{a.from}</div>
-                            <div className="font-mono text-xs text-neutral-500">
-                              {a.drones} дронов · {pat?.name.toLowerCase()}
-                              {a.pattern === "lines" ? ` ${EDGE_NAMES[a.direction]}` : ""}
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => setBattle(a)}
-                            disabled={intact === 0}
-                            className="shrink-0 rounded bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-neutral-700"
-                          >
-                            Отбить
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-
-              <Enemies
-                enemies={p.enemies}
-                drones={drones}
-                onAdd={addEnemy}
-                onRaid={doRaid}
-                onChanged={() => forceRender((v) => v + 1)}
-              />
-
-              <div className="rounded-md border border-neutral-800 bg-neutral-900/40 p-4 font-mono text-xs text-neutral-400">
-                <div className="mb-2 font-sans font-semibold text-neutral-300">Статистика</div>
-                <StatRow label="Боёв" value={p.stats.battles} />
-                <StatRow label="Дронов сбито" value={p.stats.dronesKilled} />
-                <StatRow label="Клеток сгорело" value={p.stats.cellsBurned} />
-                <StatRow label="Клеток починено" value={p.stats.cellsRepaired} />
-                <StatRow label="Складов потеряно" value={p.stats.wipes} />
-                <StatRow label="Налётов совершено" value={p.stats.raids} />
-                <StatRow label="Добыто кредитов" value={p.stats.looted} />
-              </div>
+              {tool === "drones" && <Panel title="Арсенал">{arsenalBody}</Panel>}
+              <Panel title="Входящие атаки" action={summonButton}>
+                {attacksBody}
+              </Panel>
+              <Panel title="Враги">{enemiesBody}</Panel>
+              <Panel title="Статистика">{statsBody}</Panel>
             </>
           )}
         </aside>
       </div>
+
+      {/* мобильные шторки */}
+      <Sheet open={sheet === "found"} title="Разметка склада" onClose={() => setSheet(null)}>
+        {foundBody}
+      </Sheet>
+      <Sheet open={sheet === "arsenal"} title="Арсенал" onClose={() => setSheet(null)}>
+        {p.founded ? arsenalBody : <p className="text-neutral-500">Сначала основай склад.</p>}
+      </Sheet>
+      <Sheet open={sheet === "attacks"} title="Входящие атаки" onClose={() => setSheet(null)}>
+        <div className="mb-3 flex justify-end">{summonButton}</div>
+        {attacksBody}
+      </Sheet>
+      <Sheet open={sheet === "enemies"} title="Враги" onClose={() => setSheet(null)}>
+        {enemiesBody}
+      </Sheet>
+      <Sheet open={sheet === "menu"} title="Склад" onClose={() => setSheet(null)}>
+        <div className="space-y-5">
+          <div>
+            <div className="mb-2 text-xs uppercase tracking-widest text-neutral-500">
+              Статистика
+            </div>
+            {statsBody}
+          </div>
+          <div>
+            <div className="mb-2 text-xs uppercase tracking-widest text-neutral-500">
+              Управление
+            </div>
+            <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-neutral-400">
+              <li>Тап по клетке рядом со зданием — достроить её.</li>
+              <li>Протяжка — заготовка площади, её надо утвердить.</li>
+              <li>Два пальца — зум и перетаскивание карты.</li>
+            </ul>
+          </div>
+          <div>
+            <div className="mb-2 text-xs uppercase tracking-widest text-neutral-500">Аккаунт</div>
+            {account ? (
+              <div className="flex items-center gap-3">
+                <span className="min-w-0 flex-1 truncate text-neutral-300">
+                  {account.name ?? account.email}
+                </span>
+                <button
+                  onClick={onSignOut}
+                  className="shrink-0 rounded border border-neutral-700 px-3 py-2 text-xs text-neutral-300"
+                >
+                  Выйти
+                </button>
+              </div>
+            ) : (
+              <span className="font-mono text-xs text-neutral-600">локальный режим</span>
+            )}
+          </div>
+        </div>
+      </Sheet>
     </div>
   );
 }
@@ -928,27 +1091,11 @@ function StatusBar({
 
 function Chip({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
-    <div className="flex items-baseline gap-2">
-      <span className="text-xs uppercase tracking-wider text-neutral-500">{label}</span>
+    <div className="flex shrink-0 items-baseline gap-1.5 lg:gap-2">
+      <span className="text-[10px] uppercase tracking-wider text-neutral-500 lg:text-xs">
+        {label}
+      </span>
       <span className={tone ?? "text-neutral-100"}>{value}</span>
-    </div>
-  );
-}
-
-function StatRow({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span>{label}</span>
-      <span className="text-neutral-200">{fmt(value)}</span>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <dt className="text-neutral-400">{label}</dt>
-      <dd className="text-neutral-100">{value}</dd>
     </div>
   );
 }

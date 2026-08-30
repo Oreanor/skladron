@@ -4,7 +4,20 @@
   color-scheme: dark;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   background: #0c0f0c;
   color: #e5e5e5;
+  /* тянешь заготовку по карте — страница не должна дёргаться и обновляться */
+  overscroll-behavior: none;
+}
+
+@media (max-width: 1023px) {
+  body {
+    overflow: hidden;
+  }
 }

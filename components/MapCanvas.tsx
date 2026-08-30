@@ -35,6 +35,11 @@ export interface MapCanvasProps {
   className?: string;
 }
 
+/** Масштаб, при котором вся карта влезает в окно (по короткой стороне). */
+const fitScale = (w: number, h: number) => Math.min(w, h) / SIZE;
+/** Масштаб, при котором окно заполнено картой без пустых полей. */
+const coverScale = (w: number, h: number) => Math.max(w, h) / SIZE;
+
 export default function MapCanvas({
   scene,
   sceneVersion,
@@ -48,6 +53,10 @@ export default function MapCanvas({
   className = "",
 }: MapCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  // zoom здесь — экранных пикселей на игровой пиксель. На квадратном окне 700×700
+  // это ровно 1, на вытянутом телефоне — больше, поэтому все пределы считаются
+  // от fit/cover, а не от единицы.
   const viewRef = useRef<View>({ zoom: 1, panX: 0, panY: 0 });
   const viewDirty = useRef(true);
   const sceneRef = useRef(scene);
@@ -59,31 +68,84 @@ export default function MapCanvas({
   const pinch = useRef<{ dist: number; cx: number; cy: number } | null>(null);
   const pan = useRef<{ x: number; y: number } | null>(null);
   const panMoved = useRef(false);
+  // размер окна карты в CSS-пикселях: карта занимает всё, что даёт родитель
+  const [box, setBox] = useState({ w: 0, h: 0 });
+  const boxSize = useRef(box);
+  /** Стартовый масштаб — от него считается подпись «×» и кнопка сброса. */
+  const baseZoom = useRef(1);
   const [zoom, setZoom] = useState(1);
 
   sceneRef.current = scene;
   overlayRef.current = overlay;
   sceneVersionRef.current = sceneVersion;
+  boxSize.current = box;
 
-  const clampPan = (v: View) => {
-    const span = SIZE - SIZE / v.zoom;
-    v.panX = Math.max(0, Math.min(span, v.panX));
-    v.panY = Math.max(0, Math.min(span, v.panY));
-  };
-
-  const zoomAt = useCallback((factor: number, sx: number, sy: number) => {
-    const v = viewRef.current;
-    const wx = v.panX + sx / v.zoom;
-    const wy = v.panY + sy / v.zoom;
-    const next = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, v.zoom * factor));
-    if (next === v.zoom) return;
-    v.zoom = next;
-    v.panX = wx - sx / v.zoom;
-    v.panY = wy - sy / v.zoom;
-    clampPan(v);
-    viewDirty.current = true;
-    setZoom(next);
+  const clampPan = useCallback((v: View) => {
+    const { w, h } = boxSize.current;
+    // мир уже окна — прижимаем к краям; шире — центрируем пустые поля
+    const spanX = SIZE - w / v.zoom;
+    const spanY = SIZE - h / v.zoom;
+    v.panX = spanX < 0 ? spanX / 2 : Math.max(0, Math.min(spanX, v.panX));
+    v.panY = spanY < 0 ? spanY / 2 : Math.max(0, Math.min(spanY, v.panY));
   }, []);
+
+  const zoomAt = useCallback(
+    (factor: number, sx: number, sy: number) => {
+      const v = viewRef.current;
+      const { w, h } = boxSize.current;
+      if (!w || !h) return;
+      const wx = v.panX + sx / v.zoom;
+      const wy = v.panY + sy / v.zoom;
+      const fit = fitScale(w, h);
+      const next = Math.max(fit * MIN_ZOOM, Math.min(fit * MAX_ZOOM, v.zoom * factor));
+      if (next === v.zoom) return;
+      v.zoom = next;
+      v.panX = wx - sx / v.zoom;
+      v.panY = wy - sy / v.zoom;
+      clampPan(v);
+      viewDirty.current = true;
+      setZoom(next);
+    },
+    [clampPan]
+  );
+
+  // размер окна карты. Мир квадратный, окно — какое дали: на телефоне
+  // стартуем «в размер экрана», лишнюю высоту прокручиваем пальцем.
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const measure = () => {
+      const w = Math.max(0, el.clientWidth);
+      const h = Math.max(0, el.clientHeight);
+      if (!w || !h) return;
+      const prev = boxSize.current;
+      if (prev.w === w && prev.h === h) return;
+      boxSize.current = { w, h };
+      const v = viewRef.current;
+      const base = coverScale(w, h);
+      if (!prev.w || !prev.h) {
+        baseZoom.current = base;
+        v.zoom = base;
+        v.panX = (SIZE - w / v.zoom) / 2;
+        v.panY = (SIZE - h / v.zoom) / 2;
+      } else if (prev.w !== w) {
+        // поворот или ресайз окна: держим ту же кратность приближения
+        const rel = v.zoom / baseZoom.current;
+        baseZoom.current = base;
+        v.zoom = base * rel;
+      }
+      // сменилась только высота (выехала панель) — вид не трогаем,
+      // иначе карта прыгала бы от каждой всплывающей полосы
+      clampPan(v);
+      viewDirty.current = true;
+      setZoom(v.zoom);
+      setBox({ w, h });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [clampPan]);
 
   // колесо и щипок на трекпаде. Слушатель вешаем вручную: React-обработчик
   // пассивный и не даст отменить зум страницы.
@@ -93,9 +155,11 @@ export default function MapCanvas({
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const r = canvas.getBoundingClientRect();
-      const sx = ((e.clientX - r.left) / r.width) * SIZE;
-      const sy = ((e.clientY - r.top) / r.height) * SIZE;
-      zoomAt(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0022)), sx, sy);
+      zoomAt(
+        Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0022)),
+        e.clientX - r.left,
+        e.clientY - r.top
+      );
     };
     canvas.addEventListener("wheel", onWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", onWheel);
@@ -103,18 +167,22 @@ export default function MapCanvas({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const { w, h } = box;
+    if (!canvas || !w || !h) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    canvas.width = SIZE * dpr;
-    canvas.height = SIZE * dpr;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const layer = document.createElement("canvas");
-    layer.width = SIZE * dpr;
-    layer.height = SIZE * dpr;
+    layer.width = w * dpr;
+    layer.height = h * dpr;
     const lctx = layer.getContext("2d");
     if (!lctx) return;
+
+    versionRef.current = -1;
+    viewDirty.current = true;
 
     let raf = 0;
     const loop = (now: number) => {
@@ -123,7 +191,7 @@ export default function MapCanvas({
 
       if (viewDirty.current || versionRef.current !== sceneVersionRef.current) {
         lctx.setTransform(1, 0, 0, 1, 0, 0);
-        lctx.clearRect(0, 0, SIZE * dpr, SIZE * dpr);
+        lctx.clearRect(0, 0, w * dpr, h * dpr);
         applyView(lctx, dpr, view);
         drawStatic(lctx, sceneRef.current, CELL, view.zoom);
         viewDirty.current = false;
@@ -131,21 +199,22 @@ export default function MapCanvas({
       }
 
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, SIZE * dpr, SIZE * dpr);
+      ctx.clearRect(0, 0, w * dpr, h * dpr);
       ctx.drawImage(layer, 0, 0);
       applyView(ctx, dpr, view);
       overlayRef.current?.(ctx, now, view);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [box]);
 
   const toPt = (e: React.PointerEvent<HTMLCanvasElement>): Pt => {
     const r = e.currentTarget.getBoundingClientRect();
     const v = viewRef.current;
-    const sx = ((e.clientX - r.left) / r.width) * SIZE;
-    const sy = ((e.clientY - r.top) / r.height) * SIZE;
-    return { x: (v.panX + sx / v.zoom) / CELL, y: (v.panY + sy / v.zoom) / CELL };
+    return {
+      x: (v.panX + (e.clientX - r.left) / v.zoom) / CELL,
+      y: (v.panY + (e.clientY - r.top) / v.zoom) / CELL,
+    };
   };
 
   const handleDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -181,16 +250,12 @@ export default function MapCanvas({
       if (prev) {
         const r = e.currentTarget.getBoundingClientRect();
         const v = viewRef.current;
-        v.panX -= ((cx - prev.cx) / r.width) * (SIZE / v.zoom);
-        v.panY -= ((cy - prev.cy) / r.height) * (SIZE / v.zoom);
+        v.panX -= (cx - prev.cx) / v.zoom;
+        v.panY -= (cy - prev.cy) / v.zoom;
         clampPan(v);
         viewDirty.current = true;
         if (prev.dist > 0) {
-          zoomAt(
-            dist / prev.dist,
-            ((cx - r.left) / r.width) * SIZE,
-            ((cy - r.top) / r.height) * SIZE
-          );
+          zoomAt(dist / prev.dist, cx - r.left, cy - r.top);
         }
       }
       pinch.current = { dist, cx, cy };
@@ -198,13 +263,12 @@ export default function MapCanvas({
     }
 
     if (pan.current) {
-      const r = e.currentTarget.getBoundingClientRect();
       const v = viewRef.current;
       const dx = e.clientX - pan.current.x;
       const dy = e.clientY - pan.current.y;
       if (Math.abs(dx) + Math.abs(dy) > 2) panMoved.current = true;
-      v.panX -= (dx / r.width) * (SIZE / v.zoom);
-      v.panY -= (dy / r.height) * (SIZE / v.zoom);
+      v.panX -= dx / v.zoom;
+      v.panY -= dy / v.zoom;
       clampPan(v);
       viewDirty.current = true;
       pan.current = { x: e.clientX, y: e.clientY };
@@ -234,13 +298,23 @@ export default function MapCanvas({
   };
 
   const resetView = () => {
-    viewRef.current = { zoom: 1, panX: 0, panY: 0 };
+    const { w, h } = boxSize.current;
+    const v = viewRef.current;
+    v.zoom = baseZoom.current;
+    v.panX = (SIZE - w / v.zoom) / 2;
+    v.panY = (SIZE - h / v.zoom) / 2;
+    clampPan(v);
     viewDirty.current = true;
-    setZoom(1);
+    setZoom(v.zoom);
   };
 
+  const shown = zoom / (baseZoom.current || 1);
+
   return (
-    <div className={`relative ${className}`}>
+    <div
+      ref={boxRef}
+      className={`relative overflow-hidden rounded-md border border-neutral-700 bg-neutral-900 shadow-lg ${className}`}
+    >
       <canvas
         ref={canvasRef}
         onPointerDown={handleDown}
@@ -252,16 +326,16 @@ export default function MapCanvas({
           onLeave?.();
         }}
         onContextMenu={(e) => e.preventDefault()}
-        style={{ cursor }}
-        className="aspect-square w-full touch-none select-none rounded-md border border-neutral-700 bg-neutral-900 shadow-lg [image-rendering:pixelated]"
+        style={{ cursor, width: box.w || undefined, height: box.h || undefined }}
+        className="block touch-none select-none [image-rendering:pixelated]"
       />
       <div className="pointer-events-none absolute left-2 top-2 rounded bg-black/50 px-2 py-1 font-mono text-xs text-neutral-200">
-        {zoom.toFixed(1)}×
+        {shown.toFixed(1)}×
       </div>
-      {zoom > 1 && (
+      {shown > 1.01 && (
         <button
           onClick={resetView}
-          className="absolute right-2 top-2 rounded bg-black/50 px-2 py-1 text-xs text-neutral-200 hover:bg-black/70"
+          className="absolute right-2 top-2 rounded bg-black/50 px-3 py-1.5 text-xs text-neutral-200 hover:bg-black/70"
         >
           Вся карта
         </button>

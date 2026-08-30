@@ -68,29 +68,32 @@ export default function AuthGate() {
 
   if (cloudEnabled && state === "anon") {
     return (
-      <div className="relative overflow-hidden rounded-lg border border-neutral-700">
+      <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border border-neutral-700 lg:flex-none">
         {/* заставка: широкая на десктопе, вытянутая на телефоне */}
         <picture>
           <source media="(max-width: 640px)" srcSet="/hero-portrait.png" />
           <img
             src="/hero-wide.png"
             alt="Skladron — склад под налётом дронов"
-            className="h-[70vh] w-full object-cover sm:h-auto sm:max-h-[70vh]"
+            className="h-full w-full object-cover sm:h-auto sm:max-h-[70vh]"
           />
         </picture>
 
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/85 to-transparent p-6 pt-24 text-center">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/85 to-transparent p-5 pt-24 text-center sm:p-6">
           <p className="mx-auto mb-5 max-w-md text-sm text-neutral-300">
             Склад, кредиты и повреждения хранятся в аккаунте — чтобы враги могли присылать
             дронов, пока тебя нет.
           </p>
           <button
             onClick={signIn}
-            className="rounded bg-red-600 px-6 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-lg transition hover:bg-red-500"
+            className="w-full rounded bg-red-600 px-6 py-4 text-sm font-bold uppercase tracking-wider text-white shadow-lg transition hover:bg-red-500 sm:w-auto sm:py-3"
           >
             Войти через Google
           </button>
           {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+          <p className="mt-4 text-[10px] uppercase tracking-[0.3em] text-neutral-500 sm:hidden">
+            Skladron
+          </p>
         </div>
       </div>
     );

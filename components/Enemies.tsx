@@ -4,6 +4,7 @@ import { useState } from "react";
 import { PATTERNS, type Pattern, EDGE_NAMES } from "@/lib/attack";
 import { fmt } from "@/lib/economy";
 import { MAX_ATTACK_DRONES, type Enemy, type RaidOutcome } from "@/lib/enemy";
+import { Row } from "./ui";
 
 interface Props {
   enemies: Enemy[];
@@ -29,22 +30,24 @@ export default function Enemies({ enemies, drones, onAdd, onRaid, onChanged }: P
   };
 
   return (
-    <div className="rounded-md border border-neutral-700 bg-neutral-900/60 p-4">
-      <div className="mb-3 text-xs uppercase tracking-widest text-neutral-400">Враги</div>
-
+    <>
       <div className="flex gap-2">
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && add()}
           placeholder="почта врага"
-          className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm text-neutral-200 placeholder:text-neutral-600"
+          type="email"
+          inputMode="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-2 text-base text-neutral-200 placeholder:text-neutral-600 lg:py-1 lg:text-sm"
         />
         <button
           onClick={add}
-          className="shrink-0 rounded border border-neutral-700 px-3 py-1 text-xs text-neutral-300 hover:bg-neutral-800"
+          className="shrink-0 rounded border border-neutral-700 px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-800 lg:py-1"
         >
-          Добавить врага
+          Добавить
         </button>
       </div>
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
@@ -65,7 +68,7 @@ export default function Enemies({ enemies, drones, onAdd, onRaid, onChanged }: P
                 <button
                   onClick={() => setTarget(e)}
                   disabled={drones < 10}
-                  className="shrink-0 rounded bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-neutral-700"
+                  className="shrink-0 rounded bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-neutral-700 lg:py-1"
                 >
                   Атаковать
                 </button>
@@ -99,7 +102,7 @@ export default function Enemies({ enemies, drones, onAdd, onRaid, onChanged }: P
           onClose={() => setOutcome(null)}
         />
       )}
-    </div>
+    </>
   );
 }
 
@@ -120,8 +123,8 @@ function RaidDialog({
   const [dir, setDir] = useState(0);
 
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-sm rounded-md border border-neutral-700 bg-neutral-900 p-5">
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4">
+      <div className="max-h-[92dvh] w-full max-w-sm overflow-y-auto overscroll-contain rounded-t-2xl border border-neutral-700 bg-neutral-900 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:rounded-md sm:pb-5">
         <h3 className="mb-1 text-lg font-bold">Налёт на {enemy.name}</h3>
         <p className="mb-4 text-xs text-neutral-500">
           Дроны спишутся сразу и не вернутся, чем бы дело ни кончилось.
@@ -137,7 +140,7 @@ function RaidDialog({
           step={10}
           value={n}
           onChange={(e) => setN(Number(e.target.value))}
-          className="mb-4 w-full accent-red-500"
+          className="mb-4 h-8 w-full accent-red-500"
         />
 
         <div className="mb-1 text-xs uppercase tracking-wider text-neutral-400">Рисунок волн</div>
@@ -182,13 +185,13 @@ function RaidDialog({
         <div className="flex gap-2">
           <button
             onClick={() => onSend(n, pattern, dir)}
-            className="flex-1 rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
+            className="flex-1 rounded bg-red-600 px-4 py-3 text-sm font-semibold text-white hover:bg-red-500 sm:py-2"
           >
             Отправить {n} дронов
           </button>
           <button
             onClick={onCancel}
-            className="rounded border border-neutral-700 px-4 py-2 text-sm text-neutral-300 hover:bg-neutral-800"
+            className="rounded border border-neutral-700 px-4 py-3 text-sm text-neutral-300 hover:bg-neutral-800 sm:py-2"
           >
             Отмена
           </button>
@@ -209,8 +212,8 @@ function RaidReport({
 }) {
   const r = out.result;
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-sm rounded-md border border-neutral-700 bg-neutral-900 p-5">
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4">
+      <div className="max-h-[92dvh] w-full max-w-sm overflow-y-auto overscroll-contain rounded-t-2xl border border-neutral-700 bg-neutral-900 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:rounded-md sm:pb-5">
         <h3 className="mb-1 text-lg font-bold">
           {out.destroyed ? `${name} выгорел дотла` : `Налёт на ${name}`}
         </h3>
@@ -229,20 +232,11 @@ function RaidReport({
         </dl>
         <button
           onClick={onClose}
-          className="w-full rounded bg-neutral-100 px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-white"
+          className="w-full rounded bg-neutral-100 px-4 py-3 text-sm font-semibold text-neutral-900 hover:bg-white sm:py-2"
         >
           Закрыть
         </button>
       </div>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <dt className="text-neutral-400">{label}</dt>
-      <dd className="shrink-0 text-neutral-100">{value}</dd>
     </div>
   );
 }

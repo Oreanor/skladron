@@ -14,6 +14,7 @@ import {
 } from "@/lib/engine";
 import { drawFrame } from "@/lib/render";
 import MapCanvas, { type Pt } from "./MapCanvas";
+import { Row } from "./ui";
 
 export interface BattleOutcome {
   cells: Uint8Array;
@@ -49,6 +50,7 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
   const hoverRef = useRef<{ x: number; y: number } | null>(null);
   const [hud, setHud] = useState<Hud | null>(null);
   const [done, setDone] = useState<BattleOutcome | null>(null);
+  const [hints, setHints] = useState(false);
   const finished = useRef(false);
 
   if (!stateRef.current) {
@@ -111,9 +113,10 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
   const pattern = PATTERNS.find((p) => p.id === order.pattern);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,700px)_18rem]">
-      <div className="relative">
+    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:flex-none lg:grid-cols-[minmax(0,700px)_18rem] lg:gap-4">
+      <div className="relative flex min-h-0 flex-1 flex-col lg:block">
         <MapCanvas
+          className="min-h-0 flex-1 lg:aspect-square lg:w-full lg:flex-none"
           scene={scene}
           sceneVersion={version}
           cursor="none"
@@ -136,8 +139,51 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
           }}
         />
 
+        {/* компактный HUD телефона: под картой, одной прокручиваемой строкой */}
+        <div className="flex shrink-0 gap-3 overflow-x-auto rounded-md border border-neutral-800 bg-neutral-900/60 px-3 py-2 font-mono text-xs [-ms-overflow-style:none] [scrollbar-width:none] lg:hidden [&::-webkit-scrollbar]:hidden">
+          <HudChip label="в небе" value={String(hud?.inAir ?? 0)} tone="text-red-300" />
+          <HudChip label="на подходе" value={String(hud?.left ?? 0)} />
+          <HudChip
+            label="сбито"
+            value={String((hud?.killedByGuns ?? 0) + (hud?.killedByMg ?? 0))}
+            tone="text-emerald-300"
+          />
+          <HudChip
+            label="огонь"
+            value={String(hud?.fires ?? 0)}
+            tone={hud?.fires ? "text-orange-300" : undefined}
+          />
+          <HudChip label="пушки" value={`${hud?.gunsAlive ?? 0}/${hud?.gunsTotal ?? 0}`} />
+          <HudChip
+            label="целость"
+            value={`${hud?.integrity ?? 100}%`}
+            tone={(hud?.integrity ?? 100) < 60 ? "text-orange-300" : "text-emerald-300"}
+          />
+          <HudChip label="время" value={`${Math.floor(hud?.time ?? 0)} c`} />
+        </div>
+
+        {/* подсказка по управлению: на телефоне разворачивается по кнопке */}
+        <button
+          onClick={() => setHints((v) => !v)}
+          className="absolute right-2 top-12 z-10 h-8 w-8 rounded-full border border-neutral-700 bg-black/60 text-sm text-neutral-300 lg:hidden"
+          aria-label="Управление"
+        >
+          ?
+        </button>
+        {hints && (
+          <div className="absolute inset-x-2 top-12 z-10 rounded-md border border-neutral-700 bg-neutral-950/95 p-3 text-xs leading-relaxed text-neutral-400 lg:hidden">
+            <p className="mb-2 font-semibold text-neutral-300">Управление</p>
+            <ul className="list-disc space-y-1 pl-4">
+              <li>Держи палец над землёй — пулемётная очередь.</li>
+              <li>Держи палец над зданием — струя воды, тушит клетку.</li>
+              <li>Подбитый дрон падает через 3 клетки — не сбивай над складом.</li>
+              <li>Два пальца — зум и перетаскивание карты.</li>
+            </ul>
+          </div>
+        )}
+
         {done && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-md bg-black/75 p-6">
+          <div className="absolute inset-0 z-20 flex items-center justify-center overflow-y-auto rounded-md bg-black/80 p-4 sm:p-6">
             <div className="w-full max-w-sm">
               <div
                 className={`mb-1 text-2xl font-bold tracking-wide ${
@@ -166,7 +212,7 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
               </dl>
               <button
                 onClick={() => onFinish(done)}
-                className="w-full rounded bg-neutral-100 px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-white"
+                className="w-full rounded bg-neutral-100 px-4 py-3 text-sm font-semibold text-neutral-900 hover:bg-white sm:py-2"
               >
                 Вернуться на склад
               </button>
@@ -175,7 +221,7 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
         )}
       </div>
 
-      <aside className="space-y-4 text-sm">
+      <aside className="hidden space-y-4 text-sm lg:block">
         <div className="rounded-md border border-neutral-700 bg-neutral-900/60 p-4">
           <div className="mb-2 text-xs uppercase tracking-widest text-neutral-400">Налёт</div>
           <p className="mb-3 text-neutral-300">
@@ -207,11 +253,11 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function HudChip({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
-    <div className="flex items-center justify-between">
-      <dt className="text-neutral-400">{label}</dt>
-      <dd className="text-neutral-100">{value}</dd>
+    <div className="flex shrink-0 items-baseline gap-1.5">
+      <span className="text-[10px] uppercase tracking-wider text-neutral-500">{label}</span>
+      <span className={tone ?? "text-neutral-100"}>{value}</span>
     </div>
   );
 }
