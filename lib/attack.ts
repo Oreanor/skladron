@@ -38,14 +38,10 @@ export interface SpawnTicket {
   oy: number; // отступ за кадр
 }
 
-export const PATTERNS: { id: Pattern; name: string; hint: string }[] = [
-  { id: "swarm", name: "Рой", hint: "все разом с одной стороны" },
-  { id: "lines", name: "Линиями", hint: "шеренги с одной стороны" },
-  { id: "random", name: "Со всех сторон", hint: "шеренги с разных сторон" },
-  { id: "drip", name: "Капель", hint: "по одному, всё чаще" },
-];
+export const PATTERNS: Pattern[] = ["swarm", "lines", "random", "drip"];
 
-export const EDGE_NAMES = ["сверху", "снизу", "слева", "справа"];
+/** Стороны в том же порядке, что и direction: 0 верх, 1 низ, 2 слева, 3 справа. */
+export const EDGES = [0, 1, 2, 3] as const;
 
 export function mulberry32(a: number) {
   return function () {

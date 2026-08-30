@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { fmt } from "@/lib/economy";
+import { useT } from "@/lib/i18n";
 
 /*
  * Общая мелочь интерфейса. Правило простое: цвет означает смысл, а не вкус.
@@ -197,6 +198,7 @@ export function Sheet({
   onClose: () => void;
   children: ReactNode;
 }) {
+  const t = useT();
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -211,7 +213,7 @@ export function Sheet({
   return (
     <div className="fixed inset-0 z-30 flex flex-col justify-end lg:hidden">
       <button
-        aria-label="Закрыть"
+        aria-label={t("common.close")}
         onClick={onClose}
         className="absolute inset-x-0 bottom-0 top-14 cursor-default bg-black/60"
       />
@@ -351,6 +353,7 @@ export function NameDialog({
   onCancel: () => void;
   onSubmit: (name: string) => void;
 }) {
+  const t = useT();
   const [value, setValue] = useState(initial);
   const ready = value.trim().length > 0;
 
@@ -364,7 +367,7 @@ export function NameDialog({
         onKeyDown={(e) => {
           if (e.key === "Enter" && ready) onSubmit(value);
         }}
-        placeholder="Северный терминал"
+        placeholder={t("base.namePlaceholder")}
         className={`${inputClass} mb-1 w-full`}
       />
       <p className="mb-4 text-right font-mono text-[11px] text-neutral-600">
@@ -379,7 +382,7 @@ export function NameDialog({
         >
           {confirm}
         </Button>
-        <Button onClick={onCancel}>Отмена</Button>
+        <Button onClick={onCancel}>{t("common.cancel")}</Button>
       </div>
     </Modal>
   );
@@ -399,13 +402,14 @@ export function ConfirmDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const t = useT();
   return (
     <Modal title={title} subtitle={subtitle} onClose={onCancel}>
       <div className="flex gap-2">
         <Button variant="danger" className="flex-1" onClick={onConfirm}>
           {confirm}
         </Button>
-        <Button onClick={onCancel}>Отмена</Button>
+        <Button onClick={onCancel}>{t("common.cancel")}</Button>
       </div>
     </Modal>
   );

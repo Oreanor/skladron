@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { cloudEnabled, supabase } from "@/lib/supabase";
 import Lobby from "./Lobby";
 import { Button } from "./ui";
+import { useT } from "@/lib/i18n";
 
 export interface Account {
   email: string | null;
@@ -15,6 +16,7 @@ export interface Account {
  * через Google и отдаёт аккаунт в лобби.
  */
 export default function AuthGate() {
+  const t = useT();
   const [state, setState] = useState<"checking" | "anon" | "signed">(
     cloudEnabled ? "checking" : "anon"
   );
@@ -64,7 +66,7 @@ export default function AuthGate() {
   };
 
   if (state === "checking") {
-    return <div className="p-6 text-sm text-neutral-500">Проверяем вход…</div>;
+    return <div className="p-6 text-sm text-neutral-500">{t("app.checkingSignIn")}</div>;
   }
 
   if (cloudEnabled && state === "anon") {
@@ -81,7 +83,7 @@ export default function AuthGate() {
           <source media="(min-aspect-ratio: 1/2)" srcSet="/hero-portrait.webp" />
           <img
             src="/hero-tall.webp"
-            alt="Skladron — склад под налётом дронов"
+            alt="Skladron"
             // Логотип врисован в арт у нижнего края, поэтому кроп якорим по
             // низу. В альбомных вариантах он ещё и справа — там якорь правый,
             // иначе object-cover срезает ему край.
@@ -92,8 +94,7 @@ export default function AuthGate() {
         {/* пояснение сверху — внизу его место занял логотип с арта */}
         <div className="absolute inset-x-0 top-0 bg-gradient-to-b from-black/90 via-black/60 to-transparent px-4 pb-12 pt-4 text-center sm:px-6 sm:pb-16 sm:pt-5">
           <p className="mx-auto max-w-md text-sm text-neutral-200">
-            Склад, кредиты и повреждения хранятся в аккаунте — чтобы враги могли присылать
-            дронов, пока тебя нет.
+            {t("auth.pitch")}
           </p>
         </div>
 
@@ -104,7 +105,7 @@ export default function AuthGate() {
             onClick={signIn}
             className="w-full uppercase tracking-wider shadow-lg sm:w-auto"
           >
-            Войти через Google
+            {t("auth.google")}
           </Button>
           {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
         </div>

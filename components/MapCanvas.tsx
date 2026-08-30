@@ -11,6 +11,7 @@ import {
   type View,
 } from "@/lib/render";
 import { Button } from "./ui";
+import { useT } from "@/lib/i18n";
 
 export const CELL = 7; // px на клетку в логических координатах
 export const SIZE = GRID * CELL;
@@ -53,6 +54,7 @@ export default function MapCanvas({
   cursor = "crosshair",
   className = "",
 }: MapCanvasProps) {
+  const t = useT();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   // zoom здесь — экранных пикселей на игровой пиксель. На квадратном окне 700×700
@@ -339,7 +341,7 @@ export default function MapCanvas({
           onClick={resetView}
           className="absolute right-2 top-2 border-transparent bg-black/50 font-normal text-white hover:bg-black/70"
         >
-          Вся карта
+          {t("map.wholeMap")}
         </Button>
       )}
     </div>

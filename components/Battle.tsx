@@ -15,7 +15,9 @@ import {
 import { drawFrame } from "@/lib/render";
 import { DRONE_KILL_REWARD, fmt } from "@/lib/economy";
 import MapCanvas, { type Pt } from "./MapCanvas";
-import { Button, Chip, ChipBar, IconButton, Panel, Row, SectionTitle } from "./ui";
+import { Button, Chip, ChipBar, IconButton, Panel, Row } from "./ui";
+import { useT } from "@/lib/i18n";
+import type { Key } from "@/lib/i18n/dict";
 
 export interface BattleOutcome {
   cells: Uint8Array;
@@ -52,6 +54,7 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
   const [hud, setHud] = useState<Hud | null>(null);
   const [done, setDone] = useState<BattleOutcome | null>(null);
   const [hints, setHints] = useState(false);
+  const t = useT();
   const finished = useRef(false);
 
   if (!stateRef.current) {
@@ -111,7 +114,9 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
     return { x, y };
   };
 
-  const pattern = PATTERNS.find((p) => p.id === order.pattern);
+  const patternName = t(`pattern.${order.pattern}` as Key).toLowerCase();
+  const seconds = `${Math.floor(hud?.time ?? 0)} ${t("battle.seconds")}`;
+  const killReward = ((hud?.killedByGuns ?? 0) + (hud?.killedByMg ?? 0)) * DRONE_KILL_REWARD;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,700px)_18rem] lg:gap-4">
@@ -142,37 +147,37 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
 
         {/* компактный HUD телефона: под картой, одной прокручиваемой строкой */}
         <ChipBar className="lg:hidden">
-          <Chip label="в небе" value={String(hud?.inAir ?? 0)} tone="text-red-300" />
-          <Chip label="на подходе" value={String(hud?.left ?? 0)} />
+          <Chip label={t("battle.hudAir")} value={String(hud?.inAir ?? 0)} tone="text-red-300" />
+          <Chip label={t("battle.hudLeft")} value={String(hud?.left ?? 0)} />
           <Chip
-            label="сбито"
+            label={t("battle.hudKilled")}
             value={String((hud?.killedByGuns ?? 0) + (hud?.killedByMg ?? 0))}
             tone="text-emerald-300"
           />
           <Chip
-            label="за сбитые"
+            label={t("battle.killReward")}
             value={`+${fmt(
               ((hud?.killedByGuns ?? 0) + (hud?.killedByMg ?? 0)) * DRONE_KILL_REWARD
             )}`}
             tone="text-emerald-300"
           />
           <Chip
-            label="огонь"
+            label={t("battle.hudFires")}
             value={String(hud?.fires ?? 0)}
             tone={hud?.fires ? "text-orange-300" : undefined}
           />
-          <Chip label="пушки" value={`${hud?.gunsAlive ?? 0}/${hud?.gunsTotal ?? 0}`} />
+          <Chip label={t("battle.hudGuns")} value={`${hud?.gunsAlive ?? 0}/${hud?.gunsTotal ?? 0}`} />
           <Chip
-            label="целость"
+            label={t("battle.hudIntegrity")}
             value={`${hud?.integrity ?? 100}%`}
             tone={(hud?.integrity ?? 100) < 60 ? "text-orange-300" : "text-emerald-300"}
           />
-          <Chip label="время" value={`${Math.floor(hud?.time ?? 0)} c`} />
+          <Chip label={t("battle.hudTime")} value={seconds} />
         </ChipBar>
 
         {/* подсказка по управлению: на телефоне разворачивается по кнопке */}
         <IconButton
-          label="Управление"
+          label={t("panel.controls")}
           round
           onClick={() => setHints((v) => !v)}
           className="absolute right-2 top-12 z-10 h-8 w-8 bg-black/60 lg:hidden"
@@ -181,12 +186,12 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
         </IconButton>
         {hints && (
           <div className="absolute inset-x-2 top-12 z-10 rounded-md border border-neutral-700 bg-neutral-950/95 p-3 text-xs leading-relaxed text-neutral-400 lg:hidden">
-            <p className="mb-2 font-semibold text-neutral-300">Управление</p>
+            <p className="mb-2 font-semibold text-neutral-300">{t("panel.controls")}</p>
             <ul className="list-disc space-y-1 pl-4">
-              <li>Держи палец над землёй — пулемётная очередь.</li>
-              <li>Держи палец над зданием — струя воды, тушит клетку.</li>
-              <li>Подбитый дрон падает через 3 клетки — не сбивай над складом.</li>
-              <li>Два пальца — зум и перетаскивание карты.</li>
+              <li>{t("controls.mgHold")}</li>
+              <li>{t("controls.waterHold")}</li>
+              <li>{t("controls.fallingDrone")}</li>
+              <li>{t("controls.zoomTouch")}</li>
             </ul>
           </div>
         )}
@@ -199,41 +204,45 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
                   done.won ? "text-emerald-400" : "text-red-400"
                 }`}
               >
-                {done.won ? "НАЛЁТ ОТБИТ" : "СКЛАД ВЫГОРЕЛ"}
+                {done.won ? t("battle.won") : t("battle.lost")}
               </div>
               <p className="mb-4 text-sm text-neutral-400">
-                Атака {order.from} — {order.drones} дронов, {pattern?.name.toLowerCase()}
+                {t("battle.header", {
+                  from: order.from,
+                  drones: order.drones,
+                  pattern: patternName,
+                })}
               </p>
               <dl className="mb-5 space-y-1 font-mono text-sm">
-                <Row label="Запущено дронов" value={String(order.drones)} />
-                <Row label="Сбито ракетами" value={String(done.result.killedByGuns)} />
-                <Row label="Сбито очередью" value={String(done.result.killedByMg)} />
+                <Row label={t("battle.sent")} value={String(order.drones)} />
+                <Row label={t("battle.killedByGuns")} value={String(done.result.killedByGuns)} />
+                <Row label={t("battle.killedByMg")} value={String(done.result.killedByMg)} />
                 <Row
-                  label="За сбитые дроны"
+                  label={t("battle.killReward")}
                   value={`+${fmt(
                     (done.result.killedByGuns + done.result.killedByMg) * DRONE_KILL_REWARD
                   )} кр`}
                 />
                 <Row
-                  label="Итого награда"
+                  label={t("battle.totalReward")}
                   value={`+${fmt(
                     (done.result.killedByGuns + done.result.killedByMg) *
                       DRONE_KILL_REWARD
                   )} кр`}
                 />
-                <Row label="Прорвалось" value={String(done.result.leaked)} />
+                <Row label={t("battle.leaked")} value={String(done.result.leaked)} />
                 <Row
-                  label="Разрушено склада"
+                  label={t("battle.destroyedShare")}
                   value={`${
                     s.baseTotal ? Math.round((done.result.burned / s.baseTotal) * 100) : 0
                   }%`}
                 />
-                <Row label="Потушено водой" value={String(done.result.extinguished)} />
-                <Row label="Потеряно дронов" value={String(done.result.dronesLost)} />
-                <Row label="Потеряно пушек" value={String(done.result.gunsLost)} />
+                <Row label={t("battle.extinguished")} value={String(done.result.extinguished)} />
+                <Row label={t("battle.dronesLost")} value={String(done.result.dronesLost)} />
+                <Row label={t("battle.gunsLost")} value={String(done.result.gunsLost)} />
               </dl>
               <Button variant="neutral" block onClick={() => onFinish(done)}>
-                Вернуться на склад
+                {t("battle.back")}
               </Button>
             </div>
           </div>
@@ -241,34 +250,36 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
       </div>
 
       <aside className="hidden min-h-0 space-y-4 overflow-y-auto text-sm lg:block">
-        <Panel title="Налёт">
+        <Panel title={t("panel.raid")}>
           <p className="mb-3 text-neutral-300">
-            {order.from} · {order.drones} дронов · {pattern?.name.toLowerCase()}
+            {t("battle.header", {
+              from: order.from,
+              drones: order.drones,
+              pattern: patternName,
+            })}
           </p>
           <dl className="space-y-1 font-mono">
-            <Row label="В небе" value={String(hud?.inAir ?? 0)} />
-            <Row label="На подходе" value={String(hud?.left ?? 0)} />
-            <Row label="Сбито ракетами" value={String(hud?.killedByGuns ?? 0)} />
-            <Row label="Сбито очередью" value={String(hud?.killedByMg ?? 0)} />
+            <Row label={t("battle.inAir")} value={String(hud?.inAir ?? 0)} />
+            <Row label={t("battle.incomingLeft")} value={String(hud?.left ?? 0)} />
+            <Row label={t("battle.killedByGuns")} value={String(hud?.killedByGuns ?? 0)} />
+            <Row label={t("battle.killedByMg")} value={String(hud?.killedByMg ?? 0)} />
             <Row
-              label="За сбитые"
-              value={`+${fmt(
-                ((hud?.killedByGuns ?? 0) + (hud?.killedByMg ?? 0)) * DRONE_KILL_REWARD
-              )} кр`}
+              label={t("battle.killReward")}
+              value={`+${fmt(killReward)} ${t("battle.creditsSuffix")}`}
             />
-            <Row label="Очагов огня" value={String(hud?.fires ?? 0)} />
-            <Row label="Пушек живо" value={`${hud?.gunsAlive ?? 0}/${hud?.gunsTotal ?? 0}`} />
-            <Row label="Целостность" value={`${hud?.integrity ?? 100}%`} />
-            <Row label="Время" value={`${Math.floor(hud?.time ?? 0)} c`} />
+            <Row label={t("battle.fires")} value={String(hud?.fires ?? 0)} />
+            <Row label={t("battle.gunsAlive")} value={`${hud?.gunsAlive ?? 0}/${hud?.gunsTotal ?? 0}`} />
+            <Row label={t("battle.integrity")} value={`${hud?.integrity ?? 100}%`} />
+            <Row label={t("battle.time")} value={seconds} />
           </dl>
         </Panel>
 
-        <Panel title="Управление">
+        <Panel title={t("panel.controls")}>
           <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-neutral-400">
-            <li>Над землёй зажатая ЛКМ — пулемётная очередь.</li>
-            <li>Над зданием зажатая ЛКМ — струя воды, тушит клетку.</li>
-            <li>Подбитый дрон падает через 3 клетки — не сбивай над складом.</li>
-            <li>Колесо или щипок — зум, ПКМ — тащить карту.</li>
+            <li>{t("controls.mgHold")}</li>
+            <li>{t("controls.waterHold")}</li>
+            <li>{t("controls.fallingDrone")}</li>
+            <li>{t("controls.zoomDesktop")}</li>
           </ul>
         </Panel>
       </aside>

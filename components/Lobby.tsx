@@ -30,7 +30,6 @@ import {
   fmt,
 } from "@/lib/economy";
 import {
-  EDGE_NAMES,
   PATTERNS,
   RAID_TTL_MS,
   type AttackOrder,
@@ -128,7 +127,8 @@ const TOOLS: {
   },
 ];
 
-const ENEMY_NAMES = ["Сосед", "Конкурент", "Бывший партнёр", "Аноним"];
+/** Имена ботов для отладочной кнопки «+ налёт»: настоящие атаки приходят с именем склада. */
+const BOT_COUNT = 4;
 
 export default function Lobby({
   account,
@@ -188,7 +188,7 @@ export default function Lobby({
         if (patch.credits !== undefined) cur.credits = patch.credits;
         forceRender((v) => v + 1);
       } catch (e) {
-        setMessage(`Сервер отклонил правку: ${(e as Error).message}`);
+        setMessage(t("save.rejected", { error: (e as Error).message }));
       }
     }, 400);
   };
@@ -209,12 +209,12 @@ export default function Lobby({
         setReports(loadedReports);
         setReady(true);
         if (income.credits > 0) {
-          setMessage(`Доход за ${income.days} сут: +${fmt(income.credits)} кр`);
+          setMessage(t("income.collected", { days: income.days, credits: fmt(income.credits) }));
         }
       })
       .catch((e) => {
         if (!alive) return;
-        setMessage(`Не удалось загрузить склад: ${(e as Error).message}`);
+        setMessage(t("load.failed", { error: (e as Error).message }));
         setReady(true);
       });
     return () => {
@@ -294,7 +294,7 @@ export default function Lobby({
           if (patch.credits !== undefined) cur.credits = patch.credits;
           forceRender((v) => v + 1);
         } catch (e) {
-          setMessage(`Итог автобоя не сохранён: ${(e as Error).message}`);
+          setMessage(t("auto.notSaved", { error: (e as Error).message }));
         }
       } finally {
         autoBusyRef.current = false;
@@ -313,7 +313,7 @@ export default function Lobby({
     : { cells: new Uint8Array(0), guns: [], depots: [] };
 
   if (!ready || !p) {
-    return <div className="p-6 text-sm text-neutral-500">Загрузка склада…</div>;
+    return <div className="p-6 text-sm text-neutral-500">{t("app.loading")}</div>;
   }
 
   const intact = intactCells(p);
@@ -366,8 +366,8 @@ export default function Lobby({
           setBattle(null);
           setMessage(
             o.won
-              ? `Налёт отбит. За ${killed} сбитых дронов: +${fmt(killReward)} кр`
-              : `Склад выгорел под атакой ${battle.from}. За сбитые: +${fmt(killReward)} кр`
+              ? t("battle.repelled", { killed, reward: fmt(killReward) })
+              : t("battle.burntDown", { from: battle.from, reward: fmt(killReward) })
           );
           setVersion((v) => v + 1);
           forceRender((v) => v + 1);
@@ -381,7 +381,7 @@ export default function Lobby({
             if (patch.credits !== undefined) p.credits = patch.credits;
             forceRender((v) => v + 1);
           } catch (e) {
-            setMessage(`Итог боя не сохранён: ${(e as Error).message}`);
+            setMessage(t("battle.notSaved", { error: (e as Error).message }));
           }
         }}
       />
@@ -400,18 +400,18 @@ export default function Lobby({
   const commitDraft = () => {
     if (!draftRect || draftRect.w <= 0 || draftRect.h <= 0) return;
     if (!draftConnects) {
-      setMessage("Здание должно быть без разрывов");
+      setMessage(t("draft.mustBeSolid"));
       return;
     }
     if (!draftAfford) {
-      setMessage(`Не хватает кредитов: нужно ${fmt(draftCost)}`);
+      setMessage(t("draft.needCredits", { cost: fmt(draftCost) }));
       return;
     }
     applyRect(p.cells, draftRect);
     p.credits -= draftCost;
     draftRef.current = null;
     dragRef.current = null;
-    setMessage(`Пристроено ${draftNew} клеток за ${fmt(draftCost)} кр`);
+    setMessage(t("draft.built", { cells: draftNew, cost: fmt(draftCost) }));
     touch();
   };
 
@@ -420,12 +420,12 @@ export default function Lobby({
     const i = idx(x, y);
     if (isBuilding(p.cells[i])) return;
     if (hasBuilding && !touchesBuilding(p.cells, x, y)) {
-      setMessage("Здание должно быть без разрывов");
+      setMessage(t("draft.mustBeSolid"));
       return;
     }
     const cost = CELL_COST;
     if (p.credits < cost) {
-      setMessage("Не хватает кредитов");
+      setMessage(t("draft.noCredits"));
       return;
     }
     p.cells[i] = G_BASE;
@@ -438,7 +438,7 @@ export default function Lobby({
     const i = idx(x, y);
     if (p.cells[i] !== G_BURNT) return;
     if (p.credits < REPAIR_COST) {
-      setMessage("Не хватает кредитов на ремонт");
+      setMessage(t("repair.noCredits"));
       return;
     }
     const cells = p.cells.slice();
@@ -459,15 +459,15 @@ export default function Lobby({
       return;
     }
     if (p.cells[idx(x, y)] !== G_BASE) {
-      setMessage("Пушка ставится только на целую клетку здания");
+      setMessage(t("gun.onlyIntact"));
       return;
     }
     if (p.depots.some((d) => d.cx === x && d.cy === y)) {
-      setMessage("Клетка занята контейнером с дронами");
+      setMessage(t("gun.cellBusy"));
       return;
     }
     if (p.credits < GUN_COST) {
-      setMessage("Не хватает кредитов на пушку");
+      setMessage(t("gun.noCredits"));
       return;
     }
     p.guns.push({ cx: x, cy: y });
@@ -486,15 +486,15 @@ export default function Lobby({
       selectedBuyAmount
     );
     if (!nextDepots) {
-      setMessage("Не хватает свободных клеток под контейнеры");
+      setMessage(t("arsenal.needSpace"));
       return;
     }
     const newContainers = nextDepots.length - p.depots.length;
     p.depots = nextDepots;
     p.credits -= selectedBuyCost;
     setMessage(
-      `Закуплено ${selectedBuyAmount} дронов за ${fmt(selectedBuyCost)} кр` +
-        (newContainers > 0 ? ` · новых контейнеров: ${newContainers}` : "")
+      t("arsenal.bought", { count: selectedBuyAmount, cost: fmt(selectedBuyCost) }) +
+        (newContainers > 0 ? t("arsenal.newContainers", { count: newContainers }) : "")
     );
     // На телефоне арсенал закрывает карту; после покупки сразу отдаём место
     // раскладке, потому что режим «Дроны» уже выбран.
@@ -510,7 +510,7 @@ export default function Lobby({
       p.credits = previousCredits;
       setVersion((v) => v + 1);
       forceRender((v) => v + 1);
-      setMessage(`Закупка не прошла: ${(e as Error).message}`);
+      setMessage(t("arsenal.buyFailed", { error: (e as Error).message }));
     }
   };
 
@@ -518,11 +518,11 @@ export default function Lobby({
   const moveDepot = (from: { cx: number; cy: number }, x: number, y: number) => {
     if (x < 0 || y < 0 || x >= GRID || y >= GRID) return;
     if (p.cells[idx(x, y)] !== G_BASE) {
-      setMessage("Контейнер ставится только на целую клетку склада");
+      setMessage(t("depot.onlyIntact"));
       return;
     }
     if (p.guns.some((g) => g.cx === x && g.cy === y)) {
-      setMessage("Клетка занята пушкой");
+      setMessage(t("depot.gunThere"));
       return;
     }
     if (
@@ -531,7 +531,7 @@ export default function Lobby({
           (d.cx !== from.cx || d.cy !== from.cy) && d.cx === x && d.cy === y
       )
     ) {
-      setMessage("Здесь уже стоит контейнер");
+      setMessage(t("depot.taken"));
       return;
     }
     const depotIndex = p.depots.findIndex((q) => q.cx === from.cx && q.cy === from.cy);
@@ -551,12 +551,12 @@ export default function Lobby({
     p.founded = true;
     p.lastIncomeAt = Date.now();
     setNaming(null);
-    setMessage(`Склад «${name}» основан. Доход пошёл.`);
+    setMessage(t("base.founded", { name }));
     touch();
     try {
       await repo.rename(p, name);
     } catch (e) {
-      setMessage(`Имя не сохранилось: ${(e as Error).message}`);
+      setMessage(t("base.nameNotSaved", { error: (e as Error).message }));
     }
   };
 
@@ -572,18 +572,18 @@ export default function Lobby({
     forceRender((v) => v + 1);
     try {
       await repo.rename(p, name);
-      setMessage(`Теперь это «${name}»`);
+      setMessage(t("base.renamed", { name }));
     } catch (e) {
       p.name = prev; // сервер не принял — возвращаем как было
-      setMessage(`Переименовать не вышло: ${(e as Error).message}`);
+      setMessage(t("base.renameFailed", { error: (e as Error).message }));
       forceRender((v) => v + 1);
     }
   };
 
   const addEnemy = async (email: string): Promise<string | null> => {
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return "Похоже, это не почта";
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return t("enemies.notEmail");
     if (p.enemies.some((e) => e.email.toLowerCase() === email.toLowerCase())) {
-      return "Этот враг уже в списке";
+      return t("enemies.already");
     }
     // имя берём с сервера: враг зовётся так, как назвал свой склад
     let name: string | undefined;
@@ -603,7 +603,7 @@ export default function Lobby({
     } catch (e) {
       p.enemies = p.enemies.filter((item) => item.id !== enemy.id);
       forceRender((v) => v + 1);
-      return `Не удалось сохранить: ${(e as Error).message}`;
+      return t("enemies.notSaved", { error: (e as Error).message });
     }
   };
 
@@ -617,7 +617,7 @@ export default function Lobby({
     const sent = takeDrones(p.depots, n);
     if (sent !== n) {
       p.depots = previousDepots;
-      return "Не удалось собрать нужное количество дронов";
+      return t("raid.notEnough");
     }
     const seed = (Math.random() * 1e9) | 0;
     setVersion((value) => value + 1);
@@ -625,21 +625,21 @@ export default function Lobby({
     try {
       await repo.sendAttack(p, enemy.email, n, pattern, direction, seed);
       p.stats.raids++;
-      setMessage(`Налёт отправлен. Итог придёт после того, как ${enemy.email} отыграет защиту.`);
+      setMessage(t("raid.sent", { email: enemy.email }));
       return null;
     } catch (error) {
       p.depots = previousDepots;
       setVersion((value) => value + 1);
       forceRender((value) => value + 1);
-      return `Не удалось отправить налёт: ${(error as Error).message}`;
+      return t("raid.sendFailed", { error: (error as Error).message });
     }
   };
 
   const summonAttack = () => {
-    const pattern = PATTERNS[(Math.random() * PATTERNS.length) | 0].id as Pattern;
+    const pattern = PATTERNS[(Math.random() * PATTERNS.length) | 0];
     const size = 20 + Math.floor(Math.random() * 60);
     const order = makeOrder(
-      ENEMY_NAMES[(Math.random() * ENEMY_NAMES.length) | 0],
+      t(`bot.${(Math.random() * BOT_COUNT) | 0}` as Key),
       size,
       pattern,
       (Math.random() * 4) | 0
@@ -907,10 +907,9 @@ export default function Lobby({
   if (doomed) {
     return (
       <div className="mx-auto max-w-md rounded-md border border-red-900/60 bg-neutral-900/70 p-6 text-center sm:p-8">
-        <h2 className="mb-2 text-2xl font-bold text-red-400">Склад выгорел дотла</h2>
+        <h2 className="mb-2 text-2xl font-bold text-red-400">{t("doomed.title")}</h2>
         <p className="mb-6 text-sm text-neutral-400">
-          Целых клеток не осталось, а на ремонт нет кредитов. Придётся начинать сначала —
-          статистика и вражда сохранятся.
+          {t("doomed.text")}
         </p>
         <Button
           variant="neutral"
@@ -918,15 +917,15 @@ export default function Lobby({
           onClick={async () => {
             try {
               playerRef.current = await repo.wipe(p);
-              setMessage("Новый склад, новые 10 000 кр");
+              setMessage(t("doomed.restarted"));
               setVersion((v) => v + 1);
               forceRender((v) => v + 1);
             } catch (e) {
-              setMessage(`Не удалось начать заново: ${(e as Error).message}`);
+              setMessage(t("doomed.failed", { error: (e as Error).message }));
             }
           }}
         >
-          Начать заново
+          {t("doomed.restart")}
         </Button>
       </div>
     );
@@ -936,11 +935,11 @@ export default function Lobby({
     setConfirmWipe(false);
     try {
       playerRef.current = await repo.wipe(p);
-      setMessage(`Пепелище расчищено. Стартовый склад ${STARTER_SIDE}×${STARTER_SIDE} на месте`);
+      setMessage(t("burnt.razed", { side: STARTER_SIDE }));
       setVersion((v) => v + 1);
       forceRender((v) => v + 1);
     } catch (e) {
-      setMessage(`Не удалось снести: ${(e as Error).message}`);
+      setMessage(t("burnt.razeFailed", { error: (e as Error).message }));
     }
   };
 
@@ -959,16 +958,13 @@ export default function Lobby({
   const foundBody = (
     <>
       <p className="mb-3 text-neutral-300">
-        Стартовый склад {STARTER_SIDE}×{STARTER_SIDE} уже стоит посреди поля — он твой даром.
-        Пристройка дальше — {CELL_COST} кр за клетку.
+        {t("base.starter", { side: STARTER_SIDE, cost: CELL_COST })}
       </p>
       <p className="mb-3 text-neutral-300">
-        Потяни по карте — появится красная заготовка. Её можно двигать и тянуть за углы, клик по
-        ней утверждает постройку, кнопка «Убрать» отменяет. Одиночный тап по клетке рядом со
-        зданием достраивает её сразу.
+        {t("base.drawHint")}
       </p>
       <div className="mb-3 flex items-center justify-between font-mono">
-        <span className="text-neutral-400">Площадь</span>
+        <span className="text-neutral-400">{t("base.area")}</span>
         <span className={intact >= MIN_BASE_CELLS ? "text-emerald-400" : "text-neutral-100"}>
           {intact}/{MIN_BASE_CELLS}
         </span>
@@ -979,7 +975,7 @@ export default function Lobby({
         onClick={() => setNaming("found")}
         disabled={intact < MIN_BASE_CELLS}
       >
-        Основать склад
+        {t("base.found")}
       </Button>
     </>
   );
@@ -987,17 +983,16 @@ export default function Lobby({
   const arsenalBody = (
     <>
       <p className="mb-3 text-neutral-400">
-        Дроны лежат контейнерами прямо на складе — по {DRONES_PER_CELL} штук на клетку. Клетка
-        сгорела — дроны в ней пропали.
+        {t("arsenal.explain", { perCell: DRONES_PER_CELL })}
       </p>
       <dl className="mb-3 space-y-1 font-mono text-sm">
-        <Row label="Дронов" value={fmt(drones)} />
-        <Row label="Контейнеров" value={String(p.depots.length)} />
-        <Row label="Свободных клеток" value={String(free)} />
+        <Row label={t("arsenal.drones")} value={fmt(drones)} />
+        <Row label={t("arsenal.containers")} value={String(p.depots.length)} />
+        <Row label={t("arsenal.freeCells")} value={String(free)} />
       </dl>
       <div className="mb-3">
         <div className="mb-1 flex items-center justify-between text-xs text-neutral-400">
-          <span>Купить дронов</span>
+          <span>{t("arsenal.buyTitle")}</span>
           <input
             type="number"
             min={1}
@@ -1006,7 +1001,7 @@ export default function Lobby({
             disabled={maxBuyAmount < 1}
             onChange={(event) => setBuyAmount(Number(event.target.value))}
             className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-right font-mono text-neutral-100 outline-none focus:border-amber-500 disabled:opacity-40"
-            aria-label="Точное количество дронов"
+            aria-label={t("arsenal.exactAmount")}
           />
         </div>
         <input
@@ -1018,28 +1013,28 @@ export default function Lobby({
           disabled={maxBuyAmount < 1}
           onChange={(event) => setBuyAmount(Number(event.target.value))}
           className="h-8 w-full cursor-pointer accent-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label="Количество дронов для покупки"
+          aria-label={t("arsenal.amountSlider")}
         />
         <div className="flex justify-between font-mono text-[11px] text-neutral-500">
           <span>1</span>
-          <span>макс. {maxBuyAmount}</span>
+          <span>{t("arsenal.max", { count: maxBuyAmount })}</span>
         </div>
       </div>
       <Button variant="neutral" block onClick={buyDrones} disabled={selectedBuyAmount < 1}>
-        Купить {selectedBuyAmount} за {fmt(selectedBuyCost)} кр
+        {t("arsenal.buy", { count: selectedBuyAmount, cost: fmt(selectedBuyCost) })}
       </Button>
       <p className="mt-2 text-xs text-neutral-500">
         {maxBuyAmount > 0
-          ? `${DRONE_UNIT_COST} кр за штуку · доступно мест: ${fmt(maxBySpace)}`
+          ? t("arsenal.unitAndSpace", { cost: DRONE_UNIT_COST, space: fmt(maxBySpace) })
           : intact === 0
-          ? "Дронам негде лежать: сначала почини клетки склада"
+          ? t("arsenal.noRoom")
           : maxBySpace < 1
-          ? "Нет свободного места под дроны"
-          : "Не хватает кредитов даже на одного дрона"}
+          ? t("arsenal.noSpace")
+          : t("arsenal.cantAffordOne")}
       </p>
       {p.depots.length > 0 && (
         <p className="mt-2 text-xs text-neutral-500">
-          Выбери «Дроны» и перетаскивай контейнеры прямо по карте на подсвеченные клетки.
+          {t("arsenal.dragTip")}
         </p>
       )}
     </>
@@ -1055,13 +1050,13 @@ export default function Lobby({
   const attacksBody =
     p.incoming.length === 0 ? (
       <p className="text-neutral-500">
-        Пока тихо. Кнопка «+ налёт» присылает атаку от бота — на этапе 1 так проверяем баланс.
+        {t("attacks.quiet")}
       </p>
     ) : (
       <ul className="space-y-2">
         {p.incoming.map((a, i) => {
-          const pat = PATTERNS.find((x) => x.id === a.pattern);
           const first = i === 0;
+          const edge = a.pattern === "lines" ? ` ${t(`edge.${a.direction}` as Key)}` : "";
           return (
             <Card
               key={a.id}
@@ -1070,28 +1065,31 @@ export default function Lobby({
               <div className="min-w-0">
                 <div className="truncate font-medium text-neutral-200">{a.from}</div>
                 <div className="font-mono text-xs text-neutral-500">
-                  {a.drones} дронов · {pat?.name.toLowerCase()}
-                  {a.pattern === "lines" ? ` ${EDGE_NAMES[a.direction]}` : ""}
+                  {t("attacks.dronesPattern", {
+                    drones: a.drones,
+                    pattern: t(`pattern.${a.pattern}` as Key).toLowerCase(),
+                  })}
+                  {edge}
                 </div>
                 <div className="font-mono text-xs text-neutral-500">
                   {first
                     ? headLeft !== null
-                      ? `осталось ${countdown(headLeft)}`
-                      : "часы вот-вот пойдут"
-                    : `${i + 1}-я в очереди`}
+                      ? t("attacks.timeLeft", { time: countdown(headLeft) })
+                      : t("attacks.starting")
+                    : t("attacks.queued", { position: i + 1 })}
                 </div>
               </div>
               <Button
                 variant="danger"
                 size="sm"
                 disabled={!first || intact === 0}
-                title={first ? undefined : "Сначала отбей предыдущую"}
+                title={first ? undefined : t("attacks.defendFirst")}
                 onClick={() => {
                   setSheet(null);
                   setBattle(a);
                 }}
               >
-                Отбить
+                {t("attacks.defend")}
               </Button>
             </Card>
           );
@@ -1101,7 +1099,7 @@ export default function Lobby({
 
   const summonButton = (
     <Button size="sm" onClick={summonAttack}>
-      + налёт
+      {t("attacks.summon")}
     </Button>
   );
 
@@ -1117,13 +1115,13 @@ export default function Lobby({
 
   const statsBody = (
     <div className="space-y-1 font-mono text-xs text-neutral-400">
-      <StatRow label="Боёв" value={p.stats.battles} />
-      <StatRow label="Дронов сбито" value={p.stats.dronesKilled} />
-      <StatRow label="Клеток сгорело" value={p.stats.cellsBurned} />
-      <StatRow label="Клеток починено" value={p.stats.cellsRepaired} />
-      <StatRow label="Складов потеряно" value={p.stats.wipes} />
-      <StatRow label="Налётов совершено" value={p.stats.raids} />
-      <StatRow label="Добыто кредитов" value={p.stats.looted} />
+      <StatRow label={t("stats.battles")} value={p.stats.battles} />
+      <StatRow label={t("stats.dronesKilled")} value={p.stats.dronesKilled} />
+      <StatRow label={t("stats.cellsBurned")} value={p.stats.cellsBurned} />
+      <StatRow label={t("stats.cellsRepaired")} value={p.stats.cellsRepaired} />
+      <StatRow label={t("stats.wipes")} value={p.stats.wipes} />
+      <StatRow label={t("stats.raids")} value={p.stats.raids} />
+      <StatRow label={t("stats.looted")} value={p.stats.looted} />
     </div>
   );
 
@@ -1134,10 +1132,10 @@ export default function Lobby({
           p.name ? "text-neutral-100" : "text-neutral-500"
         }`}
       >
-        {p.name || "без названия"}
+        {p.name || t("base.unnamed")}
       </span>
       <Button size="sm" onClick={() => setNaming("rename")}>
-        Переименовать
+        {t("base.rename")}
       </Button>
     </div>
   );
@@ -1155,20 +1153,20 @@ export default function Lobby({
       {/* шапка телефона: счётчики одной строкой плюс кнопки панелей */}
       <div className="flex shrink-0 items-center gap-2 lg:hidden">
         <ChipBar className="min-w-0 flex-1">
-          <Chip label="кр" value={fmt(p.credits)} tone="text-emerald-300" />
-          <Chip label="дроны" value={fmt(drones)} />
-          <Chip label="клетки" value={fmt(intact)} />
-          {burnt > 0 && <Chip label="горело" value={fmt(burnt)} tone="text-orange-300" />}
-          <Chip label="пушки" value={fmt(p.guns.length)} />
-          <Chip label="/сут" value={`+${fmt(income)}`} tone="text-emerald-300" />
+          <Chip label={t("stat.creditsShort")} value={fmt(p.credits)} tone="text-emerald-300" />
+          <Chip label={t("stat.dronesShort")} value={fmt(drones)} />
+          <Chip label={t("stat.intactShort")} value={fmt(intact)} />
+          {burnt > 0 && <Chip label={t("stat.burntShort")} value={fmt(burnt)} tone="text-orange-300" />}
+          <Chip label={t("stat.gunsShort")} value={fmt(p.guns.length)} />
+          <Chip label={t("stat.incomeShort")} value={`+${fmt(income)}`} tone="text-emerald-300" />
         </ChipBar>
-        <IconButton label="Налёты" badge={p.incoming.length} onClick={() => toggleSheet("attacks")}>
+        <IconButton label={t("panel.attacks")} badge={p.incoming.length} onClick={() => toggleSheet("attacks")}>
           <IconTarget />
         </IconButton>
-        <IconButton label="Враги" onClick={() => toggleSheet("enemies")}>
+        <IconButton label={t("panel.enemies")} onClick={() => toggleSheet("enemies")}>
           <IconUsers />
         </IconButton>
-        <IconButton label="Меню" onClick={() => toggleSheet("menu")}>
+        <IconButton label={t("panel.base")} onClick={() => toggleSheet("menu")}>
           <IconMenu />
         </IconButton>
       </div>
@@ -1177,12 +1175,12 @@ export default function Lobby({
       <div className="hidden items-center gap-4 lg:flex">
         <h1 className="shrink-0 text-2xl font-black uppercase tracking-tight">Skladron</h1>
         <ChipBar className="min-w-0 flex-1 flex-wrap px-4 py-3 text-sm">
-          <Chip label="кредиты" value={fmt(p.credits)} tone="text-emerald-300" />
-          <Chip label="дроны" value={fmt(drones)} />
-          <Chip label="целых клеток" value={fmt(intact)} />
-          <Chip label="сгорело" value={fmt(burnt)} tone={burnt ? "text-orange-300" : undefined} />
-          <Chip label="пушек" value={fmt(p.guns.length)} />
-          <Chip label="доход/сут" value={`+${fmt(income)}`} tone="text-emerald-300" />
+          <Chip label={t("stat.credits")} value={fmt(p.credits)} tone="text-emerald-300" />
+          <Chip label={t("stat.dronesShort")} value={fmt(drones)} />
+          <Chip label={t("stat.intact")} value={fmt(intact)} />
+          <Chip label={t("stat.burnt")} value={fmt(burnt)} tone={burnt ? "text-orange-300" : undefined} />
+          <Chip label={t("stat.guns")} value={fmt(p.guns.length)} />
+          <Chip label={t("stat.income")} value={`+${fmt(income)}`} tone="text-emerald-300" />
         </ChipBar>
         {accountLine}
       </div>
@@ -1236,11 +1234,16 @@ export default function Lobby({
           {tool === "area" && draftRect && draftRect.w > 0 && draftRect.h > 0 && (
             <Notice tone="warn" className="order-2 flex-wrap lg:order-3">
               <span className="font-mono">
-                {draftRect.w}×{draftRect.h} · +{draftNew} клеток · {fmt(draftCost)} кр
+                {t("draft.summary", {
+                  w: draftRect.w,
+                  h: draftRect.h,
+                  cells: draftNew,
+                  cost: fmt(draftCost),
+                })}
               </span>
-              {!draftConnects && <span className="text-red-400">разрыв со зданием</span>}
+              {!draftConnects && <span className="text-red-400">{t("draft.gap")}</span>}
               {draftConnects && !draftAfford && (
-                <span className="text-red-400">не хватает кредитов</span>
+                <span className="text-red-400">{t("draft.tooExpensive")}</span>
               )}
               <div className="ml-auto flex gap-2">
                 <Button
@@ -1249,10 +1252,10 @@ export default function Lobby({
                   onClick={commitDraft}
                   disabled={!draftConnects || !draftAfford}
                 >
-                  Утвердить
+                  {t("draft.confirm")}
                 </Button>
                 <Button size="sm" onClick={onRightClick}>
-                  Убрать
+                  {t("draft.remove")}
                 </Button>
               </div>
             </Notice>
@@ -1262,7 +1265,7 @@ export default function Lobby({
           {!p.founded && (
             <Notice className="order-2 lg:order-3 lg:hidden">
               <IconButton
-                label="Как размечать склад"
+                label={t("base.layoutHelp")}
                 round
                 className="h-7 w-7 text-xs"
                 onClick={() => setSheet("found")}
@@ -1270,7 +1273,7 @@ export default function Lobby({
                 ?
               </IconButton>
               <span className="font-mono">
-                <span className="text-neutral-400">площадь </span>
+                <span className="text-neutral-400">{t("base.areaShort")} </span>
                 <span className={intact >= MIN_BASE_CELLS ? "text-emerald-400" : "text-neutral-100"}>
                   {intact}/{MIN_BASE_CELLS}
                 </span>
@@ -1282,7 +1285,7 @@ export default function Lobby({
                 onClick={() => setNaming("found")}
                 disabled={intact < MIN_BASE_CELLS}
               >
-                Основать
+                {t("base.foundShort")}
               </Button>
             </Notice>
           )}
@@ -1290,16 +1293,14 @@ export default function Lobby({
           {p.founded && intact === 0 && (
             <Notice tone="danger" className="order-2 flex-wrap lg:order-3">
               <span className="min-w-0">
-                Склад выгорел дотла. «Ремонт» поднимает клетку за {REPAIR_COST} кр,
-                «Снести» расчищает пепелище и ставит стартовые {STARTER_SIDE}×{STARTER_SIDE}{" "}
-                заново.
+                {t("burnt.notice", { cost: REPAIR_COST, side: STARTER_SIDE })}
               </span>
               <div className="ml-auto flex gap-2">
                 <Button size="sm" active={tool === "repair"} onClick={() => pickTool("repair")}>
-                  Ремонт
+                  {t("tool.repair")}
                 </Button>
                 <Button variant="danger" size="sm" onClick={() => setConfirmWipe(true)}>
-                  Снести
+                  {t("burnt.raze")}
                 </Button>
               </div>
             </Notice>
@@ -1310,7 +1311,10 @@ export default function Lobby({
             <Notice tone="danger" className="order-2 lg:order-3 lg:hidden">
               <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-500" />
               <span className="min-w-0 truncate">
-                Налёт: {p.incoming[0].from} · {p.incoming[0].drones} дронов
+                {t("attacks.incoming", {
+                  from: p.incoming[0].from,
+                  drones: p.incoming[0].drones,
+                })}
                 {headLeft !== null ? ` · ${countdown(headLeft)}` : ""}
               </span>
               <Button
@@ -1319,7 +1323,9 @@ export default function Lobby({
                 className="ml-auto"
                 onClick={() => setSheet("attacks")}
               >
-                {p.incoming.length > 1 ? `Отбить (${p.incoming.length})` : "Отбить"}
+                {p.incoming.length > 1
+                  ? t("attacks.defendCount", { count: p.incoming.length })
+                  : t("attacks.defend")}
               </Button>
             </Notice>
           )}
@@ -1328,16 +1334,16 @@ export default function Lobby({
         {/* боковая колонка десктопа */}
         <aside className="hidden min-h-0 space-y-4 overflow-y-auto text-sm lg:block">
           {!p.founded ? (
-            <Panel title="Разметка склада">{foundBody}</Panel>
+            <Panel title={t("panel.layout")}>{foundBody}</Panel>
           ) : (
             <>
-              <Panel title="Склад">{baseNameBody}</Panel>
-              {tool === "drones" && <Panel title="Арсенал">{arsenalBody}</Panel>}
-              <Panel title="Входящие атаки" action={summonButton}>
+              <Panel title={t("panel.base")}>{baseNameBody}</Panel>
+              {tool === "drones" && <Panel title={t("panel.arsenal")}>{arsenalBody}</Panel>}
+              <Panel title={t("panel.attacks")} action={summonButton}>
                 {attacksBody}
               </Panel>
-              <Panel title="Враги">{enemiesBody}</Panel>
-              <Panel title="Статистика">{statsBody}</Panel>
+              <Panel title={t("panel.enemies")}>{enemiesBody}</Panel>
+              <Panel title={t("panel.stats")}>{statsBody}</Panel>
             </>
           )}
         </aside>
@@ -1348,33 +1354,33 @@ export default function Lobby({
         <Modal
           title={
             autoReport.outcome.won
-              ? `Налёт ${autoReport.from} прошёл без тебя`
-              : `Склад выгорел: ${autoReport.from}`
+              ? t("auto.wonTitle", { from: autoReport.from })
+              : t("auto.lostTitle", { from: autoReport.from })
           }
-          subtitle="Полчаса на ответ истекли. Пушки отстрелялись сами, тушить и бить очередью было некому."
+          subtitle={t("auto.subtitle")}
           onClose={() => setAutoReport(null)}
         >
           <dl className="mb-4 space-y-1 font-mono text-sm">
             <Row
-              label="Сбито ракетами"
+              label={t("battle.killedByGuns")}
               value={String(autoReport.outcome.result.killedByGuns)}
             />
-            <Row label="Прорвалось" value={String(autoReport.outcome.result.leaked)} />
-            <Row label="Клеток сгорело" value={String(autoReport.outcome.result.burned)} />
-            <Row label="Потеряно дронов" value={String(autoReport.outcome.result.dronesLost)} />
-            <Row label="Потеряно пушек" value={String(autoReport.outcome.result.gunsLost)} />
+            <Row label={t("battle.leaked")} value={String(autoReport.outcome.result.leaked)} />
+            <Row label={t("battle.burned")} value={String(autoReport.outcome.result.burned)} />
+            <Row label={t("battle.dronesLost")} value={String(autoReport.outcome.result.dronesLost)} />
+            <Row label={t("battle.gunsLost")} value={String(autoReport.outcome.result.gunsLost)} />
           </dl>
           <Button variant="neutral" block onClick={() => setAutoReport(null)}>
-            Понятно
+            {t("auto.ok")}
           </Button>
         </Modal>
       )}
 
       {confirmWipe && (
         <ConfirmDialog
-          title="Снести пепелище?"
-          subtitle={`Сгоревшие клетки исчезнут, а посреди поля снова встанет стартовый склад ${STARTER_SIDE}×${STARTER_SIDE}. Кредиты и статистика останутся.`}
-          confirm="Снести"
+          title={t("burnt.razeTitle")}
+          subtitle={t("burnt.razeHint", { side: STARTER_SIDE })}
+          confirm={t("burnt.raze")}
           onCancel={() => setConfirmWipe(false)}
           onConfirm={razeBase}
         />
@@ -1389,7 +1395,7 @@ export default function Lobby({
               await repo.acknowledgeReport(report.id);
               setReports((current) => current.filter((item) => item.id !== report.id));
             } catch (error) {
-              setMessage(`Не удалось закрыть отчёт: ${(error as Error).message}`);
+              setMessage(t("report.closeFailed", { error: (error as Error).message }));
             }
           }}
         />
@@ -1397,13 +1403,11 @@ export default function Lobby({
 
       {naming && (
         <NameDialog
-          title={naming === "found" ? "Как назовём склад?" : "Переименовать склад"}
+          title={naming === "found" ? t("base.namePrompt") : t("base.renameTitle")}
           subtitle={
-            naming === "found"
-              ? "Под этим именем тебя увидят враги. Поменять можно будет в любой момент."
-              : "Старое имя нигде не останется — враги сразу увидят новое."
+            naming === "found" ? t("base.namePromptHint") : t("base.renameHint")
           }
-          confirm={naming === "found" ? "Основать" : "Переименовать"}
+          confirm={naming === "found" ? t("base.foundShort") : t("base.rename")}
           initial={p.name}
           maxLength={MAX_BASE_NAME}
           onCancel={() => setNaming(null)}
@@ -1411,48 +1415,48 @@ export default function Lobby({
         />
       )}
 
-      <Sheet open={sheet === "found"} title="Разметка склада" onClose={() => setSheet(null)}>
+      <Sheet open={sheet === "found"} title={t("panel.layout")} onClose={() => setSheet(null)}>
         {foundBody}
       </Sheet>
-      <Sheet open={sheet === "arsenal"} title="Арсенал" onClose={() => setSheet(null)}>
-        {p.founded ? arsenalBody : <p className="text-neutral-500">Сначала основай склад.</p>}
+      <Sheet open={sheet === "arsenal"} title={t("panel.arsenal")} onClose={() => setSheet(null)}>
+        {p.founded ? arsenalBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}
       </Sheet>
-      <Sheet open={sheet === "attacks"} title="Входящие атаки" onClose={() => setSheet(null)}>
+      <Sheet open={sheet === "attacks"} title={t("panel.attacks")} onClose={() => setSheet(null)}>
         <div className="mb-3 flex justify-end">{summonButton}</div>
         {attacksBody}
       </Sheet>
-      <Sheet open={sheet === "enemies"} title="Враги" onClose={() => setSheet(null)}>
+      <Sheet open={sheet === "enemies"} title={t("panel.enemies")} onClose={() => setSheet(null)}>
         {enemiesBody}
       </Sheet>
-      <Sheet open={sheet === "menu"} title="Склад" onClose={() => setSheet(null)}>
+      <Sheet open={sheet === "menu"} title={t("panel.base")} onClose={() => setSheet(null)}>
         <div className="space-y-5">
           {p.founded && (
             <div>
               <div className="mb-2">
-                <SectionTitle>Склад</SectionTitle>
+                <SectionTitle>{t("panel.base")}</SectionTitle>
               </div>
               {baseNameBody}
             </div>
           )}
           <div>
             <div className="mb-2">
-              <SectionTitle>Статистика</SectionTitle>
+              <SectionTitle>{t("panel.stats")}</SectionTitle>
             </div>
             {statsBody}
           </div>
           <div>
             <div className="mb-2">
-              <SectionTitle>Управление</SectionTitle>
+              <SectionTitle>{t("panel.controls")}</SectionTitle>
             </div>
             <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-neutral-400">
-              <li>Тап по клетке рядом со зданием — достроить её.</li>
-              <li>Протяжка — заготовка площади, её надо утвердить.</li>
-              <li>Два пальца — зум и перетаскивание карты.</li>
+              <li>{t("controls.tapCell")}</li>
+              <li>{t("controls.dragDraft")}</li>
+              <li>{t("controls.zoomTouch")}</li>
             </ul>
           </div>
           <div>
             <div className="mb-2">
-              <SectionTitle>Аккаунт</SectionTitle>
+              <SectionTitle>{t("panel.account")}</SectionTitle>
             </div>
             <div className="truncate px-2 text-sm font-semibold text-neutral-100">
               {account?.name ?? account?.email ?? t("app.localMode")}
@@ -1472,25 +1476,33 @@ function AttackReportDialog({
   report: AttackReport;
   onClose: () => void;
 }) {
+  const t = useT();
   const result = report.result;
   return (
     <Modal
-      title={report.destroyed ? `${report.target} выгорел дотла` : `Итог налёта на ${report.target}`}
-      subtitle="Защитник отыграл атаку — теперь результат окончательный."
+      title={
+        report.destroyed
+          ? t("report.destroyed", { target: report.target })
+          : t("report.title", { target: report.target })
+      }
+      subtitle={t("report.subtitle")}
       onClose={onClose}
     >
       <dl className="mb-4 space-y-1 font-mono text-sm">
-        <Row label="Запущено дронов" value={String(result.dronesSent)} />
-        <Row label="Сбито ракетами" value={String(result.killedByGuns)} />
-        <Row label="Сбито очередью" value={String(result.killedByMg)} />
-        <Row label="Прорвалось" value={String(result.leaked)} />
-        <Row label="Клеток сожжено" value={String(result.burned)} />
-        <Row label="Уничтожено дронов на складе" value={String(result.dronesLost)} />
-        <Row label="Уничтожено пушек" value={String(result.gunsLost)} />
-        <Row label="За долетевшие дроны" value={`+${fmt(report.loot)} кр`} />
+        <Row label={t("battle.sent")} value={String(result.dronesSent)} />
+        <Row label={t("battle.killedByGuns")} value={String(result.killedByGuns)} />
+        <Row label={t("battle.killedByMg")} value={String(result.killedByMg)} />
+        <Row label={t("battle.leaked")} value={String(result.leaked)} />
+        <Row label={t("battle.burned")} value={String(result.burned)} />
+        <Row label={t("battle.dronesLost")} value={String(result.dronesLost)} />
+        <Row label={t("battle.gunsLost")} value={String(result.gunsLost)} />
+        <Row
+          label={t("report.leakReward")}
+          value={`+${fmt(report.loot)} ${t("battle.creditsSuffix")}`}
+        />
       </dl>
       <Button variant="neutral" block onClick={onClose}>
-        Закрыть
+        {t("common.close")}
       </Button>
     </Modal>
   );
