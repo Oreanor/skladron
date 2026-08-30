@@ -1221,7 +1221,7 @@ export default function Lobby({
         </Notice>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,700px)_20rem] lg:gap-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-4">
         {/*
           Левая колонка. На телефоне порядок задаём через order-*: карта наверху
           забирает всю свободную высоту, инструменты прижаты к низу под большой палец.
@@ -1362,7 +1362,7 @@ export default function Lobby({
         </div>
 
         {/* боковая колонка десктопа */}
-        <aside className="hidden min-h-0 space-y-4 overflow-y-auto text-sm lg:block">
+        <aside className="hidden min-h-0 space-y-4 overflow-y-auto text-sm lg:block [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {!p.founded ? (
             <Panel title={t("panel.layout")}>{foundBody}</Panel>
           ) : (

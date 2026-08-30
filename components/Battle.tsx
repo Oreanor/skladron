@@ -119,7 +119,7 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
   const killReward = ((hud?.killedByGuns ?? 0) + (hud?.killedByMg ?? 0)) * DRONE_KILL_REWARD;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,700px)_18rem] lg:gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-4">
       <div className="relative flex min-h-0 flex-1 flex-col gap-2">
         <MapCanvas
           className="min-h-0 flex-1"
@@ -249,7 +249,7 @@ export default function Battle({ cells, guns, depots, order, onFinish }: Props) 
         )}
       </div>
 
-      <aside className="hidden min-h-0 space-y-4 overflow-y-auto text-sm lg:block">
+      <aside className="hidden min-h-0 space-y-4 overflow-y-auto text-sm lg:block [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Panel title={t("panel.raid")}>
           <p className="mb-3 text-neutral-300">
             {t("battle.header", {
