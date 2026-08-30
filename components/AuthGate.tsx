@@ -69,31 +69,41 @@ export default function AuthGate() {
   if (cloudEnabled && state === "anon") {
     return (
       <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border border-neutral-700 lg:flex-none">
-        {/* заставка: широкая на десктопе, вытянутая на телефоне */}
+        {/*
+          Заставка нарисована в четырёх пропорциях, логотип в каждой врисован
+          под свой кроп. Выбираем по пропорциям экрана, а не по ширине: планшет
+          в портрете и телефон в альбоме — это разные картинки при одной ширине.
+        */}
         <picture>
-          <source media="(max-width: 640px)" srcSet="/hero-portrait.png" />
+          <source media="(min-aspect-ratio: 3/2)" srcSet="/hero-wide.webp" />
+          <source media="(min-aspect-ratio: 7/8)" srcSet="/hero-box.webp" />
+          <source media="(min-aspect-ratio: 1/2)" srcSet="/hero-portrait.webp" />
           <img
-            src="/hero-wide.png"
+            src="/hero-tall.webp"
             alt="Skladron — склад под налётом дронов"
-            className="h-full w-full object-cover sm:h-auto sm:max-h-[70vh]"
+            // Логотип врисован в арт у нижнего края, поэтому кроп якорим по
+            // низу. В альбомных вариантах он ещё и справа — там якорь правый,
+            // иначе object-cover срезает ему край.
+            className="h-full w-full object-cover object-bottom [@media(min-aspect-ratio:7/8)]:object-right-bottom lg:h-auto lg:max-h-[80vh]"
           />
         </picture>
 
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/85 to-transparent p-5 pt-24 text-center sm:p-6">
-          <p className="mx-auto mb-5 max-w-md text-sm text-neutral-300">
+        {/* пояснение сверху — внизу его место занял логотип с арта */}
+        <div className="absolute inset-x-0 top-0 bg-gradient-to-b from-black/90 via-black/60 to-transparent px-4 pb-12 pt-4 text-center sm:px-6 sm:pb-16 sm:pt-5">
+          <p className="mx-auto max-w-md text-sm text-neutral-200">
             Склад, кредиты и повреждения хранятся в аккаунте — чтобы враги могли присылать
             дронов, пока тебя нет.
           </p>
+        </div>
+
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/75 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-10 text-center sm:px-6 sm:pt-16 lg:pb-6 [@media(min-aspect-ratio:7/8)]:text-left">
           <button
             onClick={signIn}
-            className="w-full rounded bg-red-600 px-6 py-4 text-sm font-bold uppercase tracking-wider text-white shadow-lg transition hover:bg-red-500 sm:w-auto sm:py-3"
+            className="w-full rounded bg-red-600 px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-white shadow-lg transition hover:bg-red-500 sm:w-auto sm:py-3"
           >
             Войти через Google
           </button>
-          {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
-          <p className="mt-4 text-[10px] uppercase tracking-[0.3em] text-neutral-500 sm:hidden">
-            Skladron
-          </p>
+          {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
         </div>
       </div>
     );

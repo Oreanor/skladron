@@ -16,6 +16,10 @@ export function supabase(): SupabaseClient | null {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        // PKCE вместо implicit: в адресную строку прилетает одноразовый ?code=,
+        // а сам токен приходит отдельным POST-запросом и не светится ни в
+        // истории браузера, ни в Referer, ни в логах.
+        flowType: "pkce",
       },
     });
   }
