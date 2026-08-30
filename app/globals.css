@@ -1,7 +1,82 @@
 @import "tailwindcss";
 
+/*
+ * Светлая тема сделана выворотом шкалы neutral, а не переписыванием классов.
+ * Весь интерфейс построен на том, что neutral-950 — это фон, а neutral-100 —
+ * текст. В светлой теме те же ступени просто меняются местами: neutral-950
+ * становится почти белым, neutral-100 — почти чёрным. Поэтому ни один класс
+ * в компонентах трогать не нужно, а акценты (emerald, red, amber) остаются
+ * собой и одинаково читаются на обоих фонах.
+ */
+@theme inline {
+  --color-neutral-50: var(--n-50);
+  --color-neutral-100: var(--n-100);
+  --color-neutral-200: var(--n-200);
+  --color-neutral-300: var(--n-300);
+  --color-neutral-400: var(--n-400);
+  --color-neutral-500: var(--n-500);
+  --color-neutral-600: var(--n-600);
+  --color-neutral-700: var(--n-700);
+  --color-neutral-800: var(--n-800);
+  --color-neutral-900: var(--n-900);
+  --color-neutral-950: var(--n-950);
+
+  /* оттенки, которыми пишут текстом поверх панелей */
+  --color-emerald-300: var(--a-emerald);
+  --color-emerald-400: var(--a-emerald);
+  --color-red-200: var(--a-red);
+  --color-red-300: var(--a-red);
+  --color-red-400: var(--a-red);
+  --color-orange-200: var(--a-orange);
+  --color-orange-300: var(--a-orange);
+  --color-amber-300: var(--a-amber);
+}
+
 :root {
   color-scheme: dark;
+
+  --n-50: #fafafa;
+  --n-100: #f5f5f5;
+  --n-200: #e5e5e5;
+  --n-300: #d4d4d4;
+  --n-400: #a3a3a3;
+  --n-500: #737373;
+  --n-600: #525252;
+  --n-700: #404040;
+  --n-800: #262626;
+  --n-900: #171717;
+  --n-950: #0a0a0a;
+
+  --a-emerald: #6ee7b7;
+  --a-red: #fca5a5;
+  --a-orange: #fdba74;
+  --a-amber: #fcd34d;
+
+  --page: #0c0f0c;
+}
+
+/* тот же порядок ступеней, прочитанный с другого конца */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --n-50: #0a0a0a;
+  --n-100: #171717;
+  --n-200: #262626;
+  --n-300: #404040;
+  --n-400: #57534e;
+  --n-500: #78716c;
+  --n-600: #a8a29e;
+  --n-700: #d6d3d1;
+  --n-800: #e7e5e4;
+  --n-900: #f5f5f4;
+  --n-950: #fafaf9;
+
+  --a-emerald: #047857;
+  --a-red: #b91c1c;
+  --a-orange: #c2410c;
+  --a-amber: #b45309;
+
+  --page: #eef1ee;
 }
 
 html,
@@ -10,14 +85,11 @@ body {
 }
 
 body {
-  background: #0c0f0c;
-  color: #e5e5e5;
+  background: var(--page);
+  color: var(--n-200);
   /* тянешь заготовку по карте — страница не должна дёргаться и обновляться */
   overscroll-behavior: none;
-}
-
-/* игра занимает ровно экран: прокручиваются только панели внутри */
-body {
+  /* игра занимает ровно экран: прокручиваются только панели внутри */
   overflow: hidden;
 }
 

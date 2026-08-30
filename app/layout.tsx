@@ -20,7 +20,16 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ru">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* тему ставим до первой отрисовки, иначе светлая тема мигает тёмным */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var t=localStorage.getItem(\"wb.theme\");document.documentElement.dataset.theme=t===\"light\"?\"light\":\"dark\"}catch(e){}",
+          }}
+        />
+      </head>
       <body className="antialiased">{children}</body>
     </html>
   );

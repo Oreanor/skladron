@@ -330,14 +330,14 @@ export default function MapCanvas({
         style={{ cursor, width: box.w || undefined, height: box.h || undefined }}
         className="block touch-none select-none [image-rendering:pixelated]"
       />
-      <div className="pointer-events-none absolute left-2 top-2 rounded bg-black/50 px-2 py-1 font-mono text-xs text-neutral-200">
+      <div className="pointer-events-none absolute left-2 top-2 rounded bg-black/50 px-2 py-1 font-mono text-xs text-white">
         {shown.toFixed(1)}×
       </div>
       {shown > 1.01 && (
         <Button
           size="sm"
           onClick={resetView}
-          className="absolute right-2 top-2 border-transparent bg-black/50 font-normal text-neutral-200 hover:bg-black/70"
+          className="absolute right-2 top-2 border-transparent bg-black/50 font-normal text-white hover:bg-black/70"
         >
           Вся карта
         </Button>

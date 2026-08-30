@@ -25,7 +25,7 @@ const BASE =
 
 const VARIANTS: Record<Variant, string> = {
   build:
-    "bg-emerald-500 text-neutral-950 hover:bg-emerald-400 " +
+    "bg-emerald-500 text-emerald-950 hover:bg-emerald-400 " +
     "disabled:bg-neutral-800 disabled:text-neutral-500",
   danger:
     "bg-red-600 text-white hover:bg-red-500 " +
@@ -408,5 +408,46 @@ export function ConfirmDialog({
         <Button onClick={onCancel}>Отмена</Button>
       </div>
     </Modal>
+  );
+}
+
+/**
+ * Квадратная кнопка инструмента: глиф крупно, цена мелко под ним. Занимает
+ * меньше места, чем строка с подписью, и одинаково читается на телефоне.
+ */
+export function ToolButton({
+  label,
+  price,
+  hint,
+  active,
+  icon,
+  ...rest
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  label: string;
+  price: string;
+  hint: string;
+  active: boolean;
+  icon: ReactNode;
+}) {
+  return (
+    <button
+      {...rest}
+      title={`${label} · ${hint}`}
+      aria-label={`${label}, ${hint}`}
+      aria-pressed={active}
+      className={`flex aspect-square w-full min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border p-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 disabled:cursor-not-allowed disabled:opacity-40 lg:aspect-auto lg:h-auto lg:py-2 ${
+        active
+          ? "border-emerald-500 bg-emerald-500/15 text-emerald-300"
+          : "border-neutral-700 text-neutral-300 hover:bg-neutral-800"
+      }`}
+    >
+      {icon}
+      <span className="w-full truncate text-center text-[11px] font-semibold leading-none">
+        {label}
+      </span>
+      <span className="w-full truncate text-center font-mono text-[10px] leading-none text-neutral-500">
+        {price}
+      </span>
+    </button>
   );
 }

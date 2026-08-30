@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   GRID,
   G_BASE,
@@ -58,6 +58,10 @@ import Enemies from "./Enemies";
 import { drawCoverage, drawDepots } from "@/lib/render";
 import Battle, { type BattleOutcome } from "./Battle";
 import MapCanvas, { type Pt } from "./MapCanvas";
+import AccountMenu, { SettingsList } from "./AccountMenu";
+import { useT } from "@/lib/i18n";
+import type { Key } from "@/lib/i18n/dict";
+import { LayoutGrid, Package, Rocket, Wrench } from "lucide-react";
 import { autoDefend, type UnattendedOutcome } from "@/lib/unattended";
 import {
   Button,
@@ -77,17 +81,51 @@ import {
   SectionTitle,
   Sheet,
   StatRow,
+  ToolButton,
 } from "./ui";
 
 type Tool = "area" | "repair" | "gun" | "drones";
 /** Панели, которые на телефоне открываются шторкой снизу. */
 type SheetId = "found" | "arsenal" | "attacks" | "enemies" | "menu";
 
-const TOOLS: { id: Tool; name: string; hint: string }[] = [
-  { id: "area", name: "Площадь", hint: `${CELL_COST} кр за новую клетку` },
-  { id: "repair", name: "Ремонт", hint: `${REPAIR_COST} кр за клетку` },
-  { id: "gun", name: "Пушка", hint: `${GUN_COST} кр, снять — вернёт ${GUN_REFUND}` },
-  { id: "drones", name: "Дроны", hint: `${DRONE_UNIT_COST} кр за штуку` },
+const ICON = "h-5 w-5";
+
+/** Подпись и цена берутся из словаря, глиф — из lucide. */
+const TOOLS: {
+  id: Tool;
+  label: Key;
+  hint: Key;
+  vars: Record<string, number>;
+  icon: ReactNode;
+}[] = [
+  {
+    id: "area",
+    label: "tool.area",
+    hint: "tool.areaHint",
+    vars: { cost: CELL_COST },
+    icon: <LayoutGrid className={ICON} />,
+  },
+  {
+    id: "repair",
+    label: "tool.repair",
+    hint: "tool.repairHint",
+    vars: { cost: REPAIR_COST },
+    icon: <Wrench className={ICON} />,
+  },
+  {
+    id: "gun",
+    label: "tool.gun",
+    hint: "tool.gunHint",
+    vars: { cost: GUN_COST, refund: GUN_REFUND },
+    icon: <Rocket className={ICON} />,
+  },
+  {
+    id: "drones",
+    label: "tool.drones",
+    hint: "tool.dronesHint",
+    vars: { cost: DRONE_UNIT_COST },
+    icon: <Package className={ICON} />,
+  },
 ];
 
 const ENEMY_NAMES = ["Сосед", "Конкурент", "Бывший партнёр", "Аноним"];
@@ -99,6 +137,7 @@ export default function Lobby({
   account: Account | null;
   onSignOut: () => void;
 }) {
+  const t = useT();
   const repo = getRepo();
   const playerRef = useRef<Player | null>(null);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1103,19 +1142,12 @@ export default function Lobby({
     </div>
   );
 
-  const signOutButton = (
-    <Button size="sm" onClick={onSignOut}>
-      Выйти
-    </Button>
-  );
-
-  const accountLine = account ? (
-    <div className="flex shrink-0 items-center gap-2 text-xs text-neutral-400">
-      <span className="max-w-[14rem] truncate">{account.name ?? account.email}</span>
-      {signOutButton}
-    </div>
-  ) : (
-    <span className="shrink-0 font-mono text-xs text-neutral-600">локальный режим</span>
+  const accountLine = (
+    <AccountMenu
+      name={account?.name ?? null}
+      email={account?.email ?? null}
+      onSignOut={account ? onSignOut : undefined}
+    />
   );
 
   return (
@@ -1170,21 +1202,18 @@ export default function Lobby({
           забирает всю свободную высоту, инструменты прижаты к низу под большой палец.
         */}
         <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
-          <div className="order-3 grid shrink-0 grid-cols-4 gap-1.5 lg:order-1 lg:flex lg:flex-wrap lg:gap-2">
-            {TOOLS.map((t) => (
-              <Button
-                key={t.id}
-                active={tool === t.id}
-                title={t.hint}
-                disabled={!p.founded && t.id !== "area"}
-                onClick={() => pickTool(t.id)}
-                className="min-w-0 px-2 lg:px-3"
-              >
-                <span className="truncate">{t.name}</span>
-                <span className="hidden font-mono text-[11px] font-normal text-neutral-500 lg:inline">
-                  {t.hint}
-                </span>
-              </Button>
+          <div className="order-3 grid shrink-0 grid-cols-4 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(4,5.5rem)] lg:gap-2">
+            {TOOLS.map((item) => (
+              <ToolButton
+                key={item.id}
+                icon={item.icon}
+                label={t(item.label)}
+                price={t("tool.price", { cost: item.vars.cost })}
+                hint={t(item.hint, item.vars)}
+                active={tool === item.id}
+                disabled={!p.founded && item.id !== "area"}
+                onClick={() => pickTool(item.id)}
+              />
             ))}
           </div>
 
@@ -1425,16 +1454,10 @@ export default function Lobby({
             <div className="mb-2">
               <SectionTitle>Аккаунт</SectionTitle>
             </div>
-            {account ? (
-              <div className="flex items-center gap-3">
-                <span className="min-w-0 flex-1 truncate text-neutral-300">
-                  {account.name ?? account.email}
-                </span>
-                {signOutButton}
-              </div>
-            ) : (
-              <span className="font-mono text-xs text-neutral-600">локальный режим</span>
-            )}
+            <div className="truncate px-2 text-sm font-semibold text-neutral-100">
+              {account?.name ?? account?.email ?? t("app.localMode")}
+            </div>
+            <SettingsList onSignOut={account ? onSignOut : undefined} />
           </div>
         </div>
       </Sheet>
