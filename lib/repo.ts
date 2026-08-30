@@ -36,6 +36,11 @@ export interface Repo {
   saveBase(p: Player): Promise<Partial<Player>>;
   /** Список добавленных по e-mail соперников и их текущее состояние. */
   saveEnemies(p: Player): Promise<void>;
+  /**
+   * Как называются склады по этим адресам. Врага зовут именем его склада,
+   * а не выдумкой клиента, поэтому имя всегда спрашиваем у сервера.
+   */
+  baseNames(emails: string[]): Promise<Map<string, string>>;
   buyDrones(p: Player, amount: number): Promise<Partial<Player>>;
   sendAttack(
     p: Player,
@@ -76,6 +81,10 @@ class LocalRepo implements Repo {
 
   async saveEnemies(p: Player) {
     localSave(p);
+  }
+
+  async baseNames(_emails: string[]) {
+    return new Map<string, string>();
   }
 
   async buyDrones(p: Player, _amount: number) {
@@ -203,6 +212,17 @@ class CloudRepo implements Repo {
       enemies: row.enemies ?? [],
     };
 
+    // склад врага могли переименовать — подтягиваем актуальные имена
+    try {
+      const names = await this.baseNames(player.enemies.map((e) => e.email));
+      for (const e of player.enemies) {
+        const fresh = names.get(e.email.toLowerCase());
+        if (fresh && fresh !== e.name) e.name = fresh;
+      }
+    } catch {
+      // имена — украшение списка, из-за них вход в игру ломаться не должен
+    }
+
     const first = (inc.data as IncomeRow[] | null)?.[0];
     return {
       player,
@@ -269,6 +289,17 @@ class CloudRepo implements Repo {
       new_enemies: p.enemies,
     });
     if (error) throw error;
+  }
+
+  async baseNames(emails: string[]) {
+    const out = new Map<string, string>();
+    if (!emails.length) return out;
+    const { data, error } = await this.db().rpc("base_names", { emails });
+    if (error) throw error;
+    for (const row of (data as { email: string; name: string }[] | null) ?? []) {
+      if (row.email && row.name) out.set(row.email.toLowerCase(), row.name);
+    }
+    return out;
   }
 
   async buyDrones(p: Player, amount: number) {

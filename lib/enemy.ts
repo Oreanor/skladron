@@ -33,14 +33,6 @@ export interface Enemy {
   lastRaidAt: number; // когда он присылал последнюю атаку
 }
 
-const NAMES = [
-  "Северный терминал",
-  "Логистика Ковалёва",
-  "Порт-Складъ",
-  "Ангар 12",
-  "Оптовик с юга",
-];
-
 /** Склад врага: несколько сросшихся прямоугольников вокруг центра. */
 function genBase(rnd: () => number) {
   const cells = emptyCells();
@@ -89,7 +81,14 @@ function genBase(rnd: () => number) {
   return cells;
 }
 
-export function makeEnemy(email: string, seed = (Math.random() * 1e9) | 0): Enemy {
+/** Пока склад не назван, зовём врага по адресу — но не выдуманным именем. */
+export const nameFromEmail = (email: string) => email.split("@")[0] || email;
+
+export function makeEnemy(
+  email: string,
+  name = nameFromEmail(email),
+  seed = (Math.random() * 1e9) | 0
+): Enemy {
   const rnd = mulberry32(seed);
   const cells = genBase(rnd);
 
@@ -108,7 +107,7 @@ export function makeEnemy(email: string, seed = (Math.random() * 1e9) | 0): Enem
 
   return {
     id: `${Date.now().toString(36)}-${(rnd() * 1e6) | 0}`,
-    name: NAMES[(rnd() * NAMES.length) | 0],
+    name,
     email,
     cells: encodeCells(cells),
     guns,

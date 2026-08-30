@@ -271,6 +271,17 @@ begin
 end;
 $$;
 
+-- Как зовут склады по адресам. Отдаём только имя: список врагов и так
+-- строится по почте, а больше о чужом профиле знать незачем.
+create or replace function base_names(emails text[])
+returns table (email text, name text)
+language sql security definer set search_path = public as $$
+  select p.email,
+         coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1))
+    from profiles p
+   where lower(p.email) = any (select lower(e) from unnest(emails) e);
+$$;
+
 create or replace function pending_attacks()
 returns table (
   id uuid, from_name text, created_at timestamptz,
@@ -724,4 +735,5 @@ $$;
 
 grant execute on function ensure_player, collect_income, save_base,
   buy_drones, apply_battle, complete_attack, wipe_base, rename_base, save_enemies,
+  base_names,
   send_attack, pending_attacks, attack_reports, ack_attack_report to authenticated;

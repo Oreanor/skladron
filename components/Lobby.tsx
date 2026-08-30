@@ -478,7 +478,14 @@ export default function Lobby({
     if (p.enemies.some((e) => e.email.toLowerCase() === email.toLowerCase())) {
       return "Этот враг уже в списке";
     }
-    const enemy = makeEnemy(email);
+    // имя берём с сервера: враг зовётся так, как назвал свой склад
+    let name: string | undefined;
+    try {
+      name = (await repo.baseNames([email])).get(email.toLowerCase());
+    } catch {
+      // не достучались — обойдёмся адресом, имя подтянется при следующем входе
+    }
+    const enemy = makeEnemy(email, name);
     p.enemies.push(enemy);
     forceRender((v) => v + 1);
     try {
