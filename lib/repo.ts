@@ -1,7 +1,7 @@
 // Хранилище состояния игрока. Одна и та же игра работает поверх localStorage
 // и поверх Supabase — Lobby знает только этот интерфейс.
 
-import { CELLS, type Depot, decodeCells, encodeCells, type Gun } from "./base";
+import { CELLS, type Depot, decodeCells, encodeRle, type Gun } from "./base";
 
 import { CREDITS_START } from "./economy";
 import type { BattleResult } from "./engine";
@@ -148,7 +148,7 @@ class CloudRepo implements Repo {
 
   async saveBase(p: Player) {
     const { data, error } = await this.db().rpc("save_base", {
-      new_cells: encodeCells(p.cells),
+      new_cells: encodeRle(p.cells),
       new_guns: p.guns,
       new_depots: p.depots,
     });
@@ -169,7 +169,7 @@ class CloudRepo implements Repo {
 
   async applyBattle(p: Player, result: BattleResult) {
     const { data, error } = await this.db().rpc("apply_battle", {
-      new_cells: encodeCells(p.cells),
+      new_cells: encodeRle(p.cells),
       new_guns: p.guns,
       new_depots: p.depots,
       result,

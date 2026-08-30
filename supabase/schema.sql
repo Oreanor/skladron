@@ -26,6 +26,40 @@ language sql immutable as $$
     from jsonb_array_elements(coalesce(d, '[]'::jsonb)) e;
 $$;
 
+-- Карта приходит сжатой по длинам серий: «значение:сколько подряд» через
+-- запятую. Разворачиваем в те же 10 000 байт. Собираем hex-строкой, а не
+-- set_byte в цикле: bytea неизменяемый, посимвольная запись была бы
+-- квадратичной по времени.
+create or replace function rle_decode(src text) returns bytea
+language plpgsql immutable as $
+declare
+  part text;
+  v int;
+  n int;
+  total int := 0;
+  hex text := '';
+begin
+  if src is null or src = '' then raise exception 'empty map'; end if;
+  -- порядок выкатки не важен: старый клиент слал карту целиком в base64
+  if position(':' in src) = 0 then
+    return decode(src, 'base64');
+  end if;
+  foreach part in array string_to_array(src, ',') loop
+    v := split_part(part, ':', 1)::int;
+    n := split_part(part, ':', 2)::int;
+    if v < 0 or v > 4 then raise exception 'bad cell value %', v; end if;
+    if n < 1 then raise exception 'bad run length %', n; end if;
+    total := total + n;
+    if total > 10000 then raise exception 'map longer than 10000 cells'; end if;
+    hex := hex || repeat(lpad(to_hex(v), 2, '0'), n);
+  end loop;
+  if total <> 10000 then
+    raise exception 'map must cover 10000 cells, got %', total;
+  end if;
+  return decode(hex, 'hex');
+end;
+$;
+
 -- контейнеры обязаны стоять на целых клетках, по одному на клетку, не поверх пушек
 create or replace function depots_valid(d jsonb, map bytea, guns jsonb)
 returns boolean language plpgsql immutable as $$
@@ -171,7 +205,7 @@ language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
   prof profiles;
-  bin bytea := decode(new_cells, 'base64');
+  bin bytea := rle_decode(new_cells);
   cur bytea;
   cur_guns jsonb;
   cur_depots jsonb;
@@ -238,12 +272,12 @@ begin
    where user_id = uid;
 
   update profiles
-     set credits = credits - cost,
+     set credits = profiles.credits - cost,
          drones = depot_sum(new_depots),
-         founded = founded or intact_now >= 60,
-         stats = jsonb_set(stats, '{cellsRepaired}',
-                 to_jsonb((stats->>'cellsRepaired')::int + repaired))
-   where id = uid
+         founded = profiles.founded or intact_now >= 60,
+         stats = jsonb_set(profiles.stats, '{cellsRepaired}',
+                 to_jsonb((profiles.stats->>'cellsRepaired')::int + repaired))
+   where profiles.id = uid
    returning profiles.credits, profiles.drones into credits, drones;
 
   intact := intact_now;
@@ -282,9 +316,9 @@ begin
   update bases set drone_cells = new_depots, updated_at = now() where user_id = uid;
 
   update profiles
-     set credits = credits - cost,
+     set credits = profiles.credits - cost,
          drones = depot_sum(new_depots)
-   where id = uid and credits >= cost
+   where profiles.id = uid and profiles.credits >= cost
    returning profiles.credits, profiles.drones into credits, drones;
 
   if not found then raise exception 'not enough credits'; end if;
@@ -301,7 +335,7 @@ returns table (credits int, intact int)
 language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
-  bin bytea := decode(new_cells, 'base64');
+  bin bytea := rle_decode(new_cells);
   cur bytea;
   cur_guns jsonb;
   cur_depots jsonb;
@@ -349,12 +383,12 @@ begin
 
   update profiles
      set drones = depot_sum(new_depots),
-         stats = stats
+         stats = profiles.stats
        || jsonb_build_object(
-            'battles', (stats->>'battles')::int + 1,
-            'dronesKilled', (stats->>'dronesKilled')::int + killed,
-            'cellsBurned', (stats->>'cellsBurned')::int + burned)
-   where id = uid
+            'battles', (profiles.stats->>'battles')::int + 1,
+            'dronesKilled', (profiles.stats->>'dronesKilled')::int + killed,
+            'cellsBurned', (profiles.stats->>'cellsBurned')::int + burned)
+   where profiles.id = uid
    returning profiles.credits into credits;
 
   intact := intact_now;

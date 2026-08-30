@@ -131,6 +131,29 @@ export function applyRect(cells: Uint8Array, r: Rect) {
 
 // --- хранение ---
 
+/**
+ * Карта для сервера, сжатая по длинам серий: «значение:сколько подряд»
+ * через запятую. Склад — это несколько прямоугольников на пустом поле,
+ * поэтому 10 000 клеток укладываются в несколько сотен байт вместо 13 КБ
+ * base64, которые уходили на каждую правку.
+ */
+export function encodeRle(cells: Uint8Array): string {
+  const runs: string[] = [];
+  let value = cells[0];
+  let run = 0;
+  for (let i = 0; i < cells.length; i++) {
+    if (cells[i] === value) {
+      run++;
+      continue;
+    }
+    runs.push(`${value}:${run}`);
+    value = cells[i];
+    run = 1;
+  }
+  runs.push(`${value}:${run}`);
+  return runs.join(",");
+}
+
 export function encodeCells(cells: Uint8Array): string {
   let s = "";
   for (let i = 0; i < cells.length; i++) s += String.fromCharCode(cells[i]);
