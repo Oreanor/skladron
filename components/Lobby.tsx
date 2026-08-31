@@ -2154,7 +2154,11 @@ export default function Lobby({
         */}
         <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
 
-          <div className="order-4 grid shrink-0 grid-cols-9 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(9,5rem)] lg:gap-2">
+          {/*
+            На телефоне девять кнопок в ряд превращаются в марки: кладём их
+            в два ряда, отняв высоту у пустого поля вокруг склада.
+          */}
+          <div className="order-4 grid shrink-0 grid-cols-5 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(9,5rem)] lg:gap-2">
             {TOOLS.map((item) => (
               <ToolButton
                 key={item.id}
