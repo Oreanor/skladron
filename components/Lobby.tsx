@@ -128,7 +128,7 @@ import {
 
 type Tool = "area" | "repair" | "scrap" | "gun" | "drones" | "scouts";
 /** Кнопка «Апгрейд» карты не касается: она только открывает модалку. */
-type ToolId = Tool | "upgrade" | "insurance";
+type ToolId = Tool | "upgrade" | "insurance" | "loan";
 /** Панели, которые на телефоне открываются шторкой снизу. */
 type SheetId = "found" | "attacks" | "enemies" | "menu";
 /** Панели инструментов: они всплывают модалкой и вёрстку не разрывают. */
@@ -148,7 +148,7 @@ const TOOLS: {
   /** Какой класс он показывает уровнем. */
   levelKind?: UpgradeKind;
   /** Что считать в уголке кнопки: этого добра столько-то на складе. */
-  countKind?: "intact" | "burnt" | "guns" | "drones" | "scouts";
+  countKind?: "intact" | "burnt" | "guns" | "drones" | "scouts" | "loan";
 }[] = [
   {
     id: "area",
@@ -210,6 +210,15 @@ const TOOLS: {
     priceKey: "tool.priceCell",
     icon: <ShieldCheck className={ICON} />,
     levelKind: "insurance",
+  },
+  {
+    id: "loan",
+    label: "tool.loan",
+    hint: "tool.loanHint",
+    vars: { cost: LOAN_MIN, rate: LOAN_RATE },
+    priceKey: "tool.priceFrom",
+    icon: <Banknote className={ICON} />,
+    countKind: "loan",
   },
   {
     id: "upgrade",
@@ -573,7 +582,15 @@ export default function Lobby({
 
   const { intact, burnt, free, drones, scouts } = counts;
   // то же самое, но под ключи кнопок: у каждой в углу своё число
-  const counters = { intact, burnt, guns: p.guns.length, drones, scouts };
+  const counters = {
+    intact,
+    burnt,
+    guns: p.guns.length,
+    drones,
+    scouts,
+    // у кредита в углу висит долг, а если долгов нет — ничего
+    loan: p.loan || undefined,
+  };
   const hasBuilding = intact + burnt > 0;
   const doomed = isDoomed(p, intact);
   // ---------- бой ----------
@@ -1510,7 +1527,7 @@ export default function Lobby({
   const income = dailyIncome(p);
   const pickTool = (id: ToolId) => {
     // апгрейд ничего не рисует на карте — только открывает свою модалку
-    if (id === "upgrade" || id === "insurance") {
+    if (id === "upgrade" || id === "insurance" || id === "loan") {
       setModal(id);
       return;
     }
@@ -2007,9 +2024,6 @@ export default function Lobby({
           <Chip label={t("stat.creditsShort")} value={fmt(p.credits)} tone="text-emerald-300" />
           <Chip label={t("stat.incomeShort")} value={`+${fmt(income)}`} tone="text-emerald-300" />
         </ChipBar>
-        <IconButton label={t("loan.title")} onClick={() => setModal("loan")}>
-          <Banknote className={ICON} />
-        </IconButton>
         <IconButton label={t("panel.attacks")} badge={p.incoming.length} onClick={() => toggleSheet("attacks")}>
           <IconTarget />
         </IconButton>
@@ -2034,9 +2048,6 @@ export default function Lobby({
           <Chip label={t("stat.credits")} value={fmt(p.credits)} tone="text-emerald-300" />
           <Chip label={t("stat.income")} value={`+${fmt(income)}`} tone="text-emerald-300" />
         </ChipBar>
-        <Button size="sm" tone={p.loan > 0 ? "red" : undefined} onClick={() => setModal("loan")}>
-          {p.loan > 0 ? t("loan.owedShort", { debt: fmt(p.loan) }) : t("loan.title")}
-        </Button>
         {accountLine}
       </div>
 
@@ -2047,7 +2058,7 @@ export default function Lobby({
         */}
         <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
 
-          <div className="order-4 grid shrink-0 grid-cols-8 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(8,5.5rem)] lg:gap-2">
+          <div className="order-4 grid shrink-0 grid-cols-9 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(9,5rem)] lg:gap-2">
             {TOOLS.map((item) => (
               <ToolButton
                 key={item.id}

@@ -520,14 +520,15 @@ export function ToolButton({
           : "border-neutral-700 text-neutral-300 hover:bg-neutral-800"
       }`}
     >
-      {count !== undefined && (
-        <span className="absolute left-1.5 top-1 font-mono text-sm font-bold leading-none text-neutral-200">
-          {count}
-        </span>
-      )}
       {level !== undefined && level > 1 && (
         <span className="absolute right-1 top-1 rounded bg-neutral-800 px-1 font-mono text-[9px] leading-tight text-amber-300">
           {level}
+        </span>
+      )}
+      {/* число — своей строкой во всю кнопку, иконка чуть ниже */}
+      {count !== undefined && (
+        <span className="w-full truncate text-center font-mono text-sm font-bold leading-none text-neutral-100">
+          {count}
         </span>
       )}
       {icon}

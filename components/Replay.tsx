@@ -9,7 +9,7 @@ import { buildPlan, type AttackOrder } from "@/lib/attack";
 import { G_BURNT, decodeCells, type Depot, type Gun } from "@/lib/base";
 import { createBattle, setAim, setFiring, update, type GameState } from "@/lib/engine";
 import { drawFrame } from "@/lib/render";
-import { STEP, decodeTrace } from "@/lib/replay";
+import { STEP, TAIL_FRAMES, decodeTrace } from "@/lib/replay";
 import { fmt } from "@/lib/economy";
 import { useT } from "@/lib/i18n";
 import MapCanvas, { CELL } from "./MapCanvas";
@@ -79,9 +79,9 @@ export default function Replay({
 
       let guard = 0;
       while (carry >= STEP && guard++ < 32 && s.phase === "playing") {
-        // Запись кончилась — кончился и бой. Дальше крутить нельзя: без рук
-        // защитника огонь дожёг бы склад, которого он на самом деле не терял.
-        if (frames.length && step >= frames.length) {
+        // Запись кончилась — доигрываем хвост без рук защитника и на этом
+        // всё: дожигать склад, которого он не терял, повтор не должен.
+        if (frames.length && step >= frames.length + TAIL_FRAMES) {
           // что горело к этому мгновению — то и осталось пепелищем
           for (const i of s.fire.keys()) s.cells[i] = G_BURNT;
           s.fire.clear();
