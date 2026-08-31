@@ -235,6 +235,23 @@ export default function Lobby({
   const dragGunRef = useRef<{ cx: number; cy: number } | null>(null);
 
   /** Пишем склад с задержкой: на сервере это одна проверяемая операция. */
+  /**
+   * Сервер отверг запись — значит наша копия склада разъехалась с его.
+   * Дальше без синхронизации отвергалась бы каждая следующая правка, поэтому
+   * берём серверную версию: она и есть настоящая.
+   */
+  const resyncBase = async () => {
+    const cur = playerRef.current;
+    if (!cur) return;
+    try {
+      await repo.reloadBase(cur);
+      setVersion((v) => v + 1);
+      forceRender((v) => v + 1);
+    } catch {
+      // не достучались — попробуем при следующей правке
+    }
+  };
+
   const saveNow = async () => {
     const cur = playerRef.current;
     if (!cur) return;
@@ -244,16 +261,7 @@ export default function Lobby({
       forceRender((v) => v + 1);
     } catch (e) {
       setMessage(t("save.rejected", { error: (e as Error).message }));
-      // Сервер отверг правку — значит наш склад разъехался с его. Дальше без
-      // синхронизации отвергалась бы каждая следующая правка, поэтому берём
-      // серверную версию: она и есть настоящая.
-      try {
-        await repo.reloadBase(cur);
-        setVersion((v) => v + 1);
-        forceRender((v) => v + 1);
-      } catch {
-        // не достучались — попробуем при следующей правке
-      }
+      await resyncBase();
     }
   };
 
@@ -412,6 +420,9 @@ export default function Lobby({
           forceRender((v) => v + 1);
         } catch (e) {
           setMessage(t("auto.notSaved", { error: (e as Error).message }));
+          // урон не записался — не тащим сгоревшую карту дальше, иначе
+          // отвергаться будет и ремонт, и всё остальное
+          await resyncBase();
         }
       } finally {
         autoBusyRef.current = false;
@@ -525,6 +536,7 @@ export default function Lobby({
             forceRender((v) => v + 1);
           } catch (e) {
             setMessage(t("battle.notSaved", { error: (e as Error).message }));
+            await resyncBase();
           }
         }}
       />
