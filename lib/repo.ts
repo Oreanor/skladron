@@ -52,8 +52,7 @@ export interface Repo {
     drones: number,
     pattern: Pattern,
     direction: number,
-    seed: number,
-    plus?: number
+    seed: number
   ): Promise<void>;
   acknowledgeReport(id: string): Promise<void>;
   /** Переименование склада — отдельная операция, карты не касается. */
@@ -159,7 +158,6 @@ interface IncomingAttackRow {
   created_at: string;
   activated_at: string | null;
   drones: number;
-  plus: number | null;
   pattern: Pattern;
   direction: number;
   seed: number;
@@ -264,7 +262,6 @@ class CloudRepo implements Repo {
       createdAt: Date.parse(row.created_at),
       activatedAt: row.activated_at ? Date.parse(row.activated_at) : null,
       drones: row.drones,
-      plus: row.plus ?? 0,
       pattern: row.pattern,
       direction: row.direction,
       seed: row.seed,
@@ -352,8 +349,7 @@ class CloudRepo implements Repo {
     drones: number,
     pattern: Pattern,
     direction: number,
-    seed: number,
-    plus = 0
+    seed: number
   ) {
     const { error } = await this.db().rpc("send_attack", {
       target_email: targetEmail,
@@ -362,7 +358,6 @@ class CloudRepo implements Repo {
       attack_direction: direction,
       attack_seed: seed,
       new_depots: p.depots,
-      plus_count: plus,
     });
     if (error) throw error;
   }

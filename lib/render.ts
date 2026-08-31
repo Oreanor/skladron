@@ -35,24 +35,22 @@ export interface Scene {
 
 /** Контейнеры с дронами — их видит только хозяин склада. */
 /**
- * Контейнеры на складе. На крышке рисуем то, что внутри: четыре винта
- * квадрокоптера, у быстрых — плюс между ними. Иначе на карте не отличить,
- * где какой ящик.
+ * Контейнеры на складе. На крышке рисуем то, что внутри: винты квадрокоптера
+ * у ударных дронов и силуэт самолёта у разведчиков — иначе на карте не
+ * отличить, где какой ящик.
  */
 export function drawDepots(
   ctx: CanvasRenderingContext2D,
-  depots: { cx: number; cy: number; n: number; kind?: "basic" | "plus" | "scout" }[],
+  depots: { cx: number; cy: number; n: number; kind?: "basic" | "scout" }[],
   cell: number,
   dim = false
 ) {
   for (const d of depots) {
     const x = d.cx * cell;
     const y = d.cy * cell;
-    const kind = d.kind ?? "basic";
-    const plus = kind === "plus";
-    const scout = kind === "scout";
-    const fill = scout ? "58, 74, 46" : plus ? "58, 92, 110" : "122, 90, 46";
-    const line = scout ? "168, 200, 130" : plus ? "142, 202, 230" : "214, 168, 92";
+    const scout = d.kind === "scout";
+    const fill = scout ? "58, 74, 46" : "122, 90, 46";
+    const line = scout ? "168, 200, 130" : "214, 168, 92";
     ctx.fillStyle = `rgba(${fill}, ${dim ? 0.5 : 1})`;
     ctx.fillRect(x, y, cell, cell);
     ctx.strokeStyle = `rgba(${line}, ${dim ? 0.5 : 1})`;
@@ -74,7 +72,7 @@ export function drawDepots(
 
     // винты по углам и корпус между ними — клетка всего 7 px, так что это
     // не рисунок, а узнаваемое пятно
-    const r = plus ? cell * 0.17 : cell * 0.13;
+    const r = cell * 0.13;
     const off = cell * 0.28;
     const rotors: [number, number][] = [
       [off, off],
@@ -87,9 +85,6 @@ export function drawDepots(
       ctx.moveTo(x + ox + r, y + oy);
       ctx.arc(x + ox, y + oy, r, 0, Math.PI * 2);
     }
-    // у соосных винтов кольцо залито: в семь пикселей это единственное,
-    // что отличимо на глаз, кроме цвета ящика
-    if (plus) ctx.fill();
     ctx.stroke();
     ctx.fillRect(x + cell * 0.4, y + cell * 0.4, cell * 0.2, cell * 0.2);
   }

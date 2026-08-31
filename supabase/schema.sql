@@ -14,7 +14,6 @@ language sql immutable as $$
     when 'gun'    then 100
     when 'refund' then 50
     when 'drones' then 1000
-    when 'plus'   then 25    -- быстрый дрон
     when 'scout'  then 25    -- разведчик дороже ударного дрона, но дешевле пушки
     when 'drone'  then 10
     when 'income' then 10
@@ -105,7 +104,7 @@ create or replace function depots_only_changed(
     depot_sum_kind(after, k) =
       depot_sum_kind(before, k) + case when k = kind then delta else 0 end
   )
-  from unnest(array['basic', 'plus', 'scout']) as k;
+  from unnest(array['basic', 'scout']) as k;
 $$;
 
 -- контейнеры обязаны стоять на целых клетках, по одному на клетку, не поверх пушек
@@ -190,7 +189,18 @@ alter table profiles add column if not exists base_name text;
 alter table profiles add column if not exists scouts int not null default 0;
 -- очередь налётов: у первой атаки идут часы, остальные ждут
 alter table attacks add column if not exists activated_at timestamptz;
-alter table attacks add column if not exists plus int not null default 0;
+-- быстрые дроны убраны: вид остался только у разведчиков
+alter table attacks drop column if exists plus;
+
+update bases
+   set drone_cells = (
+     select coalesce(
+       jsonb_agg(case when e->>'kind' = 'plus' then e - 'kind' else e end),
+       '[]'::jsonb
+     )
+     from jsonb_array_elements(drone_cells) e
+   )
+ where drone_cells @> '[{"kind":"plus"}]'::jsonb;
 alter table profiles add column if not exists enemies jsonb not null default '[]'::jsonb;
 
 alter table profiles alter column stats set default
@@ -210,6 +220,7 @@ drop function if exists buy_drones(int, jsonb);
 drop function if exists buy_scouts(int);
 drop function if exists spend_scouts(int);
 drop function if exists send_attack(text, int, text, int, int, jsonb);
+drop function if exists send_attack(text, int, text, int, int, jsonb, int);
 -- у pending_attacks менялся не список аргументов, а состав колонок:
 -- create or replace такого тоже не умеет
 drop function if exists pending_attacks();
@@ -262,8 +273,7 @@ create or replace function send_attack(
   attack_pattern text,
   attack_direction int,
   attack_seed int,
-  new_depots jsonb,
-  plus_count int default 0
+  new_depots jsonb
 ) returns uuid
 language plpgsql security definer set search_path = public as $$
 declare
@@ -308,12 +318,8 @@ begin
          stats = jsonb_set(stats, '{raids}', to_jsonb((stats->>'raids')::int + 1))
    where id = uid;
 
-  if plus_count is null or plus_count < 0 or plus_count > drone_count then
-    raise exception 'bad fast drone count';
-  end if;
-
-  insert into attacks (attacker_id, defender_id, drones, plus, pattern, direction, seed)
-  values (uid, target.id, drone_count, plus_count, attack_pattern, attack_direction, attack_seed)
+  insert into attacks (attacker_id, defender_id, drones, pattern, direction, seed)
+  values (uid, target.id, drone_count, attack_pattern, attack_direction, attack_seed)
   returning id into order_id;
   return order_id;
 end;
@@ -384,7 +390,7 @@ $$;
 create or replace function pending_attacks()
 returns table (
   id uuid, from_name text, created_at timestamptz, activated_at timestamptz,
-  drones int, plus int, pattern text, direction int, seed int
+  drones int, pattern text, direction int, seed int
 )
 language plpgsql security definer set search_path = public as $$
 declare
@@ -410,7 +416,7 @@ begin
   return query
     select a.id,
            coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
-           a.created_at, a.activated_at, a.drones, a.plus, a.pattern, a.direction, a.seed
+           a.created_at, a.activated_at, a.drones, a.pattern, a.direction, a.seed
       from attacks a
       join profiles p on p.id = a.attacker_id
      where a.defender_id = uid and a.status = 'pending'
@@ -669,10 +675,8 @@ begin
   if packs is null or packs < 1 or packs > 100000 then
     raise exception 'bad drone amount';
   end if;
-  if kind not in ('basic', 'plus', 'scout') then raise exception 'bad drone kind'; end if;
-  cost := packs * price(
-    case kind when 'plus' then 'plus' when 'scout' then 'scout' else 'drone' end
-  );
+  if kind not in ('basic', 'scout') then raise exception 'bad drone kind'; end if;
+  cost := packs * price(case kind when 'scout' then 'scout' else 'drone' end);
 
   select b.cells, b.guns, b.drone_cells into cur, cur_guns, cur_depots
     from bases b where b.user_id = uid for update;

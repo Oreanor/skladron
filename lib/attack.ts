@@ -15,8 +15,6 @@ export interface AttackOrder {
   /** Когда атака встала первой в очереди и пошли часы. Пока null — ждёт. */
   activatedAt?: number | null;
   drones: number;
-  /** Сколько из drones — быстрые. Летят вперемешку с обычными. */
-  plus?: number;
   pattern: Pattern;
   direction: number; // 0 верх, 1 низ, 2 слева, 3 справа — для lines
   seed: number;
@@ -38,8 +36,6 @@ export interface SpawnTicket {
   edge: number;
   ox: number; // положение вдоль края, в клетках
   oy: number; // отступ за кадр
-  /** Быстрый дрон. Кто именно окажется быстрым, решает seed. */
-  fast?: boolean;
 }
 
 export const PATTERNS: Pattern[] = ["swarm", "lines", "random", "drip"];
@@ -94,18 +90,6 @@ export function buildPlan(order: AttackOrder): SpawnTicket[] {
       const k = i / Math.max(1, n - 1);
       t += 3 - k * 2.75;
     }
-  }
-
-  // «Дроны+» размазываем по всей волне, а не ставим первыми: заказ говорит
-  // только сколько их, а кто именно окажется быстрым — решает seed.
-  const fast = Math.min(plan.length, Math.max(0, order.plus ?? 0));
-  if (fast > 0) {
-    const pick = plan.map((_, k) => k);
-    for (let k = pick.length - 1; k > 0; k--) {
-      const j = (rnd() * (k + 1)) | 0;
-      [pick[k], pick[j]] = [pick[j], pick[k]];
-    }
-    for (let k = 0; k < fast; k++) plan[pick[k]].fast = true;
   }
 
   return plan.sort((a, b) => a.at - b.at);

@@ -12,17 +12,14 @@ import type { Key } from "@/lib/i18n/dict";
 interface Props {
   enemies: Enemy[];
   drones: number;
-  /** Быстрые дроны считаются отдельно: ползунок у них свой. */
-  dronesPlus: number;
-  /** Сколько разведчиков в ангаре: больше не отправить. */
+  /** Сколько разведчиков лежит в контейнерах: больше не отправить. */
   scouts: number;
   onAdd: (email: string) => Promise<string | null>; // текст ошибки или null
   onRaid: (
     enemy: Enemy,
     drones: number,
     pattern: Pattern,
-    direction: number,
-    plus: number
+    direction: number
   ) => Promise<string | null>;
   /** Разведка: сколько самолётов послать. Вернёт текст ошибки или null. */
   onScout: (enemy: Enemy, planes: number) => Promise<string | null>;
@@ -32,7 +29,6 @@ interface Props {
 export default function Enemies({
   enemies,
   drones,
-  dronesPlus,
   scouts,
   onAdd,
   onRaid,
@@ -100,7 +96,7 @@ export default function Enemies({
                   <Button
                     variant="danger"
                     size="sm"
-                    disabled={drones + dronesPlus < 10}
+                    disabled={drones < 10}
                     onClick={() => setTarget(e)}
                   >
                     {t("enemies.attack")}
@@ -132,10 +128,9 @@ export default function Enemies({
         <RaidDialog
           enemy={target}
           drones={drones}
-          dronesPlus={dronesPlus}
           onCancel={() => setTarget(null)}
-          onSend={async (n, pattern, dir, plus) => {
-            const error = await onRaid(target, n, pattern, dir, plus);
+          onSend={async (n, pattern, dir) => {
+            const error = await onRaid(target, n, pattern, dir);
             if (!error) {
               setTarget(null);
               onChanged();
@@ -209,24 +204,17 @@ function ScoutDialog({
 function RaidDialog({
   enemy,
   drones,
-  dronesPlus,
   onCancel,
   onSend,
 }: {
   enemy: Enemy;
   drones: number;
-  dronesPlus: number;
   onCancel: () => void;
-  onSend: (n: number, p: Pattern, dir: number, plus: number) => Promise<string | null>;
+  onSend: (n: number, p: Pattern, dir: number) => Promise<string | null>;
 }) {
   const t = useT();
-  const maxBasic = Math.min(drones, MAX_ATTACK_DRONES);
-  const [basic, setBasic] = useState(Math.min(50, maxBasic));
-  // на быстрые остаётся то, что не занято обычными: волна ограничена сверху
-  const maxPlus = Math.min(dronesPlus, MAX_ATTACK_DRONES - basic);
-  const [plusWanted, setPlusWanted] = useState(0);
-  const plus = Math.min(plusWanted, maxPlus);
-  const n = basic + plus;
+  const max = Math.min(drones, MAX_ATTACK_DRONES);
+  const [n, setN] = useState(Math.min(50, max));
   const [pattern, setPattern] = useState<Pattern>("swarm");
   const [dir, setDir] = useState(0);
   const [sending, setSending] = useState(false);
@@ -236,7 +224,7 @@ function RaidDialog({
     if (sending) return;
     setSending(true);
     setSendError(null);
-    const error = await onSend(n, pattern, dir, plus);
+    const error = await onSend(n, pattern, dir);
     setSending(false);
     setSendError(error);
   };
@@ -248,32 +236,17 @@ function RaidDialog({
       onClose={onCancel}
     >
       <label className="mb-1 block text-xs uppercase tracking-wider text-neutral-400">
-        {t("raid.basic", { n: basic, max: maxBasic })}
+        {t("raid.dronesOf", { n, max })}
       </label>
       <input
         type="range"
-        min={0}
-        max={Math.max(1, maxBasic)}
-        step={5}
-        value={basic}
-        onChange={(e) => setBasic(Number(e.target.value))}
-        className="mb-3 h-8 w-full cursor-pointer accent-red-500"
+        min={10}
+        max={Math.max(10, max)}
+        step={10}
+        value={n}
+        onChange={(e) => setN(Number(e.target.value))}
+        className="mb-4 h-8 w-full cursor-pointer accent-red-500"
       />
-
-      <label className="mb-1 block text-xs uppercase tracking-wider text-neutral-400">
-        {t("raid.plus", { n: plus, max: maxPlus })}
-      </label>
-      <input
-        type="range"
-        min={0}
-        max={Math.max(1, maxPlus)}
-        step={5}
-        value={plus}
-        onChange={(e) => setPlusWanted(Number(e.target.value))}
-        disabled={maxPlus < 1}
-        className="mb-2 h-8 w-full cursor-pointer accent-sky-400"
-      />
-      <p className="mb-4 text-xs text-neutral-500">{t("raid.mixHint")}</p>
 
       <div className="mb-1 text-xs uppercase tracking-wider text-neutral-400">{t("raid.pattern")}</div>
       <div className="mb-4 grid grid-cols-2 gap-2">
@@ -315,7 +288,7 @@ function RaidDialog({
 
       <div className="flex gap-2">
         <Button variant="danger" className="flex-1" onClick={() => void send()} disabled={sending}>
-          {sending ? t("raid.sending") : t("raid.total", { n })}
+          {sending ? t("raid.sending") : t("raid.send", { n })}
         </Button>
         <Button onClick={onCancel}>{t("common.cancel")}</Button>
       </div>

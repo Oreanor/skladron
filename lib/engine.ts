@@ -21,7 +21,6 @@ export const GUN_RANGE = 5; // радиус поражения пушки, в к
 export const GUN_COOLDOWN = 3; // с
 export const FIRE_SPREAD = 5; // с — горящая клетка поджигает соседей
 export const DRONE_SPEED = 4.2; // клеток/с
-export const PLUS_SPEED = 1.5; // во столько раз быстрее летит «Дрон+»
 export const MISSILE_SPEED = 17;
 export const MISSILE_LIFE = 4;
 export const GUN_HIT_CHANCE = 0.15; // шанс случайно врезаться в пушку
@@ -49,8 +48,6 @@ export interface Gun {
 
 export interface Drone {
   id: number;
-  /** Быстрый дрон: летит в PLUS_SPEED раз резвее обычного. */
-  fast?: boolean;
   x: number;
   y: number;
   tx: number;
@@ -332,7 +329,6 @@ function spawnDrone(s: GameState, t: SpawnTicket) {
   }
   s.drones.push({
     id: s.nextId++,
-    fast: t.fast,
     x,
     y,
     tx: (ti % GRID) + 0.5,
@@ -405,7 +401,7 @@ export function update(s: GameState, dt: number) {
     const dx = d.tx - d.x;
     const dy = d.ty - d.y;
     const dist = Math.hypot(dx, dy) || 1;
-    const step = DRONE_SPEED * (d.fast ? PLUS_SPEED : 1) * dt;
+    const step = DRONE_SPEED * dt;
 
     if (dist <= step) {
       ignite(s, d.ti);

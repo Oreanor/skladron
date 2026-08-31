@@ -19,8 +19,8 @@ export interface Gun {
 }
 
 /** Контейнер с дронами: занимает клетку склада, вмещает DRONES_PER_CELL штук. */
-/** Что лежит в контейнере: обычные дроны или быстрые. */
-export type DroneKind = "basic" | "plus" | "scout";
+/** Что лежит в контейнере: ударные дроны или разведчики. */
+export type DroneKind = "basic" | "scout";
 
 export interface Depot {
   cx: number;
