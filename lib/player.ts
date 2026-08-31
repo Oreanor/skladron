@@ -1,7 +1,7 @@
 // Состояние игрока и его хранение. Сейчас localStorage; на этапе 2 за тем же
 // интерфейсом окажется Supabase — игровая логика об этом знать не должна.
 
-import { CREDITS_START, STARTER_SIDE, accrue } from "./economy";
+import { CREDITS_START, INCOME_PER_CELL, STARTER_SIDE, accrue } from "./economy";
 import {
   CELLS,
   type Depot,
@@ -128,7 +128,11 @@ export function wipe(p: Player, now = Date.now()): Player {
 export const drones = (p: Player) => droneCount(p.depots);
 export const intactCells = (p: Player) => countCells(p.cells, G_BASE);
 export const burntCells = (p: Player) => countCells(p.cells, G_BURNT);
-export const dailyIncome = (p: Player, intact = intactCells(p)) => intact * 10;
+/**
+ * Доход за сутки. Платит не пустая площадь, а занятая: сколько контейнеров
+ * стоит на складе, столько и капает. Пустой склад не горит, но и не кормит.
+ */
+export const dailyIncome = (p: Player) => p.depots.length * INCOME_PER_CELL;
 
 /**
  * Склад выгорел дотла — доводим кассу до стартовых 10 000. Без этого игрок
@@ -205,7 +209,7 @@ export function save(p: Player) {
 /** Начисляет доход за прошедшие сутки. Возвращает, сколько накапало. */
 export function collectIncome(p: Player, now = Date.now()) {
   if (!p.founded) return { credits: 0, days: 0 };
-  const { credits, days, nextAt } = accrue(intactCells(p), p.lastIncomeAt, now);
+  const { credits, days, nextAt } = accrue(p.depots.length, p.lastIncomeAt, now);
   p.lastIncomeAt = nextAt;
   p.credits += credits;
   return { credits, days };

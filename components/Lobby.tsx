@@ -408,7 +408,6 @@ export default function Lobby({
         cur.stats.battles++;
         const killed = o.result.killedByGuns + o.result.killedByMg;
         cur.stats.dronesKilled += killed;
-        cur.credits += killed * DRONE_KILL_REWARD;
         cur.stats.cellsBurned += o.result.burned;
         const foe = cur.enemies.find((e) => e.name === head.from);
         if (foe) {
@@ -497,10 +496,7 @@ export default function Lobby({
           p.incoming = p.incoming.filter((a) => a.id !== battle.id);
           p.stats.battles++;
           const killed = o.result.killedByGuns + o.result.killedByMg;
-          const killReward = killed * DRONE_KILL_REWARD;
-          const defenseReward = killReward;
           p.stats.dronesKilled += killed;
-          p.credits += defenseReward;
           p.stats.cellsBurned += o.result.burned;
           // счёт вражды: записываем, сколько он у нас сжёг
           const foe = p.enemies.find((e) => e.name === battle.from);
@@ -511,8 +507,8 @@ export default function Lobby({
           setBattle(null);
           setMessage(
             o.won
-              ? t("battle.repelled", { killed, reward: fmt(killReward) })
-              : t("battle.burntDown", { from: battle.from, reward: fmt(killReward) })
+              ? t("battle.repelled", { killed })
+              : t("battle.burntDown", { from: battle.from })
           );
           setVersion((v) => v + 1);
           forceRender((v) => v + 1);
@@ -1319,7 +1315,7 @@ export default function Lobby({
     }
   };
 
-  const income = dailyIncome(p, intact);
+  const income = dailyIncome(p);
   const pickTool = (id: ToolId) => {
     // апгрейд ничего не рисует на карте — только открывает свою модалку
     if (id === "upgrade") {

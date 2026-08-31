@@ -18,11 +18,11 @@ language sql immutable as $$
     when 'drone'  then 10
     when 'income' then 10
     when 'loot'   then 5
-    when 'kill'   then 50   -- защитнику за сбитый дрон
-    when 'leak'   then 50   -- атакующему за долетевший дрон
+    when 'kill'   then 10   -- защитнику за сбитый дрон
+    when 'leak'   then 20   -- атакующему за долетевший дрон
     when 'raid_ttl' then 1800  -- полчаса на то, чтобы отбить атаку вручную
-    when 'free'   then 100   -- стартовая площадь 10×10 достаётся даром
-    when 'found'  then 100   -- столько же нужно, чтобы основаться
+    when 'free'   then 25   -- стартовая площадь 5×5 достаётся даром
+    when 'found'  then 25   -- столько же нужно, чтобы основаться
     when 'upgrade' then 5000 -- шаг апгрейда: на N-й уровень платим 5000*(N-1)
     when 'max_raid' then 500 -- потолок одного налёта, тот же и на клиенте
   end;
@@ -77,7 +77,7 @@ language sql immutable as $$
   select decode(
     string_agg(
       case
-        when (n / 100) between 45 and 54 and (n % 100) between 45 and 54
+        when (n / 100) between 47 and 51 and (n % 100) between 47 and 51
           then '01'
         else '00'
       end,
@@ -511,7 +511,7 @@ $$;
 -- Старые аккаунты, которые ещё не основали и не начали строить склад,
 -- тоже получают бесплатный центральный квадрат после обновления схемы.
 update bases b
-   set cells = starter_map(), intact_cells = 100, updated_at = now()
+   set cells = starter_map(), intact_cells = 25, updated_at = now()
   from profiles p
  where p.id = b.user_id
    and not p.founded
@@ -576,6 +576,7 @@ declare
   uid uuid := auth.uid();
   prof profiles;
   intact int;
+  occupied int;
   passed int;
   paid int;
   gain int;
@@ -584,7 +585,9 @@ begin
   select * into prof from profiles where id = uid for update;
   if not found then raise exception 'no profile'; end if;
 
-  select b.intact_cells into intact from bases b where b.user_id = uid;
+  select b.intact_cells, jsonb_array_length(b.drone_cells)
+    into intact, occupied
+    from bases b where b.user_id = uid;
 
   -- страховка: от склада ничего не осталось, а на подъём нет денег
   if prof.founded and coalesce(intact, 0) = 0 and prof.credits < 10000 then
@@ -599,7 +602,9 @@ begin
   end if;
 
   paid := least(passed, 14);
-  gain := paid * coalesce(intact, 0) * price('income');
+  -- Платит не пустая площадь, а занятая: доход идёт с товара на складе.
+  -- Считаем по тому, что лежит в момент начисления.
+  gain := paid * coalesce(occupied, 0) * price('income');
 
   update profiles
      set credits = credits + gain,
@@ -735,7 +740,8 @@ begin
     from profiles p where p.id = uid for update;
   if cur is null then raise exception 'no profile'; end if;
   if cur >= 10 then raise exception 'already at max level'; end if;
-  cost := cur * price('upgrade');
+  -- квадратично: второй уровень 5000, третий 20000, четвёртый 45000
+  cost := cur * cur * price('upgrade');
 
   update profiles
      set credits = profiles.credits - cost,
@@ -858,12 +864,14 @@ begin
          intact_cells = intact_now, updated_at = now()
    where user_id = uid;
 
+  -- За сбитых платит не бой сам по себе, а нападавший: деньги начисляет
+  -- complete_attack, у которого есть чужая атака. Иначе можно было бы
+  -- нагенерить себе учебных налётов и озолотиться за вечер.
   update profiles
      set drones = depot_sum(new_depots),
          -- сгорело всё до последней клетки — сразу поднимаем кассу
          credits = greatest(
-           profiles.credits
-             + killed * price('kill'),
+           profiles.credits,
            case when intact_now = 0 then 10000 else 0 end
          ),
          stats = profiles.stats
@@ -917,7 +925,16 @@ begin
     into defender_credits, defender_intact
     from apply_battle(new_cells, new_guns, new_depots, result) applied;
 
-  earned := coalesce((result->>'leaked')::int, 0) * price('leak');
+  -- Добыча — это перевод, а не новые деньги: сколько нападавший вынес со
+  -- склада, столько защитник и недосчитался. Больше, чем у него есть,
+  -- вынести нельзя.
+  earned := least(
+    coalesce((result->>'leaked')::int, 0) * price('leak'),
+    greatest(0, defender_credits)
+  );
+  update profiles set credits = profiles.credits - earned where profiles.id = uid;
+  defender_credits := defender_credits - earned;
+
   update profiles
      set credits = profiles.credits + earned,
          stats = jsonb_set(
@@ -947,7 +964,7 @@ begin
   update bases
      set cells = starter_map(),
          guns = '[]'::jsonb, drone_cells = '[]'::jsonb,
-         intact_cells = 100, updated_at = now()
+         intact_cells = 25, updated_at = now()
    where user_id = uid;
 
   update profiles
@@ -972,7 +989,7 @@ begin
   update bases
      set cells = starter_map(),
          guns = '[]'::jsonb, drone_cells = '[]'::jsonb,
-         intact_cells = 100, updated_at = now()
+         intact_cells = 25, updated_at = now()
    where user_id = uid;
 
   update profiles
