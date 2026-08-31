@@ -63,6 +63,7 @@ import {
 import type { Account } from "./AuthGate";
 import Enemies from "./Enemies";
 import { drawCoverage, drawDepots } from "@/lib/render";
+import { gunRange } from "@/lib/engine";
 import Battle, { type BattleOutcome } from "./Battle";
 import Scout, { type ScoutOutcome } from "./Scout";
 import MapCanvas, { type Pt } from "./MapCanvas";
@@ -993,7 +994,8 @@ export default function Lobby({
 
   const overlay = (ctx: CanvasRenderingContext2D) => {
     const cell = 7;
-    drawCoverage(ctx, p.guns, cell);
+    // круг ПВО рисуем по прокачанной дальности, иначе апгрейд не виден
+    drawCoverage(ctx, p.guns, cell, gunRange({ gunLevel: p.levels.guns }));
     const dragged = tool === "drones" ? dragDepotRef.current : null;
     drawDepots(
       ctx,
