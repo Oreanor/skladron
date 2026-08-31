@@ -61,7 +61,6 @@ import { getRepo } from "@/lib/repo";
 import {
   type Enemy,
   makeEnemy,
-  takeDrones,
 } from "@/lib/enemy";
 import type { Account } from "./AuthGate";
 import Enemies from "./Enemies";
@@ -236,19 +235,39 @@ export default function Lobby({
   const dragGunRef = useRef<{ cx: number; cy: number } | null>(null);
 
   /** Пишем склад с задержкой: на сервере это одна проверяемая операция. */
+  const saveNow = async () => {
+    const cur = playerRef.current;
+    if (!cur) return;
+    try {
+      const patch = await repo.saveBase(cur);
+      if (patch.credits !== undefined) cur.credits = patch.credits;
+      forceRender((v) => v + 1);
+    } catch (e) {
+      setMessage(t("save.rejected", { error: (e as Error).message }));
+      // Сервер отверг правку — значит наш склад разъехался с его. Дальше без
+      // синхронизации отвергалась бы каждая следующая правка, поэтому берём
+      // серверную версию: она и есть настоящая.
+      try {
+        await repo.reloadBase(cur);
+        setVersion((v) => v + 1);
+        forceRender((v) => v + 1);
+      } catch {
+        // не достучались — попробуем при следующей правке
+      }
+    }
+  };
+
   const persist = () => {
     if (persistTimer.current) clearTimeout(persistTimer.current);
-    persistTimer.current = setTimeout(async () => {
-      const cur = playerRef.current;
-      if (!cur) return;
-      try {
-        const patch = await repo.saveBase(cur);
-        if (patch.credits !== undefined) cur.credits = patch.credits;
-        forceRender((v) => v + 1);
-      } catch (e) {
-        setMessage(t("save.rejected", { error: (e as Error).message }));
-      }
-    }, 400);
+    persistTimer.current = setTimeout(() => void saveNow(), 400);
+  };
+
+  /** Досохранить прямо сейчас: перед налётом склад должен лежать на сервере. */
+  const flushPersist = async () => {
+    if (!persistTimer.current) return;
+    clearTimeout(persistTimer.current);
+    persistTimer.current = null;
+    await saveNow();
   };
 
   const touch = () => {
@@ -812,27 +831,19 @@ export default function Lobby({
 
   const doScout = async (enemy: Enemy, planes: number): Promise<string | null> => {
     if (scouts < planes) return t("scout.needPlanes");
-    const previousDepots = p.depots.map((depot) => ({ ...depot }));
     try {
+      await flushPersist();
       const base =
         repo.mode === "cloud"
           ? await repo.enemyBase(enemy.email)
           : { cells: decodeCells(enemy.cells), guns: enemy.guns, gunLevel: 1 };
-      // разведчики уходят из ящиков до вылета: взлетели — значит потрачены
-      const took = takeDrones(p.depots, planes, "scout");
-      if (took !== planes) {
-        p.depots = previousDepots;
-        return t("scout.needPlanes");
-      }
+      // разведчиков снимает со склада сервер: взлетели — значит потрачены
       await repo.spendScouts(p, planes);
       setScout({ enemy, cells: base.cells, guns: base.guns, planes, gunLevel: base.gunLevel });
       setVersion((v) => v + 1);
       forceRender((v) => v + 1);
       return null;
     } catch (e) {
-      p.depots = previousDepots;
-      setVersion((v) => v + 1);
-      forceRender((v) => v + 1);
       return t("scout.failed", { error: (e as Error).message });
     }
   };
@@ -843,24 +854,19 @@ export default function Lobby({
     pattern: Pattern,
     direction: number
   ): Promise<string | null> => {
-    const previousDepots = p.depots.map((depot) => ({ ...depot }));
-    const took = takeDrones(p.depots, n, "basic");
-    if (took !== n) {
-      p.depots = previousDepots;
-      return t("raid.notEnough");
-    }
+    if (drones < n) return t("raid.notEnough");
     const seed = (Math.random() * 1e9) | 0;
-    setVersion((value) => value + 1);
-    forceRender((value) => value + 1);
     try {
+      // Склад должен лежать на сервере до вылета: дронов снимает он сам,
+      // со своей копии, и обратно присылает уже новый склад.
+      await flushPersist();
       await repo.sendAttack(p, enemy.email, n, pattern, direction, seed);
       // счётчик налётов поднимает сам send_attack — второй раз здесь не нужно
       setMessage(t("raid.sent", { email: enemy.email }));
-      return null;
-    } catch (error) {
-      p.depots = previousDepots;
       setVersion((value) => value + 1);
       forceRender((value) => value + 1);
+      return null;
+    } catch (error) {
       return t("raid.sendFailed", { error: (error as Error).message });
     }
   };

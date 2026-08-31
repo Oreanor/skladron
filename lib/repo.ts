@@ -16,6 +16,7 @@ import {
   wipe as localWipe,
   type Player,
 } from "./player";
+import { takeDrones } from "./enemy";
 import { cloudEnabled, supabase } from "./supabase";
 
 export interface Income {
@@ -46,9 +47,15 @@ export interface Repo {
   enemyBase(email: string): Promise<{ cells: Uint8Array; guns: Gun[]; gunLevel: number }>;
   /** Апгрейд класса на уровень выше. Цену считает сервер. */
   upgrade(p: Player, kind: UpgradeKind): Promise<Partial<Player>>;
-  /** Вылет разведки: разведчики уходят из своих контейнеров. */
-  spendScouts(p: Player, n: number): Promise<void>;
+  /** Вылет разведки: разведчиков снимает со склада сервер и отдаёт новый склад. */
+  spendScouts(p: Player, n: number): Promise<Depot[]>;
+  /**
+   * Перечитывает склад с сервера. Нужен, когда сервер отверг правку: значит
+   * наша копия разъехалась с его, и правда — на сервере.
+   */
+  reloadBase(p: Player): Promise<void>;
   buyDrones(p: Player, amount: number, kind?: DroneKind): Promise<Partial<Player>>;
+  /** Налёт. Дронов снимает сервер, обратно приходит новый склад. */
   sendAttack(
     p: Player,
     targetEmail: string,
@@ -56,7 +63,7 @@ export interface Repo {
     pattern: Pattern,
     direction: number,
     seed: number
-  ): Promise<void>;
+  ): Promise<Depot[]>;
   acknowledgeReport(id: string): Promise<void>;
   /** Переименование склада — отдельная операция, карты не касается. */
   rename(p: Player, name: string): Promise<void>;
@@ -94,8 +101,14 @@ class LocalRepo implements Repo {
     return new Map<string, string>();
   }
 
-  async spendScouts(p: Player, _n: number) {
+  async spendScouts(p: Player, n: number) {
+    takeDrones(p.depots, n, "scout");
     localSave(p);
+    return p.depots;
+  }
+
+  async reloadBase() {
+    // локальная копия и есть единственная
   }
 
   async enemyBase(_email: string) {
@@ -118,7 +131,7 @@ class LocalRepo implements Repo {
     return {};
   }
 
-  async sendAttack() {
+  async sendAttack(): Promise<Depot[]> {
     throw new Error("Атаки на друзей доступны после входа через Google");
   }
 
@@ -346,8 +359,26 @@ class CloudRepo implements Repo {
     return row ? { credits: row.credits, levels: row.levels } : {};
   }
   async spendScouts(p: Player, n: number) {
-    const { error } = await this.db().rpc("spend_scouts", { n, new_depots: p.depots });
+    const { data, error } = await this.db().rpc("spend_scouts", { n });
     if (error) throw error;
+    const row = (data as { scouts: number; depots: Depot[] }[] | null)?.[0];
+    if (row?.depots) p.depots = row.depots;
+    return p.depots;
+  }
+
+  async reloadBase(p: Player) {
+    const db = this.db();
+    const [{ data: base, error }, { data: prof, error: e2 }] = await Promise.all([
+      db.from("bases").select("cells, guns, drone_cells").single(),
+      db.from("profiles").select("credits").single(),
+    ]);
+    if (error) throw error;
+    if (e2) throw e2;
+    const b = base as BaseRow;
+    p.cells = fromPgBytea(b.cells);
+    p.guns = b.guns ?? [];
+    p.depots = b.drone_cells ?? [];
+    if (prof) p.credits = (prof as { credits: number }).credits;
   }
 
 
@@ -373,15 +404,17 @@ class CloudRepo implements Repo {
     direction: number,
     seed: number
   ) {
-    const { error } = await this.db().rpc("send_attack", {
+    const { data, error } = await this.db().rpc("send_attack", {
       target_email: targetEmail,
       drone_count: drones,
       attack_pattern: pattern,
       attack_direction: direction,
       attack_seed: seed,
-      new_depots: p.depots,
     });
     if (error) throw error;
+    const row = (data as { id: string; depots: Depot[] }[] | null)?.[0];
+    if (row?.depots) p.depots = row.depots;
+    return p.depots;
   }
 
   async acknowledgeReport(id: string) {

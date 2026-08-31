@@ -139,6 +139,41 @@ $$;
 
 -- ---------- таблицы ----------
 
+-- Снимает со склада нужное число дронов заданного вида. Пустые ящики
+-- исчезают. Идём с конца: последние контейнеры опустошаются первыми — так же,
+-- как это делал клиент.
+create or replace function take_from_depots(d jsonb, want int, want_kind text)
+returns jsonb
+language plpgsql immutable as $$
+declare
+  arr jsonb := coalesce(d, '[]'::jsonb);
+  out jsonb := '[]'::jsonb;
+  e jsonb;
+  need int := want;
+  n int;
+  grab int;
+  i int;
+begin
+  if want is null or want < 1 then raise exception 'bad drone count'; end if;
+  for i in reverse jsonb_array_length(arr) - 1 .. 0 loop
+    e := arr -> i;
+    if coalesce(e->>'kind', 'basic') = want_kind and need > 0 then
+      n := coalesce((e->>'n')::int, 0);
+      grab := least(n, need);
+      need := need - grab;
+      n := n - grab;
+      if n > 0 then
+        out := jsonb_insert(out, '{0}', jsonb_set(e, '{n}', to_jsonb(n)));
+      end if;
+    else
+      out := jsonb_insert(out, '{0}', e);
+    end if;
+  end loop;
+  if need > 0 then raise exception 'not enough drones in the warehouse'; end if;
+  return out;
+end;
+$$;
+
 create table if not exists profiles (
   id uuid primary key references auth.users on delete cascade,
   email text,
@@ -237,6 +272,8 @@ drop function if exists send_attack(text, int, text, int, int, jsonb, int);
 -- у pending_attacks менялся не список аргументов, а состав колонок:
 -- create or replace такого тоже не умеет
 drop function if exists pending_attacks();
+-- дронов теперь списывает сервер: клиент больше не присылает свой склад
+drop function if exists spend_scouts(int, jsonb);
 -- enemy_base теперь отдаёт ещё и уровень чужих пушек
 drop function if exists enemy_base(text);
 
@@ -287,9 +324,8 @@ create or replace function send_attack(
   drone_count int,
   attack_pattern text,
   attack_direction int,
-  attack_seed int,
-  new_depots jsonb
-) returns uuid
+  attack_seed int
+) returns table (id uuid, depots jsonb)
 language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
@@ -297,6 +333,7 @@ declare
   cur bytea;
   cur_guns jsonb;
   cur_depots jsonb;
+  next_depots jsonb;
   order_id uuid;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
@@ -319,25 +356,25 @@ begin
   select b.cells, b.guns, b.drone_cells into cur, cur_guns, cur_depots
     from bases b where b.user_id = uid for update;
   if cur is null then raise exception 'no base'; end if;
-  if depot_sum_kind(new_depots, 'scout') <> depot_sum_kind(cur_depots, 'scout')
-     or depot_sum(new_depots) <> depot_sum(cur_depots) - drone_count then
-    raise exception 'sent drones do not match warehouse stock';
-  end if;
-  if not depots_valid(new_depots, cur, cur_guns) then
-    raise exception 'bad depot state';
-  end if;
 
-  update bases set drone_cells = new_depots, updated_at = now() where user_id = uid;
+  -- Дронов снимает сервер со своей же копии склада. Раньше новый склад
+  -- присылал клиент, и любое расхождение — недосохранённая правка, гонка с
+  -- автосохранением — валило налёт с «sent drones do not match».
+  next_depots := take_from_depots(cur_depots, drone_count, 'basic');
+
+  update bases set drone_cells = next_depots, updated_at = now() where user_id = uid;
   update profiles
-     set drones = depot_sum(new_depots),
+     set drones = depot_sum(next_depots),
          stats = jsonb_set(stats, '{raids}', to_jsonb((stats->>'raids')::int + 1))
-   where id = uid;
+   where profiles.id = uid;
 
   insert into attacks (attacker_id, defender_id, drones, pattern, direction, seed, drone_level)
   values (uid, target.id, drone_count, attack_pattern, attack_direction, attack_seed,
           (select coalesce((p.levels->>'drones')::int, 1) from profiles p where p.id = uid))
-  returning id into order_id;
-  return order_id;
+  returning attacks.id into order_id;
+  id := order_id;
+  depots := next_depots;
+  return next;
 end;
 $$;
 
@@ -358,31 +395,28 @@ $$;
 -- ---------- разведчики ----------
 -- Лежат счётчиком: на карте их нет, гореть им негде.
 
-create or replace function spend_scouts(n int, new_depots jsonb)
-returns table (scouts int)
+create or replace function spend_scouts(n int)
+returns table (scouts int, depots jsonb)
 language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
   cur bytea;
-  cur_guns jsonb;
   cur_depots jsonb;
+  next_depots jsonb;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   if n is null or n < 1 then raise exception 'bad scout count'; end if;
 
-  select b.cells, b.guns, b.drone_cells into cur, cur_guns, cur_depots
+  select b.cells, b.drone_cells into cur, cur_depots
     from bases b where b.user_id = uid for update;
   if cur is null then raise exception 'no base'; end if;
 
-  if not depots_only_changed(cur_depots, new_depots, 'scout', -n) then
-    raise exception 'scouts must come out of their containers';
-  end if;
-  if not depots_valid(new_depots, cur, cur_guns) then
-    raise exception 'bad depot state';
-  end if;
+  -- как и с ударными дронами: снимает сервер, клиент только просит
+  next_depots := take_from_depots(cur_depots, n, 'scout');
 
-  update bases set drone_cells = new_depots, updated_at = now() where user_id = uid;
-  scouts := depot_sum_kind(new_depots, 'scout');
+  update bases set drone_cells = next_depots, updated_at = now() where user_id = uid;
+  scouts := depot_sum_kind(next_depots, 'scout');
+  depots := next_depots;
   return next;
 end;
 $$;
@@ -804,7 +838,9 @@ begin
 
   killed := coalesce((result->>'killedByGuns')::int, 0)
           + coalesce((result->>'killedByMg')::int, 0);
-  if killed < 0 or killed > 300 then raise exception 'bad killed drone count'; end if;
+  if killed < 0 or killed > price('max_raid') then
+    raise exception 'bad killed drone count';
+  end if;
   if burned <> coalesce((result->>'burned')::int, -1) then
     raise exception 'burned cell count does not match map';
   end if;
