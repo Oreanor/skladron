@@ -1791,7 +1791,9 @@ export default function Lobby({
     raids.length === 0 ? (
       <p className="text-neutral-500">{t("replays.empty")}</p>
     ) : (
-      <ul className="space-y-2">
+      // Показываем три боя, остальное — прокруткой: журнал не должен
+      // выдавливать список врагов за край экрана.
+      <ul className="max-h-[10.5rem] space-y-2 overflow-y-auto overscroll-contain pr-1">
         {raids.map((r) => (
           <li key={r.id} className="flex items-center justify-between gap-2">
             <div className="min-w-0">
