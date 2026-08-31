@@ -120,7 +120,7 @@ const TOOLS: {
   /** Какой класс он показывает уровнем. */
   levelKind?: UpgradeKind;
   /** Что считать в уголке кнопки: этого добра столько-то на складе. */
-  countKind?: "guns" | "drones" | "scouts";
+  countKind?: "intact" | "burnt" | "guns" | "drones" | "scouts";
 }[] = [
   {
     id: "area",
@@ -128,6 +128,7 @@ const TOOLS: {
     hint: "tool.areaHint",
     vars: { cost: CELL_COST },
     icon: <LayoutGrid className={ICON} />,
+    countKind: "intact",
   },
   {
     id: "repair",
@@ -135,6 +136,7 @@ const TOOLS: {
     hint: "tool.repairHint",
     vars: { cost: REPAIR_COST },
     icon: <Wrench className={ICON} />,
+    countKind: "burnt",
   },
   {
     id: "gun",
@@ -473,6 +475,8 @@ export default function Lobby({
   }
 
   const { intact, burnt, free, drones, scouts } = counts;
+  // то же самое, но под ключи кнопок: у каждой в углу своё число
+  const counters = { intact, burnt, guns: p.guns.length, drones, scouts };
   const hasBuilding = intact + burnt > 0;
   const doomed = isDoomed(p, intact);
   // ---------- бой ----------
@@ -1509,8 +1513,6 @@ export default function Lobby({
         <ChipBar className="min-w-0 flex-1">
           <Chip label={t("stat.creditsShort")} value={fmt(p.credits)} tone="text-emerald-300" />
           <Chip label={t("stat.incomeShort")} value={`+${fmt(income)}`} tone="text-emerald-300" />
-          <Chip label={t("stat.intactShort")} value={fmt(intact)} />
-          {burnt > 0 && <Chip label={t("stat.burntShort")} value={fmt(burnt)} tone="text-orange-300" />}
         </ChipBar>
         <IconButton label={t("panel.attacks")} badge={p.incoming.length} onClick={() => toggleSheet("attacks")}>
           <IconTarget />
@@ -1535,8 +1537,6 @@ export default function Lobby({
         <ChipBar bare className="min-w-0 flex-1 flex-wrap px-4 py-3 text-sm">
           <Chip label={t("stat.credits")} value={fmt(p.credits)} tone="text-emerald-300" />
           <Chip label={t("stat.income")} value={`+${fmt(income)}`} tone="text-emerald-300" />
-          <Chip label={t("stat.intact")} value={fmt(intact)} />
-          <Chip label={t("stat.burnt")} value={fmt(burnt)} tone={burnt ? "text-orange-300" : undefined} />
         </ChipBar>
         {accountLine}
       </div>
@@ -1557,15 +1557,7 @@ export default function Lobby({
                 price={t(item.priceKey ?? "tool.price", { cost: item.vars.cost })}
                 hint={t(item.hint, item.vars)}
                 level={item.levelKind ? p.levels[item.levelKind] : undefined}
-                count={
-                  item.countKind
-                    ? item.countKind === "guns"
-                      ? p.guns.length
-                      : item.countKind === "drones"
-                      ? drones
-                      : scouts
-                    : undefined
-                }
+                count={item.countKind ? counters[item.countKind] : undefined}
                 active={tool === item.id}
                 disabled={!p.founded && item.id !== "area"}
                 onClick={() => pickTool(item.id)}
