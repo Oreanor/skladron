@@ -1,13 +1,21 @@
 // Состояние игрока и его хранение. Сейчас localStorage; на этапе 2 за тем же
 // интерфейсом окажется Supabase — игровая логика об этом знать не должна.
 
-import { CREDITS_START, INCOME_PER_CELL, STARTER_SIDE, accrue } from "./economy";
+import {
+  CREDITS_START,
+  DRONE_UNIT_COST,
+  INCOME_PERCENT,
+  SCOUT_UNIT_COST,
+  STARTER_SIDE,
+  accrue,
+} from "./economy";
 import {
   CELLS,
   type Depot,
   G_BASE,
   G_BURNT,
   type Gun,
+  depotKind,
   droneCount,
   countCells,
   decodeCells,
@@ -128,11 +136,19 @@ export function wipe(p: Player, now = Date.now()): Player {
 export const drones = (p: Player) => droneCount(p.depots);
 export const intactCells = (p: Player) => countCells(p.cells, G_BASE);
 export const burntCells = (p: Player) => countCells(p.cells, G_BURNT);
+/** Во сколько обходится товар на складе: по нему и считается доход. */
+export const storedValue = (p: Player) =>
+  p.depots.reduce(
+    (sum, d) => sum + d.n * (depotKind(d) === "scout" ? SCOUT_UNIT_COST : DRONE_UNIT_COST),
+    0
+  );
+
 /**
- * Доход за сутки. Платит не пустая площадь, а занятая: сколько контейнеров
- * стоит на складе, столько и капает. Пустой склад не горит, но и не кормит.
+ * Доход за сутки — доля от стоимости товара. Пустой склад не горит, но и
+ * не кормит; пушки занимают площадь даром, просто ничего не приносят.
  */
-export const dailyIncome = (p: Player) => p.depots.length * INCOME_PER_CELL;
+export const dailyIncome = (p: Player) =>
+  Math.floor((storedValue(p) * INCOME_PERCENT) / 100);
 
 /**
  * Склад выгорел дотла — доводим кассу до стартовых 10 000. Без этого игрок
@@ -209,7 +225,7 @@ export function save(p: Player) {
 /** Начисляет доход за прошедшие сутки. Возвращает, сколько накапало. */
 export function collectIncome(p: Player, now = Date.now()) {
   if (!p.founded) return { credits: 0, days: 0 };
-  const { credits, days, nextAt } = accrue(p.depots.length, p.lastIncomeAt, now);
+  const { credits, days, nextAt } = accrue(storedValue(p), p.lastIncomeAt, now);
   p.lastIncomeAt = nextAt;
   p.credits += credits;
   return { credits, days };

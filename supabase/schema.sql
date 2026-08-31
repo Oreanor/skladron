@@ -16,7 +16,7 @@ language sql immutable as $$
     when 'drones' then 1000
     when 'scout'  then 25    -- разведчик дороже ударного дрона, но дешевле пушки
     when 'drone'  then 10
-    when 'income' then 10
+    when 'income' then 10  -- процент от стоимости товара в сутки
     when 'loot'   then 5
     when 'kill'   then 10   -- защитнику за сбитый дрон
     when 'leak'   then 20   -- атакующему за долетевший дрон
@@ -86,6 +86,16 @@ language sql immutable as $$
     'hex'
   )
   from generate_series(0, 9999) as cells(n);
+$$;
+
+-- Во сколько обходится товар на складе: по нему считается суточный доход.
+create or replace function depot_value(d jsonb) returns int
+language sql immutable as $$
+  select coalesce(sum(
+    (e->>'n')::int
+    * case when coalesce(e->>'kind', 'basic') = 'scout' then price('scout') else price('drone') end
+  ), 0)::int
+  from jsonb_array_elements(coalesce(d, '[]'::jsonb)) e;
 $$;
 
 -- Сколько в контейнерах лежит именно этого вида. Вид не указан — считается
@@ -576,7 +586,7 @@ declare
   uid uuid := auth.uid();
   prof profiles;
   intact int;
-  occupied int;
+  goods int;
   passed int;
   paid int;
   gain int;
@@ -585,8 +595,8 @@ begin
   select * into prof from profiles where id = uid for update;
   if not found then raise exception 'no profile'; end if;
 
-  select b.intact_cells, jsonb_array_length(b.drone_cells)
-    into intact, occupied
+  select b.intact_cells, depot_value(b.drone_cells)
+    into intact, goods
     from bases b where b.user_id = uid;
 
   -- страховка: от склада ничего не осталось, а на подъём нет денег
@@ -602,9 +612,9 @@ begin
   end if;
 
   paid := least(passed, 14);
-  -- Платит не пустая площадь, а занятая: доход идёт с товара на складе.
-  -- Считаем по тому, что лежит в момент начисления.
-  gain := paid * coalesce(occupied, 0) * price('income');
+  -- Платит не площадь, а товар: доход — процент от стоимости того, что
+  -- лежит в контейнерах на момент начисления. Пушки едят площадь даром.
+  gain := paid * ((coalesce(goods, 0) * price('income')) / 100);
 
   update profiles
      set credits = credits + gain,
@@ -740,8 +750,7 @@ begin
     from profiles p where p.id = uid for update;
   if cur is null then raise exception 'no profile'; end if;
   if cur >= 10 then raise exception 'already at max level'; end if;
-  -- квадратично: второй уровень 5000, третий 20000, четвёртый 45000
-  cost := cur * cur * price('upgrade');
+  cost := price('upgrade');
 
   update profiles
      set credits = profiles.credits - cost,
