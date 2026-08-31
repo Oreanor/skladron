@@ -14,7 +14,7 @@ import {
   type GameState,
 } from "@/lib/engine";
 import { drawFrame } from "@/lib/render";
-import { INSURANCE_CELL, INSURANCE_DEPOT, fmt } from "@/lib/economy";
+import { goodsValue, insurance, fmt } from "@/lib/economy";
 import MapCanvas, { type Pt } from "./MapCanvas";
 import { Button, Chip, ChipBar, IconButton, Panel, Row } from "./ui";
 import { MAX_FRAMES, STEP, encodeTrace, type Frame } from "@/lib/replay";
@@ -49,7 +49,8 @@ interface Hud {
   killedByMg: number;
   fires: number;
   burned: number;
-  depotsLost: number;
+  goodsLost: number;
+  gunsLost: number;
   integrity: number;
   gunsAlive: number;
   gunsTotal: number;
@@ -64,6 +65,8 @@ export default function Battle({ cells, guns, depots, order, levels, onFinish }:
   const [hints, setHints] = useState(false);
   const t = useT();
   const finished = useRef(false);
+  /** Во что обходился товар до боя: из него считаем, сколько сгорело. */
+  const startGoods = useMemo(() => goodsValue(depots), [depots]);
   /** Кадры действий защитника — из них собирается повтор для нападавшего. */
   const trace = useRef<(Frame | null)[]>([]);
 
@@ -125,7 +128,8 @@ export default function Battle({ cells, guns, depots, order, levels, onFinish }:
           killedByMg: s.result.killedByMg,
           fires: s.fire.size,
           burned: s.result.burned,
-          depotsLost: s.result.depotsLost,
+          goodsLost: startGoods - goodsValue(s.depots),
+          gunsLost: s.result.gunsLost,
           integrity: s.baseTotal ? Math.round((s.baseOk / s.baseTotal) * 100) : 0,
           gunsAlive: s.guns.filter((g) => g.alive).length,
           gunsTotal: s.guns.length,
@@ -152,8 +156,7 @@ export default function Battle({ cells, guns, depots, order, levels, onFinish }:
   const patternName = t(`pattern.${order.pattern}` as Key).toLowerCase();
   const seconds = `${Math.floor(hud?.time ?? 0)} ${t("battle.seconds")}`;
   // За сбитых не платят. Что реально придёт — страховка за пепелище.
-  const insurance =
-    (hud?.burned ?? 0) * INSURANCE_CELL + (hud?.depotsLost ?? 0) * INSURANCE_DEPOT;
+  const payout = insurance(hud?.burned ?? 0, hud?.goodsLost ?? 0, hud?.gunsLost ?? 0);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-4">
@@ -193,8 +196,8 @@ export default function Battle({ cells, guns, depots, order, levels, onFinish }:
           />
           <Chip
             label={t("battle.insurance")}
-            value={`+${fmt(insurance)}`}
-            tone={insurance ? "text-emerald-300" : undefined}
+            value={`+${fmt(payout)}`}
+            tone={payout ? "text-emerald-300" : undefined}
           />
           <Chip
             label={t("battle.hudFires")}
@@ -255,8 +258,11 @@ export default function Battle({ cells, guns, depots, order, levels, onFinish }:
                 <Row
                   label={t("battle.insurance")}
                   value={`+${fmt(
-                    done.result.burned * INSURANCE_CELL +
-                      done.result.depotsLost * INSURANCE_DEPOT
+                    insurance(
+                      done.result.burned,
+                      goodsValue(depots) - goodsValue(done.depots),
+                      done.result.gunsLost
+                    )
                   )} ${t("battle.creditsSuffix")}`}
                 />
                 <Row label={t("battle.leaked")} value={String(done.result.leaked)} />
@@ -294,7 +300,7 @@ export default function Battle({ cells, guns, depots, order, levels, onFinish }:
             <Row label={t("battle.killedByMg")} value={String(hud?.killedByMg ?? 0)} />
             <Row
               label={t("battle.insurance")}
-              value={`+${fmt(insurance)} ${t("battle.creditsSuffix")}`}
+              value={`+${fmt(payout)} ${t("battle.creditsSuffix")}`}
             />
             <Row label={t("battle.fires")} value={String(hud?.fires ?? 0)} />
             <Row label={t("battle.gunsAlive")} value={`${hud?.gunsAlive ?? 0}/${hud?.gunsTotal ?? 0}`} />

@@ -15,8 +15,23 @@ export const INCOME_PER_CELL = 10;
 export const SALE_MULTIPLIER = 2;
 export const INCOME_CAP_DAYS = 14; // потолок накопления
 export const CELL_LOOT_REWARD = 50; // нападавшему за каждую сожжённую клетку склада
-export const INSURANCE_CELL = 10; // страховка пострадавшему за сгоревшую клетку
-export const INSURANCE_DEPOT = 50; // и ещё столько, если на клетке лежал товар
+export const INSURANCE_CELL = 5; // страховка за сгоревшую клетку — ровно на ремонт
+/** Доля, которую страховая возвращает за сгоревший товар и погибшие пушки. */
+export const INSURANCE_SHARE = 0.5;
+
+/** Во что обошлось то, что лежит в контейнерах. */
+export const goodsValue = (
+  depots: { n: number; kind?: string }[]
+) =>
+  depots.reduce(
+    (sum, d) => sum + d.n * (d.kind === "scout" ? SCOUT_UNIT_COST : DRONE_UNIT_COST),
+    0
+  );
+
+/** Страховая выплата: ремонт клеток плюс половина стоимости потерянного. */
+export const insurance = (burned: number, goodsLost: number, gunsLost: number) =>
+  burned * INSURANCE_CELL +
+  Math.floor((goodsLost + gunsLost * GUN_COST) * INSURANCE_SHARE);
 export const SCOUT_UNIT_COST = 25; // разведчик дороже ударного дрона, но дешевле пушки
 /**
  * Уровни. Апгрейд общий на класс: дорожает и уже лежащее на складе, и всё,

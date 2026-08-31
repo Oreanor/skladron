@@ -19,8 +19,8 @@ language sql immutable as $$
     when 'income' then 10  -- кредитов в сутки с каждой целой клетки
     when 'sale'   then 2   -- отгрузка идёт вдвое дороже закупки
     when 'loot'   then 50   -- нападавшему за каждую сожжённую клетку склада
-    when 'insure_cell'  then 10  -- страховка погорельцу за клетку
-    when 'insure_depot' then 50  -- и ещё столько, если на клетке лежал товар
+    when 'insure_cell'  then 5   -- страховка погорельцу: ровно на ремонт клетки
+    when 'insure_share' then 50  -- и половина стоимости сгоревшего товара и пушек
     when 'raid_ttl' then 1800  -- полчаса на то, чтобы отбить атаку вручную
     when 'free'   then 25   -- стартовая площадь 5×5 достаётся даром
     when 'found'  then 25   -- столько же нужно, чтобы основаться
@@ -906,13 +906,13 @@ begin
    where user_id = uid;
 
   -- Страховку считаем по своим данным, а не по присланным: сожжённые клетки
-  -- уже сверены с картой, а сгоревшие контейнеры — это те, что были и
-  -- пропали. Вне боя контейнеры не исчезают.
-  depots_lost := greatest(
-    0,
-    jsonb_array_length(cur_depots) - jsonb_array_length(new_depots)
-  );
-  payout := burned * price('insure_cell') + depots_lost * price('insure_depot');
+  -- уже сверены с картой, а потери в товаре и пушках видны как разница между
+  -- тем, что было, и тем, что осталось. Вне боя они не исчезают.
+  depots_lost := greatest(0, depot_value(cur_depots) - depot_value(new_depots));
+  payout := burned * price('insure_cell')
+          + ((depots_lost
+              + greatest(0, jsonb_array_length(cur_guns) - jsonb_array_length(new_guns))
+                * price('gun')) * price('insure_share')) / 100;
 
   -- За сбитых не платят: деньги приносит товар, а не стрельба. Зато
   -- погорельцу выплачивается страховка.

@@ -24,9 +24,9 @@ import {
   CELL_COST,
   STARTER_SIDE,
   DRONE_UNIT_COST,
-  INSURANCE_CELL,
-  INSURANCE_DEPOT,
   SALE_MULTIPLIER,
+  goodsValue,
+  insurance,
   GUN_COST,
   GUN_REFUND,
   MIN_BASE_CELLS,
@@ -422,6 +422,7 @@ export default function Lobby({
       try {
         const o = autoDefend(cur.cells, cur.guns, cur.depots, head, cur.levels.guns);
         resolvedRef.current.add(head.id);
+        const goodsBefore = goodsValue(cur.depots);
         cur.cells = o.cells;
         cur.guns = o.guns;
         cur.depots = o.depots;
@@ -430,9 +431,12 @@ export default function Lobby({
         const killed = o.result.killedByGuns + o.result.killedByMg;
         cur.stats.dronesKilled += killed;
         cur.stats.cellsBurned += o.result.burned;
-        // страховка погорельцу: за клетки и за сгоревший в них товар
-        cur.credits +=
-          o.result.burned * INSURANCE_CELL + o.result.depotsLost * INSURANCE_DEPOT;
+        // страховка погорельцу: ремонт клеток и половина сгоревшего добра
+        cur.credits += insurance(
+          o.result.burned,
+          goodsBefore - goodsValue(o.depots),
+          o.result.gunsLost
+        );
         const foe = cur.enemies.find((e) => e.name === head.from);
         if (foe) {
           foe.burnedByThem += o.result.burned;
@@ -515,6 +519,7 @@ export default function Lobby({
         order={battle}
         levels={{ guns: p.levels.guns, mg: p.levels.mg, water: p.levels.water }}
         onFinish={async (o: BattleOutcome) => {
+          const goodsBefore = goodsValue(p.depots);
           p.cells = o.cells;
           p.guns = o.guns;
           p.depots = o.depots;
@@ -523,8 +528,11 @@ export default function Lobby({
           const killed = o.result.killedByGuns + o.result.killedByMg;
           p.stats.dronesKilled += killed;
           p.stats.cellsBurned += o.result.burned;
-          p.credits +=
-            o.result.burned * INSURANCE_CELL + o.result.depotsLost * INSURANCE_DEPOT;
+          p.credits += insurance(
+            o.result.burned,
+            goodsBefore - goodsValue(o.depots),
+            o.result.gunsLost
+          );
           // счёт вражды: записываем, сколько он у нас сжёг
           const foe = p.enemies.find((e) => e.name === battle.from);
           if (foe) {
