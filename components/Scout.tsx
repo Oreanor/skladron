@@ -223,6 +223,11 @@ export default function Scout({ name, cells, guns, planes, known, onFinish }: Pr
 
   };
 
+  /** Ручное завершение: без него можно кружить вечно и не выйти с экрана. */
+  const finish = () => {
+    s.done = true;
+  };
+
   const steerButton = (dir: -1 | 1, icon: React.ReactNode) => (
     <button
       aria-label={dir < 0 ? t("scout.left") : t("scout.right")}
@@ -287,6 +292,9 @@ export default function Scout({ name, cells, guns, planes, known, onFinish }: Pr
         <div className="flex shrink-0 gap-2 lg:hidden">
           {steerButton(-1, <ChevronLeft className="h-6 w-6" />)}
           {steerButton(1, <ChevronRight className="h-6 w-6" />)}
+          <Button size="sm" className="shrink-0" onClick={finish}>
+            {t("scout.finish")}
+          </Button>
         </div>
       </div>
 
@@ -308,6 +316,9 @@ export default function Scout({ name, cells, guns, planes, known, onFinish }: Pr
         <span className={`text-sm ${hud?.danger ? "text-red-400" : "text-neutral-500"}`}>
           {hud?.danger ? t("scout.underFire") : t("scout.steerHint")}
         </span>
+        <Button size="sm" title={t("scout.finishHint")} onClick={finish}>
+          {t("scout.finish")}
+        </Button>
       </div>
     </div>
   );

@@ -16,6 +16,8 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 };
 
 const en = {
+  "scout.finish": "End the sortie",
+  "scout.finishHint": "Ends the flight and keeps what you have mapped. Planes still in reserve are spent all the same.",
   "tool.plus": "Drones+",
   "panel.plus": "Fast drones",
   "arsenal.plusExplain": "Fast drones fly 50% quicker and go in their own containers — they never share a crate with the plain ones. Same {perCell} per cell.",
@@ -316,6 +318,8 @@ export type Key = keyof typeof en;
 type Dict = Record<Key, string>;
 
 const ru: Dict = {
+  "scout.finish": "Закончить вылет",
+  "scout.finishHint": "Завершает полёт и оставляет снятое. Разведчики, что ещё в запасе, всё равно потрачены.",
   "tool.plus": "Дроны+",
   "panel.plus": "Быстрые дроны",
   "arsenal.plusExplain": "Быстрые дроны летят на 50% резвее и лежат в своих контейнерах — с обычными в одном ящике не смешиваются. Те же {perCell} на клетку.",
@@ -616,6 +620,8 @@ const ru: Dict = {
 };
 
 const es: Dict = {
+  "scout.finish": "Terminar la salida",
+  "scout.finishHint": "Termina el vuelo y conserva lo cartografiado. Los aviones que quedan en reserva se gastan igual.",
   "tool.plus": "Drones+",
   "panel.plus": "Drones rápidos",
   "arsenal.plusExplain": "Los drones rápidos vuelan un 50% más y van en sus propios contenedores: nunca comparten caja con los normales. Los mismos {perCell} por celda.",
@@ -916,6 +922,8 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+  "scout.finish": "Terminar a saída",
+  "scout.finishHint": "Termina o voo e guarda o que foi mapeado. Os aviões ainda em reserva gastam-se na mesma.",
   "tool.plus": "Drones+",
   "panel.plus": "Drones rápidos",
   "arsenal.plusExplain": "Os drones rápidos voam 50% mais depressa e ficam nos seus próprios contentores — nunca partilham caixa com os normais. Os mesmos {perCell} por célula.",
@@ -1216,6 +1224,8 @@ const pt: Dict = {
 };
 
 const fr: Dict = {
+  "scout.finish": "Terminer la sortie",
+  "scout.finishHint": "Met fin au vol et garde ce qui est cartographié. Les avions encore en réserve sont dépensés quand même.",
   "tool.plus": "Drones+",
   "panel.plus": "Drones rapides",
   "arsenal.plusExplain": "Les drones rapides volent 50 % plus vite et tiennent dans leurs propres conteneurs : jamais dans la même caisse que les ordinaires. Toujours {perCell} par case.",
@@ -1516,6 +1526,8 @@ const fr: Dict = {
 };
 
 const de: Dict = {
+  "scout.finish": "Einsatz beenden",
+  "scout.finishHint": "Beendet den Flug und behält das Kartierte. Noch vorrätige Aufklärer sind trotzdem verbraucht.",
   "tool.plus": "Drohnen+",
   "panel.plus": "Schnelle Drohnen",
   "arsenal.plusExplain": "Schnelle Drohnen fliegen 50 % zügiger und liegen in eigenen Containern — nie zusammen mit den einfachen in einer Kiste. Dieselben {perCell} pro Feld.",
@@ -1816,6 +1828,8 @@ const de: Dict = {
 };
 
 const it: Dict = {
+  "scout.finish": "Termina la sortita",
+  "scout.finishHint": "Chiude il volo e tiene quanto mappato. I ricognitori ancora in riserva si consumano lo stesso.",
   "tool.plus": "Droni+",
   "panel.plus": "Droni veloci",
   "arsenal.plusExplain": "I droni veloci volano il 50% più svelti e stanno in container propri: mai nella stessa cassa di quelli normali. Sempre {perCell} per cella.",
