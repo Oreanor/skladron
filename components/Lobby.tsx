@@ -199,6 +199,7 @@ export default function Lobby({
   const [modal, setModal] = useState<ModalId | null>(null);
   const [naming, setNaming] = useState<"found" | null>(null);
   const [confirmWipe, setConfirmWipe] = useState(false);
+  const [confirmRestart, setConfirmRestart] = useState(false);
   /** Идущий разведвылет: карта врага, его пушки и сколько самолётов послали. */
   const [scout, setScout] = useState<{
     enemy: Enemy;
@@ -1303,6 +1304,21 @@ export default function Lobby({
     }
   };
 
+  /** Начать сначала: всё с нуля, кроме имени склада и списка соперников. */
+  const restartGame = async () => {
+    setConfirmRestart(false);
+    try {
+      playerRef.current = await repo.restart(p);
+      resolvedRef.current.clear();
+      setReports([]);
+      setMessage(t("restart.done"));
+      setVersion((v) => v + 1);
+      forceRender((v) => v + 1);
+    } catch (e) {
+      setMessage(t("restart.failed", { error: (e as Error).message }));
+    }
+  };
+
   const income = dailyIncome(p, intact);
   const pickTool = (id: ToolId) => {
     // апгрейд ничего не рисует на карте — только открывает свою модалку
@@ -1502,6 +1518,7 @@ export default function Lobby({
     <AccountMenu
       name={account?.name ?? null}
       email={account?.email ?? null}
+      onRestart={() => setConfirmRestart(true)}
       onSignOut={account ? onSignOut : undefined}
     />
   );
@@ -1730,6 +1747,16 @@ export default function Lobby({
         </Modal>
       )}
 
+      {confirmRestart && (
+        <ConfirmDialog
+          title={t("restart.title")}
+          subtitle={t("restart.hint")}
+          confirm={t("restart.confirm")}
+          onCancel={() => setConfirmRestart(false)}
+          onConfirm={restartGame}
+        />
+      )}
+
       {confirmWipe && (
         <ConfirmDialog
           title={t("burnt.razeTitle")}
@@ -1817,7 +1844,13 @@ export default function Lobby({
             <div className="truncate px-2 text-sm font-semibold text-neutral-100">
               {account?.name ?? account?.email ?? t("app.localMode")}
             </div>
-            <SettingsList onSignOut={account ? onSignOut : undefined} />
+            <SettingsList
+              onRestart={() => {
+                setSheet(null);
+                setConfirmRestart(true);
+              }}
+              onSignOut={account ? onSignOut : undefined}
+            />
           </div>
         </div>
       </Sheet>

@@ -69,6 +69,8 @@ export interface Repo {
   rename(p: Player, name: string): Promise<void>;
   applyBattle(p: Player, result: BattleResult, attackId?: string): Promise<Partial<Player>>;
   wipe(p: Player): Promise<Player>;
+  /** Начать сначала: пустой стартовый склад, стартовые деньги, всё с нуля. */
+  restart(p: Player): Promise<Player>;
 }
 
 // ---------- локально ----------
@@ -148,6 +150,15 @@ class LocalRepo implements Repo {
 
   async wipe(p: Player) {
     const fresh = localWipe(p);
+    localSave(fresh);
+    return fresh;
+  }
+
+  async restart(p: Player) {
+    const fresh = newPlayer();
+    fresh.name = p.name;
+    fresh.enemies = p.enemies;
+    fresh.founded = p.founded;
     localSave(fresh);
     return fresh;
   }
@@ -444,6 +455,17 @@ class CloudRepo implements Repo {
   async rename(_p: Player, name: string) {
     const { error } = await this.db().rpc("rename_base", { new_name: name });
     if (error) throw error;
+  }
+
+  async restart(p: Player) {
+    const { error } = await this.db().rpc("restart_game");
+    if (error) throw error;
+    const fresh = newPlayer();
+    // имя и знакомства переживают перезапуск: это не имущество
+    fresh.name = p.name;
+    fresh.enemies = p.enemies;
+    fresh.founded = true;
+    return fresh;
   }
 
   async wipe(p: Player) {

@@ -5,7 +5,7 @@
 // показывается на телефоне внутри шторки меню.
 
 import { useEffect, useRef, useState } from "react";
-import { LogOut, Moon, Sun } from "lucide-react";
+import { LogOut, Moon, RotateCcw, Sun } from "lucide-react";
 import { LOCALES, LOCALE_NAMES, useSettings, type Locale } from "@/lib/i18n";
 import { SectionTitle } from "./ui";
 
@@ -58,7 +58,14 @@ function ThemeSwitch() {
 }
 
 /** Язык, тема и выход — одинаковые и в выпадашке, и в мобильной шторке. */
-export function SettingsList({ onSignOut }: { onSignOut?: () => void }) {
+export function SettingsList({
+  onRestart,
+  onSignOut,
+}: {
+  /** Начать игру сначала — спрашивает подтверждение снаружи. */
+  onRestart?: () => void;
+  onSignOut?: () => void;
+}) {
   const { locale, setLocale, t } = useSettings();
 
   return (
@@ -86,6 +93,15 @@ export function SettingsList({ onSignOut }: { onSignOut?: () => void }) {
       </div>
       <ThemeSwitch />
 
+      {onRestart && (
+        <div className="mt-1 border-t border-neutral-800 pt-1">
+          <button onClick={onRestart} className={ROW}>
+            <RotateCcw className="h-4 w-4" />
+            <span className="flex-1">{t("restart.menu")}</span>
+          </button>
+        </div>
+      )}
+
       {onSignOut && (
         <div className="mt-1 border-t border-neutral-800 pt-1">
           <button onClick={onSignOut} className={`${ROW} text-red-300`}>
@@ -101,10 +117,12 @@ export function SettingsList({ onSignOut }: { onSignOut?: () => void }) {
 export default function AccountMenu({
   name,
   email,
+  onRestart,
   onSignOut,
 }: {
   name: string | null;
   email: string | null;
+  onRestart?: () => void;
   /** Без аккаунта выхода нет — остаются язык и тема. */
   onSignOut?: () => void;
 }) {
@@ -150,7 +168,17 @@ export default function AccountMenu({
             </div>
           )}
           <div className="border-t border-neutral-800" />
-          <SettingsList onSignOut={onSignOut} />
+          <SettingsList
+            onRestart={
+              onRestart
+                ? () => {
+                    setOpen(false);
+                    onRestart();
+                  }
+                : undefined
+            }
+            onSignOut={onSignOut}
+          />
         </div>
       )}
     </div>

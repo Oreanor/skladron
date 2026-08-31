@@ -955,10 +955,42 @@ begin
 end;
 $$;
 
+-- ---------- начать сначала ----------
+-- Полный сброс: пустой стартовый склад, стартовые деньги, обнулённые
+-- счётчики и уровни. Имя склада и список соперников остаются — это
+-- знакомства, а не имущество.
+
+create or replace function restart_game()
+returns void language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+
+  update bases
+     set cells = starter_map(),
+         guns = '[]'::jsonb, drone_cells = '[]'::jsonb,
+         intact_cells = 100, updated_at = now()
+   where user_id = uid;
+
+  update profiles
+     set credits = 10000,
+         drones = 0,
+         founded = true,
+         last_income_at = now(),
+         levels = '{"drones":1,"guns":1,"scouts":1,"mg":1,"water":1}'::jsonb,
+         stats = '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,
+                   "wipes":0,"raids":0,"looted":0}'::jsonb
+   where id = uid;
+
+  -- налёты, которые ждали старый склад, начинать сначала не должны
+  delete from attacks where defender_id = uid and status = 'pending';
+end;
+$$;
+
 grant execute on function ensure_player, collect_income, save_base,
   buy_drones, apply_battle, complete_attack, wipe_base, rename_base, save_enemies,
   base_names, enemy_base, spend_scouts, upgrade,
-  send_attack, pending_attacks, attack_reports, ack_attack_report to authenticated;
+  send_attack, pending_attacks, attack_reports, ack_attack_report, restart_game to authenticated;
 
 -- PostgREST держит список функций в кэше. Supabase обычно перечитывает его сам,
 -- но после смены сигнатур надёжнее попросить явно — иначе клиент ещё какое-то

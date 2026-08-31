@@ -16,6 +16,12 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 };
 
 const en = {
+  "restart.menu": "Start over",
+  "restart.title": "Start the game over?",
+  "restart.hint": "The warehouse, credits, drones, guns and levels go back to the very beginning. The name and the rival list stay. This cannot be undone.",
+  "restart.confirm": "Start over",
+  "restart.done": "A clean start: the warehouse is empty, 10 000 cr in the account",
+  "restart.failed": "Could not start over: {error}",
   "common.ok": "OK",
   "upgrade.mg": "Machine gun",
   "upgrade.water": "Fire hose",
@@ -331,6 +337,12 @@ export type Key = keyof typeof en;
 type Dict = Record<Key, string>;
 
 const ru: Dict = {
+  "restart.menu": "Начать сначала",
+  "restart.title": "Начать игру сначала?",
+  "restart.hint": "Склад, кредиты, дроны, пушки и уровни вернутся к самому началу. Имя склада и список соперников останутся. Отменить это нельзя.",
+  "restart.confirm": "Начать сначала",
+  "restart.done": "С чистого листа: склад пуст, на счету 10 000 кр",
+  "restart.failed": "Не удалось начать сначала: {error}",
   "common.ok": "ОК",
   "upgrade.mg": "Пулемёт",
   "upgrade.water": "Брандспойт",
@@ -646,6 +658,12 @@ const ru: Dict = {
 };
 
 const es: Dict = {
+  "restart.menu": "Empezar de nuevo",
+  "restart.title": "¿Empezar la partida de nuevo?",
+  "restart.hint": "El almacén, los créditos, los drones, los cañones y los niveles vuelven al principio. El nombre y la lista de rivales se mantienen. No se puede deshacer.",
+  "restart.confirm": "Empezar de nuevo",
+  "restart.done": "Desde cero: el almacén está vacío y hay 10 000 cr en la cuenta",
+  "restart.failed": "No se pudo empezar de nuevo: {error}",
   "common.ok": "OK",
   "upgrade.mg": "Ametralladora",
   "upgrade.water": "Manguera",
@@ -961,6 +979,12 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+  "restart.menu": "Começar de novo",
+  "restart.title": "Começar o jogo de novo?",
+  "restart.hint": "O armazém, os créditos, os drones, os canhões e os níveis voltam ao início. O nome e a lista de rivais ficam. Isto não se desfaz.",
+  "restart.confirm": "Começar de novo",
+  "restart.done": "Do zero: o armazém está vazio e há 10 000 cr na conta",
+  "restart.failed": "Não foi possível começar de novo: {error}",
   "common.ok": "OK",
   "upgrade.mg": "Metralhadora",
   "upgrade.water": "Mangueira",
@@ -1276,6 +1300,12 @@ const pt: Dict = {
 };
 
 const fr: Dict = {
+  "restart.menu": "Tout recommencer",
+  "restart.title": "Recommencer la partie ?",
+  "restart.hint": "L’entrepôt, les crédits, les drones, les canons et les niveaux repartent de zéro. Le nom et la liste des rivaux restent. C’est irréversible.",
+  "restart.confirm": "Recommencer",
+  "restart.done": "Page blanche : l’entrepôt est vide, 10 000 cr sur le compte",
+  "restart.failed": "Impossible de recommencer : {error}",
   "common.ok": "OK",
   "upgrade.mg": "Mitrailleuse",
   "upgrade.water": "Lance à incendie",
@@ -1591,6 +1621,12 @@ const fr: Dict = {
 };
 
 const de: Dict = {
+  "restart.menu": "Neu anfangen",
+  "restart.title": "Das Spiel neu anfangen?",
+  "restart.hint": "Lager, Kredite, Drohnen, Geschütze und Stufen gehen ganz an den Anfang zurück. Name und Gegnerliste bleiben. Rückgängig geht das nicht.",
+  "restart.confirm": "Neu anfangen",
+  "restart.done": "Von vorn: das Lager ist leer, 10 000 Cr auf dem Konto",
+  "restart.failed": "Neustart nicht möglich: {error}",
   "common.ok": "OK",
   "upgrade.mg": "Maschinengewehr",
   "upgrade.water": "Löschschlauch",
@@ -1906,6 +1942,12 @@ const de: Dict = {
 };
 
 const it: Dict = {
+  "restart.menu": "Ricomincia",
+  "restart.title": "Ricominciare la partita?",
+  "restart.hint": "Magazzino, crediti, droni, cannoni e livelli tornano all’inizio. Il nome e la lista dei rivali restano. Non si torna indietro.",
+  "restart.confirm": "Ricomincia",
+  "restart.done": "Da zero: il magazzino è vuoto e ci sono 10 000 cr sul conto",
+  "restart.failed": "Non è stato possibile ricominciare: {error}",
   "common.ok": "OK",
   "upgrade.mg": "Mitragliatrice",
   "upgrade.water": "Manichetta",
