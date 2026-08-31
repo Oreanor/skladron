@@ -35,6 +35,10 @@ export const MG_INTERVAL = 0.09; // с между выстрелами
 export const MG_RADIUS = 1.8; // клеток — зона захвата дрона прицелом
 export const MG_SPREAD = 1.2; // клеток — разброс пуль
 export const MG_HIT = 0.35; // шанс попадания одним выстрелом; одного попадания достаточно
+// Струя накрывает пятно, а не одну клетку под курсором: вести мышь точно по
+// бегущему огню невозможно, а промахов у воды нет — она просто лила мимо.
+// Радиус совпадает с кругом водяного прицела, который игрок и так видит.
+export const WATER_RADIUS = 1.5; // клеток
 export const MAX_HOLES = 2500;
 export const HIT_GLIDE = 3; // клеток планирования подбитого дрона
 export const FALL_SPEED = 3.4;
@@ -264,7 +268,12 @@ function aimTick(s: GameState) {
   if (water) {
     s.shots.push({ x: a.x, y: a.y, t: 0, water: true, seed: Math.random() });
     if (s.shots.length > 60) s.shots.shift();
-    extinguish(s, cx, cy);
+    const r = Math.ceil(WATER_RADIUS);
+    for (let y = cy - r; y <= cy + r; y++) {
+      for (let x = cx - r; x <= cx + r; x++) {
+        if (Math.hypot(x + 0.5 - a.x, y + 0.5 - a.y) <= WATER_RADIUS) extinguish(s, x, y);
+      }
+    }
     return;
   }
 
