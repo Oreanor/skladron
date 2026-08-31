@@ -251,6 +251,8 @@ update profiles set levels =
 -- уровень дронов запоминаем в самой атаке: у защитника они летят так,
 -- как их прокачал нападающий, даже если тот потом апгрейднулся ещё
 alter table attacks add column if not exists drone_level int not null default 1;
+-- кто убрал бой из своего журнала: строка одна на двоих, прячем по-своему
+alter table attacks add column if not exists hidden_by uuid[] not null default '{}';
 -- повтор налёта: слепок склада защитника до боя и запись его действий
 alter table attacks add column if not exists snap_cells text;
 alter table attacks add column if not exists snap_guns jsonb;
@@ -1179,6 +1181,50 @@ begin
 end;
 $$;
 
+-- ---------- журнал боёв ----------
+-- И свои налёты, и те, где отбивался ты: по журналу открываются повторы.
+-- Слепки складов сюда не тащим, они тяжёлые — их отдаёт public_replay.
+
+create or replace function raid_log()
+returns table (
+  id uuid, side text, foe text, resolved_at timestamptz,
+  drones int, loot int, destroyed boolean, burned int, has_replay boolean
+)
+language sql security definer set search_path = public stable as $$
+  select a.id,
+         case when a.attacker_id = auth.uid() then 'attack' else 'defence' end,
+         case
+           when a.attacker_id = auth.uid()
+             then coalesce(d.base_name, d.display_name, split_part(d.email, '@', 1))
+           else coalesce(t.base_name, t.display_name, split_part(t.email, '@', 1))
+         end,
+         a.resolved_at, a.drones, a.loot, a.destroyed,
+         coalesce((a.result->>'burned')::int, 0),
+         a.snap_cells is not null
+    from attacks a
+    join profiles t on t.id = a.attacker_id
+    join profiles d on d.id = a.defender_id
+   where (a.attacker_id = auth.uid() or a.defender_id = auth.uid())
+     and a.status = 'resolved'
+     and not (auth.uid() = any (a.hidden_by))
+   order by a.resolved_at desc
+   limit 30;
+$$;
+
+-- Убрать бой из своего журнала. У второй стороны он остаётся: строка одна.
+create or replace function hide_raid(attack_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  update attacks
+     set hidden_by = array_append(hidden_by, uid)
+   where id = attack_id
+     and (attacker_id = uid or defender_id = uid)
+     and not (uid = any (hidden_by));
+end;
+$$;
+
 -- ---------- ссылка на повтор ----------
 -- Повтор боя открывается по ссылке кем угодно: id атаки — случайный uuid,
 -- а показывать нечего, кроме того, что и так видели обе стороны.
@@ -1242,7 +1288,7 @@ $$;
 
 grant execute on function ensure_player, collect_income, save_base,
   buy_drones, apply_battle, complete_attack, wipe_base, rename_base, save_enemies,
-  base_names, enemy_base, spend_scouts, upgrade, add_rival, take_loan, repay_loan,
+  base_names, enemy_base, spend_scouts, upgrade, add_rival, take_loan, repay_loan, raid_log, hide_raid,
   send_attack, pending_attacks, attack_reports, ack_attack_report, restart_game to authenticated;
 
 -- PostgREST держит список функций в кэше. Supabase обычно перечитывает его сам,

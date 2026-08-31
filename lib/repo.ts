@@ -4,7 +4,8 @@
 import { type DroneKind, CELLS, type Depot, decodeCells, encodeRle, regrowGround, type Gun } from "./base";
 
 import { CREDITS_START, LOAN_HOURS, MAX_LEVEL, loanDebt, upgradeCost } from "./economy";
-import type { AttackOrder, AttackReport, Pattern } from "./attack";
+import type { AttackOrder, AttackReport, Pattern, RaidLog } from "./attack";
+import type { ReplayData } from "@/components/Replay";
 import type { BattleResult } from "./engine";
 import type { UpgradeKind } from "./economy";
 import {
@@ -77,6 +78,12 @@ export interface Repo {
     seed: number
   ): Promise<Depot[]>;
   acknowledgeReport(id: string): Promise<void>;
+  /** Журнал боёв — и своих налётов, и чужих: из него открываются повторы. */
+  raidLog(): Promise<RaidLog[]>;
+  /** Убрать бой из своего журнала. */
+  hideRaid(id: string): Promise<void>;
+  /** Повтор одного боя целиком: карта, пушки, запись действий. */
+  replayOf(id: string): Promise<ReplayData | null>;
   /** Переименование склада — отдельная операция, карты не касается. */
   rename(p: Player, name: string): Promise<void>;
   applyBattle(
@@ -174,6 +181,16 @@ class LocalRepo implements Repo {
   }
 
   async acknowledgeReport() {}
+
+  async raidLog() {
+    return [] as RaidLog[];
+  }
+
+  async hideRaid(_id: string) {}
+
+  async replayOf(_id: string) {
+    return null;
+  }
 
   async applyBattle(p: Player) {
     localSave(p);
@@ -541,6 +558,75 @@ class CloudRepo implements Repo {
     const row = (data as { id: string; depots: Depot[] }[] | null)?.[0];
     if (row?.depots) p.depots = row.depots;
     return p.depots;
+  }
+
+  async raidLog() {
+    const { data, error } = await this.db().rpc("raid_log");
+    if (error) throw error;
+    return ((data ?? []) as {
+      id: string;
+      side: "attack" | "defence";
+      foe: string;
+      resolved_at: string;
+      drones: number;
+      loot: number;
+      destroyed: boolean;
+      burned: number;
+      has_replay: boolean;
+    }[]).map((row) => ({
+      id: row.id,
+      side: row.side,
+      foe: row.foe,
+      resolvedAt: Date.parse(row.resolved_at),
+      drones: row.drones,
+      burned: row.burned,
+      loot: row.loot,
+      destroyed: row.destroyed,
+      hasReplay: row.has_replay,
+    }));
+  }
+
+  async hideRaid(id: string) {
+    const { error } = await this.db().rpc("hide_raid", { attack_id: id });
+    if (error) throw error;
+  }
+
+  async replayOf(id: string) {
+    const { data, error } = await this.db().rpc("public_replay", { attack_id: id });
+    if (error) throw error;
+    const row = (data as {
+      attacker: string;
+      defender: string;
+      drones: number;
+      pattern: Pattern;
+      direction: number;
+      seed: number;
+      drone_level: number | null;
+      snap_cells: string;
+      snap_guns: Gun[] | null;
+      snap_depots: Depot[] | null;
+      snap_levels: { guns?: number; mg?: number; water?: number } | null;
+      trace: string | null;
+      resolved_at: string;
+    }[] | null)?.[0];
+    if (!row) return null;
+    return {
+      order: {
+        id,
+        from: row.attacker,
+        createdAt: Date.parse(row.resolved_at),
+        drones: row.drones,
+        pattern: row.pattern,
+        direction: row.direction,
+        seed: row.seed,
+        droneLevel: row.drone_level ?? 1,
+      },
+      cells: row.snap_cells,
+      guns: row.snap_guns ?? [],
+      depots: row.snap_depots ?? [],
+      levels: row.snap_levels ?? {},
+      trace: row.trace ?? "",
+    };
   }
 
   async acknowledgeReport(id: string) {

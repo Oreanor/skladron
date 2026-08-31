@@ -16,6 +16,13 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 };
 
 const en = {
+  "panel.replays": "Battle log",
+  "replays.empty": "No battles yet. Send a raid or wait for one.",
+  "replays.attack": "raid on",
+  "replays.defence": "defence against",
+  "replays.line": "{drones} drones · {burned} cells burnt",
+  "replays.hide": "Remove from the log",
+  "replay.failed": "Could not load the replay: {error}",
   "tool.scrap": "Demolish",
   "tool.scrapHint": "Scrap the remains of burnt cells for {cost} cr each. Bare ground is left behind — and the warehouse must not fall apart.",
   "tool.priceScrap": "+{cost} cr/cell",
@@ -377,6 +384,13 @@ export type Key = keyof typeof en;
 type Dict = Record<Key, string>;
 
 const ru: Dict = {
+  "panel.replays": "Журнал боёв",
+  "replays.empty": "Боёв пока не было. Пошли налёт или дождись чужого.",
+  "replays.attack": "налёт на",
+  "replays.defence": "оборона от",
+  "replays.line": "{drones} дронов · сгорело клеток: {burned}",
+  "replays.hide": "Убрать из журнала",
+  "replay.failed": "Не удалось открыть повтор: {error}",
   "tool.scrap": "Снос",
   "tool.scrapHint": "Сдать остатки сгоревших клеток во вторсырьё, {cost} кр за клетку. Остаётся голая земля — и склад не должен развалиться.",
   "tool.priceScrap": "+{cost} кр/клетка",
@@ -738,6 +752,13 @@ const ru: Dict = {
 };
 
 const es: Dict = {
+  "panel.replays": "Registro de combates",
+  "replays.empty": "Todavía no hay combates. Envía un ataque o espera uno.",
+  "replays.attack": "ataque a",
+  "replays.defence": "defensa contra",
+  "replays.line": "{drones} drones · celdas quemadas: {burned}",
+  "replays.hide": "Quitar del registro",
+  "replay.failed": "No se pudo abrir la repetición: {error}",
   "tool.scrap": "Demoler",
   "tool.scrapHint": "Vende los restos de las celdas quemadas a {cost} cr cada una. Queda tierra desnuda, y el almacén no debe partirse.",
   "tool.priceScrap": "+{cost} cr/celda",
@@ -1099,6 +1120,13 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+  "panel.replays": "Registo de combates",
+  "replays.empty": "Ainda não houve combates. Envia um ataque ou espera por um.",
+  "replays.attack": "ataque a",
+  "replays.defence": "defesa contra",
+  "replays.line": "{drones} drones · células queimadas: {burned}",
+  "replays.hide": "Remover do registo",
+  "replay.failed": "Não foi possível abrir a repetição: {error}",
   "tool.scrap": "Demolir",
   "tool.scrapHint": "Vende os restos das células queimadas a {cost} cr cada. Fica terra nua — e o armazém não pode partir-se.",
   "tool.priceScrap": "+{cost} cr/célula",
@@ -1460,6 +1488,13 @@ const pt: Dict = {
 };
 
 const fr: Dict = {
+  "panel.replays": "Journal des combats",
+  "replays.empty": "Pas encore de combats. Lance un raid ou attends-en un.",
+  "replays.attack": "raid sur",
+  "replays.defence": "défense contre",
+  "replays.line": "{drones} drones · cases brûlées : {burned}",
+  "replays.hide": "Retirer du journal",
+  "replay.failed": "Impossible d’ouvrir le replay : {error}",
   "tool.scrap": "Démolir",
   "tool.scrapHint": "Revends les restes des cases brûlées à {cost} cr pièce. Il reste de la terre nue, et l’entrepôt ne doit pas se couper en deux.",
   "tool.priceScrap": "+{cost} cr/case",
@@ -1821,6 +1856,13 @@ const fr: Dict = {
 };
 
 const de: Dict = {
+  "panel.replays": "Gefechtsbuch",
+  "replays.empty": "Noch keine Gefechte. Schick einen Angriff oder warte auf einen.",
+  "replays.attack": "Angriff auf",
+  "replays.defence": "Abwehr gegen",
+  "replays.line": "{drones} Drohnen · abgebrannte Felder: {burned}",
+  "replays.hide": "Aus dem Buch entfernen",
+  "replay.failed": "Wiederholung ließ sich nicht öffnen: {error}",
   "tool.scrap": "Abriss",
   "tool.scrapHint": "Die Reste abgebrannter Felder für je {cost} Cr verwerten. Zurück bleibt nackter Boden — und das Lager darf nicht zerfallen.",
   "tool.priceScrap": "+{cost} Cr/Feld",
@@ -2182,6 +2224,13 @@ const de: Dict = {
 };
 
 const it: Dict = {
+  "panel.replays": "Diario dei combattimenti",
+  "replays.empty": "Ancora nessun combattimento. Manda un attacco o aspettane uno.",
+  "replays.attack": "attacco a",
+  "replays.defence": "difesa da",
+  "replays.line": "{drones} droni · celle bruciate: {burned}",
+  "replays.hide": "Togli dal diario",
+  "replay.failed": "Non è stato possibile aprire la replica: {error}",
   "tool.scrap": "Demolisci",
   "tool.scrapHint": "Vendi i resti delle celle bruciate a {cost} cr l’una. Resta terra nuda, e il magazzino non deve spezzarsi.",
   "tool.priceScrap": "+{cost} cr/cella",

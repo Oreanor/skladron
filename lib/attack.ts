@@ -90,6 +90,21 @@ export interface AttackOrder {
   remote?: boolean; // настоящий налёт из серверной очереди, а не локальный бот
 }
 
+/** Строка журнала: что и когда мы посылали и есть ли к этому повтор. */
+export interface RaidLog {
+  id: string;
+  /** Кем ты был в этом бою. */
+  side: "attack" | "defence";
+  /** Вторая сторона: чей склад жгли или кто жёг твой. */
+  foe: string;
+  resolvedAt: number;
+  drones: number;
+  burned: number;
+  loot: number;
+  destroyed: boolean;
+  hasReplay: boolean;
+}
+
 /** Итог исходящего налёта, который приходит только после боя защитника. */
 export interface AttackReport {
   id: string;

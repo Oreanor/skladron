@@ -59,6 +59,7 @@ import {
   type AttackOrder,
   type AttackReport,
   type Pattern,
+  type RaidLog,
   makeOrder,
 } from "@/lib/attack";
 import {
@@ -82,7 +83,7 @@ import { gunRange } from "@/lib/engine";
 import Battle, { type BattleOutcome } from "./Battle";
 import Scout, { type ScoutOutcome } from "./Scout";
 import ScoutMap from "./ScoutMap";
-import Replay from "./Replay";
+import Replay, { type ReplayData } from "./Replay";
 import Rules from "./Rules";
 import MapCanvas, { type Pt } from "./MapCanvas";
 import AccountMenu, { SettingsList } from "./AccountMenu";
@@ -90,6 +91,8 @@ import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 import {
   Banknote,
+  Play,
+  Trash2,
   ChevronsUp,
   LayoutGrid,
   Plane,
@@ -246,9 +249,13 @@ export default function Lobby({
   const [loanAmount, setLoanAmount] = useState(LOAN_MIN);
   /** Чью снятую карту сейчас смотрим. */
   const [mapOf, setMapOf] = useState<Enemy | null>(null);
-  /** Отчёт, повтор которого сейчас крутим. */
-  const [watching, setWatching] = useState<AttackReport | null>(null);
+  /** Что сейчас крутим: чей бой и сама запись. */
+  const [watching, setWatching] = useState<
+    { id: string; name: string; replay: ReplayData } | null
+  >(null);
   const [showRules, setShowRules] = useState(false);
+  /** Журнал боёв: и свои налёты, и те, где отбивался. */
+  const [raids, setRaids] = useState<RaidLog[]>([]);
   /** Идущий разведвылет: карта врага, его пушки и сколько самолётов послали. */
   const [scout, setScout] = useState<{
     enemy: Enemy;
@@ -297,6 +304,15 @@ export default function Lobby({
    * Дальше без синхронизации отвергалась бы каждая следующая правка, поэтому
    * берём серверную версию: она и есть настоящая.
    */
+  const loadRaids = () => {
+    void repo
+      .raidLog()
+      .then((rows) => setRaids(rows))
+      .catch(() => {
+        // журнал — не игра, из-за него ломаться нечему
+      });
+  };
+
   const resyncBase = async () => {
     const cur = playerRef.current;
     if (!cur) return;
@@ -350,6 +366,7 @@ export default function Lobby({
         playerRef.current = player;
         setReports(loadedReports);
         setReady(true);
+        loadRaids();
         if (income.credits > 0) {
           const sold = income.sold;
           setMessage(
@@ -613,6 +630,8 @@ export default function Lobby({
           } catch (e) {
             setMessage(t("battle.notSaved", { error: (e as Error).message }));
             await resyncBase();
+          } finally {
+            loadRaids();
           }
         }}
       />
@@ -1465,6 +1484,29 @@ export default function Lobby({
     }
   };
 
+  /** Открыть повтор из журнала: сам бой подгружаем по одной атаке. */
+  const openReplay = async (row: RaidLog) => {
+    try {
+      const data = await repo.replayOf(row.id);
+      if (!data) {
+        setMessage(t("replay.gone"));
+        return;
+      }
+      setWatching({ id: row.id, name: row.foe, replay: data });
+    } catch (e) {
+      setMessage(t("replay.failed", { error: (e as Error).message }));
+    }
+  };
+
+  const hideRaid = async (id: string) => {
+    setRaids((rows) => rows.filter((r) => r.id !== id));
+    try {
+      await repo.hideRaid(id);
+    } catch {
+      loadRaids();
+    }
+  };
+
   const income = dailyIncome(p);
   const pickTool = (id: ToolId) => {
     // апгрейд ничего не рисует на карте — только открывает свою модалку
@@ -1745,6 +1787,52 @@ export default function Lobby({
     />
   );
 
+  const raidsBody =
+    raids.length === 0 ? (
+      <p className="text-neutral-500">{t("replays.empty")}</p>
+    ) : (
+      <ul className="space-y-2">
+        {raids.map((r) => (
+          <li key={r.id} className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="truncate text-neutral-200">
+                <span className={r.side === "attack" ? "text-red-300" : "text-sky-300"}>
+                  {t(r.side === "attack" ? "replays.attack" : "replays.defence")}
+                </span>{" "}
+                {r.foe}
+              </div>
+              <div className="font-mono text-[11px] text-neutral-500">
+                {t("replays.line", { drones: r.drones, burned: fmt(r.burned) })}
+                {r.side === "attack" && r.loot > 0
+                  ? ` · +${fmt(r.loot)} ${t("battle.creditsSuffix")}`
+                  : ""}
+              </div>
+            </div>
+            <div className="flex shrink-0 gap-1">
+              {r.hasReplay && (
+                <IconButton
+                  label={t("replay.watch")}
+                  title={t("replay.watch")}
+                  className="h-8 w-8"
+                  onClick={() => void openReplay(r)}
+                >
+                  <Play className="h-4 w-4" />
+                </IconButton>
+              )}
+              <IconButton
+                label={t("replays.hide")}
+                title={t("replays.hide")}
+                className="h-8 w-8"
+                onClick={() => void hideRaid(r.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </IconButton>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+
   const statsBody = (
     <div className="space-y-1 font-mono text-xs text-neutral-400">
       <StatRow label={t("stats.battles")} value={p.stats.battles} />
@@ -2013,6 +2101,7 @@ export default function Lobby({
               <Panel title={t("panel.attacks")} action={summonButton}>
                 {attacksBody}
               </Panel>
+              <Panel title={t("panel.replays")}>{raidsBody}</Panel>
               <Panel title={t("panel.enemies")}>{enemiesBody}</Panel>
               <Panel title={t("panel.stats")}>{statsBody}</Panel>
             </>
@@ -2071,9 +2160,9 @@ export default function Lobby({
         />
       )}
 
-      {watching?.replay && (
+      {watching && (
         <Replay
-          name={watching.target}
+          name={watching.name}
           replay={watching.replay}
           shareId={watching.id}
           onClose={() => setWatching(null)}
@@ -2083,12 +2172,22 @@ export default function Lobby({
       {reports[0] && !watching && (
         <AttackReportDialog
           report={reports[0]}
-          onWatch={reports[0].replay ? () => setWatching(reports[0]) : undefined}
+          onWatch={
+            reports[0].replay
+              ? () =>
+                  setWatching({
+                    id: reports[0].id,
+                    name: reports[0].target,
+                    replay: reports[0].replay!,
+                  })
+              : undefined
+          }
           onClose={async () => {
             const report = reports[0];
             try {
               await repo.acknowledgeReport(report.id);
               setReports((current) => current.filter((item) => item.id !== report.id));
+              loadRaids();
             } catch (error) {
               setMessage(t("report.closeFailed", { error: (error as Error).message }));
             }
@@ -2146,6 +2245,10 @@ export default function Lobby({
       <Sheet open={sheet === "attacks"} title={t("panel.attacks")} onClose={() => setSheet(null)}>
         <div className="mb-3 flex justify-end">{summonButton}</div>
         {attacksBody}
+        <div className="mt-5 mb-2">
+          <SectionTitle>{t("panel.replays")}</SectionTitle>
+        </div>
+        {raidsBody}
       </Sheet>
       <Sheet open={sheet === "enemies"} title={t("panel.enemies")} onClose={() => setSheet(null)}>
         {enemiesBody}
