@@ -1424,7 +1424,7 @@ export default function Lobby({
 
   const upgradeBody = (
     <>
-      <div className="mb-4 space-y-2">
+      <div className="space-y-2">
         {UPGRADE_KINDS.map((kind) => {
           const level = p.levels[kind];
           const maxed = level >= maxLevel(kind);
@@ -1449,15 +1449,33 @@ export default function Lobby({
           );
         })}
       </div>
-      <Button block onClick={() => setModal(null)}>
+    </>
+  );
+
+  const insuranceFooter = (
+    <div className="flex gap-2">
+      {p.levels.insurance < MAX_INSURANCE_LEVEL && (
+        <Button
+          variant="build"
+          className="flex-1"
+          disabled={p.credits < upgradeCost(p.levels.insurance)}
+          onClick={() => doUpgrade("insurance")}
+        >
+          {t("upgrade.buy", { cost: fmt(upgradeCost(p.levels.insurance)) })}
+        </Button>
+      )}
+      <Button
+        className={p.levels.insurance < MAX_INSURANCE_LEVEL ? "" : "flex-1"}
+        onClick={() => setModal(null)}
+      >
         {t("common.ok")}
       </Button>
-    </>
+    </div>
   );
 
   const insuranceBody = (
     <>
-      <div className="mb-4 space-y-2 text-sm text-neutral-300">
+      <div className="space-y-2 text-sm text-neutral-300">
         <p>{t("insurance.cells", { cost: INSURANCE_CELL })}</p>
         <p>
           {p.levels.insurance > 1
@@ -1474,21 +1492,6 @@ export default function Lobby({
                 cost: fmt(upgradeCost(p.levels.insurance)),
               })}
         </p>
-      </div>
-      <div className="flex gap-2">
-        {p.levels.insurance < MAX_INSURANCE_LEVEL && (
-          <Button
-            variant="build"
-            className="flex-1"
-            disabled={p.credits < upgradeCost(p.levels.insurance)}
-            onClick={() => doUpgrade("insurance")}
-          >
-            {t("upgrade.buy", { cost: fmt(upgradeCost(p.levels.insurance)) })}
-          </Button>
-        )}
-        <Button className={p.levels.insurance < MAX_INSURANCE_LEVEL ? "" : "flex-1"} onClick={() => setModal(null)}>
-          {t("common.ok")}
-        </Button>
       </div>
     </>
   );
@@ -1842,6 +1845,11 @@ export default function Lobby({
           }
           subtitle={t("auto.subtitle")}
           onClose={() => setAutoReport(null)}
+          footer={
+            <Button variant="neutral" block onClick={() => setAutoReport(null)}>
+              {t("common.ok")}
+            </Button>
+          }
         >
           <dl className="mb-4 space-y-1 font-mono text-sm">
             <Row
@@ -1853,9 +1861,6 @@ export default function Lobby({
             <Row label={t("battle.dronesLost")} value={String(autoReport.outcome.result.dronesLost)} />
             <Row label={t("battle.gunsLost")} value={String(autoReport.outcome.result.gunsLost)} />
           </dl>
-          <Button variant="neutral" block onClick={() => setAutoReport(null)}>
-            {t("common.ok")}
-          </Button>
         </Modal>
       )}
 
@@ -1921,13 +1926,22 @@ export default function Lobby({
       {modal === "insurance" && (
         <Modal
           title={`${t("tool.insurance")} · ${t("upgrade.level", { level: p.levels.insurance })}`}
+          footer={insuranceFooter}
           onClose={() => setModal(null)}
         >
           {insuranceBody}
         </Modal>
       )}
       {modal === "upgrade" && (
-        <Modal title={t("tool.upgrade")} onClose={() => setModal(null)}>
+        <Modal
+          title={t("tool.upgrade")}
+          onClose={() => setModal(null)}
+          footer={
+            <Button variant="neutral" block onClick={() => setModal(null)}>
+              {t("common.ok")}
+            </Button>
+          }
+        >
           {p.founded ? upgradeBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}
         </Modal>
       )}
@@ -2015,6 +2029,18 @@ function AttackReportDialog({
       }
       subtitle={t("report.subtitle")}
       onClose={onClose}
+      footer={
+        <div className="flex gap-2">
+          {onWatch && (
+            <Button variant="build" className="flex-1" onClick={onWatch}>
+              {t("replay.watch")}
+            </Button>
+          )}
+          <Button variant="neutral" className={onWatch ? "" : "flex-1"} onClick={onClose}>
+            {t("common.ok")}
+          </Button>
+        </div>
+      }
     >
       <dl className="mb-4 space-y-1 font-mono text-sm">
         <Row label={t("battle.sent")} value={String(result.dronesSent)} />
@@ -2029,16 +2055,6 @@ function AttackReportDialog({
           value={`+${fmt(report.loot)} ${t("battle.creditsSuffix")}`}
         />
       </dl>
-      <div className="flex gap-2">
-        {onWatch && (
-          <Button variant="build" className="flex-1" onClick={onWatch}>
-            {t("replay.watch")}
-          </Button>
-        )}
-        <Button variant="neutral" className={onWatch ? "" : "flex-1"} onClick={onClose}>
-          {t("common.ok")}
-        </Button>
-      </div>
     </Modal>
   );
 }

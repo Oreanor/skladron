@@ -318,11 +318,17 @@ export function IconMenu() {
 export function Modal({
   title,
   subtitle,
+  wide = false,
+  footer,
   onClose,
   children,
 }: {
   title: string;
   subtitle?: string;
+  /** Широкая карточка: для длинных текстов вроде правил. */
+  wide?: boolean;
+  /** Прибитая к низу строка кнопок: она не уезжает вместе с текстом. */
+  footer?: ReactNode;
   onClose?: () => void;
   children: ReactNode;
 }) {
@@ -336,21 +342,50 @@ export function Modal({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/70 sm:items-center sm:p-4">
-      <div className="relative max-h-[92dvh] w-full max-w-sm overflow-y-auto overscroll-contain rounded-t-2xl border border-neutral-700 bg-neutral-900 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-md sm:pb-5">
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="×"
-            className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded text-lg leading-none text-neutral-500 transition hover:bg-neutral-800 hover:text-neutral-200"
-          >
-            ×
-          </button>
+    <div
+      className="fixed inset-0 z-40 flex items-end justify-center bg-black/70 sm:items-center sm:p-4"
+      // клик мимо карточки — то же самое, что крестик
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
+    >
+      {/*
+        Шапка и низ прибиты, прокручивается только текст: иначе на длинной
+        карточке крестик и «ОК» уезжают вверх, и закрыть её нечем.
+      */}
+      <div
+        className={`flex max-h-[92dvh] w-full flex-col rounded-t-2xl border border-neutral-700 bg-neutral-900 shadow-2xl sm:rounded-md ${
+          wide ? "max-w-2xl" : "max-w-sm"
+        }`}
+      >
+        <div className="flex shrink-0 items-start gap-2 px-5 pb-2 pt-5">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg font-bold">{title}</h3>
+            {subtitle && <p className="mt-1 text-xs text-neutral-500">{subtitle}</p>}
+          </div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="×"
+              className="-mr-1 -mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded text-lg leading-none text-neutral-500 transition hover:bg-neutral-800 hover:text-neutral-200"
+            >
+              ×
+            </button>
+          )}
+        </div>
+        <div
+          className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 ${
+            footer ? "pb-3" : "pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pb-5"
+          }`}
+        >
+          {children}
+        </div>
+        {footer && (
+          <div className="shrink-0 border-t border-neutral-800 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:pb-3">
+            {footer}
+          </div>
         )}
-        <h3 className="mb-1 pr-8 text-lg font-bold">{title}</h3>
-        {subtitle && <p className="mb-4 text-xs text-neutral-500">{subtitle}</p>}
-        {children}
       </div>
     </div>
   );
@@ -379,7 +414,24 @@ export function NameDialog({
   const ready = value.trim().length > 0;
 
   return (
-    <Modal title={title} subtitle={subtitle} onClose={onCancel}>
+    <Modal
+      title={title}
+      subtitle={subtitle}
+      onClose={onCancel}
+      footer={
+        <div className="flex gap-2">
+          <Button
+            variant="build"
+            className="flex-1"
+            disabled={!ready}
+            onClick={() => onSubmit(value)}
+          >
+            {confirm}
+          </Button>
+          <Button onClick={onCancel}>{t("common.cancel")}</Button>
+        </div>
+      }
+    >
       <input
         autoFocus
         value={value}
@@ -391,20 +443,9 @@ export function NameDialog({
         placeholder={t("base.namePlaceholder")}
         className={`${inputClass} mb-1 w-full`}
       />
-      <p className="mb-4 text-right font-mono text-[11px] text-neutral-600">
+      <p className="text-right font-mono text-[11px] text-neutral-600">
         {value.length}/{maxLength}
       </p>
-      <div className="flex gap-2">
-        <Button
-          variant="build"
-          className="flex-1"
-          disabled={!ready}
-          onClick={() => onSubmit(value)}
-        >
-          {confirm}
-        </Button>
-        <Button onClick={onCancel}>{t("common.cancel")}</Button>
-      </div>
     </Modal>
   );
 }
@@ -425,13 +466,20 @@ export function ConfirmDialog({
 }) {
   const t = useT();
   return (
-    <Modal title={title} subtitle={subtitle} onClose={onCancel}>
-      <div className="flex gap-2">
-        <Button variant="danger" className="flex-1" onClick={onConfirm}>
-          {confirm}
-        </Button>
-        <Button onClick={onCancel}>{t("common.cancel")}</Button>
-      </div>
+    <Modal
+      title={title}
+      subtitle={subtitle}
+      onClose={onCancel}
+      footer={
+        <div className="flex gap-2">
+          <Button variant="danger" className="flex-1" onClick={onConfirm}>
+            {confirm}
+          </Button>
+          <Button onClick={onCancel}>{t("common.cancel")}</Button>
+        </div>
+      }
+    >
+      <></>
     </Modal>
   );
 }

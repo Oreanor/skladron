@@ -73,12 +73,7 @@ export function SettingsList({
 
   return (
     <>
-      {onRules && (
-        <button onClick={onRules} className={ROW}>
-          <BookOpen className="h-4 w-4" />
-          <span className="flex-1">{t("menu.rules")}</span>
-        </button>
-      )}
+
       <div className="px-2 pb-1 pt-2">
         <SectionTitle>{t("menu.language")}</SectionTitle>
       </div>
@@ -101,6 +96,15 @@ export function SettingsList({
         <SectionTitle>{t("menu.theme")}</SectionTitle>
       </div>
       <ThemeSwitch />
+
+      {onRules && (
+        <div className="mt-1 border-t border-neutral-800 pt-1">
+          <button onClick={onRules} className={ROW}>
+            <BookOpen className="h-4 w-4" />
+            <span className="flex-1">{t("menu.rules")}</span>
+          </button>
+        </div>
+      )}
 
       {onRestart && (
         <div className="mt-1 border-t border-neutral-800 pt-1">

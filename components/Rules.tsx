@@ -25,7 +25,7 @@ import { DRONES_PER_CELL } from "@/lib/base";
 import { FIRE_SPREAD, GUN_COOLDOWN, GUN_RANGE } from "@/lib/engine";
 import { RULES } from "@/lib/i18n/rules";
 import { useSettings } from "@/lib/i18n";
-import { Modal, SectionTitle } from "./ui";
+import { Button, Modal, SectionTitle } from "./ui";
 
 const values: Record<string, string> = {
   credits: fmt(CREDITS_START),
@@ -57,7 +57,16 @@ export default function Rules({ onClose }: { onClose: () => void }) {
   const sections = RULES[locale] ?? RULES.en;
 
   return (
-    <Modal title={t("menu.rules")} onClose={onClose}>
+    <Modal
+      title={t("menu.rules")}
+      wide
+      onClose={onClose}
+      footer={
+        <Button variant="neutral" block onClick={onClose}>
+          {t("common.ok")}
+        </Button>
+      }
+    >
       <div className="space-y-4 text-sm leading-relaxed text-neutral-300">
         {sections.map((section) => (
           <section key={section.title}>

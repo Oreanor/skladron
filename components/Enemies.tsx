@@ -188,6 +188,19 @@ function ScoutDialog({
       title={t("scout.title", { name: enemy.name })}
       subtitle={t("scout.subtitle")}
       onClose={onCancel}
+      footer={
+        <div className="flex gap-2">
+          <Button
+            variant="build"
+            className="flex-1"
+            disabled={sending || max < 1}
+            onClick={() => void send()}
+          >
+            {max < 1 ? t("scout.needPlanes") : t("scout.send", { n })}
+          </Button>
+          <Button onClick={onCancel}>{t("common.cancel")}</Button>
+        </div>
+      }
     >
       <label className="mb-1 block text-xs uppercase tracking-wider text-neutral-400">
         {t("scout.planes", { n, max })}
@@ -201,17 +214,6 @@ function ScoutDialog({
         onChange={(e) => setN(Number(e.target.value))}
         className="mb-4 h-8 w-full cursor-pointer accent-sky-400"
       />
-      <div className="flex gap-2">
-        <Button
-          variant="build"
-          className="flex-1"
-          disabled={sending || max < 1}
-          onClick={() => void send()}
-        >
-          {max < 1 ? t("scout.needPlanes") : t("scout.send", { n })}
-        </Button>
-        <Button onClick={onCancel}>{t("common.cancel")}</Button>
-      </div>
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
     </Modal>
   );
@@ -252,6 +254,19 @@ function RaidDialog({
       title={t("raid.title", { name: enemy.name })}
       subtitle={t("raid.subtitle")}
       onClose={onCancel}
+      footer={
+        <div className="flex gap-2">
+          <Button
+            variant="danger"
+            className="flex-1"
+            onClick={() => void send()}
+            disabled={sending || max < 1}
+          >
+            {sending ? t("raid.sending") : t("raid.send", { n: count })}
+          </Button>
+          <Button onClick={onCancel}>{t("common.cancel")}</Button>
+        </div>
+      }
     >
       <label className="mb-1 block text-xs uppercase tracking-wider text-neutral-400">
         {t("raid.dronesOf", { n: count, max })}
@@ -309,17 +324,6 @@ function RaidDialog({
         </>
       )}
 
-      <div className="flex gap-2">
-        <Button
-          variant="danger"
-          className="flex-1"
-          onClick={() => void send()}
-          disabled={sending || max < 1}
-        >
-          {sending ? t("raid.sending") : t("raid.send", { n: count })}
-        </Button>
-        <Button onClick={onCancel}>{t("common.cancel")}</Button>
-      </div>
       {sendError && <p className="mt-2 text-xs text-red-400">{sendError}</p>}
     </Modal>
   );
