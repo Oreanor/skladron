@@ -16,6 +16,7 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 };
 
 const en = {
+  "menu.rules": "How to play",
   "income.sold": " · shipped out: {drones} drones for {dronesValue} cr, {scouts} recon planes for {scoutsValue} cr",
   "replay.watch": "Watch the raid",
   "replay.of": "raid on",
@@ -343,6 +344,7 @@ export type Key = keyof typeof en;
 type Dict = Record<Key, string>;
 
 const ru: Dict = {
+  "menu.rules": "Как играть",
   "income.sold": " · отгружено: {drones} дронов на {dronesValue} кр, {scouts} разведчиков на {scoutsValue} кр",
   "replay.watch": "Смотреть налёт",
   "replay.of": "налёт на",
@@ -670,6 +672,7 @@ const ru: Dict = {
 };
 
 const es: Dict = {
+  "menu.rules": "Cómo se juega",
   "income.sold": " · expedido: {drones} drones por {dronesValue} cr, {scouts} aviones por {scoutsValue} cr",
   "replay.watch": "Ver el ataque",
   "replay.of": "ataque a",
@@ -997,6 +1000,7 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+  "menu.rules": "Como se joga",
   "income.sold": " · expedido: {drones} drones por {dronesValue} cr, {scouts} aviões por {scoutsValue} cr",
   "replay.watch": "Ver o ataque",
   "replay.of": "ataque a",
@@ -1324,6 +1328,7 @@ const pt: Dict = {
 };
 
 const fr: Dict = {
+  "menu.rules": "Comment jouer",
   "income.sold": " · expédié : {drones} drones pour {dronesValue} cr, {scouts} avions pour {scoutsValue} cr",
   "replay.watch": "Voir le raid",
   "replay.of": "raid sur",
@@ -1651,6 +1656,7 @@ const fr: Dict = {
 };
 
 const de: Dict = {
+  "menu.rules": "Spielregeln",
   "income.sold": " · verladen: {drones} Drohnen für {dronesValue} Cr, {scouts} Aufklärer für {scoutsValue} Cr",
   "replay.watch": "Angriff ansehen",
   "replay.of": "Angriff auf",
@@ -1978,6 +1984,7 @@ const de: Dict = {
 };
 
 const it: Dict = {
+  "menu.rules": "Come si gioca",
   "income.sold": " · spedito: {drones} droni per {dronesValue} cr, {scouts} ricognitori per {scoutsValue} cr",
   "replay.watch": "Guarda l’attacco",
   "replay.of": "attacco a",

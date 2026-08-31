@@ -5,7 +5,7 @@
 // показывается на телефоне внутри шторки меню.
 
 import { useEffect, useRef, useState } from "react";
-import { LogOut, Moon, RotateCcw, Sun } from "lucide-react";
+import { BookOpen, LogOut, Moon, RotateCcw, Sun } from "lucide-react";
 import { LOCALES, LOCALE_NAMES, useSettings, type Locale } from "@/lib/i18n";
 import { SectionTitle } from "./ui";
 
@@ -59,9 +59,12 @@ function ThemeSwitch() {
 
 /** Язык, тема и выход — одинаковые и в выпадашке, и в мобильной шторке. */
 export function SettingsList({
+  onRules,
   onRestart,
   onSignOut,
 }: {
+  /** Показать правила игры. */
+  onRules?: () => void;
   /** Начать игру сначала — спрашивает подтверждение снаружи. */
   onRestart?: () => void;
   onSignOut?: () => void;
@@ -70,6 +73,12 @@ export function SettingsList({
 
   return (
     <>
+      {onRules && (
+        <button onClick={onRules} className={ROW}>
+          <BookOpen className="h-4 w-4" />
+          <span className="flex-1">{t("menu.rules")}</span>
+        </button>
+      )}
       <div className="px-2 pb-1 pt-2">
         <SectionTitle>{t("menu.language")}</SectionTitle>
       </div>
@@ -117,11 +126,13 @@ export function SettingsList({
 export default function AccountMenu({
   name,
   email,
+  onRules,
   onRestart,
   onSignOut,
 }: {
   name: string | null;
   email: string | null;
+  onRules?: () => void;
   onRestart?: () => void;
   /** Без аккаунта выхода нет — остаются язык и тема. */
   onSignOut?: () => void;
@@ -169,6 +180,14 @@ export default function AccountMenu({
           )}
           <div className="border-t border-neutral-800" />
           <SettingsList
+            onRules={
+              onRules
+                ? () => {
+                    setOpen(false);
+                    onRules();
+                  }
+                : undefined
+            }
             onRestart={
               onRestart
                 ? () => {

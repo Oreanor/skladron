@@ -71,6 +71,7 @@ import Battle, { type BattleOutcome } from "./Battle";
 import Scout, { type ScoutOutcome } from "./Scout";
 import ScoutMap from "./ScoutMap";
 import Replay from "./Replay";
+import Rules from "./Rules";
 import MapCanvas, { type Pt } from "./MapCanvas";
 import AccountMenu, { SettingsList } from "./AccountMenu";
 import { useT } from "@/lib/i18n";
@@ -208,6 +209,7 @@ export default function Lobby({
   const [mapOf, setMapOf] = useState<Enemy | null>(null);
   /** Отчёт, повтор которого сейчас крутим. */
   const [watching, setWatching] = useState<AttackReport | null>(null);
+  const [showRules, setShowRules] = useState(false);
   /** Идущий разведвылет: карта врага, его пушки и сколько самолётов послали. */
   const [scout, setScout] = useState<{
     enemy: Enemy;
@@ -1550,6 +1552,7 @@ export default function Lobby({
     <AccountMenu
       name={account?.name ?? null}
       email={account?.email ?? null}
+      onRules={() => setShowRules(true)}
       onRestart={() => setConfirmRestart(true)}
       onSignOut={account ? onSignOut : undefined}
     />
@@ -1779,6 +1782,8 @@ export default function Lobby({
         </Modal>
       )}
 
+      {showRules && <Rules onClose={() => setShowRules(false)} />}
+
       {confirmRestart && (
         <ConfirmDialog
           title={t("restart.title")}
@@ -1880,6 +1885,10 @@ export default function Lobby({
               {account?.name ?? account?.email ?? t("app.localMode")}
             </div>
             <SettingsList
+              onRules={() => {
+                setSheet(null);
+                setShowRules(true);
+              }}
               onRestart={() => {
                 setSheet(null);
                 setConfirmRestart(true);
