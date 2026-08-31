@@ -16,6 +16,7 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 };
 
 const en = {
+  "stat.creditsLine": "{credits} (+{income} cr/day)",
   "tool.loan": "Loan",
   "tool.loanHint": "Borrow from {cost} cr for a day at {rate}%. The goods you buy with it can burn — the debt will not.",
   "panel.replays": "Battle log",
@@ -386,6 +387,7 @@ export type Key = keyof typeof en;
 type Dict = Record<Key, string>;
 
 const ru: Dict = {
+  "stat.creditsLine": "{credits} (+{income} кр/сут)",
   "tool.loan": "Кредит",
   "tool.loanHint": "Занять от {cost} кр на сутки под {rate}%. Купленный на них товар может сгореть, долг — нет.",
   "panel.replays": "Журнал боёв",
@@ -756,6 +758,7 @@ const ru: Dict = {
 };
 
 const es: Dict = {
+  "stat.creditsLine": "{credits} (+{income} cr/día)",
   "tool.loan": "Crédito",
   "tool.loanHint": "Pide desde {cost} cr por un día al {rate}%. La mercancía comprada puede arder; la deuda no.",
   "panel.replays": "Registro de combates",
@@ -1126,6 +1129,7 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+  "stat.creditsLine": "{credits} (+{income} cr/dia)",
   "tool.loan": "Crédito",
   "tool.loanHint": "Pede a partir de {cost} cr por um dia a {rate}%. A mercadoria comprada pode arder; a dívida não.",
   "panel.replays": "Registo de combates",
@@ -1496,6 +1500,7 @@ const pt: Dict = {
 };
 
 const fr: Dict = {
+  "stat.creditsLine": "{credits} (+{income} cr/j)",
   "tool.loan": "Crédit",
   "tool.loanHint": "Emprunte à partir de {cost} cr pour un jour à {rate} %. La marchandise achetée peut brûler, la dette non.",
   "panel.replays": "Journal des combats",
@@ -1866,6 +1871,7 @@ const fr: Dict = {
 };
 
 const de: Dict = {
+  "stat.creditsLine": "{credits} (+{income} Cr/Tag)",
   "tool.loan": "Kredit",
   "tool.loanHint": "Ab {cost} Cr für einen Tag zu {rate} % leihen. Die dafür gekaufte Ware kann abbrennen — die Schuld nicht.",
   "panel.replays": "Gefechtsbuch",
@@ -2236,6 +2242,7 @@ const de: Dict = {
 };
 
 const it: Dict = {
+  "stat.creditsLine": "{credits} (+{income} cr/g)",
   "tool.loan": "Prestito",
   "tool.loanHint": "Prendi da {cost} cr per un giorno al {rate}%. La merce comprata può bruciare, il debito no.",
   "panel.replays": "Diario dei combattimenti",

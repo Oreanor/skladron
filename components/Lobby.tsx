@@ -2113,10 +2113,9 @@ export default function Lobby({
     <div className="flex min-h-0 flex-1 flex-col gap-2 lg:gap-3">
       {/* шапка телефона: счётчики одной строкой плюс кнопки панелей */}
       <div className="flex shrink-0 items-center gap-2 lg:hidden">
-        <ChipBar className="min-w-0 flex-1">
-          <Chip label={t("stat.creditsShort")} value={fmt(p.credits)} tone="text-emerald-300" />
-          <Chip label={t("stat.incomeShort")} value={`+${fmt(income)}`} tone="text-emerald-300" />
-        </ChipBar>
+        <span className="min-w-0 flex-1 truncate font-mono text-sm text-emerald-300">
+          {t("stat.creditsLine", { credits: fmt(p.credits), income: fmt(income) })}
+        </span>
         <IconButton label={t("panel.attacks")} badge={p.incoming.length} onClick={() => toggleSheet("attacks")}>
           <IconTarget />
         </IconButton>
@@ -2134,13 +2133,18 @@ export default function Lobby({
           value={p.name}
           placeholder={t("base.unnamed")}
           title={t("base.rename")}
-          className="w-56 shrink-0 text-xl font-black uppercase leading-none tracking-tight"
+          className="max-w-[14rem] shrink-0 text-xl font-black uppercase leading-none tracking-tight"
           onCommit={rename}
         />
-        <ChipBar bare className="min-w-0 flex-1 flex-wrap px-0 py-0 text-sm">
-          <Chip label={t("stat.credits")} value={fmt(p.credits)} tone="text-emerald-300" />
-          <Chip label={t("stat.income")} value={`+${fmt(income)}`} tone="text-emerald-300" />
-        </ChipBar>
+        <span className="shrink-0 font-mono text-sm text-emerald-300">
+          {t("stat.creditsLine", { credits: fmt(p.credits), income: fmt(income) })}
+        </span>
+        {/* остальная строка — поле для всего, что игра говорит игроку */}
+        <div
+          className={`flex min-h-[2.25rem] min-w-0 flex-1 items-center gap-x-3 gap-y-1 rounded-md border px-3 py-1 text-sm ${barTone}`}
+        >
+          {barBody}
+        </div>
         {accountLine}
       </div>
 
@@ -2174,7 +2178,7 @@ export default function Lobby({
             даже пустой, — иначе карта дёргалась бы на каждое слово.
           */}
           <div
-            className={`order-2 flex min-h-[2.75rem] shrink-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-3 py-1.5 text-sm ${barTone}`}
+            className={`order-2 flex min-h-[2.75rem] shrink-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-3 py-1.5 text-sm lg:hidden ${barTone}`}
           >
             {barBody}
           </div>
