@@ -843,7 +843,10 @@ begin
 
   killed := coalesce((result->>'killedByGuns')::int, 0)
           + coalesce((result->>'killedByMg')::int, 0);
-  if killed < 0 or killed > price('max_raid') then
+  -- Здесь про размер роя ничего не известно: бой мог быть и с ботом, и с
+  -- атакой, отправленной при прежнем потолке. Точную сверку с числом
+  -- высланных дронов делает complete_attack; тут — только защита от чуши.
+  if killed < 0 or killed > 100000 then
     raise exception 'bad killed drone count';
   end if;
   if burned <> coalesce((result->>'burned')::int, -1) then

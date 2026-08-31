@@ -550,7 +550,11 @@ export function update(s: GameState, dt: number) {
       s.missiles.splice(i, 1);
       continue;
     }
-    const t = byId!.get(m.target);
+    // Сбитый пулемётом дрон ещё планирует к земле, но он уже посчитан:
+    // ракета его больше не видит, иначе один дрон уходил бы в счёт дважды —
+    // и сумма сбитых переваливала за размер роя.
+    const found = byId!.get(m.target);
+    const t = found && !found.hit ? found : undefined;
     if (t) {
       const a = Math.atan2(t.y - m.y, t.x - m.x);
       const ca = Math.atan2(m.dy, m.dx);
