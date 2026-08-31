@@ -211,6 +211,8 @@ function RaidDialog({
   const t = useT();
   const max = Math.min(drones, MAX_ATTACK_DRONES);
   const [n, setN] = useState(Math.min(50, max));
+  // Запас мог измениться, пока окно открыто, — держим ползунок в его границах.
+  const count = Math.max(1, Math.min(n, max));
   const [pattern, setPattern] = useState<Pattern>("swarm");
   const [dir, setDir] = useState(0);
   const [sending, setSending] = useState(false);
@@ -220,7 +222,7 @@ function RaidDialog({
     if (sending) return;
     setSending(true);
     setSendError(null);
-    const error = await onSend(n, pattern, dir);
+    const error = await onSend(count, pattern, dir);
     setSending(false);
     setSendError(error);
   };
@@ -232,17 +234,22 @@ function RaidDialog({
       onClose={onCancel}
     >
       <label className="mb-1 block text-xs uppercase tracking-wider text-neutral-400">
-        {t("raid.dronesOf", { n, max })}
+        {t("raid.dronesOf", { n: count, max })}
       </label>
       <input
         type="range"
-        min={10}
-        max={Math.max(10, max)}
-        step={10}
-        value={n}
+        min={1}
+        max={Math.max(1, max)}
+        step={1}
+        value={count}
+        disabled={max < 1}
         onChange={(e) => setN(Number(e.target.value))}
-        className="mb-4 h-8 w-full cursor-pointer accent-red-500"
+        className="h-8 w-full cursor-pointer accent-red-500 disabled:opacity-40"
       />
+      <div className="mb-4 flex justify-between font-mono text-[11px] text-neutral-500">
+        <span>1</span>
+        <span>{t("arsenal.max", { count: max })}</span>
+      </div>
 
       <div className="mb-1 text-xs uppercase tracking-wider text-neutral-400">{t("raid.pattern")}</div>
       <div className="mb-4 grid grid-cols-2 gap-2">

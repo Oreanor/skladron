@@ -24,6 +24,7 @@ language sql immutable as $$
     when 'free'   then 100   -- стартовая площадь 10×10 достаётся даром
     when 'found'  then 100   -- столько же нужно, чтобы основаться
     when 'upgrade' then 5000 -- шаг апгрейда: на N-й уровень платим 5000*(N-1)
+    when 'max_raid' then 1000 -- потолок одного налёта, тот же и на клиенте
   end;
 $$;
 
@@ -166,7 +167,7 @@ create table if not exists attacks (
   id uuid primary key default gen_random_uuid(),
   attacker_id uuid not null references profiles on delete cascade,
   defender_id uuid not null references profiles on delete cascade,
-  drones int not null check (drones between 1 and 300),
+  drones int not null check (drones between 1 and 1000),
   pattern text not null check (pattern in ('swarm', 'lines', 'random', 'drip')),
   direction int not null check (direction between 0 and 3),
   seed int not null,
@@ -195,6 +196,10 @@ update profiles set levels = '{"drones":1,"guns":1,"scouts":1}'::jsonb || levels
 -- уровень дронов запоминаем в самой атаке: у защитника они летят так,
 -- как их прокачал нападающий, даже если тот потом апгрейднулся ещё
 alter table attacks add column if not exists drone_level int not null default 1;
+-- потолок налёта подняли с 300 до 1000: у существующей таблицы check
+-- сам не поменяется, поэтому пересоздаём его явно
+alter table attacks drop constraint if exists attacks_drones_check;
+alter table attacks add constraint attacks_drones_check check (drones between 1 and 1000);
 -- очередь налётов: у первой атаки идут часы, остальные ждут
 alter table attacks add column if not exists activated_at timestamptz;
 -- быстрые дроны убраны: вид остался только у разведчиков
@@ -295,7 +300,7 @@ declare
   order_id uuid;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
-  if drone_count is null or drone_count < 1 or drone_count > 300 then
+  if drone_count is null or drone_count < 1 or drone_count > price('max_raid') then
     raise exception 'bad drone count';
   end if;
   if attack_pattern not in ('swarm', 'lines', 'random', 'drip') then
