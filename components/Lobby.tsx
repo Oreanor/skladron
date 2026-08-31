@@ -31,7 +31,6 @@ import {
   insurance,
   insuranceShare,
   GUN_COST,
-  GUN_REFUND,
   MIN_BASE_CELLS,
   REPAIR_COST,
   SCOUT_UNIT_COST,
@@ -149,7 +148,7 @@ const TOOLS: {
     id: "gun",
     label: "tool.gun",
     hint: "tool.gunHint",
-    vars: { cost: GUN_COST, refund: GUN_REFUND },
+    vars: { cost: GUN_COST },
     icon: <Rocket className={ICON} />,
     levelKind: "guns",
     countKind: "guns",
@@ -706,14 +705,6 @@ export default function Lobby({
 
   const gunAt = (x: number, y: number) => {
     if (x < 0 || y < 0 || x >= GRID || y >= GRID) return;
-    const existing = p.guns.findIndex((g) => g.cx === x && g.cy === y);
-    if (existing >= 0) {
-      p.guns.splice(existing, 1);
-      p.credits += GUN_REFUND;
-      showPrice(x, y, GUN_REFUND);
-      touch();
-      return;
-    }
     if (p.cells[idx(x, y)] !== G_BASE) {
       setMessage(t("gun.onlyIntact"));
       return;
@@ -1131,13 +1122,8 @@ export default function Lobby({
     if (fromGun) {
       dragGunRef.current = null;
       const c = cellOf(pt);
-      // Отпустил там же, откуда взял: в режиме пушек это «снять и вернуть
-      // деньги», в остальных — просто передумал тащить.
-      if (c.x === fromGun.cx && c.y === fromGun.cy) {
-        if (tool === "gun") gunAt(c.x, c.y);
-      } else {
-        moveGun(fromGun, c.x, c.y);
-      }
+      // Отпустил там же, откуда взял — просто передумал тащить.
+      if (c.x !== fromGun.cx || c.y !== fromGun.cy) moveGun(fromGun, c.x, c.y);
       forceRender((v) => v + 1);
       return;
     }

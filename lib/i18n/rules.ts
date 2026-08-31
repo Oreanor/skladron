@@ -23,7 +23,7 @@ const en: RuleSection[] = [
     lines: [
       "«Area» — drag a frame or tap a cell. A new cell costs {cell} cr and must touch what already stands.",
       "«Repair» — the same, {repair} cr per burnt cell.",
-      "«Gun» — {gun} cr on a free intact cell; clicking a gun in this mode sells it back for {refund} cr.",
+      "«Gun» — {gun} cr on a free intact cell. Guns are not sold back, but they can be dragged anywhere on the warehouse.",
       "«Drones» and «Recon» — a container of {perCell} for {droneBox} and {scoutBox} cr.",
       "Guns and containers can be dragged around the warehouse in any mode, and that costs nothing.",
     ],
@@ -81,7 +81,7 @@ const ru: RuleSection[] = [
     lines: [
       "«Площадь» — тяни рамку или ткни в клетку. Новая клетка стоит {cell} кр и должна примыкать к тому, что уже стоит.",
       "«Ремонт» — так же, {repair} кр за сгоревшую клетку.",
-      "«Пушка» — {gun} кр на свободную целую клетку; клик по пушке в этом режиме продаёт её обратно за {refund} кр.",
+      "«Пушка» — {gun} кр на свободную целую клетку. Обратно пушка не продаётся, но её можно перетащить куда угодно по складу.",
       "«Дроны» и «Разведка» — контейнер на {perCell} штук за {droneBox} и {scoutBox} кр.",
       "Пушки и контейнеры таскаются по складу в любом режиме, и это бесплатно.",
     ],
@@ -139,7 +139,7 @@ const es: RuleSection[] = [
     lines: [
       "«Área»: arrastra un marco o toca una celda. Una celda nueva cuesta {cell} cr y debe tocar lo ya construido.",
       "«Reparar»: igual, {repair} cr por celda quemada.",
-      "«Cañón»: {gun} cr en una celda intacta libre; pulsar un cañón en este modo lo revende por {refund} cr.",
+      "«Cañón»: {gun} cr en una celda intacta libre. Los cañones no se revenden, pero se arrastran a cualquier punto del almacén.",
       "«Drones» y «Exploración»: un contenedor de {perCell} por {droneBox} y {scoutBox} cr.",
       "Cañones y contenedores se arrastran por el almacén en cualquier modo, y eso no cuesta nada.",
     ],
@@ -197,7 +197,7 @@ const pt: RuleSection[] = [
     lines: [
       "«Área» — arrasta uma moldura ou toca numa célula. Uma célula nova custa {cell} cr e tem de tocar no que já está de pé.",
       "«Reparar» — igual, {repair} cr por célula queimada.",
-      "«Canhão» — {gun} cr numa célula intacta livre; clicar num canhão neste modo revende-o por {refund} cr.",
+      "«Canhão» — {gun} cr numa célula intacta livre. Os canhões não se revendem, mas arrastam-se para onde quiseres no armazém.",
       "«Drones» e «Reconhecimento» — um contentor de {perCell} por {droneBox} e {scoutBox} cr.",
       "Canhões e contentores arrastam-se pelo armazém em qualquer modo, e isso não custa nada.",
     ],
@@ -255,7 +255,7 @@ const fr: RuleSection[] = [
     lines: [
       "« Surface » — tire un cadre ou clique une case. Une case neuve coûte {cell} cr et doit toucher l’existant.",
       "« Réparer » — pareil, {repair} cr par case brûlée.",
-      "« Canon » — {gun} cr sur une case intacte libre ; cliquer un canon dans ce mode le revend {refund} cr.",
+      "« Canon » — {gun} cr sur une case intacte libre. Un canon ne se revend pas, mais se déplace où tu veux dans l’entrepôt.",
       "« Drones » et « Reconnaissance » — un conteneur de {perCell} pour {droneBox} et {scoutBox} cr.",
       "Canons et conteneurs se déplacent dans l’entrepôt dans n’importe quel mode, et cela ne coûte rien.",
     ],
@@ -313,7 +313,7 @@ const de: RuleSection[] = [
     lines: [
       "«Fläche» — Rahmen ziehen oder Feld antippen. Ein neues Feld kostet {cell} Cr und muss ans Bestehende grenzen.",
       "«Reparieren» — genauso, {repair} Cr je abgebranntem Feld.",
-      "«Geschütz» — {gun} Cr auf ein freies heiles Feld; ein Klick auf ein Geschütz in diesem Modus verkauft es für {refund} Cr zurück.",
+      "«Geschütz» — {gun} Cr auf ein freies heiles Feld. Zurückverkaufen lässt sich ein Geschütz nicht, ziehen dagegen überallhin im Lager.",
       "«Drohnen» und «Aufklärung» — ein Container mit {perCell} Stück für {droneBox} bzw. {scoutBox} Cr.",
       "Geschütze und Container lassen sich in jedem Modus über das Lager ziehen, und das kostet nichts.",
     ],
@@ -371,7 +371,7 @@ const it: RuleSection[] = [
     lines: [
       "«Area» — trascina una cornice o tocca una cella. Una cella nuova costa {cell} cr e deve toccare ciò che c’è già.",
       "«Riparare» — lo stesso, {repair} cr per cella bruciata.",
-      "«Cannone» — {gun} cr su una cella intatta libera; cliccare un cannone in questa modalità lo rivende a {refund} cr.",
+      "«Cannone» — {gun} cr su una cella intatta libera. Il cannone non si rivende, ma si trascina ovunque nel magazzino.",
       "«Droni» e «Ricognizione» — un container da {perCell} per {droneBox} e {scoutBox} cr.",
       "Cannoni e container si trascinano per il magazzino in qualsiasi modalità, e non costa nulla.",
     ],

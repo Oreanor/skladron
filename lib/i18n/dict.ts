@@ -166,7 +166,7 @@ const en = {
   "tool.price": "{cost} cr",
   "tool.areaHint": "{cost} cr per new cell",
   "tool.repairHint": "{cost} cr per cell",
-  "tool.gunHint": "{cost} cr, refund {refund}",
+  "tool.gunHint": "{cost} cr per gun",
   "tool.dronesHint": "A container of {perCell} drones for {cost} cr. Click a free cell of the warehouse; drag containers to move them.",
 
   "stat.credits": "credits",
@@ -508,7 +508,7 @@ const ru: Dict = {
   "tool.price": "{cost} кр",
   "tool.areaHint": "{cost} кр за новую клетку",
   "tool.repairHint": "{cost} кр за клетку",
-  "tool.gunHint": "{cost} кр, вернёт {refund}",
+  "tool.gunHint": "{cost} кр за пушку",
   "tool.dronesHint": "Контейнер на {perCell} дронов за {cost} кр. Ткни в свободную клетку склада; ящики можно перетаскивать.",
 
   "stat.credits": "кредиты",
@@ -850,7 +850,7 @@ const es: Dict = {
   "tool.price": "{cost} cr",
   "tool.areaHint": "{cost} cr por celda nueva",
   "tool.repairHint": "{cost} cr por celda",
-  "tool.gunHint": "{cost} cr, devuelve {refund}",
+  "tool.gunHint": "{cost} cr por cañón",
   "tool.dronesHint": "Un contenedor de {perCell} drones por {cost} cr. Pulsa una celda libre del almacén; los contenedores se arrastran.",
 
   "stat.credits": "créditos",
@@ -1192,7 +1192,7 @@ const pt: Dict = {
   "tool.price": "{cost} cr",
   "tool.areaHint": "{cost} cr por célula nova",
   "tool.repairHint": "{cost} cr por célula",
-  "tool.gunHint": "{cost} cr, devolve {refund}",
+  "tool.gunHint": "{cost} cr por canhão",
   "tool.dronesHint": "Um contentor de {perCell} drones por {cost} cr. Toca numa célula livre do armazém; os contentores arrastam-se.",
 
   "stat.credits": "créditos",
@@ -1534,7 +1534,7 @@ const fr: Dict = {
   "tool.price": "{cost} cr",
   "tool.areaHint": "{cost} cr par nouvelle case",
   "tool.repairHint": "{cost} cr par case",
-  "tool.gunHint": "{cost} cr, rend {refund}",
+  "tool.gunHint": "{cost} cr le canon",
   "tool.dronesHint": "Un conteneur de {perCell} drones pour {cost} cr. Clique une case libre de l’entrepôt ; les conteneurs se déplacent à la souris.",
 
   "stat.credits": "crédits",
@@ -1876,7 +1876,7 @@ const de: Dict = {
   "tool.price": "{cost} Cr",
   "tool.areaHint": "{cost} Cr pro neuem Feld",
   "tool.repairHint": "{cost} Cr pro Feld",
-  "tool.gunHint": "{cost} Cr, bringt {refund} zurück",
+  "tool.gunHint": "{cost} Cr je Geschütz",
   "tool.dronesHint": "Ein Container mit {perCell} Drohnen für {cost} Cr. Auf ein freies Lagerfeld klicken; Container lassen sich ziehen.",
 
   "stat.credits": "Kredite",
@@ -2218,7 +2218,7 @@ const it: Dict = {
   "tool.price": "{cost} cr",
   "tool.areaHint": "{cost} cr per cella nuova",
   "tool.repairHint": "{cost} cr per cella",
-  "tool.gunHint": "{cost} cr, ne rende {refund}",
+  "tool.gunHint": "{cost} cr per cannone",
   "tool.dronesHint": "Un container da {perCell} droni per {cost} cr. Tocca una cella libera del magazzino; i container si trascinano.",
 
   "stat.credits": "crediti",
