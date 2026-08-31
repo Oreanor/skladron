@@ -549,7 +549,8 @@ export function ToolButton({
       title={`${label} · ${hint}`}
       aria-label={`${label}, ${hint}`}
       aria-pressed={active}
-      className={`relative flex aspect-square w-full min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border p-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 disabled:cursor-not-allowed disabled:opacity-40 lg:aspect-auto lg:h-auto lg:py-2 ${
+      // сверху оставляем место счётчику и уровню — иконка идёт под ними
+      className={`relative flex aspect-square w-full min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border px-1 pb-1 pt-4 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 disabled:cursor-not-allowed disabled:opacity-40 lg:aspect-auto lg:h-auto lg:pb-2 lg:pt-5 ${
         active
           ? "border-emerald-500 bg-emerald-500/15 text-emerald-300"
           : "border-neutral-700 text-neutral-300 hover:bg-neutral-800"

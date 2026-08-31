@@ -1634,7 +1634,6 @@ export default function Lobby({
       setMessage(
         t("upgrade.done", { name: t(`upgrade.${kind}` as Key), level: p.levels[kind] })
       );
-      setModal(null);
       forceRender((v) => v + 1);
     } catch (e) {
       setMessage(t("upgrade.failed", { error: (e as Error).message }));
