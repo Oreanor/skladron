@@ -26,6 +26,7 @@ import {
   DRONE_UNIT_COST,
   INSURANCE_CELL,
   INSURANCE_DEPOT,
+  SALE_MULTIPLIER,
   GUN_COST,
   GUN_REFUND,
   MIN_BASE_CELLS,
@@ -68,6 +69,8 @@ import { drawCoverage, drawDepots } from "@/lib/render";
 import { gunRange } from "@/lib/engine";
 import Battle, { type BattleOutcome } from "./Battle";
 import Scout, { type ScoutOutcome } from "./Scout";
+import ScoutMap from "./ScoutMap";
+import Replay from "./Replay";
 import MapCanvas, { type Pt } from "./MapCanvas";
 import AccountMenu, { SettingsList } from "./AccountMenu";
 import { useT } from "@/lib/i18n";
@@ -201,6 +204,10 @@ export default function Lobby({
   const [naming, setNaming] = useState<"found" | null>(null);
   const [confirmWipe, setConfirmWipe] = useState(false);
   const [confirmRestart, setConfirmRestart] = useState(false);
+  /** Чью снятую карту сейчас смотрим. */
+  const [mapOf, setMapOf] = useState<Enemy | null>(null);
+  /** Отчёт, повтор которого сейчас крутим. */
+  const [watching, setWatching] = useState<AttackReport | null>(null);
   /** Идущий разведвылет: карта врага, его пушки и сколько самолётов послали. */
   const [scout, setScout] = useState<{
     enemy: Enemy;
@@ -303,7 +310,18 @@ export default function Lobby({
         setReports(loadedReports);
         setReady(true);
         if (income.credits > 0) {
-          setMessage(t("income.collected", { days: income.days, credits: fmt(income.credits) }));
+          const sold = income.sold;
+          setMessage(
+            t("income.collected", { days: income.days, credits: fmt(income.credits) }) +
+              (sold && (sold.drones || sold.scouts)
+                ? t("income.sold", {
+                    drones: sold.drones,
+                    dronesValue: fmt(sold.drones * DRONE_UNIT_COST * SALE_MULTIPLIER),
+                    scouts: sold.scouts,
+                    scoutsValue: fmt(sold.scouts * SCOUT_UNIT_COST * SALE_MULTIPLIER),
+                  })
+                : "")
+          );
         }
       })
       .catch((e) => {
@@ -425,7 +443,8 @@ export default function Lobby({
           const patch = await repo.applyBattle(
             cur,
             o.result,
-            head.remote ? head.id : undefined
+            head.remote ? head.id : undefined,
+            "" // некому было ни тушить, ни стрелять: запись пустая
           );
           if (patch.credits !== undefined) cur.credits = patch.credits;
           forceRender((v) => v + 1);
@@ -523,7 +542,8 @@ export default function Lobby({
             const patch = await repo.applyBattle(
               p,
               o.result,
-              battle.remote ? battle.id : undefined
+              battle.remote ? battle.id : undefined,
+              o.trace
             );
             if (patch.credits !== undefined) p.credits = patch.credits;
             forceRender((v) => v + 1);
@@ -533,6 +553,12 @@ export default function Lobby({
           }
         }}
       />
+    );
+  }
+
+  if (mapOf?.scout) {
+    return (
+      <ScoutMap name={mapOf.name} snapshot={mapOf.scout} onClose={() => setMapOf(null)} />
     );
   }
 
@@ -1490,6 +1516,10 @@ export default function Lobby({
       onAdd={addEnemy}
       onRaid={doRaid}
       onScout={doScout}
+      onShowMap={(enemy) => {
+        setSheet(null);
+        setMapOf(enemy);
+      }}
       onChanged={() => forceRender((v) => v + 1)}
     />
   );
@@ -1769,9 +1799,12 @@ export default function Lobby({
         />
       )}
 
-      {reports[0] && (
+      {watching && <Replay report={watching} onClose={() => setWatching(null)} />}
+
+      {reports[0] && !watching && (
         <AttackReportDialog
           report={reports[0]}
+          onWatch={reports[0].replay ? () => setWatching(reports[0]) : undefined}
           onClose={async () => {
             const report = reports[0];
             try {
@@ -1862,9 +1895,12 @@ export default function Lobby({
 
 function AttackReportDialog({
   report,
+  onWatch,
   onClose,
 }: {
   report: AttackReport;
+  /** Есть запись боя — можно посмотреть, как всё было. */
+  onWatch?: () => void;
   onClose: () => void;
 }) {
   const t = useT();
@@ -1892,9 +1928,16 @@ function AttackReportDialog({
           value={`+${fmt(report.loot)} ${t("battle.creditsSuffix")}`}
         />
       </dl>
-      <Button variant="neutral" block onClick={onClose}>
-        {t("common.ok")}
-      </Button>
+      <div className="flex gap-2">
+        {onWatch && (
+          <Button variant="build" className="flex-1" onClick={onWatch}>
+            {t("replay.watch")}
+          </Button>
+        )}
+        <Button variant="neutral" className={onWatch ? "" : "flex-1"} onClick={onClose}>
+          {t("common.ok")}
+        </Button>
+      </div>
     </Modal>
   );
 }

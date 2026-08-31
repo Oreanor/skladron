@@ -22,6 +22,8 @@ interface Props {
   ) => Promise<string | null>;
   /** Разведка: сколько самолётов послать. Вернёт текст ошибки или null. */
   onScout: (enemy: Enemy, planes: number) => Promise<string | null>;
+  /** Показать снятую карту врага. */
+  onShowMap: (enemy: Enemy) => void;
   onChanged: () => void;
 }
 
@@ -32,6 +34,7 @@ export default function Enemies({
   onAdd,
   onRaid,
   onScout,
+  onShowMap,
   onChanged,
 }: Props) {
   const t = useT();
@@ -89,6 +92,11 @@ export default function Enemies({
                   <div className="truncate font-mono text-[11px] text-neutral-500">{e.email}</div>
                 </div>
                 <div className="flex shrink-0 gap-2">
+                  {e.scout && (
+                    <Button size="sm" onClick={() => onShowMap(e)}>
+                      {t("scout.map")}
+                    </Button>
+                  )}
                   <Button size="sm" onClick={() => setScoutTarget(e)}>
                     {t("scout.button")}
                   </Button>

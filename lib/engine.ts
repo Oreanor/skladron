@@ -13,7 +13,7 @@ import {
   idx,
   isBuilding,
 } from "./base";
-import type { SpawnTicket } from "./attack";
+import { mulberry32, type SpawnTicket } from "./attack";
 
 export { GRID, G_BASE, G_FIRE, G_GROUND, G_SCORCH, idx, isBuilding };
 export { G_BURNT } from "./base";
@@ -150,6 +150,8 @@ export interface GameState {
   /** Целые клетки склада — цели дронов. Список пересобираем, только когда он протух. */
   targets: number[];
   targetsStale: boolean;
+  /** Своя случайность вместо Math.random: бой должен быть повторим. */
+  rnd: () => number;
   /** Уровень дронов нападающего и уровни защитника. */
   droneLevel: number;
   gunLevel: number;
@@ -169,6 +171,11 @@ export interface BattleLevels {
   guns?: number;
   mg?: number;
   water?: number;
+  /**
+   * Зерно случайности. С ним бой воспроизводим: те же шаги и те же действия
+   * дают тот же исход — иначе повтор у нападавшего разошёлся бы с боем.
+   */
+  seed?: number;
 }
 
 export function createBattle(
@@ -213,6 +220,7 @@ export function createBattle(
     baseOk: ok,
     targets: baseCells.filter((i) => map[i] === G_BASE),
     targetsStale: false,
+    rnd: mulberry32(levels.seed ?? ((Math.random() * 1e9) | 0)),
     result: {
       dronesSent: plan.length,
       killedByGuns: 0,
@@ -291,7 +299,7 @@ function aimTick(s: GameState) {
   const water = isBuilding(s.cells[idx(cx, cy)]);
 
   if (water) {
-    s.shots.push({ x: a.x, y: a.y, t: 0, water: true, seed: Math.random() });
+    s.shots.push({ x: a.x, y: a.y, t: 0, water: true, seed: s.rnd() });
     if (s.shots.length > 60) s.shots.shift();
     const reach = WATER_RADIUS * levelBonus(s.waterLevel, WATER_PER_LEVEL);
     const r = Math.ceil(reach);
@@ -305,15 +313,15 @@ function aimTick(s: GameState) {
     return;
   }
 
-  const px = a.x + (Math.random() - 0.5) * MG_SPREAD * 2;
-  const py = a.y + (Math.random() - 0.5) * MG_SPREAD * 2;
-  s.shots.push({ x: px, y: py, t: 0, water: false, seed: Math.random() });
+  const px = a.x + (s.rnd() - 0.5) * MG_SPREAD * 2;
+  const py = a.y + (s.rnd() - 0.5) * MG_SPREAD * 2;
+  s.shots.push({ x: px, y: py, t: 0, water: false, seed: s.rnd() });
   if (s.shots.length > 60) s.shots.shift();
 
   const hx = Math.floor(px);
   const hy = Math.floor(py);
   if (hx >= 0 && hy >= 0 && hx < GRID && hy < GRID && !isBuilding(s.cells[idx(hx, hy)])) {
-    s.holes.push({ x: px, y: py, seed: Math.random() });
+    s.holes.push({ x: px, y: py, seed: s.rnd() });
     if (s.holes.length > MAX_HOLES) s.holes.shift();
   }
 
@@ -331,7 +339,7 @@ function aimTick(s: GameState) {
   }
   if (!best) return;
   // Меткость очереди растёт с уровнем пулемёта, но не до безусловной.
-  if (Math.random() > Math.min(0.95, MG_HIT * levelBonus(s.mgLevel, MG_PER_LEVEL))) return;
+  if (s.rnd() > Math.min(0.95, MG_HIT * levelBonus(s.mgLevel, MG_PER_LEVEL))) return;
 
   const len = Math.hypot(best.tx - best.x, best.ty - best.y) || 1;
   best.hit = true;
@@ -372,12 +380,12 @@ function targets(s: GameState): number[] {
 function randomTarget(s: GameState): number {
   const alive = targets(s);
   if (!alive.length) return -1;
-  const i = alive[(Math.random() * alive.length) | 0];
+  const i = alive[(s.rnd() * alive.length) | 0];
   // список мог протухнуть в этом же кадре — тогда пересобираем и берём заново
   if (s.cells[i] === G_BASE) return i;
   s.targetsStale = true;
   const fresh = targets(s);
-  return fresh.length ? fresh[(Math.random() * fresh.length) | 0] : -1;
+  return fresh.length ? fresh[(s.rnd() * fresh.length) | 0] : -1;
 }
 
 function spawnDrone(s: GameState, t: SpawnTicket) {
@@ -406,7 +414,7 @@ function spawnDrone(s: GameState, t: SpawnTicket) {
     tx: (ti % GRID) + 0.5,
     ty: ((ti / GRID) | 0) + 0.5,
     ti,
-    wob: Math.random() * Math.PI * 2,
+    wob: s.rnd() * Math.PI * 2,
     hit: false,
     hx: 0,
     hy: 0,
@@ -447,7 +455,7 @@ export function update(s: GameState, dt: number) {
       d.smokeT -= dt;
       if (d.smokeT <= 0) {
         d.smokeT = 0.05;
-        s.puffs.push({ x: d.x, y: d.y, t: 0, r: 0.5 + Math.random() * 0.5 });
+        s.puffs.push({ x: d.x, y: d.y, t: 0, r: 0.5 + s.rnd() * 0.5 });
       }
       if (d.x < -4 || d.y < -4 || d.x > GRID + 4 || d.y > GRID + 4) {
         s.drones.splice(i, 1);
@@ -496,7 +504,7 @@ export function update(s: GameState, dt: number) {
     const cy = d.y | 0;
     if (cx !== px || cy !== py) {
       const g = gunAt(s, cx, cy);
-      if (g && Math.random() < GUN_HIT_CHANCE) {
+      if (g && s.rnd() < GUN_HIT_CHANCE) {
         g.alive = false;
         s.result.gunsLost++;
         s.booms.push({ x: cx + 0.5, y: cy + 0.5, t: 0, r: 3 });

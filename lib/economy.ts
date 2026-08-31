@@ -6,12 +6,13 @@ export const REPAIR_COST = 5; // ремонт сгоревшей клетки
 export const GUN_COST = 100;
 export const GUN_REFUND = 50; // возврат при снятии пушки
 export const DRONE_UNIT_COST = 10;
+/** Каждая целая клетка склада приносит столько в сутки. */
+export const INCOME_PER_CELL = 10;
 /**
- * Доход за сутки — доля от стоимости товара на складе. Контейнер обычных
- * дронов стоит 100 кр и приносит 10 кр в сутки, контейнер разведчиков —
- * 250 и 25. Пустая площадь не приносит ничего, пушки едят её даром.
+ * Раз в сутки склад отгружает всё, что на нём лежит: дроны и разведчики
+ * уходят вдвое дороже закупки. Не успел пустить их в дело — они проданы.
  */
-export const INCOME_PERCENT = 10;
+export const SALE_MULTIPLIER = 2;
 export const INCOME_CAP_DAYS = 14; // потолок накопления
 export const CELL_LOOT_REWARD = 50; // нападавшему за каждую сожжённую клетку склада
 export const INSURANCE_CELL = 10; // страховка пострадавшему за сгоревшую клетку
@@ -46,12 +47,12 @@ export const DAY_MS = 24 * 60 * 60 * 1000;
  * Сколько кредитов накопилось с прошлого начисления.
  * Считаем по целым суткам UTC, остаток переносим на следующий заход.
  */
-export function accrue(storedValue: number, lastIncomeAt: number, now: number) {
+export function accrue(intactCells: number, lastIncomeAt: number, now: number) {
   const days = Math.floor((now - lastIncomeAt) / DAY_MS);
   if (days <= 0) return { credits: 0, days: 0, nextAt: lastIncomeAt };
   const paid = Math.min(days, INCOME_CAP_DAYS);
   return {
-    credits: paid * Math.floor((storedValue * INCOME_PERCENT) / 100),
+    credits: paid * intactCells * INCOME_PER_CELL,
     days: paid,
     // сдвигаем на все прошедшие сутки, иначе сверх потолка копилось бы дальше
     nextAt: lastIncomeAt + days * DAY_MS,

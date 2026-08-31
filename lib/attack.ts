@@ -96,6 +96,15 @@ export interface AttackReport {
   result: BattleResult;
   loot: number;
   destroyed: boolean;
+  /** Всё нужное, чтобы отыграть бой заново глазами нападавшего. */
+  replay?: {
+    order: AttackOrder;
+    cells: string;
+    guns: { cx: number; cy: number }[];
+    depots: { cx: number; cy: number; n: number; kind?: string }[];
+    levels: { guns?: number; mg?: number; water?: number };
+    trace: string;
+  };
 }
 
 export interface SpawnTicket {

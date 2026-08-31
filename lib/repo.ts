@@ -22,6 +22,8 @@ import { cloudEnabled, supabase } from "./supabase";
 export interface Income {
   credits: number;
   days: number;
+  /** Что ушло с отгрузкой: склад продаёт остатки раз в сутки. */
+  sold?: { drones: number; scouts: number } | null;
 }
 
 export interface Repo {
@@ -67,7 +69,13 @@ export interface Repo {
   acknowledgeReport(id: string): Promise<void>;
   /** Переименование склада — отдельная операция, карты не касается. */
   rename(p: Player, name: string): Promise<void>;
-  applyBattle(p: Player, result: BattleResult, attackId?: string): Promise<Partial<Player>>;
+  applyBattle(
+    p: Player,
+    result: BattleResult,
+    attackId?: string,
+    /** Запись боя: её увидит нападавший в отчёте о налёте. */
+    trace?: string
+  ): Promise<Partial<Player>>;
   wipe(p: Player): Promise<Player>;
   /** Начать сначала: пустой стартовый склад, стартовые деньги, всё с нуля. */
   restart(p: Player): Promise<Player>;
@@ -80,7 +88,7 @@ class LocalRepo implements Repo {
 
   async load() {
     const player = localLoad();
-    const income = localIncome(player, Date.now());
+    const income = localIncome(player, Date.now()) as Income;
     insure(player);
     localSave(player);
     return { player, income, reports: [] };
@@ -182,6 +190,8 @@ interface ProfileRow {
 interface IncomeRow {
   credits_added: number;
   days: number;
+  sold_drones: number;
+  sold_scouts: number;
 }
 
 interface BaseRow {
@@ -209,6 +219,15 @@ interface AttackReportRow {
   result: BattleResult;
   loot: number;
   destroyed: boolean;
+  drones: number;
+  pattern: Pattern;
+  direction: number;
+  seed: number;
+  snap_cells: string | null;
+  snap_guns: Gun[] | null;
+  snap_depots: Depot[] | null;
+  snap_levels: { guns?: number; mg?: number; water?: number } | null;
+  trace: string | null;
 }
 
 /** Postgres отдаёт bytea в hex-виде «\x00ff…». */
@@ -280,7 +299,13 @@ class CloudRepo implements Repo {
     const first = (inc.data as IncomeRow[] | null)?.[0];
     return {
       player,
-      income: { credits: first?.credits_added ?? 0, days: first?.days ?? 0 },
+      income: {
+        credits: first?.credits_added ?? 0,
+        days: first?.days ?? 0,
+        sold: first && (first.sold_drones || first.sold_scouts)
+          ? { drones: first.sold_drones, scouts: first.sold_scouts }
+          : null,
+      },
       reports: attacks.reports,
     };
   }
@@ -316,6 +341,25 @@ class CloudRepo implements Repo {
       result: row.result,
       loot: row.loot,
       destroyed: row.destroyed,
+      // повтор есть не у всех: старые налёты писались без слепка склада
+      replay: row.snap_cells
+        ? {
+            order: {
+              id: row.id,
+              from: row.target_name,
+              createdAt: Date.parse(row.resolved_at),
+              drones: row.drones,
+              pattern: row.pattern,
+              direction: row.direction,
+              seed: row.seed,
+            },
+            cells: row.snap_cells,
+            guns: row.snap_guns ?? [],
+            depots: row.snap_depots ?? [],
+            levels: row.snap_levels ?? {},
+            trace: row.trace ?? "",
+          }
+        : undefined,
     }));
     return {
       incoming,
@@ -437,14 +481,14 @@ class CloudRepo implements Repo {
     if (error) throw error;
   }
 
-  async applyBattle(p: Player, result: BattleResult, attackId?: string) {
+  async applyBattle(p: Player, result: BattleResult, attackId?: string, trace?: string) {
     const rpc = attackId ? "complete_attack" : "apply_battle";
     const args = {
       new_cells: encodeRle(p.cells),
       new_guns: p.guns,
       new_depots: p.depots,
       result,
-      ...(attackId ? { attack_id: attackId } : {}),
+      ...(attackId ? { attack_id: attackId, battle_trace: trace ?? "" } : {}),
     };
     const { data, error } = await this.db().rpc(rpc, args);
     if (error) throw error;

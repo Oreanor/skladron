@@ -29,6 +29,7 @@ export function autoDefend(
   const s = createBattle(cells, guns, depots, buildPlan(order), {
     drones: order.droneLevel ?? 1,
     guns: gunLevel,
+    seed: order.seed,
   });
 
   let t = 0;

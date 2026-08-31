@@ -16,7 +16,8 @@ language sql immutable as $$
     when 'drones' then 1000
     when 'scout'  then 25    -- разведчик дороже ударного дрона, но дешевле пушки
     when 'drone'  then 10
-    when 'income' then 10  -- процент от стоимости товара в сутки
+    when 'income' then 10  -- кредитов в сутки с каждой целой клетки
+    when 'sale'   then 2   -- отгрузка идёт вдвое дороже закупки
     when 'loot'   then 50   -- нападавшему за каждую сожжённую клетку склада
     when 'insure_cell'  then 10  -- страховка погорельцу за клетку
     when 'insure_depot' then 50  -- и ещё столько, если на клетке лежал товар
@@ -244,6 +245,12 @@ update profiles set levels = '{"drones":1,"guns":1,"scouts":1,"mg":1,"water":1}'
 -- уровень дронов запоминаем в самой атаке: у защитника они летят так,
 -- как их прокачал нападающий, даже если тот потом апгрейднулся ещё
 alter table attacks add column if not exists drone_level int not null default 1;
+-- повтор налёта: слепок склада защитника до боя и запись его действий
+alter table attacks add column if not exists snap_cells text;
+alter table attacks add column if not exists snap_guns jsonb;
+alter table attacks add column if not exists snap_depots jsonb;
+alter table attacks add column if not exists snap_levels jsonb;
+alter table attacks add column if not exists trace text;
 -- потолок налёта подняли с 300 до 500: у существующей таблицы check
 -- сам не поменяется, поэтому пересоздаём его явно
 alter table attacks drop constraint if exists attacks_drones_check;
@@ -287,6 +294,12 @@ drop function if exists send_attack(text, int, text, int, int, jsonb, int);
 drop function if exists pending_attacks();
 -- дронов теперь списывает сервер: клиент больше не присылает свой склад
 drop function if exists spend_scouts(int, jsonb);
+-- complete_attack принимает ещё и запись боя
+drop function if exists complete_attack(uuid, text, jsonb, jsonb, jsonb);
+-- attack_reports отдаёт ещё и повтор боя
+drop function if exists attack_reports();
+-- collect_income отдаёт ещё и что было продано с отгрузкой
+drop function if exists collect_income();
 -- enemy_base теперь отдаёт ещё и уровень чужих пушек
 drop function if exists enemy_base(text);
 
@@ -494,12 +507,16 @@ $$;
 create or replace function attack_reports()
 returns table (
   id uuid, target_name text, resolved_at timestamptz,
-  result jsonb, loot int, destroyed boolean
+  result jsonb, loot int, destroyed boolean,
+  drones int, pattern text, direction int, seed int,
+  snap_cells text, snap_guns jsonb, snap_depots jsonb, snap_levels jsonb, trace text
 )
 language sql security definer set search_path = public as $$
   select a.id,
          coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)) as target_name,
-         a.resolved_at, a.result, a.loot, a.destroyed
+         a.resolved_at, a.result, a.loot, a.destroyed,
+         a.drones, a.pattern, a.direction, a.seed,
+         a.snap_cells, a.snap_guns, a.snap_depots, a.snap_levels, a.trace
     from attacks a
     join profiles p on p.id = a.defender_id
    where a.attacker_id = auth.uid()
@@ -580,24 +597,27 @@ $$;
 -- 10 кр за целую клетку за сутки, потолок накопления 14 суток
 
 create or replace function collect_income()
-returns table (credits_added int, days int)
+returns table (credits_added int, days int, sold_drones int, sold_scouts int)
 language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
   prof profiles;
   intact int;
-  goods int;
   passed int;
   paid int;
   gain int;
+  cur_depots jsonb;
+  drones_out int;
+  scouts_out int;
+  sale int;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   select * into prof from profiles where id = uid for update;
   if not found then raise exception 'no profile'; end if;
 
-  select b.intact_cells, depot_value(b.drone_cells)
-    into intact, goods
-    from bases b where b.user_id = uid;
+  select b.intact_cells, b.drone_cells
+    into intact, cur_depots
+    from bases b where b.user_id = uid for update;
 
   -- страховка: от склада ничего не осталось, а на подъём нет денег
   if prof.founded and coalesce(intact, 0) = 0 and prof.credits < 10000 then
@@ -607,21 +627,31 @@ begin
 
   passed := floor(extract(epoch from (now() - prof.last_income_at)) / 86400);
   if passed <= 0 then
-    return query select 0, 0;
+    return query select 0, 0, 0, 0;
     return;
   end if;
 
   paid := least(passed, 14);
-  -- Платит не площадь, а товар: доход — процент от стоимости того, что
-  -- лежит в контейнерах на момент начисления. Пушки едят площадь даром.
-  gain := paid * ((coalesce(goods, 0) * price('income')) / 100);
+  -- Аренда идёт с каждой целой клетки за каждые сутки.
+  gain := paid * coalesce(intact, 0) * price('income');
+
+  -- А раз в отгрузку склад продаёт всё, что на нём лежит, вдвое дороже
+  -- закупки. Продаётся то, что есть сейчас, а не за каждые прошедшие сутки.
+  drones_out := depot_sum_kind(cur_depots, 'basic');
+  scouts_out := depot_sum_kind(cur_depots, 'scout');
+  sale := (drones_out * price('drone') + scouts_out * price('scout')) * price('sale');
+
+  update bases
+     set drone_cells = '[]'::jsonb, updated_at = now()
+   where user_id = uid and jsonb_array_length(drone_cells) > 0;
 
   update profiles
-     set credits = credits + gain,
+     set credits = credits + gain + sale,
+         drones = 0,
          last_income_at = prof.last_income_at + (passed || ' days')::interval
    where id = uid;
 
-  return query select gain, paid;
+  return query select gain + sale, paid, drones_out, scouts_out;
 end;
 $$;
 
@@ -913,7 +943,8 @@ create or replace function complete_attack(
   new_cells text,
   new_guns jsonb,
   new_depots jsonb,
-  result jsonb
+  result jsonb,
+  battle_trace text default ''
 ) returns table (credits int, intact int)
 language plpgsql security definer set search_path = public as $$
 declare
@@ -922,6 +953,10 @@ declare
   defender_credits int;
   defender_intact int;
   earned int;
+  snap_map text;
+  snap_g jsonb;
+  snap_d jsonb;
+  snap_lv jsonb;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   select a.* into order_row from attacks a where a.id = attack_id for update;
@@ -939,6 +974,13 @@ begin
        + coalesce((result->>'leaked')::int, 0) > order_row.drones then
     raise exception 'attack result exceeds sent drones';
   end if;
+
+  -- Слепок склада до боя: по нему нападавший и посмотрит повтор. Снимаем
+  -- до apply_battle — дальше карта уже будет обгорелой.
+  select encode(b.cells, 'base64'), b.guns, b.drone_cells
+    into snap_map, snap_g, snap_d
+    from bases b where b.user_id = uid;
+  select p.levels into snap_lv from profiles p where p.id = uid;
 
   select applied.credits, applied.intact
     into defender_credits, defender_intact
@@ -965,7 +1007,10 @@ begin
 
   update attacks
      set status = 'resolved', result = $5, loot = earned,
-         destroyed = defender_intact = 0, resolved_at = now()
+         destroyed = defender_intact = 0, resolved_at = now(),
+         snap_cells = snap_map, snap_guns = snap_g,
+         snap_depots = snap_d, snap_levels = snap_lv,
+         trace = battle_trace
    where id = attack_id;
 
   return query select defender_credits, defender_intact;

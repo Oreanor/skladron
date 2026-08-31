@@ -17,6 +17,7 @@ import { drawFrame } from "@/lib/render";
 import { CELL_LOOT_REWARD, INSURANCE_CELL, INSURANCE_DEPOT, fmt } from "@/lib/economy";
 import MapCanvas, { type Pt } from "./MapCanvas";
 import { Button, Chip, ChipBar, IconButton, Panel, Row } from "./ui";
+import { MAX_FRAMES, STEP, encodeTrace, type Frame } from "@/lib/replay";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 
@@ -26,6 +27,8 @@ export interface BattleOutcome {
   depots: Depot[];
   result: BattleResult;
   won: boolean;
+  /** Запись действий защитника: по ней нападавший увидит бой своими глазами. */
+  trace: string;
 }
 
 interface Props {
@@ -60,11 +63,14 @@ export default function Battle({ cells, guns, depots, order, levels, onFinish }:
   const [hints, setHints] = useState(false);
   const t = useT();
   const finished = useRef(false);
+  /** Кадры действий защитника — из них собирается повтор для нападавшего. */
+  const trace = useRef<(Frame | null)[]>([]);
 
   if (!stateRef.current) {
     stateRef.current = createBattle(cells, guns, depots, buildPlan(order), {
       ...levels,
       drones: order.droneLevel ?? 1,
+      seed: order.seed,
     });
   }
   const s = stateRef.current;
@@ -80,11 +86,26 @@ export default function Battle({ cells, guns, depots, order, levels, onFinish }:
     let last = performance.now();
     let hudAt = 0;
     let mapAt = 0;
+    let carry = 0;
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      update(s, dt);
+
+      // Шаг фиксированный: иначе бой зависит от частоты кадров и повтор у
+      // нападавшего разошёлся бы с тем, что видел защитник.
+      carry += dt;
+      let steps = 0;
+      while (carry >= STEP && steps++ < 8) {
+        carry -= STEP;
+        if (trace.current.length < MAX_FRAMES) {
+          const a = s.aim;
+          trace.current.push(
+            a ? { x: Math.floor(a.x), y: Math.floor(a.y), firing: s.firing } : null
+          );
+        }
+        update(s, STEP);
+      }
 
       // Перерисовка карты стоит десяти тысяч заливок, а пожар ползёт
       // секундами: чаще десяти раз в секунду обновлять её незачем.
@@ -112,7 +133,7 @@ export default function Battle({ cells, guns, depots, order, levels, onFinish }:
       if (s.phase !== "playing" && !finished.current) {
         finished.current = true;
         const out = settle(s);
-        setDone({ ...out, won: s.phase === "won" });
+        setDone({ ...out, won: s.phase === "won", trace: encodeTrace(trace.current) });
       }
     };
     raf = requestAnimationFrame(loop);
