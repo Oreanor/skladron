@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { EDGES, PATTERNS, type Pattern } from "@/lib/attack";
-import { fmt } from "@/lib/economy";
 import { MAX_ATTACK_DRONES, type Enemy } from "@/lib/enemy";
 import { MAX_SCOUTS } from "@/lib/scout";
 import { Button, Card, Modal, inputClass } from "./ui";
@@ -102,9 +101,6 @@ export default function Enemies({
                     {t("enemies.attack")}
                   </Button>
                 </div>
-              </div>
-              <div className="mt-1 font-mono text-[11px] text-neutral-500">
-                {t("enemies.score", { mine: fmt(e.burnedByMe), theirs: fmt(e.burnedByThem) })}
               </div>
             </Card>
           ))}
