@@ -42,6 +42,9 @@ export interface SpawnTicket {
 
 export const PATTERNS: Pattern[] = ["swarm", "lines", "random", "drip"];
 
+/** За сколько примерно секунд «капель» высыпает весь рой, каким бы он ни был. */
+const DRIP_SECONDS = 60;
+
 /** Стороны в том же порядке, что и direction: 0 верх, 1 низ, 2 слева, 3 справа. */
 export const EDGES = [0, 1, 2, 3] as const;
 
@@ -74,23 +77,29 @@ export function buildPlan(order: AttackOrder): SpawnTicket[] {
     // всё сразу: пушки просто не успевают перезаряжаться
     for (let i = 0; i < n; i++) push(2 + rnd() * 1.5, order.direction, 10);
   } else if (order.pattern === "lines" || order.pattern === "random") {
-    const rowSize = 8 + Math.floor(rnd() * 5);
+    // Чем крупнее рой, тем шире шеренга и короче пауза между ними: три сотни
+    // дронов не должны заходить теми же восьмёрками, что и полтора десятка.
+    const rowSize = Math.min(40, 8 + Math.floor(rnd() * 5) + Math.floor(n / 12));
+    const gap = Math.max(1.4, 4 - n / 60);
     let t = 2;
     let left = n;
     while (left > 0) {
       const size = Math.min(left, rowSize);
       const edge = order.pattern === "lines" ? order.direction : Math.floor(rnd() * 4);
-      for (let i = 0; i < size; i++) push(t + i * 0.12, edge, 6);
+      for (let i = 0; i < size; i++) push(t + i * 0.1, edge, 6);
       left -= size;
-      t += 4;
+      t += gap;
     }
   } else {
-    // капель: интервал сжимается с 3 с до 0.25 с
+    // Капель: интервал сжимается к концу вдвенадцатеро, но весь налёт
+    // укладывается примерно в DRIP_SECONDS независимо от размера роя.
+    const first = Math.min(3, (2 * DRIP_SECONDS) / (n * (1 + 1 / 12)));
+    const last = Math.max(0.05, first / 12);
     let t = 2;
     for (let i = 0; i < n; i++) {
       push(t, Math.floor(rnd() * 4), 4);
       const k = i / Math.max(1, n - 1);
-      t += 3 - k * 2.75;
+      t += first - k * (first - last);
     }
   }
 

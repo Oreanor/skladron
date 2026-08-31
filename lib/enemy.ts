@@ -205,7 +205,7 @@ export function counterRaid(enemy: Enemy, now = Date.now()): AttackOrder | null 
   const patterns: Pattern[] = ["swarm", "lines", "random", "drip"];
   const size = Math.min(
     MAX_ATTACK_DRONES,
-    20 + Math.floor(enemy.burnedByMe / 4) + Math.floor(Math.random() * 30)
+    80 + Math.floor(enemy.burnedByMe / 2) + Math.floor(Math.random() * 80)
   );
   return makeOrder(
     enemy.name,

@@ -804,7 +804,8 @@ export default function Lobby({
 
   const summonAttack = () => {
     const pattern = PATTERNS[(Math.random() * PATTERNS.length) | 0];
-    const size = 20 + Math.floor(Math.random() * 60);
+    // сотня дронов — нижняя планка: меньшим роем склад даже не почешешь
+    const size = 100 + Math.floor(Math.random() * 200);
     const order = makeOrder(
       t(`bot.${(Math.random() * BOT_COUNT) | 0}` as Key),
       size,
