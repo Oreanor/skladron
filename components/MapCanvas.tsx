@@ -34,6 +34,12 @@ export interface MapCanvasProps {
   onRightClick?: (p: Pt) => void;
   onLeave?: () => void;
   cursor?: string;
+  /**
+   * Карта, на которой ничего само не движется (лобби). Тогда кадр рисуется
+   * не всегда, а только когда что-то поменялось: вид, сцена, React-рендер
+   * или рука игрока на карте. В бою и на разведке этого ставить нельзя.
+   */
+  idle?: boolean;
   className?: string;
   /** Накладки поверх карты: например всплывающее сообщение. */
   children?: ReactNode;
@@ -54,6 +60,7 @@ export default function MapCanvas({
   onRightClick,
   onLeave,
   cursor = "crosshair",
+  idle = false,
   className = "",
   children,
 }: MapCanvasProps) {
@@ -70,6 +77,9 @@ export default function MapCanvas({
   // версия сцены живёт в ref, чтобы цикл отрисовки не пересоздавался
   const sceneVersionRef = useRef(sceneVersion);
   const overlayRef = useRef(overlay);
+  const idleRef = useRef(idle);
+  /** До какого момента рисуем каждый кадр: рука на карте — значит рисуем. */
+  const wakeUntil = useRef(0);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const pinch = useRef<{ dist: number; cx: number; cy: number } | null>(null);
   const pan = useRef<{ x: number; y: number } | null>(null);
@@ -83,8 +93,14 @@ export default function MapCanvas({
 
   sceneRef.current = scene;
   overlayRef.current = overlay;
+  idleRef.current = idle;
   sceneVersionRef.current = sceneVersion;
   boxSize.current = box;
+
+  /** Рука на карте: ближайшие полсекунды рисуем каждый кадр. */
+  const wake = useCallback(() => {
+    wakeUntil.current = performance.now() + 500;
+  }, []);
 
   const clampPan = useCallback((v: View) => {
     const { w, h } = boxSize.current;
@@ -160,6 +176,7 @@ export default function MapCanvas({
     if (!canvas) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      wake();
       const r = canvas.getBoundingClientRect();
       zoomAt(
         Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0022)),
@@ -169,7 +186,7 @@ export default function MapCanvas({
     };
     canvas.addEventListener("wheel", onWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", onWheel);
-  }, [zoomAt]);
+  }, [zoomAt, wake]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -191,15 +208,32 @@ export default function MapCanvas({
     viewDirty.current = true;
 
     let raf = 0;
+    let drawn: MapCanvasProps["overlay"] = undefined;
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
       const view = viewRef.current;
+      const staticStale =
+        viewDirty.current || versionRef.current !== sceneVersionRef.current;
+      // Свежее замыкание overlay значит, что React перерисовал родителя, —
+      // это и есть сигнал, что накладке есть что показать нового.
+      const overlayStale = drawn !== overlayRef.current;
+      drawn = overlayRef.current;
+      if (idleRef.current && !staticStale && !overlayStale && now > wakeUntil.current) {
+        return;
+      }
 
-      if (viewDirty.current || versionRef.current !== sceneVersionRef.current) {
+      if (staticStale) {
         lctx.setTransform(1, 0, 0, 1, 0, 0);
         lctx.clearRect(0, 0, w * dpr, h * dpr);
         applyView(lctx, dpr, view);
-        drawStatic(lctx, sceneRef.current, CELL, view.zoom);
+        // Рисуем только то, что видно: на приближении это десятки клеток
+        // вместо десяти тысяч.
+        drawStatic(lctx, sceneRef.current, CELL, view.zoom, {
+          x0: Math.floor(view.panX / CELL),
+          y0: Math.floor(view.panY / CELL),
+          x1: Math.ceil((view.panX + w / view.zoom) / CELL),
+          y1: Math.ceil((view.panY + h / view.zoom) / CELL),
+        });
         viewDirty.current = false;
         versionRef.current = sceneVersionRef.current;
       }
@@ -224,6 +258,7 @@ export default function MapCanvas({
   };
 
   const handleDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    wake();
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -244,6 +279,7 @@ export default function MapCanvas({
   };
 
   const handleMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    wake();
     const pts = pointers.current;
     if (pts.has(e.pointerId)) pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
@@ -285,6 +321,7 @@ export default function MapCanvas({
   };
 
   const handleUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    wake();
     const wasPan = pan.current !== null;
     pointers.current.delete(e.pointerId);
     if (pointers.current.size < 2) pinch.current = null;
@@ -328,6 +365,7 @@ export default function MapCanvas({
         onPointerUp={handleUp}
         onPointerCancel={handleUp}
         onPointerLeave={() => {
+          wake();
           pan.current = null;
           onLeave?.();
         }}

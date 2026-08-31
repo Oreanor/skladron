@@ -142,6 +142,9 @@ export interface GameState {
   baseOk: number;
   result: BattleResult;
   nextId: number;
+  /** Целые клетки склада — цели дронов. Список пересобираем, только когда он протух. */
+  targets: number[];
+  targetsStale: boolean;
   /** Уровень дронов нападающего и пушек защитника. */
   droneLevel: number;
   gunLevel: number;
@@ -192,6 +195,8 @@ export function createBattle(
     time: 0,
     baseTotal: baseCells.length,
     baseOk: ok,
+    targets: baseCells.filter((i) => map[i] === G_BASE),
+    targetsStale: false,
     result: {
       dronesSent: plan.length,
       killedByGuns: 0,
@@ -227,6 +232,7 @@ export function extinguish(s: GameState, x: number, y: number) {
   if (s.cells[i] !== G_FIRE) return false;
   s.cells[i] = 3; // G_BURNT
   s.fire.delete(i);
+  s.targetsStale = true;
   s.result.extinguished++;
   s.dirty = true;
   return true;
@@ -235,6 +241,7 @@ export function extinguish(s: GameState, x: number, y: number) {
 function ignite(s: GameState, i: number) {
   if (s.cells[i] !== G_BASE) return;
   s.cells[i] = G_FIRE;
+  s.targetsStale = true;
   s.fire.set(i, FIRE_SPREAD);
   s.baseOk--;
   s.result.burned++;
@@ -290,10 +297,12 @@ function aimTick(s: GameState) {
   }
 
   let best: Drone | null = null;
-  let bestD = MG_RADIUS;
+  let bestD = MG_RADIUS * MG_RADIUS;
   for (const d of s.drones) {
     if (d.hit) continue;
-    const dd = Math.hypot(d.x - a.x, d.y - a.y);
+    const ddx = d.x - a.x;
+    const ddy = d.y - a.y;
+    const dd = ddx * ddx + ddy * ddy;
     if (dd < bestD) {
       bestD = dd;
       best = d;
@@ -324,13 +333,29 @@ function crash(s: GameState, d: Drone) {
   s.booms.push({ x: cx + 0.5, y: cy + 0.5, t: 0, r: 2.5 });
 }
 
-function randomTarget(s: GameState): number {
-  for (let tries = 0; tries < 40; tries++) {
-    const i = s.baseCells[(Math.random() * s.baseCells.length) | 0];
-    if (s.cells[i] === G_BASE) return i;
+/**
+ * Цели дронов — целые клетки склада. Раньше их искали случайным тыком по всей
+ * карте, а на догорающем складе — фильтром десяти тысяч клеток, и так на
+ * каждый дрон каждый кадр. Теперь список живёт в состоянии и пересобирается
+ * только после пожара или ремонта.
+ */
+function targets(s: GameState): number[] {
+  if (s.targetsStale) {
+    s.targets = s.baseCells.filter((i) => s.cells[i] === G_BASE);
+    s.targetsStale = false;
   }
-  const alive = s.baseCells.filter((i) => s.cells[i] === G_BASE);
-  return alive.length ? alive[(Math.random() * alive.length) | 0] : -1;
+  return s.targets;
+}
+
+function randomTarget(s: GameState): number {
+  const alive = targets(s);
+  if (!alive.length) return -1;
+  const i = alive[(Math.random() * alive.length) | 0];
+  // список мог протухнуть в этом же кадре — тогда пересобираем и берём заново
+  if (s.cells[i] === G_BASE) return i;
+  s.targetsStale = true;
+  const fresh = targets(s);
+  return fresh.length ? fresh[(Math.random() * fresh.length) | 0] : -1;
 }
 
 function spawnDrone(s: GameState, t: SpawnTicket) {
@@ -425,7 +450,7 @@ export function update(s: GameState, dt: number) {
     }
     const dx = d.tx - d.x;
     const dy = d.ty - d.y;
-    const dist = Math.hypot(dx, dy) || 1;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
     const step = DRONE_SPEED * levelBonus(s.droneLevel, DRONE_PER_LEVEL) * dt;
 
     if (dist <= step) {
@@ -467,10 +492,13 @@ export function update(s: GameState, dt: number) {
     const gx = g.cx + 0.5;
     const gy = g.cy + 0.5;
     let best: Drone | null = null;
-    let bestD = gunRange(s) + 0.5;
+    const reach = gunRange(s) + 0.5;
+    let bestD = reach * reach;
     for (const d of s.drones) {
       if (d.hit) continue;
-      const dd = Math.hypot(d.x - gx, d.y - gy);
+      const ddx = d.x - gx;
+      const ddy = d.y - gy;
+      const dd = ddx * ddx + ddy * ddy;
       if (dd < bestD) {
         bestD = dd;
         best = d;
@@ -492,6 +520,10 @@ export function update(s: GameState, dt: number) {
   }
 
   // --- ракеты ---
+  // Цель ищем по индексу: раньше каждая ракета перебирала весь рой, и на
+  // трёх сотнях дронов это выходило в десятки тысяч сравнений за кадр.
+  const byId = s.missiles.length ? new Map<number, Drone>() : null;
+  if (byId) for (const d of s.drones) byId.set(d.id, d);
   for (let i = s.missiles.length - 1; i >= 0; i--) {
     const m = s.missiles[i];
     m.life -= dt;
@@ -499,7 +531,7 @@ export function update(s: GameState, dt: number) {
       s.missiles.splice(i, 1);
       continue;
     }
-    const t = s.drones.find((d) => d.id === m.target);
+    const t = byId!.get(m.target);
     if (t) {
       const a = Math.atan2(t.y - m.y, t.x - m.x);
       const ca = Math.atan2(m.dy, m.dx);
@@ -513,9 +545,11 @@ export function update(s: GameState, dt: number) {
     const missileSpeed = MISSILE_SPEED * levelBonus(s.gunLevel, GUN_PER_LEVEL);
     m.x += m.dx * missileSpeed * dt;
     m.y += m.dy * missileSpeed * dt;
-    if (t && Math.hypot(t.x - m.x, t.y - m.y) < 0.8) {
+    if (t && (t.x - m.x) * (t.x - m.x) + (t.y - m.y) * (t.y - m.y) < 0.64) {
       s.booms.push({ x: t.x, y: t.y, t: 0, r: 2 });
-      s.drones = s.drones.filter((d) => d !== t);
+      const at = s.drones.indexOf(t);
+      if (at >= 0) s.drones.splice(at, 1);
+      byId!.delete(t.id);
       s.missiles.splice(i, 1);
       s.result.killedByGuns++;
       continue;
@@ -546,6 +580,7 @@ export function update(s: GameState, dt: number) {
         // гореть больше нечему — очаг догорает сам, иначе бой не кончится
         s.cells[i] = 3; // G_BURNT
         s.fire.delete(i);
+        s.targetsStale = true;
         s.dirty = true;
         continue;
       }

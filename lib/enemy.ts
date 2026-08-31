@@ -1,6 +1,6 @@
-// Враги и отправка атак. Пока всё локально: склад врага генерится, а исход
-// налёта считается тем же движком вхолостую — на этапе 3 вместо этого будет
-// живой игрок, отыгрывающий бой у себя.
+// Враги: список соперников по почте, их снятые разведкой карты и выдача
+// дронов со склада перед вылетом. Сам бой у соперника отыгрывает он сам —
+// сюда приходит только результат.
 
 import {
   type Depot,
@@ -11,26 +11,13 @@ import {
   type Gun,
   type Rect,
   applyRect,
-  decodeCells,
   emptyCells,
   encodeCells,
   normRect,
 } from "./base";
-import { ATTACK_LEAK_REWARD } from "./economy";
-import {
-  MAX_RAID,
-  type AttackOrder,
-  type Pattern,
-  buildPlan,
-  makeOrder,
-  mulberry32,
-  raidDifficulty,
-  raidSize,
-} from "./attack";
-import { type BattleResult, createBattle, extinguish, update } from "./engine";
+import { MAX_RAID, mulberry32 } from "./attack";
 
 export const MAX_ATTACK_DRONES = MAX_RAID;
-export const DEFENDER_HOSE = 1.6; // клеток в секунду тушит враг-бот
 
 /** Что удалось снять разведкой: карта врага и маска того, что мы видели. */
 export interface ScoutSnapshot {
@@ -152,77 +139,4 @@ export function takeDrones(depots: Depot[], count: number, kind?: DroneKind) {
     if (depots[i].n === 0) depots.splice(i, 1);
   }
   return count - left;
-}
-
-export interface RaidOutcome {
-  result: BattleResult;
-  loot: number;
-  destroyed: boolean; // склад врага выгорел полностью
-  order: AttackOrder;
-}
-
-/**
- * Считает налёт на врага вхолостую: работают его пушки и пожарный расчёт,
- * но пулемёта у бота нет — это привилегия живого игрока. Урон остаётся
- * на складе врага до следующего раза.
- */
-export function raid(
-  enemy: Enemy,
-  drones: number,
-  pattern: Pattern,
-  direction: number,
-  myName: string
-): RaidOutcome {
-  const order = makeOrder(myName, drones, pattern, direction);
-  const cells = decodeCells(enemy.cells);
-  const s = createBattle(cells, enemy.guns, enemy.depots, buildPlan(order));
-
-  let t = 0;
-  let hose = 0;
-  while (t < 900 && s.phase === "playing") {
-    update(s, 1 / 60);
-    t += 1 / 60;
-
-    // враг тушит: медленнее живого игрока с брандспойтом, но не сидит сложа руки
-    hose += 1 / 60;
-    while (hose >= 1 / DEFENDER_HOSE && s.fire.size > 0) {
-      hose -= 1 / DEFENDER_HOSE;
-      const i = s.fire.keys().next().value as number;
-      extinguish(s, i % GRID, (i / GRID) | 0);
-    }
-  }
-
-  // то, что горело к концу, дотлевает
-  for (const i of s.fire.keys()) s.cells[i] = 3;
-  enemy.cells = encodeCells(s.cells);
-  enemy.guns = s.guns.filter((g) => g.alive).map((g) => ({ cx: g.cx, cy: g.cy }));
-  enemy.depots = s.depots;
-  enemy.burnedByMe += s.result.burned;
-
-  return {
-    result: s.result,
-    loot: s.result.leaked * ATTACK_LEAK_REWARD,
-    destroyed: s.baseOk <= 0,
-    order,
-  };
-}
-
-/** Ответный налёт врага: чем больше ты ему сжёг, тем злее ответ. */
-export function counterRaid(
-  enemy: Enemy,
-  defence: { guns: number; intact: number },
-  now = Date.now()
-): AttackOrder | null {
-  if (now - enemy.lastRaidAt < 30_000) return null; // не чаще раза в полминуты
-  enemy.lastRaidAt = now;
-  const patterns: Pattern[] = ["swarm", "lines", "random", "drip"];
-  // за сожжённое у него мстят злее, но потолок всё тот же
-  const spite = 1 + Math.min(0.5, enemy.burnedByMe / 800);
-  const size = raidSize(defence.guns, defence.intact, raidDifficulty() * spite);
-  return makeOrder(
-    enemy.name,
-    size,
-    patterns[(Math.random() * patterns.length) | 0],
-    (Math.random() * 4) | 0
-  );
 }

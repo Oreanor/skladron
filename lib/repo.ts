@@ -302,17 +302,14 @@ class CloudRepo implements Repo {
   }
 
   async saveBase(p: Player) {
-    const db = this.db();
-    const [{ data, error }, enemyResult] = await Promise.all([
-      db.rpc("save_base", {
-        new_cells: encodeRle(p.cells),
-        new_guns: p.guns,
-        new_depots: p.depots,
-      }),
-      db.rpc("save_enemies", { new_enemies: p.enemies }),
-    ]);
+    // Список врагов сюда не подмешиваем: он меняется втрое реже карты, а
+    // писался вторым запросом на каждую поставленную клетку.
+    const { data, error } = await this.db().rpc("save_base", {
+      new_cells: encodeRle(p.cells),
+      new_guns: p.guns,
+      new_depots: p.depots,
+    });
     if (error) throw error;
-    if (enemyResult.error) throw enemyResult.error;
     const row = (data as { credits: number }[] | null)?.[0];
     return row ? { credits: row.credits } : {};
   }

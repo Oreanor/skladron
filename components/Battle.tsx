@@ -81,14 +81,18 @@ export default function Battle({ cells, guns, depots, order, gunLevel = 1, onFin
     let raf = 0;
     let last = performance.now();
     let hudAt = 0;
+    let mapAt = 0;
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       update(s, dt);
 
-      if (s.dirty) {
+      // Перерисовка карты стоит десяти тысяч заливок, а пожар ползёт
+      // секундами: чаще десяти раз в секунду обновлять её незачем.
+      if (s.dirty && now - mapAt > 100) {
         s.dirty = false;
+        mapAt = now;
         setVersion((v) => v + 1);
       }
       if (now - hudAt > 100) {

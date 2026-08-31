@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   GRID,
   G_BASE,
@@ -9,6 +9,7 @@ import {
   type Rect,
   applyRect,
   droneCount,
+  countFreeCells,
   freeCells,
   idx,
   isBuilding,
@@ -227,6 +228,8 @@ export default function Lobby({
     moved: boolean;
   } | null>(null);
   const hoverRef = useRef<Pt | null>(null);
+  /** Последняя нарисованная рамка: по ней решаем, нужен ли React-рендер. */
+  const draftKey = useRef("");
   const paintingRef = useRef(false);
   // раскладка контейнеров
   const dragDepotRef = useRef<{ cx: number; cy: number } | null>(null);
@@ -281,11 +284,22 @@ export default function Lobby({
     if (repo.mode !== "cloud") return;
     let alive = true;
     const sync = async () => {
+      // В свёрнутой вкладке опрашивать некого: игрок всё равно не смотрит,
+      // а запросы идут. Вернётся — синхронизируемся сразу.
+      if (typeof document !== "undefined" && document.hidden) return;
       try {
         const state = await repo.syncAttacks();
         const cur = playerRef.current;
         if (!alive || !cur) return;
-        cur.incoming = state.incoming.filter((a) => !resolvedRef.current.has(a.id));
+        // Очередь сервера — только настоящие налёты. Боты с кнопки «+ налёт»
+        // живут на клиенте, и раньше их сносил первый же опрос: список
+        // подменялся серверным целиком. Теперь сливаем оба и сортируем по
+        // времени — очередь остаётся одна и в правильном порядке.
+        const bots = cur.incoming.filter((a) => !a.remote);
+        cur.incoming = [
+          ...state.incoming.filter((a) => !resolvedRef.current.has(a.id)),
+          ...bots,
+        ].sort((a, b) => a.createdAt - b.createdAt);
         if (state.credits !== undefined) cur.credits = state.credits;
         if (state.stats) cur.stats = { ...cur.stats, ...state.stats };
         setReports(state.reports);
@@ -316,9 +330,14 @@ export default function Lobby({
       }
     };
     const timer = window.setInterval(() => void sync(), 10_000);
+    const onVisible = () => {
+      if (!document.hidden) void sync();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       alive = false;
       window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [repo]);
 
@@ -357,7 +376,10 @@ export default function Lobby({
         cur.credits += killed * DRONE_KILL_REWARD;
         cur.stats.cellsBurned += o.result.burned;
         const foe = cur.enemies.find((e) => e.name === head.from);
-        if (foe) foe.burnedByThem += o.result.burned;
+        if (foe) {
+          foe.burnedByThem += o.result.burned;
+          void repo.saveEnemies(cur).catch(() => {});
+        }
         setAutoReport({ from: head.from, outcome: o });
         setVersion((v) => v + 1);
         forceRender((v) => v + 1);
@@ -387,6 +409,23 @@ export default function Lobby({
   }, [message]);
 
   const p = playerRef.current;
+  /**
+   * Всё, что требует прохода по десяти тысячам клеток. Пересчитываем только
+   * когда склад менялся: рендер случается и от движения мыши, и раз в секунду
+   * при идущей атаке, а таких проходов тут было пять на каждый.
+   */
+  const counts = useMemo(() => {
+    if (!p) return { intact: 0, burnt: 0, free: 0, drones: 0, scouts: 0 };
+    return {
+      intact: intactCells(p),
+      burnt: burntCells(p),
+      free: countFreeCells(p.cells, p.guns, p.depots),
+      drones: droneCount(p.depots, "basic"),
+      scouts: droneCount(p.depots, "scout"),
+    };
+    // version меняется при любой правке склада — он и есть ключ кэша
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p, version]);
   // Сцена собирается на каждом React-обновлении. Это важно для ремонта и
   // drag-and-drop: там массив клеток/контейнеров заменяется целиком, чтобы
   // canvas гарантированно получил новое состояние, а не старую ссылку.
@@ -398,16 +437,12 @@ export default function Lobby({
     return <div className="p-6 text-sm text-neutral-500">{t("app.loading")}</div>;
   }
 
-  const intact = intactCells(p);
-  const burnt = burntCells(p);
+  const { intact, burnt, free, drones, scouts } = counts;
   const hasBuilding = intact + burnt > 0;
-  const doomed = isDoomed(p);
-  const drones = droneCount(p.depots, "basic");
-  const scouts = droneCount(p.depots, "scout");
+  const doomed = isDoomed(p, intact);
   // магазин один, вид берём из выбранного инструмента
   const buyKind: DroneKind = tool === "scouts" ? "scout" : "basic";
   const unitCost = buyKind === "scout" ? SCOUT_UNIT_COST : DRONE_UNIT_COST;
-  const free = freeCells(p.cells, p.guns, p.depots).length;
   // место есть только в неполных ящиках того же вида: смешивать нельзя
   const roomInPartialDepots = p.depots.reduce(
     (sum, depot) =>
@@ -448,7 +483,10 @@ export default function Lobby({
           p.stats.cellsBurned += o.result.burned;
           // счёт вражды: записываем, сколько он у нас сжёг
           const foe = p.enemies.find((e) => e.name === battle.from);
-          if (foe) foe.burnedByThem += o.result.burned;
+          if (foe) {
+            foe.burnedByThem += o.result.burned;
+            void repo.saveEnemies(p).catch(() => {});
+          }
           setBattle(null);
           setMessage(
             o.won
@@ -816,7 +854,7 @@ export default function Lobby({
     forceRender((value) => value + 1);
     try {
       await repo.sendAttack(p, enemy.email, n, pattern, direction, seed);
-      p.stats.raids++;
+      // счётчик налётов поднимает сам send_attack — второй раз здесь не нужно
       setMessage(t("raid.sent", { email: enemy.email }));
       return null;
     } catch (error) {
@@ -961,7 +999,15 @@ export default function Lobby({
       else y1 = Math.round(pt.y);
       draftRef.current = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
     }
-    forceRender((v) => v + 1);
+    // Рамку каждый кадр рисует overlay прямо из ref. React нужен только
+    // ради цифр в подсказке — а они меняются, лишь когда рамка сменила
+    // клетки, а не на каждый пиксель мыши.
+    const r = draftRef.current;
+    const key = r ? `${r.x}|${r.y}|${r.w}|${r.h}` : "";
+    if (key !== draftKey.current) {
+      draftKey.current = key;
+      forceRender((v) => v + 1);
+    }
   };
 
   const onUp = (pt: Pt) => {
@@ -1183,7 +1229,7 @@ export default function Lobby({
     }
   };
 
-  const income = dailyIncome(p);
+  const income = dailyIncome(p, intact);
   const pickTool = (id: ToolId) => {
     // апгрейд ничего не рисует на карте — только открывает свою модалку
     if (id === "upgrade") {
@@ -1526,6 +1572,7 @@ export default function Lobby({
           </div>
 
           <MapCanvas
+            idle
             className="order-1 min-h-0 flex-1 lg:order-2"
             scene={scene}
             sceneVersion={version}

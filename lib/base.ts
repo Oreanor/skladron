@@ -49,6 +49,18 @@ export function freeCells(cells: Uint8Array, guns: Gun[], depots: Depot[]) {
   return out;
 }
 
+/**
+ * Сколько целых клеток свободно. То же, что freeCells().length, но без
+ * массива на тысячи элементов: в лобби это считается на каждый рендер.
+ */
+export function countFreeCells(cells: Uint8Array, guns: Gun[], depots: Depot[]) {
+  let n = 0;
+  for (let i = 0; i < cells.length; i++) if (cells[i] === G_BASE) n++;
+  for (const g of guns) if (cells[idx(g.cx, g.cy)] === G_BASE) n--;
+  for (const d of depots) if (cells[idx(d.cx, d.cy)] === G_BASE) n--;
+  return Math.max(0, n);
+}
+
 /** Манхэттеново расстояние от каждой клетки до ближайшей клетки из sources. */
 function distanceField(sources: number[]) {
   const far = GRID * 2;

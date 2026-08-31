@@ -118,7 +118,7 @@ export function wipe(p: Player, now = Date.now()): Player {
 export const drones = (p: Player) => droneCount(p.depots);
 export const intactCells = (p: Player) => countCells(p.cells, G_BASE);
 export const burntCells = (p: Player) => countCells(p.cells, G_BURNT);
-export const dailyIncome = (p: Player) => intactCells(p) * 10;
+export const dailyIncome = (p: Player, intact = intactCells(p)) => intact * 10;
 
 /**
  * Склад выгорел дотла — доводим кассу до стартовых 10 000. Без этого игрок
@@ -134,9 +134,9 @@ export function insure(p: Player) {
 }
 
 /** Склад выгорел полностью и чинить не на что — дальше только заново. */
-export function isDoomed(p: Player) {
+export function isDoomed(p: Player, intact = intactCells(p)) {
   if (!p.founded) return false;
-  if (intactCells(p) > 0) return false;
+  if (intact > 0) return false;
   return p.credits < 5; // не хватает даже на одну клетку ремонта
 }
 

@@ -3,6 +3,7 @@ import {
   GRID,
   G_BASE,
   G_BURNT,
+  G_FIRE,
   G_SCORCH,
   type Gun,
   isBuilding,
@@ -106,31 +107,53 @@ export function applyView(ctx: CanvasRenderingContext2D, dpr: number, v: View) {
 }
 
 /** Статичный слой: земля, склад, пепелище, тумбы пушек. */
+/** Видимый кусок карты в клетках — рисовать остальное незачем. */
+export interface Clip {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+const FULL: Clip = { x0: 0, y0: 0, x1: GRID, y1: GRID };
+
 export function drawStatic(
   ctx: CanvasRenderingContext2D,
   s: Scene,
   cell: number,
-  zoom = 1
+  zoom = 1,
+  clip: Clip = FULL
 ) {
+  const x0 = Math.max(0, clip.x0);
+  const y0 = Math.max(0, clip.y0);
+  const x1 = Math.min(GRID, clip.x1);
+  const y1 = Math.min(GRID, clip.y1);
+
   ctx.fillStyle = COLORS.groundA;
-  ctx.fillRect(0, 0, GRID * cell, GRID * cell);
+  ctx.fillRect(x0 * cell, y0 * cell, (x1 - x0) * cell, (y1 - y0) * cell);
 
   ctx.fillStyle = COLORS.groundB;
-  for (let y = 0; y < GRID; y++) {
-    for (let x = y & 1; x < GRID; x += 2) {
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0 + ((x0 ^ y) & 1); x < x1; x += 2) {
       ctx.fillRect(x * cell, y * cell, cell, cell);
     }
   }
 
-  for (let y = 0; y < GRID; y++) {
-    for (let x = 0; x < GRID; x++) {
-      const v = s.cells[y * GRID + x];
-      if (v === 0) continue;
-      if (v === G_BASE) ctx.fillStyle = COLORS.base;
-      else if (v === G_BURNT) ctx.fillStyle = COLORS.burnt;
-      else if (v === G_SCORCH) ctx.fillStyle = COLORS.scorch;
-      else ctx.fillStyle = "#e0561a"; // подложка под огонь
-      ctx.fillRect(x * cell, y * cell, cell, cell);
+  // Клетки красим слоями, по цвету за проход: смена fillStyle стоит дороже
+  // самой заливки, а раньше она случалась на каждую из десяти тысяч клеток.
+  const layers: [number, string][] = [
+    [G_BASE, COLORS.base],
+    [G_BURNT, COLORS.burnt],
+    [G_SCORCH, COLORS.scorch],
+    [G_FIRE, "#e0561a"], // подложка под огонь
+  ];
+  for (const [value, color] of layers) {
+    ctx.fillStyle = color;
+    for (let y = y0; y < y1; y++) {
+      const row = y * GRID;
+      for (let x = x0; x < x1; x++) {
+        if (s.cells[row + x] === value) ctx.fillRect(x * cell, y * cell, cell, cell);
+      }
     }
   }
 
