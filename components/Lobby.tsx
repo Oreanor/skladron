@@ -368,6 +368,17 @@ export default function Lobby({
         ].sort((a, b) => a.createdAt - b.createdAt);
         if (state.credits !== undefined) cur.credits = state.credits;
         if (state.stats) cur.stats = { ...cur.stats, ...state.stats };
+        // Кто на нас напал, тот попадает в список: иначе ответить некому.
+        let met = false;
+        for (const a of cur.incoming) {
+          const mail = a.fromEmail;
+          if (!mail) continue;
+          if (cur.enemies.some((e) => e.email.toLowerCase() === mail.toLowerCase())) continue;
+          cur.enemies.push(makeEnemy(mail, a.from));
+          met = true;
+        }
+        if (met) void repo.saveEnemies(cur).catch(() => {});
+
         setReports(state.reports);
         forceRender((value) => value + 1);
       } catch {
@@ -860,12 +871,13 @@ export default function Lobby({
     if (p.enemies.some((e) => e.email.toLowerCase() === email.toLowerCase())) {
       return t("enemies.already");
     }
-    // имя берём с сервера: враг зовётся так, как назвал свой склад
+    // Знакомство взаимное: он появляется у нас, мы — у него. Заодно сервер
+    // отдаёт его настоящее имя склада.
     let name: string | undefined;
     try {
-      name = (await repo.baseNames([email])).get(email.toLowerCase());
-    } catch {
-      // не достучались — обойдёмся адресом, имя подтянется при следующем входе
+      name = (await repo.addRival(email)) ?? undefined;
+    } catch (e) {
+      return t("enemies.notSaved", { error: (e as Error).message });
     }
     const enemy = makeEnemy(email, name);
     p.enemies.push(enemy);

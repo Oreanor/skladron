@@ -470,7 +470,8 @@ $$;
 create or replace function pending_attacks()
 returns table (
   id uuid, from_name text, created_at timestamptz, activated_at timestamptz,
-  drones int, pattern text, direction int, seed int, drone_level int
+  drones int, pattern text, direction int, seed int, drone_level int,
+  from_email text
 )
 language plpgsql security definer set search_path = public as $$
 declare
@@ -497,7 +498,7 @@ begin
     select a.id,
            coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
            a.created_at, a.activated_at, a.drones, a.pattern, a.direction, a.seed,
-           a.drone_level
+           a.drone_level, p.email
       from attacks a
       join profiles p on p.id = a.attacker_id
      where a.defender_id = uid and a.status = 'pending'
@@ -1045,6 +1046,54 @@ begin
 end;
 $$;
 
+-- ---------- знакомство в обе стороны ----------
+-- Добавил соперника — он добавляет тебя. Иначе получалось одностороннее
+-- знакомство: он видит налёты от «Порт-Складъ», а ответить не может, потому
+-- что почты твоей не знает.
+
+create or replace function add_rival(target_email text)
+returns table (email text, name text)
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  me profiles;
+  target profiles;
+  card jsonb;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  select p.* into me from profiles p where p.id = uid;
+  select p.* into target
+    from profiles p where lower(p.email) = lower(btrim(target_email)) limit 1;
+  if not found then raise exception 'player with this email has not joined yet'; end if;
+  if target.id = uid then raise exception 'cannot add yourself'; end if;
+
+  -- карточка знакомства: склад придёт с разведки, счёт вражды — с боёв
+  card := jsonb_build_object(
+    'id', gen_random_uuid()::text,
+    'name', coalesce(me.base_name, me.display_name, split_part(me.email, '@', 1)),
+    'email', me.email,
+    'cells', '',
+    'guns', '[]'::jsonb,
+    'depots', '[]'::jsonb,
+    'burnedByMe', 0,
+    'burnedByThem', 0,
+    'lastRaidAt', 0
+  );
+
+  update profiles
+     set enemies = profiles.enemies || card
+   where profiles.id = target.id
+     and not exists (
+       select 1 from jsonb_array_elements(profiles.enemies) e
+        where lower(e->>'email') = lower(me.email)
+     );
+
+  email := target.email;
+  name := coalesce(target.base_name, target.display_name, split_part(target.email, '@', 1));
+  return next;
+end;
+$$;
+
 -- ---------- ссылка на повтор ----------
 -- Повтор боя открывается по ссылке кем угодно: id атаки — случайный uuid,
 -- а показывать нечего, кроме того, что и так видели обе стороны.
@@ -1106,7 +1155,7 @@ $$;
 
 grant execute on function ensure_player, collect_income, save_base,
   buy_drones, apply_battle, complete_attack, wipe_base, rename_base, save_enemies,
-  base_names, enemy_base, spend_scouts, upgrade,
+  base_names, enemy_base, spend_scouts, upgrade, add_rival,
   send_attack, pending_attacks, attack_reports, ack_attack_report, restart_game to authenticated;
 
 -- PostgREST держит список функций в кэше. Supabase обычно перечитывает его сам,

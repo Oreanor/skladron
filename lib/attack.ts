@@ -85,6 +85,8 @@ export interface AttackOrder {
   seed: number;
   /** Уровень дронов нападающего на момент вылета. */
   droneLevel?: number;
+  /** Почта нападавшего: по ней он попадает в список соперников. */
+  fromEmail?: string;
   remote?: boolean; // настоящий налёт из серверной очереди, а не локальный бот
 }
 

@@ -47,6 +47,11 @@ export interface Repo {
   baseNames(emails: string[]): Promise<Map<string, string>>;
   /** Карта противника для разведывательного вылета — с уровнем его пушек. */
   enemyBase(email: string): Promise<{ cells: Uint8Array; guns: Gun[]; gunLevel: number }>;
+  /**
+   * Заносит нас в список соперника: знакомство должно быть взаимным, иначе
+   * ему нечем ответить. Возвращает его настоящее имя склада.
+   */
+  addRival(email: string): Promise<string | null>;
   /** Апгрейд класса на уровень выше. Цену считает сервер. */
   upgrade(p: Player, kind: UpgradeKind): Promise<Partial<Player>>;
   /** Вылет разведки: разведчиков снимает со склада сервер и отдаёт новый склад. */
@@ -124,6 +129,10 @@ class LocalRepo implements Repo {
   async enemyBase(_email: string) {
     // локально настоящих противников нет — карту берём из сгенерированного бота
     return { cells: new Uint8Array(CELLS), guns: [] as Gun[], gunLevel: 1 };
+  }
+
+  async addRival(_email: string) {
+    return null; // локально соперник живёт только у нас
   }
 
   async upgrade(p: Player, kind: UpgradeKind) {
@@ -210,6 +219,7 @@ interface IncomingAttackRow {
   direction: number;
   seed: number;
   drone_level: number | null;
+  from_email: string | null;
 }
 
 interface AttackReportRow {
@@ -332,6 +342,7 @@ class CloudRepo implements Repo {
       seed: row.seed,
       // дроны летят на том уровне, до какого их довёл нападающий
       droneLevel: row.drone_level ?? 1,
+      fromEmail: row.from_email ?? undefined,
       remote: true,
     }));
     const reports = ((reportResult.data ?? []) as AttackReportRow[]).map((row) => ({
@@ -405,6 +416,13 @@ class CloudRepo implements Repo {
     const row = (data as { cells: string; guns: Gun[]; gun_level: number }[] | null)?.[0];
     if (!row) throw new Error("no base");
     return { cells: decodeCells(row.cells), guns: row.guns ?? [], gunLevel: row.gun_level ?? 1 };
+  }
+
+  async addRival(email: string) {
+    const { data, error } = await this.db().rpc("add_rival", { target_email: email });
+    if (error) throw error;
+    const row = (data as { email: string; name: string }[] | null)?.[0];
+    return row?.name ?? null;
   }
 
   async upgrade(p: Player, kind: UpgradeKind) {
