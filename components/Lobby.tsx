@@ -210,6 +210,8 @@ export default function Lobby({
   /** Атаки, которые уже прошли автоматом: опрос не должен их воскрешать. */
   const resolvedRef = useRef(new Set<string>());
   const autoBusyRef = useRef(false);
+  /** Когда последний раз сверяли имена чужих складов. */
+  const namesAt = useRef(0);
   const [buyAmount, setBuyAmount] = useState(1);
   const [reports, setReports] = useState<AttackReport[]>([]);
   const toggleSheet = (id: SheetId) => setSheet((cur) => (cur === id ? null : id));
@@ -290,6 +292,27 @@ export default function Lobby({
         forceRender((value) => value + 1);
       } catch {
         // Сеть может кратко пропасть — следующий опрос повторит попытку.
+      }
+
+      // Склад врага могли переименовать прямо сейчас — раз в пять минут
+      // сверяем имена, чтобы список не звал человека вчерашним именем.
+      if (Date.now() - namesAt.current < 5 * 60_000) return;
+      namesAt.current = Date.now();
+      try {
+        const cur = playerRef.current;
+        if (!cur?.enemies.length) return;
+        const names = await repo.baseNames(cur.enemies.map((e) => e.email));
+        let changed = false;
+        for (const e of cur.enemies) {
+          const fresh = names.get(e.email.toLowerCase());
+          if (fresh && fresh !== e.name) {
+            e.name = fresh;
+            changed = true;
+          }
+        }
+        if (changed && alive) forceRender((value) => value + 1);
+      } catch {
+        // имена — украшение списка, из-за них опрос ломаться не должен
       }
     };
     const timer = window.setInterval(() => void sync(), 10_000);
