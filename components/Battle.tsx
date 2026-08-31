@@ -38,6 +38,8 @@ interface Props {
   order: AttackOrder;
   /** Свои уровни: пушки, пулемёт, брандспойт. */
   levels?: BattleLevels;
+  /** Уровень страхового полиса — по нему считается выплата. */
+  insuranceLevel?: number;
   onFinish: (o: BattleOutcome) => void;
 }
 
@@ -57,7 +59,15 @@ interface Hud {
   time: number;
 }
 
-export default function Battle({ cells, guns, depots, order, levels, onFinish }: Props) {
+export default function Battle({
+  cells,
+  guns,
+  depots,
+  order,
+  levels,
+  insuranceLevel = 1,
+  onFinish,
+}: Props) {
   const stateRef = useRef<GameState | null>(null);
   const hoverRef = useRef<{ x: number; y: number } | null>(null);
   const [hud, setHud] = useState<Hud | null>(null);
@@ -156,7 +166,12 @@ export default function Battle({ cells, guns, depots, order, levels, onFinish }:
   const patternName = t(`pattern.${order.pattern}` as Key).toLowerCase();
   const seconds = `${Math.floor(hud?.time ?? 0)} ${t("battle.seconds")}`;
   // За сбитых не платят. Что реально придёт — страховка за пепелище.
-  const payout = insurance(hud?.burned ?? 0, hud?.goodsLost ?? 0, hud?.gunsLost ?? 0);
+  const payout = insurance(
+    hud?.burned ?? 0,
+    hud?.goodsLost ?? 0,
+    hud?.gunsLost ?? 0,
+    insuranceLevel
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-4">
@@ -261,7 +276,8 @@ export default function Battle({ cells, guns, depots, order, levels, onFinish }:
                     insurance(
                       done.result.burned,
                       goodsValue(depots) - goodsValue(done.depots),
-                      done.result.gunsLost
+                      done.result.gunsLost,
+                      insuranceLevel
                     )
                   )} ${t("battle.creditsSuffix")}`}
                 />

@@ -16,8 +16,17 @@ export const SALE_MULTIPLIER = 2;
 export const INCOME_CAP_DAYS = 14; // потолок накопления
 export const CELL_LOOT_REWARD = 50; // нападавшему за каждую сожжённую клетку склада
 export const INSURANCE_CELL = 5; // страховка за сгоревшую клетку — ровно на ремонт
-/** Доля, которую страховая возвращает за сгоревший товар и погибшие пушки. */
-export const INSURANCE_SHARE = 0.5;
+/** Прибавка к покрытию за каждый уровень страховки. */
+export const INSURANCE_PER_LEVEL = 0.25;
+/** Выше пятого уровня страховать нечего: покрытие и так полное. */
+export const MAX_INSURANCE_LEVEL = 5;
+
+/**
+ * Какую долю сгоревшего товара и погибших пушек вернут. Базовый полис
+ * покрывает только расчистку клеток; дальше — по четверти за уровень.
+ */
+export const insuranceShare = (level: number) =>
+  Math.min(1, Math.max(0, level - 1) * INSURANCE_PER_LEVEL);
 
 /** Во что обошлось то, что лежит в контейнерах. */
 export const goodsValue = (
@@ -28,10 +37,15 @@ export const goodsValue = (
     0
   );
 
-/** Страховая выплата: ремонт клеток плюс половина стоимости потерянного. */
-export const insurance = (burned: number, goodsLost: number, gunsLost: number) =>
+/** Страховая выплата: расчистка клеток плюс доля стоимости потерянного. */
+export const insurance = (
+  burned: number,
+  goodsLost: number,
+  gunsLost: number,
+  level = 1
+) =>
   burned * INSURANCE_CELL +
-  Math.floor((goodsLost + gunsLost * GUN_COST) * INSURANCE_SHARE);
+  Math.floor((goodsLost + gunsLost * GUN_COST) * insuranceShare(level));
 export const SCOUT_UNIT_COST = 25; // разведчик дороже ударного дрона, но дешевле пушки
 /**
  * Уровни. Апгрейд общий на класс: дорожает и уже лежащее на складе, и всё,
@@ -44,8 +58,19 @@ export const MAX_LEVEL = 10;
 /** Цена следующего уровня. Одна и та же на всех ступенях. */
 export const upgradeCost = (_level: number) => UPGRADE_STEP;
 
-export type UpgradeKind = "drones" | "guns" | "scouts" | "mg" | "water";
-export const UPGRADE_KINDS: UpgradeKind[] = ["drones", "guns", "scouts", "mg", "water"];
+export type UpgradeKind = "drones" | "guns" | "scouts" | "mg" | "water" | "insurance";
+export const UPGRADE_KINDS: UpgradeKind[] = [
+  "drones",
+  "guns",
+  "scouts",
+  "mg",
+  "water",
+  "insurance",
+];
+
+/** Потолок у страховки свой: дальше полного покрытия расти некуда. */
+export const maxLevel = (kind: UpgradeKind) =>
+  kind === "insurance" ? MAX_INSURANCE_LEVEL : MAX_LEVEL;
 
 /** Прибавка за уровень: первый уровень — множитель 1. */
 export const levelBonus = (level: number, perLevel: number) =>

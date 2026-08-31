@@ -172,16 +172,55 @@ export function drawStatic(
   }
 
   for (const g of s.guns) {
-    if (g.alive === false) {
-      ctx.fillStyle = "#4a4a4a";
-      ctx.fillRect(g.cx * cell, g.cy * cell, cell, cell);
-      continue;
-    }
-    ctx.fillStyle = COLORS.gun;
-    ctx.fillRect(g.cx * cell, g.cy * cell, cell, cell);
-    ctx.fillStyle = COLORS.gunTop;
-    ctx.fillRect(g.cx * cell + cell * 0.25, g.cy * cell + cell * 0.25, cell * 0.5, cell * 0.5);
+    // Ствол смотрит наружу от середины склада, пока не начался бой: в бою
+    // поверх этого слоя рисуется живая башня со своим углом.
+    drawTurret(
+      ctx,
+      g.cx,
+      g.cy,
+      cell,
+      Math.atan2(g.cy + 0.5 - GRID / 2, g.cx + 0.5 - GRID / 2),
+      g.alive !== false
+    );
   }
+}
+
+/**
+ * Турель: круглое основание, ободок и короткий поворотный ствол. Ствол
+ * показывает, куда пушка целится, — она это знает всегда.
+ */
+export function drawTurret(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  cell: number,
+  angle: number,
+  alive = true
+) {
+  const x = (cx + 0.5) * cell;
+  const y = (cy + 0.5) * cell;
+  const r = cell * 0.42;
+
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = alive ? COLORS.gun : "#3f3f3f";
+  ctx.fill();
+  ctx.strokeStyle = alive ? COLORS.gunTop : "#555";
+  ctx.lineWidth = Math.max(0.6, cell * 0.12);
+  ctx.stroke();
+
+  if (!alive) return;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.fillStyle = COLORS.gunTop;
+  // ствол торчит наружу, казённик прикрывает центр
+  ctx.fillRect(r * 0.2, -cell * 0.14, cell * 0.72, cell * 0.28);
+  ctx.beginPath();
+  ctx.arc(0, 0, cell * 0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 /**
@@ -231,6 +270,7 @@ export function drawFrame(
   }
 
   drawCoverage(ctx, s.guns, cell, gunRange(s));
+  for (const g of s.guns) drawTurret(ctx, g.cx, g.cy, cell, g.angle, g.alive);
 
   // прицел: над зданием он водяной, над землёй стрелковый
   if (s.phase === "playing" && hover) {

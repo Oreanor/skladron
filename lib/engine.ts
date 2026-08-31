@@ -18,7 +18,7 @@ import { mulberry32, type SpawnTicket } from "./attack";
 export { GRID, G_BASE, G_FIRE, G_GROUND, G_SCORCH, idx, isBuilding };
 export { G_BURNT } from "./base";
 
-export const GUN_RANGE = 5; // радиус поражения пушки первого уровня, в клетках
+export const GUN_RANGE = 6; // радиус поражения пушки первого уровня, в клетках
 /** Прибавка к дальности и скорости ракеты за каждый уровень пушек. */
 export const GUN_PER_LEVEL = 0.25;
 /** Прибавка к скорости дрона за каждый уровень. */
@@ -57,7 +57,13 @@ export interface Gun {
   cy: number;
   cd: number;
   alive: boolean;
+  /** Куда сейчас смотрит ствол и куда доворачивает. */
+  angle: number;
+  aim: number;
 }
+
+/** Скорость доворота башни, рад/с. */
+export const TURRET_TURN = 4;
 
 export interface Drone {
   id: number;
@@ -198,7 +204,16 @@ export function createBattle(
     cells: map,
     baseCells,
     fire: new Map(),
-    guns: guns.map((g) => ({ id: nextId++, cx: g.cx, cy: g.cy, cd: 0, alive: true })),
+    guns: guns.map((g) => ({
+      id: nextId++,
+      cx: g.cx,
+      cy: g.cy,
+      cd: 0,
+      alive: true,
+      // изначально стволы смотрят наружу от середины карты
+      angle: Math.atan2(g.cy + 0.5 - GRID / 2, g.cx + 0.5 - GRID / 2),
+      aim: Math.atan2(g.cy + 0.5 - GRID / 2, g.cx + 0.5 - GRID / 2),
+    })),
     depots: depots.map((d) => ({ ...d })),
     drones: [],
     missiles: [],
@@ -517,6 +532,14 @@ export function update(s: GameState, dt: number) {
   // --- пушки ---
   for (const g of s.guns) {
     if (!g.alive) continue;
+
+    // Башня доворачивает к последней цели — по ней видно, куда пушка смотрит.
+    let da = g.aim - g.angle;
+    while (da > Math.PI) da -= Math.PI * 2;
+    while (da < -Math.PI) da += Math.PI * 2;
+    const turn = TURRET_TURN * dt;
+    g.angle += Math.max(-turn, Math.min(turn, da));
+
     g.cd -= dt;
     if (g.cd > 0) continue;
     const gx = g.cx + 0.5;
@@ -536,6 +559,7 @@ export function update(s: GameState, dt: number) {
     }
     if (best) {
       const a = Math.atan2(best.y - gy, best.x - gx);
+      g.aim = a;
       s.missiles.push({
         id: s.nextId++,
         x: gx,

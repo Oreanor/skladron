@@ -55,6 +55,8 @@ export interface Levels {
   mg: number;
   /** Брандспойт: ширина струи. */
   water: number;
+  /** Страховой полис: какую долю потерь возместят. */
+  insurance: number;
 }
 
 export const startLevels = (): Levels => ({
@@ -63,6 +65,7 @@ export const startLevels = (): Levels => ({
   scouts: 1,
   mg: 1,
   water: 1,
+  insurance: 1,
 });
 
 export interface Player {

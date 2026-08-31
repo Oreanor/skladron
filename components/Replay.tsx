@@ -5,7 +5,7 @@
 // действий — и прокручиваем бой тем же движком, теми же шагами.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { buildPlan, type AttackReport } from "@/lib/attack";
+import { buildPlan, type AttackOrder } from "@/lib/attack";
 import { decodeCells, type Depot, type Gun } from "@/lib/base";
 import { createBattle, setAim, setFiring, update, type GameState } from "@/lib/engine";
 import { drawFrame } from "@/lib/render";
@@ -18,15 +18,30 @@ import { Button, Chip, ChipBar } from "./ui";
 /** Во сколько раз крутим бой. Живьём он идёт минуты — смотреть столько незачем. */
 const SPEEDS = [1, 2, 4] as const;
 
+export interface ReplayData {
+  order: AttackOrder;
+  cells: string;
+  guns: { cx: number; cy: number }[];
+  depots: { cx: number; cy: number; n: number; kind?: string }[];
+  levels: { guns?: number; mg?: number; water?: number };
+  trace: string;
+}
+
 export default function Replay({
-  report,
+  name,
+  replay,
+  shareId,
   onClose,
 }: {
-  report: AttackReport;
-  onClose: () => void;
+  /** Чей склад отбивался — его и показываем в шапке. */
+  name: string;
+  replay: ReplayData;
+  /** Есть id — можно дать ссылку, по которой бой посмотрят другие. */
+  shareId?: string;
+  onClose?: () => void;
 }) {
   const t = useT();
-  const replay = report.replay!;
+  const [shared, setShared] = useState(false);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(2);
   const [version, setVersion] = useState(0);
   const [hud, setHud] = useState({ time: 0, inAir: 0, burned: 0, done: false });
@@ -98,7 +113,7 @@ export default function Replay({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <ChipBar className="shrink-0 flex-wrap">
-        <Chip label={t("replay.of")} value={report.target} />
+        <Chip label={t("replay.of")} value={name} />
         <Chip label={t("battle.time")} value={`${Math.floor(hud.time)} ${t("battle.seconds")}`} />
         <Chip label={t("battle.inAir")} value={String(hud.inAir)} />
         <Chip label={t("battle.burned")} value={fmt(hud.burned)} tone="text-orange-300" />
@@ -118,9 +133,24 @@ export default function Replay({
             {v}×
           </Button>
         ))}
-        <Button variant="neutral" className="ml-auto" onClick={onClose}>
-          {t("common.ok")}
-        </Button>
+        {shareId && (
+          <Button
+            className="ml-auto"
+            onClick={() => {
+              void navigator.clipboard
+                ?.writeText(`${location.origin}/replay/${shareId}`)
+                .then(() => setShared(true))
+                .catch(() => setShared(false));
+            }}
+          >
+            {shared ? t("replay.copied") : t("replay.share")}
+          </Button>
+        )}
+        {onClose && (
+          <Button variant="neutral" className={shareId ? "" : "ml-auto"} onClick={onClose}>
+            {t("common.ok")}
+          </Button>
+        )}
       </div>
     </div>
   );

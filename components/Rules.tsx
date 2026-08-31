@@ -13,7 +13,7 @@ import {
   INCOME_CAP_DAYS,
   INCOME_PER_CELL,
   INSURANCE_CELL,
-  INSURANCE_SHARE,
+  INSURANCE_PER_LEVEL,
   REPAIR_COST,
   SALE_MULTIPLIER,
   SCOUT_UNIT_COST,
@@ -48,7 +48,7 @@ const values: Record<string, string> = {
   maxRaid: String(MAX_RAID),
   loot: String(CELL_LOOT_REWARD),
   insureCell: String(INSURANCE_CELL),
-  insureShare: String(Math.round(INSURANCE_SHARE * 100)),
+  insureShare: String(Math.round(INSURANCE_PER_LEVEL * 100)),
   upgrade: fmt(UPGRADE_STEP),
 };
 

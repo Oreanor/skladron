@@ -24,15 +24,18 @@ import {
   CELL_COST,
   STARTER_SIDE,
   DRONE_UNIT_COST,
+  INSURANCE_CELL,
+  MAX_INSURANCE_LEVEL,
   SALE_MULTIPLIER,
   goodsValue,
   insurance,
+  insuranceShare,
   GUN_COST,
   GUN_REFUND,
   MIN_BASE_CELLS,
   REPAIR_COST,
   SCOUT_UNIT_COST,
-  MAX_LEVEL,
+  maxLevel,
   UPGRADE_KINDS,
   UPGRADE_STEP,
   upgradeCost,
@@ -76,7 +79,7 @@ import MapCanvas, { type Pt } from "./MapCanvas";
 import AccountMenu, { SettingsList } from "./AccountMenu";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
-import { ChevronsUp, LayoutGrid, Plane, Rocket, Wrench } from "lucide-react";
+import { ChevronsUp, LayoutGrid, Plane, Rocket, ShieldCheck, Wrench } from "lucide-react";
 import { autoDefend, type UnattendedOutcome } from "@/lib/unattended";
 import { decodeCells, decodeRle, encodeRle, type DroneKind, type Gun } from "@/lib/base";
 import {
@@ -95,21 +98,20 @@ import {
   Panel,
   Row,
   SectionTitle,
+  TOAST_MS,
   Sheet,
   StatRow,
-  TOAST_MS,
-  Toast,
   ToolButton,
   IconDrone,
 } from "./ui";
 
 type Tool = "area" | "repair" | "gun" | "drones" | "scouts";
 /** Кнопка «Апгрейд» карты не касается: она только открывает модалку. */
-type ToolId = Tool | "upgrade";
+type ToolId = Tool | "upgrade" | "insurance";
 /** Панели, которые на телефоне открываются шторкой снизу. */
 type SheetId = "found" | "attacks" | "enemies" | "menu";
 /** Панели инструментов: они всплывают модалкой и вёрстку не разрывают. */
-type ModalId = "upgrade";
+type ModalId = "upgrade" | "insurance";
 
 const ICON = "h-5 w-5";
 
@@ -169,6 +171,15 @@ const TOOLS: {
     icon: <Plane className={ICON} />,
     levelKind: "scouts",
     countKind: "scouts",
+  },
+  {
+    id: "insurance",
+    label: "tool.insurance",
+    hint: "tool.insuranceHint",
+    vars: { cost: INSURANCE_CELL },
+    priceKey: "tool.priceCell",
+    icon: <ShieldCheck className={ICON} />,
+    levelKind: "insurance",
   },
   {
     id: "upgrade",
@@ -435,7 +446,8 @@ export default function Lobby({
         cur.credits += insurance(
           o.result.burned,
           goodsBefore - goodsValue(o.depots),
-          o.result.gunsLost
+          o.result.gunsLost,
+          cur.levels.insurance
         );
         const foe = cur.enemies.find((e) => e.name === head.from);
         if (foe) {
@@ -518,6 +530,7 @@ export default function Lobby({
         depots={p.depots}
         order={battle}
         levels={{ guns: p.levels.guns, mg: p.levels.mg, water: p.levels.water }}
+        insuranceLevel={p.levels.insurance}
         onFinish={async (o: BattleOutcome) => {
           const goodsBefore = goodsValue(p.depots);
           p.cells = o.cells;
@@ -531,7 +544,8 @@ export default function Lobby({
           p.credits += insurance(
             o.result.burned,
             goodsBefore - goodsValue(o.depots),
-            o.result.gunsLost
+            o.result.gunsLost,
+            p.levels.insurance
           );
           // счёт вражды: записываем, сколько он у нас сжёг
           const foe = p.enemies.find((e) => e.name === battle.from);
@@ -1360,8 +1374,8 @@ export default function Lobby({
   const income = dailyIncome(p);
   const pickTool = (id: ToolId) => {
     // апгрейд ничего не рисует на карте — только открывает свою модалку
-    if (id === "upgrade") {
-      setModal("upgrade");
+    if (id === "upgrade" || id === "insurance") {
+      setModal(id);
       return;
     }
     setTool(id);
@@ -1371,7 +1385,7 @@ export default function Lobby({
 
   const doUpgrade = async (kind: UpgradeKind) => {
     const level = p.levels[kind];
-    if (level >= MAX_LEVEL) return;
+    if (level >= maxLevel(kind)) return;
     const cost = upgradeCost(level);
     if (p.credits < cost) {
       setMessage(t("upgrade.cantAfford", { cost: fmt(cost) }));
@@ -1427,7 +1441,7 @@ export default function Lobby({
       <div className="mb-4 space-y-2">
         {UPGRADE_KINDS.map((kind) => {
           const level = p.levels[kind];
-          const maxed = level >= MAX_LEVEL;
+          const maxed = level >= maxLevel(kind);
           const cost = upgradeCost(level);
           return (
             <div key={kind} className="flex items-center justify-between gap-3">
@@ -1454,6 +1468,46 @@ export default function Lobby({
       </Button>
     </>
   );
+
+  const insuranceBody = (
+    <>
+      <div className="mb-4 space-y-2 text-sm text-neutral-300">
+        <p>{t("insurance.cells", { cost: INSURANCE_CELL })}</p>
+        <p>
+          {p.levels.insurance > 1
+            ? t("insurance.covers", {
+                share: Math.round(insuranceShare(p.levels.insurance) * 100),
+              })
+            : t("insurance.basic")}
+        </p>
+        <p className="text-neutral-500">
+          {p.levels.insurance >= MAX_INSURANCE_LEVEL
+            ? t("insurance.full")
+            : t("insurance.next", {
+                share: Math.round(insuranceShare(p.levels.insurance + 1) * 100),
+                cost: fmt(upgradeCost(p.levels.insurance)),
+              })}
+        </p>
+      </div>
+      <div className="flex gap-2">
+        {p.levels.insurance < MAX_INSURANCE_LEVEL && (
+          <Button
+            variant="build"
+            className="flex-1"
+            disabled={p.credits < upgradeCost(p.levels.insurance)}
+            onClick={() => doUpgrade("insurance")}
+          >
+            {t("upgrade.buy", { cost: fmt(upgradeCost(p.levels.insurance)) })}
+          </Button>
+        )}
+        <Button className={p.levels.insurance < MAX_INSURANCE_LEVEL ? "" : "flex-1"} onClick={() => setModal(null)}>
+          {t("common.ok")}
+        </Button>
+      </div>
+    </>
+  );
+
+  const activeTool = TOOLS.find((item) => item.id === tool) ?? TOOLS[0];
 
   const head = p.incoming[0] ?? null;
   const headLeft = head?.activatedAt ? head.activatedAt + RAID_TTL_MS - now : null;
@@ -1556,6 +1610,127 @@ export default function Lobby({
     />
   );
 
+  // ---------- полоса сообщений ----------
+  // Всё, что игра говорит игроку, идёт одной строкой под кнопками: и рамка
+  // с подтверждением, и тревога, и обычные сообщения. Порядок — по тому,
+  // что сейчас важнее для рук.
+  const draftOpen = drafting && draftRect && draftRect.w > 0 && draftRect.h > 0;
+  let barTone = "border-neutral-800 bg-neutral-900/40 text-neutral-500";
+  let barBody: ReactNode = (
+    <span className="min-w-0 truncate">{t(activeTool.hint, activeTool.vars)}</span>
+  );
+
+  if (draftOpen && draftRect) {
+    barTone = "border-amber-700/60 bg-amber-950/30 text-amber-100";
+    barBody = (
+      <>
+        <span className="font-mono">
+          {t(tool === "repair" ? "repair.summary" : "draft.summary", {
+            w: draftRect.w,
+            h: draftRect.h,
+            cells: draftCells,
+            cost: fmt(draftCost),
+          })}
+        </span>
+        {!draftConnects && <span className="text-red-400">{t("draft.gap")}</span>}
+        {draftConnects && !draftAfford && (
+          <span className="text-red-400">{t("draft.tooExpensive")}</span>
+        )}
+        {tool === "repair" && draftCells === 0 && (
+          <span className="text-neutral-400">{t("repair.nothing")}</span>
+        )}
+        <div className="ml-auto flex gap-2">
+          <Button
+            variant="build"
+            size="sm"
+            onClick={commitDraft}
+            disabled={!draftConnects || !draftAfford || draftCells === 0}
+          >
+            {t("draft.confirm")}
+          </Button>
+          <Button size="sm" onClick={onRightClick}>
+            {t("draft.remove")}
+          </Button>
+        </div>
+      </>
+    );
+  } else if (p.founded && intact === 0) {
+    barTone = "border-red-900/70 bg-red-950/30 text-red-100";
+    barBody = (
+      <>
+        <span className="min-w-0">{t("burnt.notice", { cost: REPAIR_COST, side: STARTER_SIDE })}</span>
+        <div className="ml-auto flex gap-2">
+          <Button size="sm" active={tool === "repair"} onClick={() => pickTool("repair")}>
+            {t("tool.repair")}
+          </Button>
+          <Button variant="danger" size="sm" onClick={() => setConfirmWipe(true)}>
+            {t("burnt.raze")}
+          </Button>
+        </div>
+      </>
+    );
+  } else if (message) {
+    barTone = "border-neutral-700 bg-neutral-900 text-neutral-200";
+    barBody = (
+      <>
+        <span className="min-w-0">{message}</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={t("common.close")}
+          className="-mr-2 ml-auto shrink-0"
+          onClick={() => setMessage(null)}
+        >
+          ✕
+        </Button>
+      </>
+    );
+  } else if (!p.founded) {
+    barTone = "border-neutral-700 bg-neutral-900 text-neutral-200";
+    barBody = (
+      <>
+        <span className="font-mono">
+          <span className="text-neutral-400">{t("base.areaShort")} </span>
+          <span className={intact >= MIN_BASE_CELLS ? "text-emerald-400" : "text-neutral-100"}>
+            {intact}/{MIN_BASE_CELLS}
+          </span>
+        </span>
+        <span className="min-w-0 truncate text-neutral-400">{t("base.drawHint")}</span>
+        <Button
+          variant="build"
+          size="sm"
+          className="ml-auto"
+          onClick={() => setNaming("found")}
+          disabled={intact < MIN_BASE_CELLS}
+        >
+          {t("base.foundShort")}
+        </Button>
+      </>
+    );
+  } else if (p.incoming.length > 0) {
+    barTone = "border-red-900/70 bg-red-950/30 text-red-100";
+    barBody = (
+      <>
+        <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-500" />
+        <span className="min-w-0 truncate">
+          {t("attacks.incoming", { from: p.incoming[0].from, drones: p.incoming[0].drones })}
+          {headLeft !== null ? ` · ${countdown(headLeft)}` : ""}
+        </span>
+        <Button
+          variant="danger"
+          size="sm"
+          className="ml-auto"
+          onClick={() => (window.innerWidth < 1024 ? setSheet("attacks") : setBattle(p.incoming[0]))}
+          disabled={intact === 0}
+        >
+          {p.incoming.length > 1
+            ? t("attacks.defendCount", { count: p.incoming.length })
+            : t("attacks.defend")}
+        </Button>
+      </>
+    );
+  }
+
   const accountLine = (
     <AccountMenu
       name={account?.name ?? null}
@@ -1567,7 +1742,7 @@ export default function Lobby({
   );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:gap-3">
       {/* шапка телефона: счётчики одной строкой плюс кнопки панелей */}
       <div className="flex shrink-0 items-center gap-2 lg:hidden">
         <ChipBar className="min-w-0 flex-1">
@@ -1586,15 +1761,15 @@ export default function Lobby({
       </div>
 
       {/* шапка десктопа: логотип, счётчики и аккаунт одной строкой */}
-      <div className="hidden items-center gap-4 lg:flex">
+      <div className="hidden items-center gap-3 lg:flex">
         <BaseName
           value={p.name}
           placeholder={t("base.unnamed")}
           title={t("base.rename")}
-          className="w-56 shrink-0 text-2xl font-black uppercase tracking-tight"
+          className="w-56 shrink-0 text-xl font-black uppercase leading-none tracking-tight"
           onCommit={rename}
         />
-        <ChipBar bare className="min-w-0 flex-1 flex-wrap px-4 py-3 text-sm">
+        <ChipBar bare className="min-w-0 flex-1 flex-wrap px-0 py-0 text-sm">
           <Chip label={t("stat.credits")} value={fmt(p.credits)} tone="text-emerald-300" />
           <Chip label={t("stat.income")} value={`+${fmt(income)}`} tone="text-emerald-300" />
         </ChipBar>
@@ -1608,7 +1783,7 @@ export default function Lobby({
         */}
         <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
 
-          <div className="order-3 grid shrink-0 grid-cols-6 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(6,5.5rem)] lg:gap-2">
+          <div className="order-4 grid shrink-0 grid-cols-7 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(7,5.5rem)] lg:gap-2">
             {TOOLS.map((item) => (
               <ToolButton
                 key={item.id}
@@ -1625,9 +1800,20 @@ export default function Lobby({
             ))}
           </div>
 
+          {/*
+            Одна полоса на все разговоры игры: и подтверждение рамки, и
+            тревога о налёте, и обычные сообщения. Высота у неё есть всегда,
+            даже пустой, — иначе карта дёргалась бы на каждое слово.
+          */}
+          <div
+            className={`order-2 flex min-h-[2.75rem] shrink-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-3 py-1.5 text-sm ${barTone}`}
+          >
+            {barBody}
+          </div>
+
           <MapCanvas
             idle
-            className="order-1 min-h-0 flex-1 lg:order-2"
+            className="order-1 min-h-0 flex-1 lg:order-3"
             scene={scene}
             sceneVersion={version}
             overlay={overlay}
@@ -1640,111 +1826,8 @@ export default function Lobby({
               paintingRef.current = false;
             }}
             cursor={dragDepotRef.current || dragGunRef.current ? "grabbing" : "crosshair"}
-          >
-            {message && <Toast key={message} text={message} onClose={() => setMessage(null)} />}
-          </MapCanvas>
+          />
 
-          {drafting && draftRect && draftRect.w > 0 && draftRect.h > 0 && (
-            <Notice tone="warn" className="order-2 flex-wrap lg:order-3">
-              <span className="font-mono">
-                {t(tool === "repair" ? "repair.summary" : "draft.summary", {
-                  w: draftRect.w,
-                  h: draftRect.h,
-                  cells: draftCells,
-                  cost: fmt(draftCost),
-                })}
-              </span>
-              {!draftConnects && <span className="text-red-400">{t("draft.gap")}</span>}
-              {draftConnects && !draftAfford && (
-                <span className="text-red-400">{t("draft.tooExpensive")}</span>
-              )}
-              {tool === "repair" && draftCells === 0 && (
-                <span className="text-neutral-400">{t("repair.nothing")}</span>
-              )}
-              <div className="ml-auto flex gap-2">
-                <Button
-                  variant="build"
-                  size="sm"
-                  onClick={commitDraft}
-                  disabled={!draftConnects || !draftAfford || draftCells === 0}
-                >
-                  {t("draft.confirm")}
-                </Button>
-                <Button size="sm" onClick={onRightClick}>
-                  {t("draft.remove")}
-                </Button>
-              </div>
-            </Notice>
-          )}
-
-          {/* пока склад не основан, счётчик площади держим на виду */}
-          {!p.founded && (
-            <Notice className="order-2 lg:order-3 lg:hidden">
-              <IconButton
-                label={t("base.layoutHelp")}
-                round
-                className="h-7 w-7 text-xs"
-                onClick={() => setSheet("found")}
-              >
-                ?
-              </IconButton>
-              <span className="font-mono">
-                <span className="text-neutral-400">{t("base.areaShort")} </span>
-                <span className={intact >= MIN_BASE_CELLS ? "text-emerald-400" : "text-neutral-100"}>
-                  {intact}/{MIN_BASE_CELLS}
-                </span>
-              </span>
-              <Button
-                variant="build"
-                size="sm"
-                className="ml-auto"
-                onClick={() => setNaming("found")}
-                disabled={intact < MIN_BASE_CELLS}
-              >
-                {t("base.foundShort")}
-              </Button>
-            </Notice>
-          )}
-
-          {p.founded && intact === 0 && (
-            <Notice tone="danger" className="order-2 flex-wrap lg:order-3">
-              <span className="min-w-0">
-                {t("burnt.notice", { cost: REPAIR_COST, side: STARTER_SIDE })}
-              </span>
-              <div className="ml-auto flex gap-2">
-                <Button size="sm" active={tool === "repair"} onClick={() => pickTool("repair")}>
-                  {t("tool.repair")}
-                </Button>
-                <Button variant="danger" size="sm" onClick={() => setConfirmWipe(true)}>
-                  {t("burnt.raze")}
-                </Button>
-              </div>
-            </Notice>
-          )}
-
-          {/* входящий налёт не должен теряться в шторке */}
-          {p.founded && p.incoming.length > 0 && (
-            <Notice tone="danger" className="order-2 lg:order-3 lg:hidden">
-              <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-500" />
-              <span className="min-w-0 truncate">
-                {t("attacks.incoming", {
-                  from: p.incoming[0].from,
-                  drones: p.incoming[0].drones,
-                })}
-                {headLeft !== null ? ` · ${countdown(headLeft)}` : ""}
-              </span>
-              <Button
-                variant="danger"
-                size="sm"
-                className="ml-auto"
-                onClick={() => setSheet("attacks")}
-              >
-                {p.incoming.length > 1
-                  ? t("attacks.defendCount", { count: p.incoming.length })
-                  : t("attacks.defend")}
-              </Button>
-            </Notice>
-          )}
         </div>
 
         {/* боковая колонка десктопа */}
@@ -1812,7 +1895,14 @@ export default function Lobby({
         />
       )}
 
-      {watching && <Replay report={watching} onClose={() => setWatching(null)} />}
+      {watching?.replay && (
+        <Replay
+          name={watching.target}
+          replay={watching.replay}
+          shareId={watching.id}
+          onClose={() => setWatching(null)}
+        />
+      )}
 
       {reports[0] && !watching && (
         <AttackReportDialog
@@ -1842,6 +1932,14 @@ export default function Lobby({
         />
       )}
 
+      {modal === "insurance" && (
+        <Modal
+          title={`${t("tool.insurance")} · ${t("upgrade.level", { level: p.levels.insurance })}`}
+          onClose={() => setModal(null)}
+        >
+          {insuranceBody}
+        </Modal>
+      )}
       {modal === "upgrade" && (
         <Modal title={t("tool.upgrade")} onClose={() => setModal(null)}>
           {p.founded ? upgradeBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}

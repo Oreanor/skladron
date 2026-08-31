@@ -20,7 +20,7 @@ language sql immutable as $$
     when 'sale'   then 2   -- отгрузка идёт вдвое дороже закупки
     when 'loot'   then 50   -- нападавшему за каждую сожжённую клетку склада
     when 'insure_cell'  then 5   -- страховка погорельцу: ровно на ремонт клетки
-    when 'insure_share' then 50  -- и половина стоимости сгоревшего товара и пушек
+    when 'insure_step'  then 25  -- покрытие товара и пушек: столько процентов за уровень полиса
     when 'raid_ttl' then 1800  -- полчаса на то, чтобы отбить атаку вручную
     when 'free'   then 25   -- стартовая площадь 5×5 достаётся даром
     when 'found'  then 25   -- столько же нужно, чтобы основаться
@@ -237,11 +237,12 @@ alter table profiles add column if not exists base_name text;
 alter table profiles add column if not exists scouts int not null default 0;
 -- уровни классов: с ними растут скорость дронов, дальнобойность пушек и обзор разведки
 alter table profiles add column if not exists levels jsonb not null
-  default '{"drones":1,"guns":1,"scouts":1,"mg":1,"water":1}'::jsonb;
+  default '{"drones":1,"guns":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb;
 alter table profiles alter column levels set default
-  '{"drones":1,"guns":1,"scouts":1,"mg":1,"water":1}'::jsonb;
--- пулемёт и брандспойт добавились позже: у заведённых профилей их нет
-update profiles set levels = '{"drones":1,"guns":1,"scouts":1,"mg":1,"water":1}'::jsonb || levels;
+  '{"drones":1,"guns":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb;
+-- пулемёт, брандспойт и полис добавились позже: у заведённых профилей их нет
+update profiles set levels =
+  '{"drones":1,"guns":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb || levels;
 -- уровень дронов запоминаем в самой атаке: у защитника они летят так,
 -- как их прокачал нападающий, даже если тот потом апгрейднулся ещё
 alter table attacks add column if not exists drone_level int not null default 1;
@@ -772,14 +773,17 @@ declare
   cost int;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
-  if kind not in ('drones', 'guns', 'scouts', 'mg', 'water') then
+  if kind not in ('drones', 'guns', 'scouts', 'mg', 'water', 'insurance') then
     raise exception 'bad upgrade kind';
   end if;
 
   select coalesce((p.levels->>kind)::int, 1) into cur
     from profiles p where p.id = uid for update;
   if cur is null then raise exception 'no profile'; end if;
-  if cur >= 10 then raise exception 'already at max level'; end if;
+  -- у страховки потолок свой: пятый уровень покрывает потери целиком
+  if cur >= (case when kind = 'insurance' then 5 else 10 end) then
+    raise exception 'already at max level';
+  end if;
   cost := price('upgrade');
 
   update profiles
@@ -860,6 +864,7 @@ declare
   killed int;
   depots_lost int;
   payout int;
+  cover int;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   if octet_length(bin) <> 10000 then raise exception 'bad map size'; end if;
@@ -909,10 +914,16 @@ begin
   -- уже сверены с картой, а потери в товаре и пушках видны как разница между
   -- тем, что было, и тем, что осталось. Вне боя они не исчезают.
   depots_lost := greatest(0, depot_value(cur_depots) - depot_value(new_depots));
+  -- Базовый полис покрывает только расчистку клеток, каждый следующий
+  -- уровень добавляет четверть стоимости сгоревшего товара и пушек.
+  select least(100, greatest(0, coalesce((p.levels->>'insurance')::int, 1) - 1)
+                     * price('insure_step'))
+    into cover
+    from profiles p where p.id = uid;
   payout := burned * price('insure_cell')
           + ((depots_lost
               + greatest(0, jsonb_array_length(cur_guns) - jsonb_array_length(new_guns))
-                * price('gun')) * price('insure_share')) / 100;
+                * price('gun')) * cover) / 100;
 
   -- За сбитых не платят: деньги приносит товар, а не стрельба. Зато
   -- погорельцу выплачивается страховка.
@@ -1033,6 +1044,33 @@ begin
    where id = uid;
 end;
 $$;
+
+-- ---------- ссылка на повтор ----------
+-- Повтор боя открывается по ссылке кем угодно: id атаки — случайный uuid,
+-- а показывать нечего, кроме того, что и так видели обе стороны.
+
+create or replace function public_replay(attack_id uuid)
+returns table (
+  attacker text, defender text,
+  drones int, pattern text, direction int, seed int, drone_level int,
+  snap_cells text, snap_guns jsonb, snap_depots jsonb, snap_levels jsonb,
+  trace text, result jsonb, resolved_at timestamptz
+)
+language sql security definer set search_path = public stable as $$
+  select coalesce(att.base_name, att.display_name, split_part(att.email, '@', 1)),
+         coalesce(def.base_name, def.display_name, split_part(def.email, '@', 1)),
+         a.drones, a.pattern, a.direction, a.seed, a.drone_level,
+         a.snap_cells, a.snap_guns, a.snap_depots, a.snap_levels,
+         a.trace, a.result, a.resolved_at
+    from attacks a
+    join profiles att on att.id = a.attacker_id
+    join profiles def on def.id = a.defender_id
+   where a.id = attack_id
+     and a.status = 'resolved'
+     and a.snap_cells is not null;
+$$;
+
+grant execute on function public_replay to anon, authenticated;
 
 -- ---------- начать сначала ----------
 -- Полный сброс: пустой стартовый склад, стартовые деньги, обнулённые
