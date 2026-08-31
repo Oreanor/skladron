@@ -1,6 +1,7 @@
 // Атака: заказ и превращение его в расписание вылетов.
 
 import { GRID } from "./base";
+import { levelBonus } from "./economy";
 import type { BattleResult } from "./engine";
 
 export type Pattern = "swarm" | "lines" | "random" | "drip";
@@ -18,10 +19,15 @@ export const MAX_RAID = 500;
 // разбирает руками: пулемётом и брандспойтом. Остальное прорывается, и рой
 // считаем так, чтобы прорывов было столько, сколько реально успеть затушить.
 
-/** Сколько дронов пушка снимает за налёт сама. */
+/** Сколько дронов снимает за налёт одна пушка первого уровня. */
 export const DRONES_PER_GUN = 3;
-/** Какую долю роя игрок снимает руками, если играет, а не смотрит. */
-export const PLAYER_SHARE = 0.5;
+/** Доля роя, которую снимает руками игрок без прокачки. */
+export const BARE_HANDS_SHARE = 0.35;
+/** Прибавка к этой доле за уровень пулемёта и брандспойта. */
+export const MG_SHARE_PER_LEVEL = 0.06;
+export const WATER_SHARE_PER_LEVEL = 0.04;
+/** Больше этой доли руками не снять, как ни качайся. */
+export const MAX_HANDS_SHARE = 0.6;
 /** Надбавка за размер склада: по большому есть куда бить. */
 export const RAID_PER_CELL = 0.06;
 
@@ -30,14 +36,36 @@ function leaksOk(intact: number) {
   return Math.min(40, 10 + intact / 25);
 }
 
+/** Уровни обороны, от которых зависит, сколько рой встретит сопротивления. */
+export interface DefenceLevels {
+  guns?: number;
+  mg?: number;
+  water?: number;
+}
+
 /**
- * Размер налёта под конкретную оборону. Множитель сложности гуляет от 0,75
- * до 1,35: бывает и полегче, и позлее, но неподъёмного не приходит.
+ * Размер налёта под конкретную оборону: сколько пушек, какой они прокачки,
+ * какой площади склад и насколько игрок хорош руками. Множитель сложности
+ * гуляет от 0,75 до 1,35 — бывает и полегче, и позлее, но неподъёмного
+ * не приходит.
  */
-export function raidSize(guns: number, intact: number, difficulty = 1) {
-  const survivable = leaksOk(intact) + guns * DRONES_PER_GUN + intact * RAID_PER_CELL;
-  const fair = survivable / (1 - PLAYER_SHARE);
-  return Math.max(30, Math.min(MAX_RAID, Math.round(fair * difficulty)));
+export function raidSize(
+  guns: number,
+  intact: number,
+  difficulty = 1,
+  levels: DefenceLevels = {}
+) {
+  // прокачанная пушка успевает больше: и достаёт дальше, и снаряд быстрее
+  const gunPower = guns * DRONES_PER_GUN * levelBonus(levels.guns ?? 1, 0.25);
+  // руки тоже растут: меткость очереди и ширина струи
+  const hands = Math.min(
+    MAX_HANDS_SHARE,
+    BARE_HANDS_SHARE +
+      MG_SHARE_PER_LEVEL * ((levels.mg ?? 1) - 1) +
+      WATER_SHARE_PER_LEVEL * ((levels.water ?? 1) - 1)
+  );
+  const survivable = leaksOk(intact) + gunPower + intact * RAID_PER_CELL;
+  return Math.max(30, Math.min(MAX_RAID, Math.round((survivable / (1 - hands)) * difficulty)));
 }
 
 /** Случайная сложность очередного налёта. */

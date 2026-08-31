@@ -884,7 +884,7 @@ export default function Lobby({
   const summonAttack = () => {
     const pattern = PATTERNS[(Math.random() * PATTERNS.length) | 0];
     // рой подбираем под оборону: сколько пушек и сколько склада прикрывать
-    const size = raidSize(p.guns.length, intact, raidDifficulty());
+    const size = raidSize(p.guns.length, intact, raidDifficulty(), p.levels);
     const order = makeOrder(
       t(`bot.${(Math.random() * BOT_COUNT) | 0}` as Key),
       size,
