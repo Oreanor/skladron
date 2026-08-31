@@ -31,6 +31,8 @@ function Screen({ id }: { id: string }) {
   const [state, setState] = useState<
     { name: string; replay: ReplayData } | "loading" | "gone"
   >("loading");
+  /** Чем именно ответил сервер: без этого «повтора нет» ничего не объясняет. */
+  const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
     const db = supabase();
@@ -44,7 +46,12 @@ function Screen({ id }: { id: string }) {
       .then(({ data, error }) => {
         if (!alive) return;
         const row = (data as Row[] | null)?.[0];
-        if (error || !row) {
+        if (error) {
+          setFailed(error.message);
+          setState("gone");
+          return;
+        }
+        if (!row) {
           setState("gone");
           return;
         }
@@ -82,6 +89,7 @@ function Screen({ id }: { id: string }) {
     return (
       <div className="m-auto max-w-sm space-y-4 p-6 text-center">
         <p className="text-neutral-400">{t("replay.gone")}</p>
+        {failed && <p className="font-mono text-xs text-neutral-600">{failed}</p>}
         <Button variant="neutral" onClick={() => (location.href = "/")}>
           {t("replay.open")}
         </Button>
