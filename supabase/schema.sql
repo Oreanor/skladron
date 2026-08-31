@@ -24,7 +24,7 @@ language sql immutable as $$
     when 'free'   then 100   -- стартовая площадь 10×10 достаётся даром
     when 'found'  then 100   -- столько же нужно, чтобы основаться
     when 'upgrade' then 5000 -- шаг апгрейда: на N-й уровень платим 5000*(N-1)
-    when 'max_raid' then 1000 -- потолок одного налёта, тот же и на клиенте
+    when 'max_raid' then 500 -- потолок одного налёта, тот же и на клиенте
   end;
 $$;
 
@@ -202,7 +202,7 @@ create table if not exists attacks (
   id uuid primary key default gen_random_uuid(),
   attacker_id uuid not null references profiles on delete cascade,
   defender_id uuid not null references profiles on delete cascade,
-  drones int not null check (drones between 1 and 1000),
+  drones int not null check (drones between 1 and 500),
   pattern text not null check (pattern in ('swarm', 'lines', 'random', 'drip')),
   direction int not null check (direction between 0 and 3),
   seed int not null,
@@ -231,10 +231,10 @@ update profiles set levels = '{"drones":1,"guns":1,"scouts":1}'::jsonb || levels
 -- уровень дронов запоминаем в самой атаке: у защитника они летят так,
 -- как их прокачал нападающий, даже если тот потом апгрейднулся ещё
 alter table attacks add column if not exists drone_level int not null default 1;
--- потолок налёта подняли с 300 до 1000: у существующей таблицы check
+-- потолок налёта подняли с 300 до 500: у существующей таблицы check
 -- сам не поменяется, поэтому пересоздаём его явно
 alter table attacks drop constraint if exists attacks_drones_check;
-alter table attacks add constraint attacks_drones_check check (drones between 1 and 1000);
+alter table attacks add constraint attacks_drones_check check (drones between 1 and 500);
 -- очередь налётов: у первой атаки идут часы, остальные ждут
 alter table attacks add column if not exists activated_at timestamptz;
 -- быстрые дроны убраны: вид остался только у разведчиков

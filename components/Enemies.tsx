@@ -290,8 +290,13 @@ function RaidDialog({
       )}
 
       <div className="flex gap-2">
-        <Button variant="danger" className="flex-1" onClick={() => void send()} disabled={sending}>
-          {sending ? t("raid.sending") : t("raid.send", { n })}
+        <Button
+          variant="danger"
+          className="flex-1"
+          onClick={() => void send()}
+          disabled={sending || max < 1}
+        >
+          {sending ? t("raid.sending") : t("raid.send", { n: count })}
         </Button>
         <Button onClick={onCancel}>{t("common.cancel")}</Button>
       </div>
