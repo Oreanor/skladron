@@ -23,6 +23,7 @@ language sql immutable as $$
     when 'raid_ttl' then 1800  -- полчаса на то, чтобы отбить атаку вручную
     when 'free'   then 100   -- стартовая площадь 10×10 достаётся даром
     when 'found'  then 100   -- столько же нужно, чтобы основаться
+    when 'upgrade' then 5000 -- шаг апгрейда: на N-й уровень платим 5000*(N-1)
   end;
 $$;
 
@@ -187,6 +188,13 @@ create index if not exists attacks_attacker_reports
 -- default существующей таблице не меняет, а клиент ждёт все семь счётчиков.
 alter table profiles add column if not exists base_name text;
 alter table profiles add column if not exists scouts int not null default 0;
+-- уровни классов: с ними растут скорость дронов, дальнобойность пушек и обзор разведки
+alter table profiles add column if not exists levels jsonb not null
+  default '{"drones":1,"guns":1,"scouts":1}'::jsonb;
+update profiles set levels = '{"drones":1,"guns":1,"scouts":1}'::jsonb || levels;
+-- уровень дронов запоминаем в самой атаке: у защитника они летят так,
+-- как их прокачал нападающий, даже если тот потом апгрейднулся ещё
+alter table attacks add column if not exists drone_level int not null default 1;
 -- очередь налётов: у первой атаки идут часы, остальные ждут
 alter table attacks add column if not exists activated_at timestamptz;
 -- быстрые дроны убраны: вид остался только у разведчиков
@@ -224,6 +232,8 @@ drop function if exists send_attack(text, int, text, int, int, jsonb, int);
 -- у pending_attacks менялся не список аргументов, а состав колонок:
 -- create or replace такого тоже не умеет
 drop function if exists pending_attacks();
+-- enemy_base теперь отдаёт ещё и уровень чужих пушек
+drop function if exists enemy_base(text);
 
 alter table profiles enable row level security;
 alter table bases enable row level security;
@@ -318,8 +328,9 @@ begin
          stats = jsonb_set(stats, '{raids}', to_jsonb((stats->>'raids')::int + 1))
    where id = uid;
 
-  insert into attacks (attacker_id, defender_id, drones, pattern, direction, seed)
-  values (uid, target.id, drone_count, attack_pattern, attack_direction, attack_seed)
+  insert into attacks (attacker_id, defender_id, drones, pattern, direction, seed, drone_level)
+  values (uid, target.id, drone_count, attack_pattern, attack_direction, attack_seed,
+          (select coalesce((p.levels->>'drones')::int, 1) from profiles p where p.id = uid))
   returning id into order_id;
   return order_id;
 end;
@@ -372,7 +383,7 @@ end;
 $$;
 
 create or replace function enemy_base(target_email text)
-returns table (cells text, guns jsonb)
+returns table (cells text, guns jsonb, gun_level int)
 language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
@@ -383,14 +394,17 @@ begin
   if tid is null then raise exception 'no such player'; end if;
 
   return query
-    select encode(b.cells, 'base64'), b.guns from bases b where b.user_id = tid;
+    select encode(b.cells, 'base64'), b.guns,
+           coalesce((p.levels->>'guns')::int, 1)
+      from bases b join profiles p on p.id = b.user_id
+     where b.user_id = tid;
 end;
 $$;
 
 create or replace function pending_attacks()
 returns table (
   id uuid, from_name text, created_at timestamptz, activated_at timestamptz,
-  drones int, pattern text, direction int, seed int
+  drones int, pattern text, direction int, seed int, drone_level int
 )
 language plpgsql security definer set search_path = public as $$
 declare
@@ -416,7 +430,8 @@ begin
   return query
     select a.id,
            coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
-           a.created_at, a.activated_at, a.drones, a.pattern, a.direction, a.seed
+           a.created_at, a.activated_at, a.drones, a.pattern, a.direction, a.seed,
+           a.drone_level
       from attacks a
       join profiles p on p.id = a.attacker_id
      where a.defender_id = uid and a.status = 'pending'
@@ -657,6 +672,38 @@ begin
 end;
 $$;
 
+-- ---------- апгрейд классов ----------
+-- Уровень общий для всего класса: апгрейд достаёт и склад, и то, что
+-- купят завтра. Цена растёт линейно: на 2-й уровень 5000, на 3-й 10000.
+
+create or replace function upgrade(kind text)
+returns table (credits int, levels jsonb)
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  cur int;
+  cost int;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  if kind not in ('drones', 'guns', 'scouts') then raise exception 'bad upgrade kind'; end if;
+
+  select coalesce((p.levels->>kind)::int, 1) into cur
+    from profiles p where p.id = uid for update;
+  if cur is null then raise exception 'no profile'; end if;
+  if cur >= 10 then raise exception 'already at max level'; end if;
+  cost := cur * price('upgrade');
+
+  update profiles
+     set credits = profiles.credits - cost,
+         levels = jsonb_set(profiles.levels, array[kind], to_jsonb(cur + 1))
+   where profiles.id = uid and profiles.credits >= cost
+   returning profiles.credits, profiles.levels into credits, levels;
+
+  if not found then raise exception 'not enough credits'; end if;
+  return next;
+end;
+$$;
+
 -- ---------- закупка дронов ----------
 
 -- Параметр packs сохранён по имени для бесшовного обновления старой RPC,
@@ -864,7 +911,7 @@ $$;
 
 grant execute on function ensure_player, collect_income, save_base,
   buy_drones, apply_battle, complete_attack, wipe_base, rename_base, save_enemies,
-  base_names, enemy_base, spend_scouts,
+  base_names, enemy_base, spend_scouts, upgrade,
   send_attack, pending_attacks, attack_reports, ack_attack_report to authenticated;
 
 -- PostgREST держит список функций в кэше. Supabase обычно перечитывает его сам,

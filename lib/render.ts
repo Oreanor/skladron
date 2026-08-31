@@ -1,3 +1,4 @@
+import { gunRange } from "./engine";
 import {
   GRID,
   G_BASE,
@@ -167,7 +168,8 @@ export function drawStatic(
 export function drawCoverage(
   ctx: CanvasRenderingContext2D,
   guns: Gun[] | { cx: number; cy: number; alive?: boolean }[],
-  cell: number
+  cell: number,
+  range = GUN_RANGE
 ) {
   const live = guns.filter((g) => (g as { alive?: boolean }).alive !== false);
   if (!live.length) return;
@@ -175,7 +177,7 @@ export function drawCoverage(
   for (const g of live) {
     const cx = (g.cx + 0.5) * cell;
     const cy = (g.cy + 0.5) * cell;
-    const r = (GUN_RANGE + 0.5) * cell;
+    const r = (range + 0.5) * cell;
     ctx.moveTo(cx + r, cy);
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
   }
@@ -205,7 +207,7 @@ export function drawFrame(
     ctx.fill();
   }
 
-  drawCoverage(ctx, s.guns, cell);
+  drawCoverage(ctx, s.guns, cell, gunRange(s));
 
   // прицел: над зданием он водяной, над землёй стрелковый
   if (s.phase === "playing" && hover) {

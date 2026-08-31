@@ -37,9 +37,19 @@ export function normName(raw: string) {
   return raw.replace(/\s+/g, " ").trim().slice(0, MAX_BASE_NAME);
 }
 
+/** Уровни классов. Растут только апгрейдом, начинаются с первого. */
+export interface Levels {
+  drones: number;
+  guns: number;
+  scouts: number;
+}
+
+export const startLevels = (): Levels => ({ drones: 1, guns: 1, scouts: 1 });
+
 export interface Player {
   name: string;
   credits: number;
+  levels: Levels;
   cells: Uint8Array;
   guns: Gun[];
   depots: Depot[];
@@ -55,6 +65,7 @@ interface Stored {
   v: 1;
   name?: string;
   credits: number;
+  levels?: Partial<Levels>;
   cells: string;
   guns: Gun[];
   depots: Depot[];
@@ -72,6 +83,7 @@ export function newPlayer(now = Date.now()): Player {
   return {
     name: "",
     credits: CREDITS_START,
+    levels: startLevels(),
     cells: starterCells(STARTER_SIDE),
     guns: [],
     depots: [],
@@ -96,6 +108,7 @@ export function newPlayer(now = Date.now()): Player {
 export function wipe(p: Player, now = Date.now()): Player {
   const fresh = newPlayer(now);
   fresh.name = p.name;
+  fresh.levels = { ...p.levels };
   fresh.credits = Math.max(p.credits, CREDITS_START);
   fresh.stats = { ...p.stats, wipes: p.stats.wipes + 1 };
   fresh.enemies = p.enemies;
@@ -139,6 +152,7 @@ export function load(): Player {
     return {
       name: s.name ?? "",
       credits: s.credits,
+      levels: { ...startLevels(), ...(s.levels ?? {}) },
       cells,
       guns: s.guns ?? [],
       depots: s.depots ?? [],
@@ -160,6 +174,7 @@ export function save(p: Player) {
     v: 1,
     name: p.name,
     credits: p.credits,
+    levels: p.levels,
     cells: encodeCells(p.cells),
     guns: p.guns,
     depots: p.depots,

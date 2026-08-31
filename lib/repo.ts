@@ -3,9 +3,10 @@
 
 import { type DroneKind, CELLS, type Depot, decodeCells, encodeRle, regrowGround, type Gun } from "./base";
 
-import { CREDITS_START } from "./economy";
+import { CREDITS_START, MAX_LEVEL, upgradeCost } from "./economy";
 import type { AttackOrder, AttackReport, Pattern } from "./attack";
 import type { BattleResult } from "./engine";
+import type { UpgradeKind } from "./economy";
 import {
   collectIncome as localIncome,
   insure,
@@ -41,8 +42,10 @@ export interface Repo {
    * а не выдумкой клиента, поэтому имя всегда спрашиваем у сервера.
    */
   baseNames(emails: string[]): Promise<Map<string, string>>;
-  /** Карта противника для разведывательного вылета. */
-  enemyBase(email: string): Promise<{ cells: Uint8Array; guns: Gun[] }>;
+  /** Карта противника для разведывательного вылета — с уровнем его пушек. */
+  enemyBase(email: string): Promise<{ cells: Uint8Array; guns: Gun[]; gunLevel: number }>;
+  /** Апгрейд класса на уровень выше. Цену считает сервер. */
+  upgrade(p: Player, kind: UpgradeKind): Promise<Partial<Player>>;
   /** Вылет разведки: разведчики уходят из своих контейнеров. */
   spendScouts(p: Player, n: number): Promise<void>;
   buyDrones(p: Player, amount: number, kind?: DroneKind): Promise<Partial<Player>>;
@@ -97,7 +100,17 @@ class LocalRepo implements Repo {
 
   async enemyBase(_email: string) {
     // локально настоящих противников нет — карту берём из сгенерированного бота
-    return { cells: new Uint8Array(CELLS), guns: [] as Gun[] };
+    return { cells: new Uint8Array(CELLS), guns: [] as Gun[], gunLevel: 1 };
+  }
+
+  async upgrade(p: Player, kind: UpgradeKind) {
+    if (p.levels[kind] >= MAX_LEVEL) throw new Error("already at max level");
+    const cost = upgradeCost(p.levels[kind]);
+    if (p.credits < cost) throw new Error("not enough credits");
+    p.credits -= cost;
+    p.levels = { ...p.levels, [kind]: p.levels[kind] + 1 };
+    localSave(p);
+    return { credits: p.credits, levels: p.levels };
   }
 
   async buyDrones(p: Player, _amount: number, _kind?: DroneKind) {
@@ -138,6 +151,7 @@ interface ProfileRow {
   // в базе может лежать статистика более старого образца, чем знает клиент
   stats: Partial<Player["stats"]> | null;
   enemies: Player["enemies"] | null;
+  levels: Partial<Player["levels"]> | null;
 }
 
 /** collect_income отдаёт именно credits_added — имя колонки, а не поля Income. */
@@ -161,6 +175,7 @@ interface IncomingAttackRow {
   pattern: Pattern;
   direction: number;
   seed: number;
+  drone_level: number | null;
 }
 
 interface AttackReportRow {
@@ -219,6 +234,7 @@ class CloudRepo implements Repo {
       createdAt: Date.parse(row.created_at),
       // недостающие счётчики берём нулями: иначе fmt() падает на undefined
       stats: { ...fresh.stats, ...(row.stats ?? {}), ...(attacks.stats ?? {}) },
+      levels: { ...fresh.levels, ...(row.levels ?? {}) },
       cells: fromPgBytea(b.cells),
       guns: b.guns ?? [],
       depots: b.drone_cells ?? [],
@@ -265,6 +281,8 @@ class CloudRepo implements Repo {
       pattern: row.pattern,
       direction: row.direction,
       seed: row.seed,
+      // дроны летят на том уровне, до какого их довёл нападающий
+      droneLevel: row.drone_level ?? 1,
       remote: true,
     }));
     const reports = ((reportResult.data ?? []) as AttackReportRow[]).map((row) => ({
@@ -319,9 +337,16 @@ class CloudRepo implements Repo {
   async enemyBase(email: string) {
     const { data, error } = await this.db().rpc("enemy_base", { target_email: email });
     if (error) throw error;
-    const row = (data as { cells: string; guns: Gun[] }[] | null)?.[0];
+    const row = (data as { cells: string; guns: Gun[]; gun_level: number }[] | null)?.[0];
     if (!row) throw new Error("no base");
-    return { cells: decodeCells(row.cells), guns: row.guns ?? [] };
+    return { cells: decodeCells(row.cells), guns: row.guns ?? [], gunLevel: row.gun_level ?? 1 };
+  }
+
+  async upgrade(p: Player, kind: UpgradeKind) {
+    const { data, error } = await this.db().rpc("upgrade", { kind });
+    if (error) throw error;
+    const row = (data as { credits: number; levels: Player["levels"] }[] | null)?.[0];
+    return row ? { credits: row.credits, levels: row.levels } : {};
   }
   async spendScouts(p: Player, n: number) {
     const { error } = await this.db().rpc("spend_scouts", { n, new_depots: p.depots });

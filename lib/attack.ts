@@ -18,6 +18,8 @@ export interface AttackOrder {
   pattern: Pattern;
   direction: number; // 0 верх, 1 низ, 2 слева, 3 справа — для lines
   seed: number;
+  /** Уровень дронов нападающего на момент вылета. */
+  droneLevel?: number;
   remote?: boolean; // настоящий налёт из серверной очереди, а не локальный бот
 }
 

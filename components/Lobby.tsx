@@ -30,6 +30,11 @@ import {
   MIN_BASE_CELLS,
   REPAIR_COST,
   SCOUT_UNIT_COST,
+  MAX_LEVEL,
+  UPGRADE_KINDS,
+  UPGRADE_STEP,
+  upgradeCost,
+  type UpgradeKind,
   fmt,
 } from "@/lib/economy";
 import {
@@ -64,7 +69,7 @@ import MapCanvas, { type Pt } from "./MapCanvas";
 import AccountMenu, { SettingsList } from "./AccountMenu";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
-import { LayoutGrid, Plane, Rocket, Wrench } from "lucide-react";
+import { ChevronsUp, LayoutGrid, Plane, Rocket, Wrench } from "lucide-react";
 import { autoDefend, type UnattendedOutcome } from "@/lib/unattended";
 import { decodeCells, decodeRle, depotKind, encodeRle, type DroneKind, type Gun } from "@/lib/base";
 import {
@@ -92,18 +97,26 @@ import {
 } from "./ui";
 
 type Tool = "area" | "repair" | "gun" | "drones" | "scouts";
+/** Кнопка «Апгрейд» карты не касается: она только открывает модалку. */
+type ToolId = Tool | "upgrade";
 /** Панели, которые на телефоне открываются шторкой снизу. */
-type SheetId = "found" | "arsenal" | "scouts" | "attacks" | "enemies" | "menu";
+type SheetId = "found" | "attacks" | "enemies" | "menu";
+/** Панели инструментов: они всплывают модалкой и вёрстку не разрывают. */
+type ModalId = "arsenal" | "scouts" | "upgrade";
 
 const ICON = "h-5 w-5";
 
 /** Подпись и цена берутся из словаря, глиф — из lucide. */
 const TOOLS: {
-  id: Tool;
+  id: ToolId;
   label: Key;
   hint: Key;
   vars: Record<string, number>;
   icon: ReactNode;
+  /** Цена этого инструмента — не фиксированная, а «от». */
+  priceKey?: Key;
+  /** Какой класс он показывает уровнем. */
+  levelKind?: UpgradeKind;
 }[] = [
   {
     id: "area",
@@ -120,11 +133,20 @@ const TOOLS: {
     icon: <Wrench className={ICON} />,
   },
   {
+    id: "upgrade",
+    label: "tool.upgrade",
+    hint: "tool.upgradeHint",
+    vars: { cost: UPGRADE_STEP },
+    priceKey: "tool.priceFrom",
+    icon: <ChevronsUp className={ICON} />,
+  },
+  {
     id: "gun",
     label: "tool.gun",
     hint: "tool.gunHint",
     vars: { cost: GUN_COST, refund: GUN_REFUND },
     icon: <Rocket className={ICON} />,
+    levelKind: "guns",
   },
   {
     id: "drones",
@@ -132,6 +154,7 @@ const TOOLS: {
     hint: "tool.dronesHint",
     vars: { cost: DRONE_UNIT_COST },
     icon: <IconDrone />,
+    levelKind: "drones",
   },
   {
     id: "scouts",
@@ -139,6 +162,7 @@ const TOOLS: {
     hint: "tool.dronesHint",
     vars: { cost: SCOUT_UNIT_COST },
     icon: <Plane className={ICON} />,
+    levelKind: "scouts",
   },
 ];
 
@@ -163,15 +187,17 @@ export default function Lobby({
   const [ready, setReady] = useState(false);
   const [version, setVersion] = useState(0);
   const [sheet, setSheet] = useState<SheetId | null>(null);
-  const [naming, setNaming] = useState<"found" | "rename" | null>(null);
+  const [modal, setModal] = useState<ModalId | null>(null);
+  const [naming, setNaming] = useState<"found" | null>(null);
   const [confirmWipe, setConfirmWipe] = useState(false);
-  const [scoutBuy, setScoutBuy] = useState(5);
   /** Идущий разведвылет: карта врага, его пушки и сколько самолётов послали. */
   const [scout, setScout] = useState<{
     enemy: Enemy;
     cells: Uint8Array;
     guns: Gun[];
     planes: number;
+    /** Уровень пушек противника — они стреляют дальше и точнее. */
+    gunLevel: number;
   } | null>(null);
   /** Итог налёта, который прошёл без игрока. */
   const [autoReport, setAutoReport] = useState<
@@ -293,7 +319,7 @@ export default function Lobby({
 
       autoBusyRef.current = true;
       try {
-        const o = autoDefend(cur.cells, cur.guns, cur.depots, head);
+        const o = autoDefend(cur.cells, cur.guns, cur.depots, head, cur.levels.guns);
         resolvedRef.current.add(head.id);
         cur.cells = o.cells;
         cur.guns = o.guns;
@@ -381,6 +407,7 @@ export default function Lobby({
         guns={p.guns}
         depots={p.depots}
         order={battle}
+        gunLevel={p.levels.guns}
         onFinish={async (o: BattleOutcome) => {
           p.cells = o.cells;
           p.guns = o.guns;
@@ -429,6 +456,8 @@ export default function Lobby({
         cells={scout.cells}
         guns={scout.guns}
         planes={scout.planes}
+        level={p.levels.scouts}
+        gunLevel={scout.gunLevel}
         known={known}
         onFinish={async (o: ScoutOutcome) => {
           const foe = p.enemies.find((e) => e.id === scout.enemy.id);
@@ -724,7 +753,7 @@ export default function Lobby({
       const base =
         repo.mode === "cloud"
           ? await repo.enemyBase(enemy.email)
-          : { cells: decodeCells(enemy.cells), guns: enemy.guns };
+          : { cells: decodeCells(enemy.cells), guns: enemy.guns, gunLevel: 1 };
       // разведчики уходят из ящиков до вылета: взлетели — значит потрачены
       const took = takeDrones(p.depots, planes, "scout");
       if (took !== planes) {
@@ -732,7 +761,7 @@ export default function Lobby({
         return t("scout.needPlanes");
       }
       await repo.spendScouts(p, planes);
-      setScout({ enemy, cells: base.cells, guns: base.guns, planes });
+      setScout({ enemy, cells: base.cells, guns: base.guns, planes, gunLevel: base.gunLevel });
       setVersion((v) => v + 1);
       forceRender((v) => v + 1);
       return null;
@@ -1126,14 +1155,40 @@ export default function Lobby({
     }
   };
 
-  const maxScoutBuy = Math.max(0, Math.floor(p.credits / SCOUT_UNIT_COST));
   const income = dailyIncome(p);
-  const pickTool = (id: Tool) => {
+  const pickTool = (id: ToolId) => {
+    // апгрейд ничего не рисует на карте — только открывает свою модалку
+    if (id === "upgrade") {
+      setModal("upgrade");
+      return;
+    }
     setTool(id);
     draftRef.current = null;
-    // на телефоне арсенал живёт в шторке, на десктопе — в боковой колонке
-    if (id === "drones") setSheet("arsenal");
-    if (id === "scouts") setSheet("scouts");
+    // панель инструмента всплывает модалкой: колонка справа от неё не едет
+    if (id === "drones") setModal("arsenal");
+    else if (id === "scouts") setModal("scouts");
+    else setModal(null);
+  };
+
+  const doUpgrade = async (kind: UpgradeKind) => {
+    const level = p.levels[kind];
+    if (level >= MAX_LEVEL) return;
+    const cost = upgradeCost(level);
+    if (p.credits < cost) {
+      setMessage(t("upgrade.cantAfford", { cost: fmt(cost) }));
+      return;
+    }
+    try {
+      const patch = await repo.upgrade(p, kind);
+      if (patch.credits !== undefined) p.credits = patch.credits;
+      p.levels = patch.levels ?? { ...p.levels, [kind]: level + 1 };
+      setMessage(
+        t("upgrade.done", { name: t(`upgrade.${kind}` as Key), level: p.levels[kind] })
+      );
+      forceRender((v) => v + 1);
+    } catch (e) {
+      setMessage(t("upgrade.failed", { error: (e as Error).message }));
+    }
   };
 
   // ---------- содержимое панелей ----------
@@ -1223,6 +1278,42 @@ export default function Lobby({
           {t("arsenal.dragTip")}
         </p>
       )}
+    </>
+  );
+
+  const upgradeBody = (
+    <>
+      <p className="mb-3 text-neutral-400">{t("upgrade.explain")}</p>
+      <div className="space-y-2">
+        {UPGRADE_KINDS.map((kind) => {
+          const level = p.levels[kind];
+          const maxed = level >= MAX_LEVEL;
+          const cost = upgradeCost(level);
+          return (
+            <Card key={kind} className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="truncate font-medium text-neutral-200">
+                  {t(`upgrade.${kind}` as Key)}
+                  <span className="ml-2 font-mono text-xs text-amber-300">
+                    {t("upgrade.level", { level })}
+                  </span>
+                </div>
+                <div className="text-xs text-neutral-500">
+                  {t(`upgrade.${kind}Effect` as Key)}
+                </div>
+              </div>
+              <Button
+                variant="build"
+                size="sm"
+                disabled={maxed || p.credits < cost}
+                onClick={() => doUpgrade(kind)}
+              >
+                {maxed ? t("upgrade.max") : t("upgrade.buy", { cost: fmt(cost) })}
+              </Button>
+            </Card>
+          );
+        })}
+      </div>
     </>
   );
 
@@ -1323,18 +1414,13 @@ export default function Lobby({
   );
 
   const baseNameBody = (
-    <div className="flex items-center gap-3">
-      <span
-        className={`min-w-0 flex-1 truncate font-semibold ${
-          p.name ? "text-neutral-100" : "text-neutral-500"
-        }`}
-      >
-        {p.name || t("base.unnamed")}
-      </span>
-      <Button size="sm" onClick={() => setNaming("rename")}>
-        {t("base.rename")}
-      </Button>
-    </div>
+    <BaseName
+      value={p.name}
+      placeholder={t("base.unnamed")}
+      title={t("base.rename")}
+      className="w-full font-semibold"
+      onCommit={rename}
+    />
   );
 
   const accountLine = (
@@ -1370,8 +1456,14 @@ export default function Lobby({
 
       {/* шапка десктопа: логотип, счётчики и аккаунт одной строкой */}
       <div className="hidden items-center gap-4 lg:flex">
-        <h1 className="shrink-0 text-2xl font-black uppercase tracking-tight">Skladron</h1>
-        <ChipBar className="min-w-0 flex-1 flex-wrap px-4 py-3 text-sm">
+        <BaseName
+          value={p.name}
+          placeholder={t("base.unnamed")}
+          title={t("base.rename")}
+          className="w-56 shrink-0 text-2xl font-black uppercase tracking-tight"
+          onCommit={rename}
+        />
+        <ChipBar bare className="min-w-0 flex-1 flex-wrap px-4 py-3 text-sm">
           <Chip label={t("stat.credits")} value={fmt(p.credits)} tone="text-emerald-300" />
           <Chip label={t("stat.dronesShort")} value={fmt(drones)} />
           <Chip label={t("stat.intact")} value={fmt(intact)} />
@@ -1389,14 +1481,15 @@ export default function Lobby({
         */}
         <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
 
-          <div className="order-3 grid shrink-0 grid-cols-5 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(5,5.5rem)] lg:gap-2">
+          <div className="order-3 grid shrink-0 grid-cols-6 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(6,5.5rem)] lg:gap-2">
             {TOOLS.map((item) => (
               <ToolButton
                 key={item.id}
                 icon={item.icon}
                 label={t(item.label)}
-                price={t("tool.price", { cost: item.vars.cost })}
+                price={t(item.priceKey ?? "tool.price", { cost: item.vars.cost })}
                 hint={t(item.hint, item.vars)}
+                level={item.levelKind ? p.levels[item.levelKind] : undefined}
                 active={tool === item.id}
                 disabled={!p.founded && item.id !== "area"}
                 onClick={() => pickTool(item.id)}
@@ -1541,9 +1634,6 @@ export default function Lobby({
             <Panel title={t("panel.layout")}>{foundBody}</Panel>
           ) : (
             <>
-              <Panel title={t("panel.base")}>{baseNameBody}</Panel>
-              {tool === "drones" && <Panel title={t("panel.arsenal")}>{arsenalBody}</Panel>}
-              {tool === "scouts" && <Panel title={t("scout.panel")}>{scoutsBody}</Panel>}
               <Panel title={t("panel.attacks")} action={summonButton}>
                 {attacksBody}
               </Panel>
@@ -1608,26 +1698,34 @@ export default function Lobby({
 
       {naming && (
         <NameDialog
-          title={naming === "found" ? t("base.namePrompt") : t("base.renameTitle")}
-          subtitle={
-            naming === "found" ? t("base.namePromptHint") : t("base.renameHint")
-          }
-          confirm={naming === "found" ? t("base.foundShort") : t("base.rename")}
+          title={t("base.namePrompt")}
+          subtitle={t("base.namePromptHint")}
+          confirm={t("base.foundShort")}
           initial={p.name}
           maxLength={MAX_BASE_NAME}
           onCancel={() => setNaming(null)}
-          onSubmit={naming === "found" ? found : rename}
+          onSubmit={found}
         />
+      )}
+
+      {modal === "arsenal" && (
+        <Modal title={t("panel.arsenal")} onClose={() => setModal(null)}>
+          {p.founded ? arsenalBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}
+        </Modal>
+      )}
+      {modal === "scouts" && (
+        <Modal title={t("scout.panel")} onClose={() => setModal(null)}>
+          {p.founded ? scoutsBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}
+        </Modal>
+      )}
+      {modal === "upgrade" && (
+        <Modal title={t("panel.upgrade")} onClose={() => setModal(null)}>
+          {p.founded ? upgradeBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}
+        </Modal>
       )}
 
       <Sheet open={sheet === "found"} title={t("panel.layout")} onClose={() => setSheet(null)}>
         {foundBody}
-      </Sheet>
-      <Sheet open={sheet === "arsenal"} title={t("panel.arsenal")} onClose={() => setSheet(null)}>
-        {p.founded ? arsenalBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}
-      </Sheet>
-      <Sheet open={sheet === "scouts"} title={t("scout.panel")} onClose={() => setSheet(null)}>
-        {scoutsBody}
       </Sheet>
       <Sheet open={sheet === "attacks"} title={t("panel.attacks")} onClose={() => setSheet(null)}>
         <div className="mb-3 flex justify-end">{summonButton}</div>
@@ -1714,5 +1812,67 @@ function AttackReportDialog({
         {t("common.close")}
       </Button>
     </Modal>
+  );
+}
+
+/**
+ * Имя склада прямо в шапке. Кнопки «переименовать» нет: щёлкнул по имени —
+ * поле стало инпутом, Enter сохраняет, Escape отменяет.
+ */
+function BaseName({
+  value,
+  placeholder,
+  title,
+  className = "",
+  onCommit,
+}: {
+  value: string;
+  placeholder: string;
+  title: string;
+  className?: string;
+  onCommit: (name: string) => void | Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  const start = () => {
+    setDraft(value);
+    setEditing(true);
+  };
+
+  const commit = () => {
+    setEditing(false);
+    const name = draft.trim();
+    if (name && name !== value) void onCommit(name);
+  };
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={draft}
+        maxLength={MAX_BASE_NAME}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          else if (e.key === "Escape") setEditing(false);
+        }}
+        className={`min-w-0 truncate rounded border border-amber-500 bg-neutral-950 px-2 py-0.5 text-neutral-100 outline-none ${className}`}
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={start}
+      className={`min-w-0 truncate rounded border border-transparent px-2 py-0.5 text-left transition hover:border-neutral-700 hover:bg-neutral-800/60 ${
+        value ? "text-neutral-100" : "text-neutral-500"
+      } ${className}`}
+    >
+      {value || placeholder}
+    </button>
   );
 }

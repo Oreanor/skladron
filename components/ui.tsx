@@ -263,10 +263,21 @@ export function Chip({ label, value, tone }: { label: string; value: string; ton
 }
 
 /** Горизонтальная лента счётчиков, которая прокручивается на узком экране. */
-export function ChipBar({ children, className = "" }: { children: ReactNode; className?: string }) {
+export function ChipBar({
+  children,
+  className = "",
+  bare = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  /** Без рамки и подложки: строка счётчиков в шапке ничего не обводит. */
+  bare?: boolean;
+}) {
   return (
     <div
-      className={`flex shrink-0 gap-3 overflow-x-auto rounded-md border border-neutral-800 bg-neutral-900/60 px-3 py-2 font-mono text-xs [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
+      className={`flex shrink-0 gap-3 overflow-x-auto px-3 py-2 font-mono text-xs ${
+        bare ? "" : "rounded-md border border-neutral-800 bg-neutral-900/60"
+      } [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
     >
       {children}
     </div>
@@ -326,8 +337,18 @@ export function Modal({
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/70 sm:items-center sm:p-4">
-      <div className="max-h-[92dvh] w-full max-w-sm overflow-y-auto overscroll-contain rounded-t-2xl border border-neutral-700 bg-neutral-900 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-md sm:pb-5">
-        <h3 className="mb-1 text-lg font-bold">{title}</h3>
+      <div className="relative max-h-[92dvh] w-full max-w-sm overflow-y-auto overscroll-contain rounded-t-2xl border border-neutral-700 bg-neutral-900 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-md sm:pb-5">
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="×"
+            className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded text-lg leading-none text-neutral-500 transition hover:bg-neutral-800 hover:text-neutral-200"
+          >
+            ×
+          </button>
+        )}
+        <h3 className="mb-1 pr-8 text-lg font-bold">{title}</h3>
         {subtitle && <p className="mb-4 text-xs text-neutral-500">{subtitle}</p>}
         {children}
       </div>
@@ -425,6 +446,7 @@ export function ToolButton({
   hint,
   active,
   icon,
+  level,
   ...rest
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   label: string;
@@ -432,6 +454,8 @@ export function ToolButton({
   hint: string;
   active: boolean;
   icon: ReactNode;
+  /** Уровень класса, если он у этого инструмента есть: рисуем уголком. */
+  level?: number;
 }) {
   return (
     <button
@@ -439,12 +463,17 @@ export function ToolButton({
       title={`${label} · ${hint}`}
       aria-label={`${label}, ${hint}`}
       aria-pressed={active}
-      className={`flex aspect-square w-full min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border p-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 disabled:cursor-not-allowed disabled:opacity-40 lg:aspect-auto lg:h-auto lg:py-2 ${
+      className={`relative flex aspect-square w-full min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border p-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 disabled:cursor-not-allowed disabled:opacity-40 lg:aspect-auto lg:h-auto lg:py-2 ${
         active
           ? "border-emerald-500 bg-emerald-500/15 text-emerald-300"
           : "border-neutral-700 text-neutral-300 hover:bg-neutral-800"
       }`}
     >
+      {level !== undefined && level > 1 && (
+        <span className="absolute right-1 top-1 rounded bg-neutral-800 px-1 font-mono text-[9px] leading-tight text-amber-300">
+          {level}
+        </span>
+      )}
       {icon}
       <span className="w-full truncate text-center text-[11px] font-semibold leading-none">
         {label}

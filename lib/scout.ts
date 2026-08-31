@@ -3,12 +3,15 @@
 // они бьют настоящими снарядами, и сбивает только прямое попадание.
 
 import { CELLS, GRID, type Gun } from "./base";
-import { GUN_RANGE } from "./engine";
+import { levelBonus } from "./economy";
+import { GUN_PER_LEVEL, GUN_RANGE } from "./engine";
 
-/** Радиус съёмки в клетках: за проход открывается коридор в двадцать клеток. */
+/** Радиус съёмки в клетках у первого уровня: коридор в двадцать клеток. */
 export const SCOUT_RADIUS = 10;
 /** Клеток в секунду. Дрон летит 4,2 — самолёт почти вдвое быстрее. */
 export const SCOUT_SPEED = 8;
+/** Прибавка к обзору и скорости разведчика за уровень. */
+export const SCOUT_PER_LEVEL = 0.25;
 /** Насколько быстро самолёт доворачивает, радиан в секунду. */
 export const SCOUT_TURN = 2.2;
 /** Сколько разведчиков можно послать за раз. */
@@ -40,6 +43,12 @@ export interface Shell {
 export interface ScoutState {
   cells: Uint8Array; // настоящая карта врага
   guns: Gun[];
+  /** Свой уровень разведки и уровень пушек противника. */
+  level: number;
+  gunLevel: number;
+  radius: number;
+  speed: number;
+  gunRange: number;
   /** Перезарядка по каждой пушке, индексы совпадают с guns. */
   cool: number[];
   /** 1 — клетка снята, 0 — под туманом. */
@@ -72,10 +81,22 @@ export function spawnPlane(rnd = Math.random): ScoutPlane {
   return { ...pos, heading: Math.atan2(mid - pos.y, mid - pos.x) };
 }
 
-export function createScout(cells: Uint8Array, guns: Gun[], planes: number): ScoutState {
+export function createScout(
+  cells: Uint8Array,
+  guns: Gun[],
+  planes: number,
+  level = 1,
+  gunLevel = 1
+): ScoutState {
+  const k = levelBonus(level, SCOUT_PER_LEVEL);
   return {
     cells,
     guns,
+    level,
+    gunLevel,
+    radius: SCOUT_RADIUS * k,
+    speed: SCOUT_SPEED * k,
+    gunRange: GUN_RANGE * levelBonus(gunLevel, GUN_PER_LEVEL),
     cool: guns.map(() => Math.random() * GUN_RELOAD),
     seen: new Uint8Array(CELLS),
     fresh: [],
@@ -91,7 +112,7 @@ export function createScout(cells: Uint8Array, guns: Gun[], planes: number): Sco
 
 /** Открывает круг вокруг самолёта. */
 function reveal(s: ScoutState, cx: number, cy: number) {
-  const r = SCOUT_RADIUS;
+  const r = s.radius;
   const x0 = Math.max(0, Math.floor(cx - r));
   const x1 = Math.min(GRID - 1, Math.ceil(cx + r));
   const y0 = Math.max(0, Math.floor(cy - r));
@@ -126,8 +147,8 @@ function fire(s: ScoutState, g: Gun, p: ScoutPlane) {
   const gx = g.cx + 0.5;
   const gy = g.cy + 0.5;
   const flight = Math.hypot(p.x - gx, p.y - gy) / SHELL_SPEED;
-  const aimX = p.x + Math.cos(p.heading) * SCOUT_SPEED * flight;
-  const aimY = p.y + Math.sin(p.heading) * SCOUT_SPEED * flight;
+  const aimX = p.x + Math.cos(p.heading) * s.speed * flight;
+  const aimY = p.y + Math.sin(p.heading) * s.speed * flight;
   const angle =
     Math.atan2(aimY - gy, aimX - gx) + (Math.random() - 0.5) * 2 * SHELL_SPREAD;
   s.shells.push({
@@ -135,7 +156,7 @@ function fire(s: ScoutState, g: Gun, p: ScoutPlane) {
     y: gy,
     vx: Math.cos(angle) * SHELL_SPEED,
     vy: Math.sin(angle) * SHELL_SPEED,
-    life: (GUN_RANGE * 2.5) / SHELL_SPEED,
+    life: (s.gunRange * 2.5) / SHELL_SPEED,
   });
 }
 
@@ -178,8 +199,8 @@ export function updateScout(s: ScoutState, dt: number) {
   }
 
   p.heading += s.steer * SCOUT_TURN * dt;
-  p.x += Math.cos(p.heading) * SCOUT_SPEED * dt;
-  p.y += Math.sin(p.heading) * SCOUT_SPEED * dt;
+  p.x += Math.cos(p.heading) * s.speed * dt;
+  p.y += Math.sin(p.heading) * s.speed * dt;
 
   // снимаем всё, над чем прошли
   if (p.x > -OUT && p.y > -OUT && p.x < GRID + OUT && p.y < GRID + OUT) {
@@ -191,7 +212,7 @@ export function updateScout(s: ScoutState, dt: number) {
     s.cool[i] -= dt;
     const g = s.guns[i];
     const d = Math.hypot(g.cx + 0.5 - p.x, g.cy + 0.5 - p.y);
-    if (d <= GUN_RANGE && s.cool[i] <= 0) {
+    if (d <= s.gunRange && s.cool[i] <= 0) {
       fire(s, g, p);
       s.cool[i] = GUN_RELOAD;
     }
@@ -209,7 +230,7 @@ export function underFire(s: ScoutState, x: number, y: number) {
   for (const g of s.guns) {
     const dx = g.cx + 0.5 - x;
     const dy = g.cy + 0.5 - y;
-    if (dx * dx + dy * dy <= GUN_RANGE * GUN_RANGE) return true;
+    if (dx * dx + dy * dy <= s.gunRange * s.gunRange) return true;
   }
   return false;
 }

@@ -1,6 +1,7 @@
 // Бой: чистая логика, без React и без canvas.
 // Карта и пушки приходят из склада игрока, дроны — из расписания атаки.
 
+import { levelBonus } from "./economy";
 import {
   GRID,
   G_BASE,
@@ -17,7 +18,11 @@ import type { SpawnTicket } from "./attack";
 export { GRID, G_BASE, G_FIRE, G_GROUND, G_SCORCH, idx, isBuilding };
 export { G_BURNT } from "./base";
 
-export const GUN_RANGE = 5; // радиус поражения пушки, в клетках
+export const GUN_RANGE = 5; // радиус поражения пушки первого уровня, в клетках
+/** Прибавка к дальности и скорости ракеты за каждый уровень пушек. */
+export const GUN_PER_LEVEL = 0.25;
+/** Прибавка к скорости дрона за каждый уровень. */
+export const DRONE_PER_LEVEL = 0.25;
 export const GUN_COOLDOWN = 3; // с
 export const FIRE_SPREAD = 5; // с — горящая клетка поджигает соседей
 export const DRONE_SPEED = 4.2; // клеток/с
@@ -133,15 +138,24 @@ export interface GameState {
   baseOk: number;
   result: BattleResult;
   nextId: number;
+  /** Уровень дронов нападающего и пушек защитника. */
+  droneLevel: number;
+  gunLevel: number;
   dirty: boolean;
 }
 
 /** Готовит бой: карта склада как есть, пушки как есть, дроны по расписанию. */
+/** Дальность пушек с учётом уровня — её же рисует зона покрытия. */
+export const gunRange = (s: { gunLevel: number }) =>
+  GUN_RANGE * levelBonus(s.gunLevel, GUN_PER_LEVEL);
+
 export function createBattle(
   cells: Uint8Array,
   guns: BaseGun[],
   depots: Depot[],
-  plan: SpawnTicket[]
+  plan: SpawnTicket[],
+  droneLevel = 1,
+  gunLevel = 1
 ): GameState {
   const map = cells.slice();
   const baseCells: number[] = [];
@@ -168,6 +182,8 @@ export function createBattle(
     firing: false,
     mgCd: 0,
     plan,
+    droneLevel,
+    gunLevel,
     planAt: 0,
     time: 0,
     baseTotal: baseCells.length,
@@ -401,7 +417,7 @@ export function update(s: GameState, dt: number) {
     const dx = d.tx - d.x;
     const dy = d.ty - d.y;
     const dist = Math.hypot(dx, dy) || 1;
-    const step = DRONE_SPEED * dt;
+    const step = DRONE_SPEED * levelBonus(s.droneLevel, DRONE_PER_LEVEL) * dt;
 
     if (dist <= step) {
       ignite(s, d.ti);
@@ -442,7 +458,7 @@ export function update(s: GameState, dt: number) {
     const gx = g.cx + 0.5;
     const gy = g.cy + 0.5;
     let best: Drone | null = null;
-    let bestD = GUN_RANGE + 0.5;
+    let bestD = gunRange(s) + 0.5;
     for (const d of s.drones) {
       if (d.hit) continue;
       const dd = Math.hypot(d.x - gx, d.y - gy);
@@ -485,8 +501,9 @@ export function update(s: GameState, dt: number) {
       m.dx = Math.cos(ca + turn);
       m.dy = Math.sin(ca + turn);
     }
-    m.x += m.dx * MISSILE_SPEED * dt;
-    m.y += m.dy * MISSILE_SPEED * dt;
+    const missileSpeed = MISSILE_SPEED * levelBonus(s.gunLevel, GUN_PER_LEVEL);
+    m.x += m.dx * missileSpeed * dt;
+    m.y += m.dy * missileSpeed * dt;
     if (t && Math.hypot(t.x - m.x, t.y - m.y) < 0.8) {
       s.booms.push({ x: t.x, y: t.y, t: 0, r: 2 });
       s.drones = s.drones.filter((d) => d !== t);

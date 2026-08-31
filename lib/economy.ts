@@ -11,6 +11,23 @@ export const INCOME_CAP_DAYS = 14; // потолок накопления
 export const ATTACK_LEAK_REWARD = 50; // атакующему за дрон, долетевший до склада
 export const DRONE_KILL_REWARD = 50; // защитнику за каждый сбитый дрон
 export const SCOUT_UNIT_COST = 25; // разведчик дороже ударного дрона, но дешевле пушки
+/**
+ * Уровни. Апгрейд общий на класс: дорожает и уже лежащее на складе, и всё,
+ * что купишь потом. Второй уровень стоит 5 000, третий 10 000, и так далее —
+ * шаг ровный, чтобы прикидывать в уме.
+ */
+export const UPGRADE_STEP = 5000;
+export const MAX_LEVEL = 10;
+
+export const upgradeCost = (level: number) => UPGRADE_STEP * level;
+
+export type UpgradeKind = "drones" | "guns" | "scouts";
+export const UPGRADE_KINDS: UpgradeKind[] = ["drones", "guns", "scouts"];
+
+/** Прибавка за уровень: первый уровень — множитель 1. */
+export const levelBonus = (level: number, perLevel: number) =>
+  1 + perLevel * (Math.max(1, level) - 1);
+
 export const STARTER_SIDE = 10; // стартовый склад 10×10 уже стоит в центре
 export const STARTER_CELLS = STARTER_SIDE * STARTER_SIDE;
 export const MIN_BASE_CELLS = STARTER_CELLS; // меньше стартового склада не основываемся

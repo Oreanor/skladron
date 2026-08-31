@@ -22,9 +22,17 @@ export function autoDefend(
   cells: Uint8Array,
   guns: Gun[],
   depots: Depot[],
-  order: AttackOrder
+  order: AttackOrder,
+  gunLevel = 1
 ): UnattendedOutcome {
-  const s = createBattle(cells, guns, depots, buildPlan(order));
+  const s = createBattle(
+    cells,
+    guns,
+    depots,
+    buildPlan(order),
+    order.droneLevel ?? 1,
+    gunLevel
+  );
 
   let t = 0;
   while (t < MAX_SECONDS && s.phase === "playing") {

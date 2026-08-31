@@ -7,10 +7,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CELLS, GRID, type Gun } from "@/lib/base";
-import { GUN_RANGE } from "@/lib/engine";
 import { COLORS, drawCoverage } from "@/lib/render";
 import {
-  SCOUT_RADIUS,
   createScout,
   seenShare,
   underFire,
@@ -33,6 +31,9 @@ interface Props {
   cells: Uint8Array;
   guns: Gun[];
   planes: number;
+  /** Уровень своей разведки и уровень чужих пушек. */
+  level?: number;
+  gunLevel?: number;
   /** Уже снятое раньше: новый вылет дополняет старую карту, а не стирает её. */
   known?: Uint8Array | null;
   onFinish: (o: ScoutOutcome) => void;
@@ -49,7 +50,16 @@ interface Hud {
   flying: boolean;
 }
 
-export default function Scout({ name, cells, guns, planes, known, onFinish }: Props) {
+export default function Scout({
+  name,
+  cells,
+  guns,
+  planes,
+  level = 1,
+  gunLevel = 1,
+  known,
+  onFinish,
+}: Props) {
   const t = useT();
   const stateRef = useRef<ScoutState | null>(null);
   const [hud, setHud] = useState<Hud | null>(null);
@@ -57,7 +67,7 @@ export default function Scout({ name, cells, guns, planes, known, onFinish }: Pr
   const finished = useRef(false);
 
   if (!stateRef.current) {
-    const s = createScout(cells, guns, planes);
+    const s = createScout(cells, guns, planes, level, gunLevel);
     // старую съёмку переносим сразу: она уже наша и туман по ней снят
     if (known && known.length === CELLS) {
       s.seen.set(known);
@@ -176,7 +186,7 @@ export default function Scout({ name, cells, guns, planes, known, onFinish }: Pr
     // пушки показываем только там, где туман уже снят
     const known: Gun[] = s.guns.filter((g) => s.seen[g.cy * GRID + g.cx]);
     if (known.length) {
-      drawCoverage(ctx, known, CELL);
+      drawCoverage(ctx, known, CELL, s.gunRange);
       for (const g of known) {
         ctx.fillStyle = COLORS.gun;
         ctx.fillRect(g.cx * CELL, g.cy * CELL, CELL, CELL);
@@ -204,7 +214,7 @@ export default function Scout({ name, cells, guns, planes, known, onFinish }: Pr
     ctx.strokeStyle = "rgba(140, 215, 255, 0.35)";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(p.x * CELL, p.y * CELL, SCOUT_RADIUS * CELL, 0, Math.PI * 2);
+    ctx.arc(p.x * CELL, p.y * CELL, s.radius * CELL, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.save();
