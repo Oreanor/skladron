@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  type ButtonHTMLAttributes,
+  type HTMLAttributes,
+  type ReactNode,
+} from "react";
 import { fmt } from "@/lib/economy";
 import { useT } from "@/lib/i18n";
 
@@ -122,23 +128,51 @@ export function SectionTitle({ children }: { children: ReactNode }) {
 export function Panel({
   title,
   action,
+  collapsed,
+  onToggle,
+  dragging,
   children,
   className = "",
+  ...rest
 }: {
   title?: string;
   action?: ReactNode;
+  /** Свёрнута: видна только шапка. */
+  collapsed?: boolean;
+  /** Клик по названию сворачивает и разворачивает. */
+  onToggle?: () => void;
+  /** Панель тащат — показываем это бледностью. */
+  dragging?: boolean;
   children: ReactNode;
   className?: string;
-}) {
+} & Omit<HTMLAttributes<HTMLDivElement>, "title" | "children">) {
   return (
-    <div className={`rounded-md border border-neutral-700 bg-neutral-900/60 p-4 ${className}`}>
+    <div
+      {...rest}
+      className={`rounded-md border border-neutral-700 bg-neutral-900/60 p-4 transition-opacity ${
+        dragging ? "opacity-40" : ""
+      } ${className}`}
+    >
       {(title || action) && (
-        <div className="mb-3 flex items-center justify-between gap-2">
-          {title && <SectionTitle>{title}</SectionTitle>}
-          {action}
+        <div className={`flex items-center justify-between gap-2 ${collapsed ? "" : "mb-3"}`}>
+          {title &&
+            (onToggle ? (
+              <button
+                type="button"
+                onClick={onToggle}
+                // Заголовок — он же ручка: за него панель и сворачивают, и таскают.
+                className="flex min-w-0 flex-1 cursor-grab items-center gap-1 text-left active:cursor-grabbing"
+              >
+                <span className="text-neutral-600">{collapsed ? "▸" : "▾"}</span>
+                <SectionTitle>{title}</SectionTitle>
+              </button>
+            ) : (
+              <SectionTitle>{title}</SectionTitle>
+            ))}
+          {!collapsed && action}
         </div>
       )}
-      {children}
+      {!collapsed && children}
     </div>
   );
 }

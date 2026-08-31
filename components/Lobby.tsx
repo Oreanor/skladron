@@ -233,6 +233,35 @@ const TOOLS: {
 /** Имена ботов для отладочной кнопки «+ налёт»: настоящие атаки приходят с именем склада. */
 const BOT_COUNT = 4;
 
+/** Панели правой колонки в порядке по умолчанию. */
+const DEFAULT_PANELS = ["attacks", "enemies", "replays", "stats"];
+const PANELS_KEY = "wb.panels.v1";
+
+function readPanels(): {
+  order: string[];
+  hidden: Record<string, boolean>;
+  tool?: Tool;
+} {
+  if (typeof window === "undefined") return { order: DEFAULT_PANELS, hidden: {} };
+  try {
+    const raw = window.localStorage.getItem(PANELS_KEY);
+    if (!raw) return { order: DEFAULT_PANELS, hidden: {} };
+    const saved = JSON.parse(raw) as {
+      order?: string[];
+      hidden?: Record<string, boolean>;
+      tool?: Tool;
+    };
+    // новые панели дописываем в конец, исчезнувшие выкидываем
+    const order = [
+      ...(saved.order ?? []).filter((id) => DEFAULT_PANELS.includes(id)),
+      ...DEFAULT_PANELS.filter((id) => !(saved.order ?? []).includes(id)),
+    ];
+    return { order, hidden: saved.hidden ?? {}, tool: saved.tool };
+  } catch {
+    return { order: DEFAULT_PANELS, hidden: {} };
+  }
+}
+
 export default function Lobby({
   account,
   onSignOut,
@@ -246,6 +275,9 @@ export default function Lobby({
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [, forceRender] = useState(0);
   const [tool, setTool] = useState<Tool>("area");
+  /** Выбранный инструмент помним между заходами — он тоже настройка. */
+  const toolRef = useRef<Tool>("area");
+  toolRef.current = tool;
   const [message, setMessage] = useState<string | null>(null);
   const [battle, setBattle] = useState<AttackOrder | null>(null);
   const [ready, setReady] = useState(false);
@@ -263,6 +295,9 @@ export default function Lobby({
     { id: string; name: string; replay: ReplayData } | null
   >(null);
   const [showRules, setShowRules] = useState(false);
+  const [panelOrder, setPanelOrder] = useState(DEFAULT_PANELS);
+  const [hidden, setHidden] = useState<Record<string, boolean>>({});
+  const [dragPanel, setDragPanel] = useState<string | null>(null);
   /** Журнал боёв: и свои налёты, и те, где отбивался. */
   const [raids, setRaids] = useState<RaidLog[]>([]);
   /** Идущий разведвылет: карта врага, его пушки и сколько самолётов послали. */
@@ -313,6 +348,52 @@ export default function Lobby({
    * Дальше без синхронизации отвергалась бы каждая следующая правка, поэтому
    * берём серверную версию: она и есть настоящая.
    */
+  // Раскладку панелей помним в браузере: она про привычку, а не про склад.
+  useEffect(() => {
+    const saved = readPanels();
+    setPanelOrder(saved.order);
+    setHidden(saved.hidden);
+    if (saved.tool) setTool(saved.tool);
+  }, []);
+
+  const savePanels = (
+    order: string[],
+    next: Record<string, boolean>,
+    activeTool: Tool = toolRef.current
+  ) => {
+    try {
+      window.localStorage.setItem(
+        PANELS_KEY,
+        JSON.stringify({ order, hidden: next, tool: activeTool })
+      );
+    } catch {
+      // приватный режим — переживём, просто не запомним
+    }
+  };
+
+  const togglePanel = (id: string) => {
+    setHidden((cur) => {
+      const next = { ...cur, [id]: !cur[id] };
+      savePanels(panelOrder, next);
+      return next;
+    });
+  };
+
+  /** Перетаскивание: тащим одну панель поверх другой — они меняются местами. */
+  const movePanel = (over: string) => {
+    setPanelOrder((cur) => {
+      if (!dragPanel || dragPanel === over) return cur;
+      const from = cur.indexOf(dragPanel);
+      const to = cur.indexOf(over);
+      if (from < 0 || to < 0) return cur;
+      const next = cur.slice();
+      next.splice(from, 1);
+      next.splice(to, 0, dragPanel);
+      savePanels(next, hidden);
+      return next;
+    });
+  };
+
   const loadRaids = () => {
     void repo
       .raidLog()
@@ -1532,6 +1613,8 @@ export default function Lobby({
       return;
     }
     setTool(id);
+    toolRef.current = id;
+    savePanels(panelOrder, hidden, id);
     draftRef.current = null;
     setModal(null);
   };
@@ -1864,6 +1947,16 @@ export default function Lobby({
     </div>
   );
 
+  const SIDE_PANELS: Record<
+    string,
+    { title: Key; action?: ReactNode; body: ReactNode }
+  > = {
+    attacks: { title: "panel.attacks", action: summonButton, body: attacksBody },
+    enemies: { title: "panel.enemies", body: enemiesBody },
+    replays: { title: "panel.replays", body: raidsBody },
+    stats: { title: "panel.stats", body: statsBody },
+  };
+
   const baseNameBody = (
     <BaseName
       value={p.name}
@@ -2111,12 +2204,29 @@ export default function Lobby({
             <Panel title={t("panel.layout")}>{foundBody}</Panel>
           ) : (
             <>
-              <Panel title={t("panel.attacks")} action={summonButton}>
-                {attacksBody}
-              </Panel>
-              <Panel title={t("panel.replays")}>{raidsBody}</Panel>
-              <Panel title={t("panel.enemies")}>{enemiesBody}</Panel>
-              <Panel title={t("panel.stats")}>{statsBody}</Panel>
+              {panelOrder.map((id) => {
+                const panel = SIDE_PANELS[id];
+                if (!panel) return null;
+                return (
+                  <Panel
+                    key={id}
+                    title={t(panel.title)}
+                    action={panel.action}
+                    collapsed={hidden[id]}
+                    dragging={dragPanel === id}
+                    onToggle={() => togglePanel(id)}
+                    draggable
+                    onDragStart={() => setDragPanel(id)}
+                    onDragEnd={() => setDragPanel(null)}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      movePanel(id);
+                    }}
+                  >
+                    {panel.body}
+                  </Panel>
+                );
+              })}
             </>
           )}
         </aside>
