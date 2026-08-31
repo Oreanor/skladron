@@ -121,6 +121,7 @@ export interface BattleResult {
   extinguished: number; // потушено водой
   gunsLost: number;
   dronesLost: number; // сгорело в контейнерах на складе
+  depotsLost: number; // сколько контейнеров сгорело вместе с клетками
 }
 
 export interface GameState {
@@ -221,6 +222,7 @@ export function createBattle(
       extinguished: 0,
       gunsLost: 0,
       dronesLost: 0,
+      depotsLost: 0,
     },
     nextId,
     dirty: true,
@@ -268,6 +270,7 @@ function ignite(s: GameState, i: number) {
   const k = s.depots.findIndex((d) => d.cx === x && d.cy === y);
   if (k >= 0) {
     s.result.dronesLost += s.depots[k].n;
+    s.result.depotsLost++;
     s.depots.splice(k, 1);
   }
 

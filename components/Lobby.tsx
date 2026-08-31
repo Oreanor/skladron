@@ -24,7 +24,8 @@ import {
   CELL_COST,
   STARTER_SIDE,
   DRONE_UNIT_COST,
-  DRONE_KILL_REWARD,
+  INSURANCE_CELL,
+  INSURANCE_DEPOT,
   GUN_COST,
   GUN_REFUND,
   MIN_BASE_CELLS,
@@ -409,6 +410,9 @@ export default function Lobby({
         const killed = o.result.killedByGuns + o.result.killedByMg;
         cur.stats.dronesKilled += killed;
         cur.stats.cellsBurned += o.result.burned;
+        // страховка погорельцу: за клетки и за сгоревший в них товар
+        cur.credits +=
+          o.result.burned * INSURANCE_CELL + o.result.depotsLost * INSURANCE_DEPOT;
         const foe = cur.enemies.find((e) => e.name === head.from);
         if (foe) {
           foe.burnedByThem += o.result.burned;
@@ -498,6 +502,8 @@ export default function Lobby({
           const killed = o.result.killedByGuns + o.result.killedByMg;
           p.stats.dronesKilled += killed;
           p.stats.cellsBurned += o.result.burned;
+          p.credits +=
+            o.result.burned * INSURANCE_CELL + o.result.depotsLost * INSURANCE_DEPOT;
           // счёт вражды: записываем, сколько он у нас сжёг
           const foe = p.enemies.find((e) => e.name === battle.from);
           if (foe) {

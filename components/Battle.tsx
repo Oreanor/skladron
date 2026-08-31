@@ -14,7 +14,7 @@ import {
   type GameState,
 } from "@/lib/engine";
 import { drawFrame } from "@/lib/render";
-import { DRONE_KILL_REWARD, fmt } from "@/lib/economy";
+import { CELL_LOOT_REWARD, INSURANCE_CELL, INSURANCE_DEPOT, fmt } from "@/lib/economy";
 import MapCanvas, { type Pt } from "./MapCanvas";
 import { Button, Chip, ChipBar, IconButton, Panel, Row } from "./ui";
 import { useT } from "@/lib/i18n";
@@ -45,6 +45,7 @@ interface Hud {
   killedByGuns: number;
   killedByMg: number;
   fires: number;
+  burned: number;
   integrity: number;
   gunsAlive: number;
   gunsTotal: number;
@@ -101,6 +102,7 @@ export default function Battle({ cells, guns, depots, order, levels, onFinish }:
           killedByGuns: s.result.killedByGuns,
           killedByMg: s.result.killedByMg,
           fires: s.fire.size,
+          burned: s.result.burned,
           integrity: s.baseTotal ? Math.round((s.baseOk / s.baseTotal) * 100) : 0,
           gunsAlive: s.guns.filter((g) => g.alive).length,
           gunsTotal: s.guns.length,
@@ -126,7 +128,8 @@ export default function Battle({ cells, guns, depots, order, levels, onFinish }:
 
   const patternName = t(`pattern.${order.pattern}` as Key).toLowerCase();
   const seconds = `${Math.floor(hud?.time ?? 0)} ${t("battle.seconds")}`;
-  const killReward = ((hud?.killedByGuns ?? 0) + (hud?.killedByMg ?? 0)) * DRONE_KILL_REWARD;
+  // За сбитых не платят: на кону то, что нападавший вынесет за сожжённое.
+  const loss = (hud?.burned ?? 0) * CELL_LOOT_REWARD;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-4">
@@ -165,11 +168,9 @@ export default function Battle({ cells, guns, depots, order, levels, onFinish }:
             tone="text-emerald-300"
           />
           <Chip
-            label={t("battle.killReward")}
-            value={`+${fmt(
-              ((hud?.killedByGuns ?? 0) + (hud?.killedByMg ?? 0)) * DRONE_KILL_REWARD
-            )}`}
-            tone="text-emerald-300"
+            label={t("battle.loss")}
+            value={`−${fmt(loss)}`}
+            tone={loss ? "text-red-300" : undefined}
           />
           <Chip
             label={t("battle.hudFires")}
@@ -228,17 +229,15 @@ export default function Battle({ cells, guns, depots, order, levels, onFinish }:
                 <Row label={t("battle.killedByGuns")} value={String(done.result.killedByGuns)} />
                 <Row label={t("battle.killedByMg")} value={String(done.result.killedByMg)} />
                 <Row
-                  label={t("battle.killReward")}
-                  value={`+${fmt(
-                    (done.result.killedByGuns + done.result.killedByMg) * DRONE_KILL_REWARD
-                  )} кр`}
+                  label={t("battle.loss")}
+                  value={`−${fmt(done.result.burned * CELL_LOOT_REWARD)} ${t("battle.creditsSuffix")}`}
                 />
                 <Row
-                  label={t("battle.totalReward")}
+                  label={t("battle.insurance")}
                   value={`+${fmt(
-                    (done.result.killedByGuns + done.result.killedByMg) *
-                      DRONE_KILL_REWARD
-                  )} кр`}
+                    done.result.burned * INSURANCE_CELL +
+                      done.result.depotsLost * INSURANCE_DEPOT
+                  )} ${t("battle.creditsSuffix")}`}
                 />
                 <Row label={t("battle.leaked")} value={String(done.result.leaked)} />
                 <Row
@@ -274,8 +273,8 @@ export default function Battle({ cells, guns, depots, order, levels, onFinish }:
             <Row label={t("battle.killedByGuns")} value={String(hud?.killedByGuns ?? 0)} />
             <Row label={t("battle.killedByMg")} value={String(hud?.killedByMg ?? 0)} />
             <Row
-              label={t("battle.killReward")}
-              value={`+${fmt(killReward)} ${t("battle.creditsSuffix")}`}
+              label={t("battle.loss")}
+              value={`−${fmt(loss)} ${t("battle.creditsSuffix")}`}
             />
             <Row label={t("battle.fires")} value={String(hud?.fires ?? 0)} />
             <Row label={t("battle.gunsAlive")} value={`${hud?.gunsAlive ?? 0}/${hud?.gunsTotal ?? 0}`} />

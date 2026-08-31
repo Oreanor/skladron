@@ -16,6 +16,8 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 };
 
 const en = {
+  "battle.insurance": "insurance",
+  "battle.loss": "looted from you",
   "restart.menu": "Start over",
   "restart.title": "Start the game over?",
   "restart.hint": "The warehouse, credits, drones, guns and levels go back to the very beginning. The name and the rival list stay. This cannot be undone.",
@@ -337,6 +339,8 @@ export type Key = keyof typeof en;
 type Dict = Record<Key, string>;
 
 const ru: Dict = {
+  "battle.insurance": "страховка",
+  "battle.loss": "вынесут со склада",
   "restart.menu": "Начать сначала",
   "restart.title": "Начать игру сначала?",
   "restart.hint": "Склад, кредиты, дроны, пушки и уровни вернутся к самому началу. Имя склада и список соперников останутся. Отменить это нельзя.",
@@ -658,6 +662,8 @@ const ru: Dict = {
 };
 
 const es: Dict = {
+  "battle.insurance": "seguro",
+  "battle.loss": "te saquean",
   "restart.menu": "Empezar de nuevo",
   "restart.title": "¿Empezar la partida de nuevo?",
   "restart.hint": "El almacén, los créditos, los drones, los cañones y los niveles vuelven al principio. El nombre y la lista de rivales se mantienen. No se puede deshacer.",
@@ -979,6 +985,8 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+  "battle.insurance": "seguro",
+  "battle.loss": "levam-te do armazém",
   "restart.menu": "Começar de novo",
   "restart.title": "Começar o jogo de novo?",
   "restart.hint": "O armazém, os créditos, os drones, os canhões e os níveis voltam ao início. O nome e a lista de rivais ficam. Isto não se desfaz.",
@@ -1300,6 +1308,8 @@ const pt: Dict = {
 };
 
 const fr: Dict = {
+  "battle.insurance": "assurance",
+  "battle.loss": "pillé chez toi",
   "restart.menu": "Tout recommencer",
   "restart.title": "Recommencer la partie ?",
   "restart.hint": "L’entrepôt, les crédits, les drones, les canons et les niveaux repartent de zéro. Le nom et la liste des rivaux restent. C’est irréversible.",
@@ -1621,6 +1631,8 @@ const fr: Dict = {
 };
 
 const de: Dict = {
+  "battle.insurance": "Versicherung",
+  "battle.loss": "aus dem Lager geholt",
   "restart.menu": "Neu anfangen",
   "restart.title": "Das Spiel neu anfangen?",
   "restart.hint": "Lager, Kredite, Drohnen, Geschütze und Stufen gehen ganz an den Anfang zurück. Name und Gegnerliste bleiben. Rückgängig geht das nicht.",
@@ -1942,6 +1954,8 @@ const de: Dict = {
 };
 
 const it: Dict = {
+  "battle.insurance": "assicurazione",
+  "battle.loss": "ti portano via",
   "restart.menu": "Ricomincia",
   "restart.title": "Ricominciare la partita?",
   "restart.hint": "Magazzino, crediti, droni, cannoni e livelli tornano all’inizio. Il nome e la lista dei rivali restano. Non si torna indietro.",

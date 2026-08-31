@@ -13,8 +13,9 @@ export const DRONE_UNIT_COST = 10;
  */
 export const INCOME_PERCENT = 10;
 export const INCOME_CAP_DAYS = 14; // потолок накопления
-export const ATTACK_LEAK_REWARD = 20; // атакующему за дрон, долетевший до склада
-export const DRONE_KILL_REWARD = 10; // защитнику за каждый сбитый дрон
+export const CELL_LOOT_REWARD = 50; // нападавшему за каждую сожжённую клетку склада
+export const INSURANCE_CELL = 10; // страховка пострадавшему за сгоревшую клетку
+export const INSURANCE_DEPOT = 50; // и ещё столько, если на клетке лежал товар
 export const SCOUT_UNIT_COST = 25; // разведчик дороже ударного дрона, но дешевле пушки
 /**
  * Уровни. Апгрейд общий на класс: дорожает и уже лежащее на складе, и всё,

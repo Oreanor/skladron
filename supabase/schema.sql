@@ -17,13 +17,13 @@ language sql immutable as $$
     when 'scout'  then 25    -- разведчик дороже ударного дрона, но дешевле пушки
     when 'drone'  then 10
     when 'income' then 10  -- процент от стоимости товара в сутки
-    when 'loot'   then 5
-    when 'kill'   then 10   -- защитнику за сбитый дрон
-    when 'leak'   then 20   -- атакующему за долетевший дрон
+    when 'loot'   then 50   -- нападавшему за каждую сожжённую клетку склада
+    when 'insure_cell'  then 10  -- страховка погорельцу за клетку
+    when 'insure_depot' then 50  -- и ещё столько, если на клетке лежал товар
     when 'raid_ttl' then 1800  -- полчаса на то, чтобы отбить атаку вручную
     when 'free'   then 25   -- стартовая площадь 5×5 достаётся даром
     when 'found'  then 25   -- столько же нужно, чтобы основаться
-    when 'upgrade' then 5000 -- шаг апгрейда: на N-й уровень платим 5000*(N-1)
+    when 'upgrade' then 5000 -- апгрейд на любую ступень стоит одинаково
     when 'max_raid' then 500 -- потолок одного налёта, тот же и на клиенте
   end;
 $$;
@@ -828,6 +828,8 @@ declare
   intact_now int := 0;
   burned int := 0;
   killed int;
+  depots_lost int;
+  payout int;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   if octet_length(bin) <> 10000 then raise exception 'bad map size'; end if;
@@ -873,14 +875,22 @@ begin
          intact_cells = intact_now, updated_at = now()
    where user_id = uid;
 
-  -- За сбитых платит не бой сам по себе, а нападавший: деньги начисляет
-  -- complete_attack, у которого есть чужая атака. Иначе можно было бы
-  -- нагенерить себе учебных налётов и озолотиться за вечер.
+  -- Страховку считаем по своим данным, а не по присланным: сожжённые клетки
+  -- уже сверены с картой, а сгоревшие контейнеры — это те, что были и
+  -- пропали. Вне боя контейнеры не исчезают.
+  depots_lost := greatest(
+    0,
+    jsonb_array_length(cur_depots) - jsonb_array_length(new_depots)
+  );
+  payout := burned * price('insure_cell') + depots_lost * price('insure_depot');
+
+  -- За сбитых не платят: деньги приносит товар, а не стрельба. Зато
+  -- погорельцу выплачивается страховка.
   update profiles
      set drones = depot_sum(new_depots),
          -- сгорело всё до последней клетки — сразу поднимаем кассу
          credits = greatest(
-           profiles.credits,
+           profiles.credits + payout,
            case when intact_now = 0 then 10000 else 0 end
          ),
          stats = profiles.stats
@@ -934,11 +944,11 @@ begin
     into defender_credits, defender_intact
     from apply_battle(new_cells, new_guns, new_depots, result) applied;
 
-  -- Добыча — это перевод, а не новые деньги: сколько нападавший вынес со
-  -- склада, столько защитник и недосчитался. Больше, чем у него есть,
-  -- вынести нельзя.
+  -- Добыча считается по нанесённому ущербу: за каждую сожжённую клетку.
+  -- И это перевод, а не новые деньги: сколько нападавший взял, столько
+  -- защитник и недосчитался. Больше, чем у того есть, не возьмёшь.
   earned := least(
-    coalesce((result->>'leaked')::int, 0) * price('leak'),
+    coalesce((result->>'burned')::int, 0) * price('loot'),
     greatest(0, defender_credits)
   );
   update profiles set credits = profiles.credits - earned where profiles.id = uid;
