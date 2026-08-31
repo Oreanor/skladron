@@ -8,6 +8,43 @@ export type Pattern = "swarm" | "lines" | "random" | "drip";
 /** Сколько атака ждёт живого защитника, прежде чем пройти сама. */
 export const RAID_TTL_MS = 30 * 60 * 1000;
 
+/** Рой больше этого кладёт браузер жертвы. */
+export const MAX_RAID = 300;
+
+// ---------- размер налёта ----------
+// Цифры сняты прогоном боя без игрока: пушки палят сами, рой растёт. Одна
+// живая пушка успевает снять около трёх дронов за налёт — её держит не
+// меткость, а перезарядка в три секунды. Примерно половину роя игрок
+// разбирает руками: пулемётом и брандспойтом. Остальное прорывается, и рой
+// считаем так, чтобы прорывов было столько, сколько реально успеть затушить.
+
+/** Сколько дронов пушка снимает за налёт сама. */
+export const DRONES_PER_GUN = 3;
+/** Какую долю роя игрок снимает руками, если играет, а не смотрит. */
+export const PLAYER_SHARE = 0.5;
+/** Надбавка за размер склада: по большому есть куда бить. */
+export const RAID_PER_CELL = 0.06;
+
+/** Сколько прорывов игрок ещё успевает затушить на складе такого размера. */
+function leaksOk(intact: number) {
+  return Math.min(40, 10 + intact / 25);
+}
+
+/**
+ * Размер налёта под конкретную оборону. Множитель сложности гуляет от 0,75
+ * до 1,35: бывает и полегче, и позлее, но неподъёмного не приходит.
+ */
+export function raidSize(guns: number, intact: number, difficulty = 1) {
+  const survivable = leaksOk(intact) + guns * DRONES_PER_GUN + intact * RAID_PER_CELL;
+  const fair = survivable / (1 - PLAYER_SHARE);
+  return Math.max(30, Math.min(MAX_RAID, Math.round(fair * difficulty)));
+}
+
+/** Случайная сложность очередного налёта. */
+export function raidDifficulty() {
+  return 0.75 + Math.random() * 0.6;
+}
+
 export interface AttackOrder {
   id: string;
   from: string; // кто прислал

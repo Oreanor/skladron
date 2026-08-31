@@ -40,6 +40,8 @@ import {
 import {
   PATTERNS,
   RAID_TTL_MS,
+  raidDifficulty,
+  raidSize,
   type AttackOrder,
   type AttackReport,
   type Pattern,
@@ -804,8 +806,8 @@ export default function Lobby({
 
   const summonAttack = () => {
     const pattern = PATTERNS[(Math.random() * PATTERNS.length) | 0];
-    // сотня дронов — нижняя планка: меньшим роем склад даже не почешешь
-    const size = 100 + Math.floor(Math.random() * 200);
+    // рой подбираем под оборону: сколько пушек и сколько склада прикрывать
+    const size = raidSize(p.guns.length, intact, raidDifficulty());
     const order = makeOrder(
       t(`bot.${(Math.random() * BOT_COUNT) | 0}` as Key),
       size,

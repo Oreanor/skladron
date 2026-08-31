@@ -17,10 +17,19 @@ import {
   normRect,
 } from "./base";
 import { ATTACK_LEAK_REWARD } from "./economy";
-import { type AttackOrder, type Pattern, buildPlan, makeOrder, mulberry32 } from "./attack";
+import {
+  MAX_RAID,
+  type AttackOrder,
+  type Pattern,
+  buildPlan,
+  makeOrder,
+  mulberry32,
+  raidDifficulty,
+  raidSize,
+} from "./attack";
 import { type BattleResult, createBattle, extinguish, update } from "./engine";
 
-export const MAX_ATTACK_DRONES = 300; // рой больше этого кладёт браузер жертвы
+export const MAX_ATTACK_DRONES = MAX_RAID;
 export const DEFENDER_HOSE = 1.6; // клеток в секунду тушит враг-бот
 
 /** Что удалось снять разведкой: карта врага и маска того, что мы видели. */
@@ -199,14 +208,17 @@ export function raid(
 }
 
 /** Ответный налёт врага: чем больше ты ему сжёг, тем злее ответ. */
-export function counterRaid(enemy: Enemy, now = Date.now()): AttackOrder | null {
+export function counterRaid(
+  enemy: Enemy,
+  defence: { guns: number; intact: number },
+  now = Date.now()
+): AttackOrder | null {
   if (now - enemy.lastRaidAt < 30_000) return null; // не чаще раза в полминуты
   enemy.lastRaidAt = now;
   const patterns: Pattern[] = ["swarm", "lines", "random", "drip"];
-  const size = Math.min(
-    MAX_ATTACK_DRONES,
-    80 + Math.floor(enemy.burnedByMe / 2) + Math.floor(Math.random() * 80)
-  );
+  // за сожжённое у него мстят злее, но потолок всё тот же
+  const spite = 1 + Math.min(0.5, enemy.burnedByMe / 800);
+  const size = raidSize(defence.guns, defence.intact, raidDifficulty() * spite);
   return makeOrder(
     enemy.name,
     size,
