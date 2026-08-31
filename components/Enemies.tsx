@@ -4,7 +4,8 @@ import { useState } from "react";
 import { EDGES, PATTERNS, type Pattern } from "@/lib/attack";
 import { MAX_ATTACK_DRONES, type Enemy } from "@/lib/enemy";
 import { MAX_SCOUTS } from "@/lib/scout";
-import { Button, Card, Modal, inputClass } from "./ui";
+import { Crosshair, Map, Plane } from "lucide-react";
+import { Button, Card, IconButton, Modal, inputClass } from "./ui";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 
@@ -93,21 +94,32 @@ export default function Enemies({
                 </div>
                 <div className="flex shrink-0 gap-2">
                   {e.scout && (
-                    <Button size="sm" onClick={() => onShowMap(e)}>
-                      {t("scout.map")}
-                    </Button>
+                    <IconButton
+                      label={t("scout.map")}
+                      title={t("scout.map")}
+                      className="h-9 w-9"
+                      onClick={() => onShowMap(e)}
+                    >
+                      <Map className="h-4 w-4" />
+                    </IconButton>
                   )}
-                  <Button size="sm" onClick={() => setScoutTarget(e)}>
-                    {t("scout.button")}
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
+                  <IconButton
+                    label={t("scout.button")}
+                    title={t("scout.button")}
+                    className="h-9 w-9"
+                    onClick={() => setScoutTarget(e)}
+                  >
+                    <Plane className="h-4 w-4" />
+                  </IconButton>
+                  <IconButton
+                    label={t("enemies.attack")}
+                    title={t("enemies.attack")}
                     disabled={drones < 10}
+                    className="h-9 w-9 border-red-800 bg-red-950/40 text-red-300 hover:bg-red-900/50 disabled:cursor-not-allowed disabled:opacity-40"
                     onClick={() => setTarget(e)}
                   >
-                    {t("enemies.attack")}
-                  </Button>
+                    <Crosshair className="h-4 w-4" />
+                  </IconButton>
                 </div>
               </div>
             </Card>

@@ -986,15 +986,10 @@ begin
     into defender_credits, defender_intact
     from apply_battle(new_cells, new_guns, new_depots, result) applied;
 
-  -- Добыча считается по нанесённому ущербу: за каждую сожжённую клетку.
-  -- И это перевод, а не новые деньги: сколько нападавший взял, столько
-  -- защитник и недосчитался. Больше, чем у того есть, не возьмёшь.
-  earned := least(
-    coalesce((result->>'burned')::int, 0) * price('loot'),
-    greatest(0, defender_credits)
-  );
-  update profiles set credits = profiles.credits - earned where profiles.id = uid;
-  defender_credits := defender_credits - earned;
+  -- Премия нападающему за нанесённый ущерб: по цене за каждую сожжённую
+  -- клетку. У защитника с этого ничего не списывается — его убыток и так
+  -- в пепелище, а страховку ему платит apply_battle.
+  earned := coalesce((result->>'burned')::int, 0) * price('loot');
 
   update profiles
      set credits = profiles.credits + earned,
