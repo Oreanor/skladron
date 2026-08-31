@@ -13,9 +13,14 @@ import {
   INCOME_PER_CELL,
   INSURANCE_CELL,
   INSURANCE_PER_LEVEL,
+  LOAN_HOURS,
+  LOAN_MAX,
+  LOAN_MIN,
+  LOAN_RATE,
   REPAIR_COST,
   SALE_MULTIPLIER,
   SCOUT_UNIT_COST,
+  SCRAP_REWARD,
   STARTER_SIDE,
   UPGRADE_STEP,
   fmt,
@@ -48,6 +53,11 @@ const values: Record<string, string> = {
   insureCell: String(INSURANCE_CELL),
   insureShare: String(Math.round(INSURANCE_PER_LEVEL * 100)),
   upgrade: fmt(UPGRADE_STEP),
+  scrap: String(SCRAP_REWARD),
+  loanMin: fmt(LOAN_MIN),
+  loanMax: fmt(LOAN_MAX),
+  loanRate: String(LOAN_RATE),
+  loanHours: String(LOAN_HOURS),
 };
 
 const fill = (line: string) => line.replace(/\{(\w+)\}/g, (m, key) => values[key] ?? m);

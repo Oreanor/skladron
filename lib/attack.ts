@@ -197,11 +197,6 @@ export function buildPlan(order: AttackOrder): SpawnTicket[] {
   return plan.sort((a, b) => a.at - b.at);
 }
 
-/** Сколько примерно продлится налёт — показываем в лобби перед боем. */
-export function planLength(plan: SpawnTicket[]) {
-  return plan.length ? plan[plan.length - 1].at : 0;
-}
-
 let counter = 0;
 export function makeOrder(
   from: string,

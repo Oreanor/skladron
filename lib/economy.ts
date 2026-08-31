@@ -4,7 +4,6 @@ export const CREDITS_START = 10_000;
 export const CELL_COST = 10; // новая клетка склада
 export const REPAIR_COST = 5; // ремонт сгоревшей клетки
 export const GUN_COST = 100;
-export const GUN_REFUND = 50; // возврат при снятии пушки
 export const DRONE_UNIT_COST = 10;
 /** Сколько платят за сданные во вторсырьё остатки сгоревшей клетки. */
 export const SCRAP_REWARD = 5;

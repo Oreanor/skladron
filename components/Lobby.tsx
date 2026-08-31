@@ -130,7 +130,7 @@ type Tool = "area" | "repair" | "scrap" | "gun" | "drones" | "scouts";
 /** Кнопка «Апгрейд» карты не касается: она только открывает модалку. */
 type ToolId = Tool | "upgrade" | "insurance" | "loan";
 /** Панели, которые на телефоне открываются шторкой снизу. */
-type SheetId = "found" | "attacks" | "enemies" | "menu";
+type SheetId = "attacks" | "enemies" | "menu";
 /** Панели инструментов: они всплывают модалкой и вёрстку не разрывают. */
 type ModalId = "upgrade" | "insurance" | "loan";
 
@@ -563,6 +563,8 @@ export default function Lobby({
     const tick = async () => {
       const cur = playerRef.current;
       const head = cur?.incoming[0];
+      // время нужно не только очереди налётов: по нему же идёт срок займа
+      if (cur?.loan) setNow(Date.now());
       if (!cur || !head) return;
       if (!head.activatedAt) {
         // сервер отметит своим временем при ближайшем опросе, а бот-атаки
@@ -1590,7 +1592,12 @@ export default function Lobby({
         setMessage(t("replay.gone"));
         return;
       }
-      setWatching({ id: row.id, name: row.foe, replay: data });
+      // в шапке повтора стоит тот, чей склад отбивался
+      setWatching({
+        id: row.id,
+        name: row.side === "attack" ? row.foe : p.name,
+        replay: data,
+      });
     } catch (e) {
       setMessage(t("replay.failed", { error: (e as Error).message }));
     }
@@ -2379,9 +2386,6 @@ export default function Lobby({
         </Modal>
       )}
 
-      <Sheet open={sheet === "found"} title={t("panel.layout")} onClose={() => setSheet(null)}>
-        {foundBody}
-      </Sheet>
       <Sheet open={sheet === "attacks"} title={t("panel.attacks")} onClose={() => setSheet(null)}>
         <div className="mb-3 flex justify-end">{summonButton}</div>
         {attacksBody}

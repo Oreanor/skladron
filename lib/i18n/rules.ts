@@ -16,6 +16,7 @@ const en: RuleSection[] = [
       "Once a day the warehouse pays rent: {income} cr for every intact cell.",
       "The same moment everything stored ships out at double the purchase price: drones at {droneSale} cr, recon planes at {scoutSale} cr. Whatever you did not send into battle is sold.",
       "Away for a while? The rent accrues for at most {capDays} days.",
+      "Short of money? The bank lends {loanMin}–{loanMax} cr for {loanHours} hours at {loanRate}%. The goods you buy with it can burn in a raid — the debt will not.",
     ],
   },
   {
@@ -23,6 +24,7 @@ const en: RuleSection[] = [
     lines: [
       "«Area» — drag a frame or tap a cell. A new cell costs {cell} cr and must touch what already stands.",
       "«Repair» — the same, {repair} cr per burnt cell.",
+      "«Demolish» — sell the remains of burnt cells for {scrap} cr each. Bare ground is left behind, and the warehouse must stay in one piece.",
       "«Gun» — {gun} cr on a free intact cell. Guns are not sold back, but they can be dragged anywhere on the warehouse.",
       "«Drones» and «Recon» — a container of {perCell} for {droneBox} and {scoutBox} cr.",
       "Guns and containers can be dragged around the warehouse in any mode, and that costs nothing.",
@@ -45,6 +47,7 @@ const en: RuleSection[] = [
       "The defender fights the raid on their own screen. You get a report afterwards — and can watch the whole thing replayed.",
       "For every cell you burn down you get a {loot} cr bonus. The defender's insurance pays them {insureCell} cr per burnt cell — exactly the repair. The basic policy stops there; every level of it adds {insureShare}% cover for goods and guns lost in the fire, up to the full value.",
       "Nobody is paid for downed drones: money comes from goods, not from shooting.",
+      "Every finished battle lands in the log: watch the replay or copy a link so others can see how it went.",
     ],
   },
   {
@@ -59,7 +62,7 @@ const en: RuleSection[] = [
   {
     title: "Upgrades",
     lines: [
-      "Five classes, ten levels each, {upgrade} cr per level.",
+      "Six classes, {upgrade} cr per level. Ten levels each, except the insurance policy: it tops out at five, where cover is already full.",
       "Drones fly faster, guns reach further and shoot quicker, recon planes see more and fly faster, the machine gun aims better, the hose covers more.",
       "A level applies to everything at once — to what is already in stock and to everything bought later.",
     ],
@@ -74,6 +77,7 @@ const ru: RuleSection[] = [
       "Раз в сутки склад приносит аренду: {income} кр с каждой целой клетки.",
       "Тогда же уходит отгрузка: всё, что лежит, продаётся вдвое дороже закупки — дроны по {droneSale} кр, разведчики по {scoutSale}. Что не пустил в дело, то продано.",
       "Не заходил долго — аренда копится не больше чем за {capDays} суток.",
+      "Не хватает денег — банк даёт {loanMin}–{loanMax} кр на {loanHours} часа под {loanRate}%. Купленный на них товар может сгореть в налёте, долг — нет.",
     ],
   },
   {
@@ -81,6 +85,7 @@ const ru: RuleSection[] = [
     lines: [
       "«Площадь» — тяни рамку или ткни в клетку. Новая клетка стоит {cell} кр и должна примыкать к тому, что уже стоит.",
       "«Ремонт» — так же, {repair} кр за сгоревшую клетку.",
+      "«Снос» — сдать остатки сгоревших клеток во вторсырьё, {scrap} кр за клетку. Остаётся голая земля, и склад не должен развалиться надвое.",
       "«Пушка» — {gun} кр на свободную целую клетку. Обратно пушка не продаётся, но её можно перетащить куда угодно по складу.",
       "«Дроны» и «Разведка» — контейнер на {perCell} штук за {droneBox} и {scoutBox} кр.",
       "Пушки и контейнеры таскаются по складу в любом режиме, и это бесплатно.",
@@ -103,6 +108,7 @@ const ru: RuleSection[] = [
       "Налёт отбивает защитник у себя. Тебе приходит отчёт — и повтор боя, который можно посмотреть целиком.",
       "За каждую сожжённую клетку тебе идёт премия {loot} кр. Защитнику страховая платит {insureCell} кр за клетку — ровно на ремонт. Базовый полис на этом и кончается; каждый его уровень добавляет {insureShare}% покрытия сгоревшего товара и пушек, до полной стоимости.",
       "За сбитых дронов не платят никому: деньги приносит товар, а не стрельба.",
+      "Каждый отгремевший бой попадает в журнал: там его можно пересмотреть или дать ссылку, чтобы посмотрели другие.",
     ],
   },
   {
@@ -117,7 +123,7 @@ const ru: RuleSection[] = [
   {
     title: "Прокачка",
     lines: [
-      "Пять классов, по десять уровней, {upgrade} кр за уровень.",
+      "Шесть классов, {upgrade} кр за уровень. У каждого по десять уровней, кроме полиса: у него пять, дальше покрывать нечего.",
       "Дроны летят быстрее, пушки бьют дальше и резвее, разведчики видят дальше и летят быстрее, пулемёт точнее, струя шире.",
       "Уровень достаётся всему классу разом — и тому, что уже на складе, и тому, что купишь потом.",
     ],
@@ -132,6 +138,7 @@ const es: RuleSection[] = [
       "Una vez al día el almacén paga renta: {income} cr por cada celda intacta.",
       "En ese mismo momento se expide todo lo almacenado al doble del precio de compra: drones a {droneSale} cr, aviones a {scoutSale}. Lo que no enviaste al combate, se vende.",
       "¿Estuviste fuera? La renta se acumula como mucho {capDays} días.",
+      "¿Falta dinero? El banco presta {loanMin}–{loanMax} cr por {loanHours} horas al {loanRate}%. La mercancía comprada puede arder en un ataque; la deuda no.",
     ],
   },
   {
@@ -139,6 +146,7 @@ const es: RuleSection[] = [
     lines: [
       "«Área»: arrastra un marco o toca una celda. Una celda nueva cuesta {cell} cr y debe tocar lo ya construido.",
       "«Reparar»: igual, {repair} cr por celda quemada.",
+      "«Demoler»: vende los restos de las celdas quemadas a {scrap} cr cada una. Queda tierra desnuda y el almacén debe seguir de una pieza.",
       "«Cañón»: {gun} cr en una celda intacta libre. Los cañones no se revenden, pero se arrastran a cualquier punto del almacén.",
       "«Drones» y «Exploración»: un contenedor de {perCell} por {droneBox} y {scoutBox} cr.",
       "Cañones y contenedores se arrastran por el almacén en cualquier modo, y eso no cuesta nada.",
@@ -161,6 +169,7 @@ const es: RuleSection[] = [
       "El defensor combate el ataque en su pantalla. Tú recibes un informe y la repetición completa del combate.",
       "Por cada celda quemada recibes una prima de {loot} cr. Al defensor el seguro le paga {insureCell} cr por celda: justo la reparación. La póliza básica acaba ahí; cada nivel añade un {insureShare}% de cobertura de la mercancía y los cañones perdidos, hasta el valor total.",
       "Nadie cobra por drones derribados: el dinero lo trae la mercancía, no los disparos.",
+      "Cada combate terminado va al registro: puedes volver a verlo o copiar un enlace para que lo vean otros.",
     ],
   },
   {
@@ -175,7 +184,7 @@ const es: RuleSection[] = [
   {
     title: "Mejoras",
     lines: [
-      "Cinco clases, diez niveles cada una, {upgrade} cr por nivel.",
+      "Seis clases, {upgrade} cr por nivel. Diez niveles cada una, salvo la póliza: la suya acaba en el quinto, cuando la cobertura ya es total.",
       "Los drones vuelan más rápido, los cañones llegan más lejos y disparan antes, los exploradores ven más y vuelan más, la ametralladora apunta mejor, la manguera cubre más.",
       "El nivel vale para toda la clase a la vez: lo que ya tienes y lo que compres después.",
     ],
@@ -190,6 +199,7 @@ const pt: RuleSection[] = [
       "Uma vez por dia o armazém paga renda: {income} cr por cada célula intacta.",
       "No mesmo momento sai a expedição: tudo o que está guardado vende-se ao dobro da compra — drones a {droneSale} cr, aviões a {scoutSale}. O que não mandaste ao combate, foi vendido.",
       "Estiveste fora? A renda acumula no máximo {capDays} dias.",
+      "Falta dinheiro? O banco empresta {loanMin}–{loanMax} cr por {loanHours} horas a {loanRate}%. A mercadoria comprada pode arder num ataque; a dívida não.",
     ],
   },
   {
@@ -197,6 +207,7 @@ const pt: RuleSection[] = [
     lines: [
       "«Área» — arrasta uma moldura ou toca numa célula. Uma célula nova custa {cell} cr e tem de tocar no que já está de pé.",
       "«Reparar» — igual, {repair} cr por célula queimada.",
+      "«Demolir» — vende os restos das células queimadas a {scrap} cr cada. Fica terra nua, e o armazém tem de continuar inteiro.",
       "«Canhão» — {gun} cr numa célula intacta livre. Os canhões não se revendem, mas arrastam-se para onde quiseres no armazém.",
       "«Drones» e «Reconhecimento» — um contentor de {perCell} por {droneBox} e {scoutBox} cr.",
       "Canhões e contentores arrastam-se pelo armazém em qualquer modo, e isso não custa nada.",
@@ -219,6 +230,7 @@ const pt: RuleSection[] = [
       "O defensor trava o ataque no ecrã dele. Tu recebes um relatório — e a repetição completa do combate.",
       "Por cada célula queimada recebes um prémio de {loot} cr. Ao defensor o seguro paga {insureCell} cr por célula — exatamente a reparação. A apólice básica fica por aí; cada nível acrescenta {insureShare}% de cobertura da mercadoria e dos canhões perdidos, até ao valor total.",
       "Ninguém é pago por drones abatidos: o dinheiro vem da mercadoria, não dos tiros.",
+      "Cada combate terminado vai para o registo: podes revê-lo ou copiar uma ligação para outros verem.",
     ],
   },
   {
@@ -233,7 +245,7 @@ const pt: RuleSection[] = [
   {
     title: "Melhorias",
     lines: [
-      "Cinco classes, dez níveis cada, {upgrade} cr por nível.",
+      "Seis classes, {upgrade} cr por nível. Dez níveis cada, exceto a apólice: a dela acaba no quinto, quando a cobertura já é total.",
       "Os drones voam mais depressa, os canhões alcançam mais longe e disparam mais rápido, os reconhecedores veem mais e voam mais, a metralhadora acerta melhor, a mangueira cobre mais.",
       "O nível vale para toda a classe de uma vez: o que já tens e o que comprares depois.",
     ],
@@ -248,6 +260,7 @@ const fr: RuleSection[] = [
       "Une fois par jour l’entrepôt rapporte un loyer : {income} cr par case intacte.",
       "Au même moment part l’expédition : tout ce qui est stocké se vend au double du prix d’achat — drones à {droneSale} cr, avions à {scoutSale}. Ce que tu n’as pas envoyé au combat est vendu.",
       "Absent longtemps ? Le loyer s’accumule sur {capDays} jours au maximum.",
+      "À court d’argent ? La banque prête {loanMin}–{loanMax} cr pour {loanHours} heures à {loanRate} %. La marchandise achetée peut brûler dans un raid, la dette non.",
     ],
   },
   {
@@ -255,6 +268,7 @@ const fr: RuleSection[] = [
     lines: [
       "« Surface » — tire un cadre ou clique une case. Une case neuve coûte {cell} cr et doit toucher l’existant.",
       "« Réparer » — pareil, {repair} cr par case brûlée.",
+      "« Démolir » — revends les restes des cases brûlées à {scrap} cr pièce. Il reste de la terre nue, et l’entrepôt doit rester d’un seul tenant.",
       "« Canon » — {gun} cr sur une case intacte libre. Un canon ne se revend pas, mais se déplace où tu veux dans l’entrepôt.",
       "« Drones » et « Reconnaissance » — un conteneur de {perCell} pour {droneBox} et {scoutBox} cr.",
       "Canons et conteneurs se déplacent dans l’entrepôt dans n’importe quel mode, et cela ne coûte rien.",
@@ -277,6 +291,7 @@ const fr: RuleSection[] = [
       "Le défenseur mène le combat chez lui. Tu reçois un rapport — et le replay complet de la bataille.",
       "Pour chaque case brûlée tu touches une prime de {loot} cr. Le défenseur reçoit de son assurance {insureCell} cr par case — juste la réparation. La police de base s’arrête là ; chaque niveau ajoute {insureShare} % de couverture de la marchandise et des canons perdus, jusqu’à la valeur entière.",
       "Personne n’est payé pour les drones abattus : l’argent vient de la marchandise, pas des tirs.",
+      "Chaque combat terminé va au journal : on peut le revoir ou copier un lien pour le montrer.",
     ],
   },
   {
@@ -291,7 +306,7 @@ const fr: RuleSection[] = [
   {
     title: "Améliorations",
     lines: [
-      "Cinq classes, dix niveaux chacune, {upgrade} cr le niveau.",
+      "Six classes, {upgrade} cr le niveau. Dix niveaux chacune, sauf la police d’assurance : elle s’arrête au cinquième, la couverture y est déjà totale.",
       "Les drones volent plus vite, les canons portent plus loin et tirent plus vite, les éclaireurs voient plus et volent plus vite, la mitrailleuse vise mieux, la lance couvre plus.",
       "Le niveau vaut pour toute la classe d’un coup : ce que tu as déjà et ce que tu achèteras ensuite.",
     ],
@@ -306,6 +321,7 @@ const de: RuleSection[] = [
       "Einmal am Tag bringt das Lager Miete: {income} Cr pro heilem Feld.",
       "Im selben Moment geht die Verladung raus: alles Eingelagerte wird zum doppelten Einkaufspreis verkauft — Drohnen zu {droneSale} Cr, Aufklärer zu {scoutSale}. Was du nicht in den Einsatz geschickt hast, ist verkauft.",
       "Länger weg gewesen? Die Miete läuft höchstens {capDays} Tage auf.",
+      "Zu wenig Geld? Die Bank leiht {loanMin}–{loanMax} Cr für {loanHours} Stunden zu {loanRate} %. Die dafür gekaufte Ware kann bei einem Angriff verbrennen — die Schuld nicht.",
     ],
   },
   {
@@ -313,6 +329,7 @@ const de: RuleSection[] = [
     lines: [
       "«Fläche» — Rahmen ziehen oder Feld antippen. Ein neues Feld kostet {cell} Cr und muss ans Bestehende grenzen.",
       "«Reparieren» — genauso, {repair} Cr je abgebranntem Feld.",
+      "«Abriss» — die Reste abgebrannter Felder für je {scrap} Cr verwerten. Zurück bleibt nackter Boden, und das Lager muss ein Stück bleiben.",
       "«Geschütz» — {gun} Cr auf ein freies heiles Feld. Zurückverkaufen lässt sich ein Geschütz nicht, ziehen dagegen überallhin im Lager.",
       "«Drohnen» und «Aufklärung» — ein Container mit {perCell} Stück für {droneBox} bzw. {scoutBox} Cr.",
       "Geschütze und Container lassen sich in jedem Modus über das Lager ziehen, und das kostet nichts.",
@@ -335,6 +352,7 @@ const de: RuleSection[] = [
       "Der Verteidiger schlägt den Angriff bei sich. Du bekommst einen Bericht — und die vollständige Wiederholung des Gefechts.",
       "Für jedes abgebrannte Feld bekommst du eine Prämie von {loot} Cr. Dem Verteidiger zahlt die Versicherung {insureCell} Cr je Feld — genau die Reparatur. Die Grundpolice endet dort; jede Stufe deckt zusätzlich {insureShare} % von verbrannter Ware und Geschützen, bis zum vollen Wert.",
       "Für abgeschossene Drohnen zahlt niemand: Geld bringt die Ware, nicht das Schießen.",
+      "Jedes beendete Gefecht landet im Buch: dort lässt es sich noch einmal ansehen oder als Link weitergeben.",
     ],
   },
   {
@@ -349,7 +367,7 @@ const de: RuleSection[] = [
   {
     title: "Ausbau",
     lines: [
-      "Fünf Klassen, je zehn Stufen, {upgrade} Cr pro Stufe.",
+      "Sechs Klassen, {upgrade} Cr pro Stufe. Je zehn Stufen, außer der Police: sie endet bei fünf, dort ist die Deckung schon voll.",
       "Drohnen fliegen schneller, Geschütze reichen weiter und schießen zügiger, Aufklärer sehen mehr und fliegen schneller, das MG trifft besser, der Schlauch deckt mehr ab.",
       "Eine Stufe gilt für die ganze Klasse auf einmal — für Vorhandenes und für später Gekauftes.",
     ],
@@ -364,6 +382,7 @@ const it: RuleSection[] = [
       "Una volta al giorno il magazzino rende affitto: {income} cr per ogni cella intatta.",
       "Nello stesso momento parte la spedizione: tutto ciò che è stoccato si vende al doppio dell’acquisto — droni a {droneSale} cr, ricognitori a {scoutSale}. Quello che non hai mandato in battaglia è venduto.",
       "Sei stato via? L’affitto si accumula al massimo per {capDays} giorni.",
+      "Soldi finiti? La banca presta {loanMin}–{loanMax} cr per {loanHours} ore al {loanRate}%. La merce comprata può bruciare in un attacco, il debito no.",
     ],
   },
   {
@@ -371,6 +390,7 @@ const it: RuleSection[] = [
     lines: [
       "«Area» — trascina una cornice o tocca una cella. Una cella nuova costa {cell} cr e deve toccare ciò che c’è già.",
       "«Riparare» — lo stesso, {repair} cr per cella bruciata.",
+      "«Demolisci» — vendi i resti delle celle bruciate a {scrap} cr l’una. Resta terra nuda, e il magazzino deve restare tutto d’un pezzo.",
       "«Cannone» — {gun} cr su una cella intatta libera. Il cannone non si rivende, ma si trascina ovunque nel magazzino.",
       "«Droni» e «Ricognizione» — un container da {perCell} per {droneBox} e {scoutBox} cr.",
       "Cannoni e container si trascinano per il magazzino in qualsiasi modalità, e non costa nulla.",
@@ -393,6 +413,7 @@ const it: RuleSection[] = [
       "Il difensore affronta l’attacco da sé. A te arriva un rapporto — e la replica completa della battaglia.",
       "Per ogni cella bruciata ricevi un premio di {loot} cr. Al difensore l’assicurazione paga {insureCell} cr per cella: esattamente la riparazione. La polizza base finisce lì; ogni livello aggiunge il {insureShare}% di copertura di merce e cannoni perduti, fino al valore pieno.",
       "Nessuno viene pagato per i droni abbattuti: i soldi li porta la merce, non gli spari.",
+      "Ogni combattimento finito finisce nel diario: lo si può rivedere o copiarne il link per mostrarlo.",
     ],
   },
   {
@@ -407,7 +428,7 @@ const it: RuleSection[] = [
   {
     title: "Potenziamenti",
     lines: [
-      "Cinque classi, dieci livelli ciascuna, {upgrade} cr per livello.",
+      "Sei classi, {upgrade} cr per livello. Dieci livelli ciascuna, tranne la polizza: la sua finisce al quinto, dove la copertura è già piena.",
       "I droni volano più veloci, i cannoni arrivano più lontano e sparano prima, i ricognitori vedono di più e volano più veloci, la mitragliatrice mira meglio, la manichetta copre di più.",
       "Il livello vale per tutta la classe in una volta: per ciò che hai già e per ciò che comprerai poi.",
     ],

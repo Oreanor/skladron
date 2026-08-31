@@ -313,6 +313,8 @@ drop function if exists attack_reports();
 drop function if exists collect_income();
 -- enemy_base теперь отдаёт ещё и уровень чужих пушек
 drop function if exists enemy_base(text);
+-- журнал переехал с my_raids на raid_log: старую убираем, чтобы не висела
+drop function if exists my_raids();
 
 alter table profiles enable row level security;
 alter table bases enable row level security;

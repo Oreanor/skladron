@@ -76,12 +76,3 @@ export function decodeTrace(src: string): (Frame | null)[] {
   }
   return out;
 }
-
-/** Слепок склада защитника до боя: без него повтор не с чего начинать. */
-export interface BattleSnapshot {
-  cells: string; // карта в base64, как её отдаёт сервер
-  guns: { cx: number; cy: number }[];
-  depots: { cx: number; cy: number; n: number; kind?: string }[];
-  levels: { guns?: number; mg?: number; water?: number };
-  trace: string;
-}
