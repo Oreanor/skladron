@@ -370,7 +370,7 @@ class CloudRepo implements Repo {
     const db = this.db();
     const [{ data: base, error }, { data: prof, error: e2 }] = await Promise.all([
       db.from("bases").select("cells, guns, drone_cells").single(),
-      db.from("profiles").select("credits").single(),
+      db.from("profiles").select("credits, levels").single(),
     ]);
     if (error) throw error;
     if (e2) throw e2;
@@ -378,7 +378,11 @@ class CloudRepo implements Repo {
     p.cells = fromPgBytea(b.cells);
     p.guns = b.guns ?? [];
     p.depots = b.drone_cells ?? [];
-    if (prof) p.credits = (prof as { credits: number }).credits;
+    const row = prof as { credits: number; levels: Partial<Player["levels"]> | null } | null;
+    if (row) {
+      p.credits = row.credits;
+      p.levels = { ...p.levels, ...(row.levels ?? {}) };
+    }
   }
 
 
@@ -447,6 +451,9 @@ class CloudRepo implements Repo {
     if (error) throw error;
     const fresh = newPlayer();
     fresh.name = p.name;
+    // Уровни переживают пожар: на сервере они и не сбрасывались, а клиент
+    // забывал их и потом предлагал апгрейд по цене первого уровня.
+    fresh.levels = { ...p.levels };
     fresh.credits = Math.max(p.credits, CREDITS_START);
     fresh.stats = { ...p.stats, wipes: p.stats.wipes + 1 };
     fresh.enemies = p.enemies;

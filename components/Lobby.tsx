@@ -1280,6 +1280,8 @@ export default function Lobby({
       forceRender((v) => v + 1);
     } catch (e) {
       setMessage(t("upgrade.failed", { error: (e as Error).message }));
+      // Скорее всего наши уровни разошлись с серверными — берём его версию.
+      await resyncBase();
     }
   };
 
