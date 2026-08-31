@@ -709,9 +709,8 @@ export default function Lobby({
       t("arsenal.bought", { count: selectedBuyAmount, cost: fmt(selectedBuyCost) }) +
         (newContainers > 0 ? t("arsenal.newContainers", { count: newContainers }) : "")
     );
-    // На телефоне арсенал закрывает карту; после покупки сразу отдаём место
-    // раскладке, потому что режим «Дроны» уже выбран.
-    setSheet(null);
+    // Купил — окно своё дело сделало и уходит: дальше смотрят на склад.
+    setModal(null);
     setVersion((v) => v + 1);
     forceRender((v) => v + 1);
     try {
@@ -1277,6 +1276,7 @@ export default function Lobby({
       setMessage(
         t("upgrade.done", { name: t(`upgrade.${kind}` as Key), level: p.levels[kind] })
       );
+      setModal(null);
       forceRender((v) => v + 1);
     } catch (e) {
       setMessage(t("upgrade.failed", { error: (e as Error).message }));

@@ -95,9 +95,10 @@ function distanceField(sources: number[]) {
 }
 
 /**
- * Раскладывает новые контейнеры по целым свободным клеткам. Сначала выбирает
- * места подальше от разрушенных клеток, затем разносит контейнеры по доступной
- * площади, а не складывает их подряд в первый ряд.
+ * Раскладывает новые контейнеры по целым свободным клеткам. Первым делом
+ * уходит подальше от пепелища, дальше держится середины склада — по краям
+ * контейнер сгорает первым, — и лишь при прочих равных расходится в стороны,
+ * чтобы не выстраиваться в один ряд.
  */
 export function placeDepots(
   cells: Uint8Array,
@@ -117,8 +118,19 @@ export function placeDepots(
   const separation = distanceField(occupied);
   let hasAnchor = occupied.length > 0;
   const used = new Set<number>();
-  const centerX = free.reduce((sum, i) => sum + (i % GRID), 0) / free.length;
-  const centerY = free.reduce((sum, i) => sum + ((i / GRID) | 0), 0) / free.length;
+  // Середину считаем по всему складу, а не по свободным клеткам: иначе она
+  // уползала бы вслед за уже занятыми местами.
+  let sumX = 0;
+  let sumY = 0;
+  let n = 0;
+  for (let i = 0; i < cells.length; i++) {
+    if (cells[i] !== G_BASE) continue;
+    sumX += i % GRID;
+    sumY += (i / GRID) | 0;
+    n++;
+  }
+  const centerX = n ? sumX / n : GRID / 2;
+  const centerY = n ? sumY / n : GRID / 2;
   const added: Depot[] = [];
 
   for (let k = 0; k < count && k < free.length; k++) {
@@ -129,12 +141,13 @@ export function placeDepots(
       const x = i % GRID;
       const y = (i / GRID) | 0;
       const centerDistance = (x - centerX) ** 2 + (y - centerY) ** 2;
-      // Одна ступень безопасности от пепелища важнее разницы в расстоянии
-      // между контейнерами. Когда пепелища нет, safety у всех одинаковая.
+      // Ступень безопасности от пепелища важнее всего; дальше тянем к
+      // середине, а расстояние между контейнерами работает лишь как
+      // разводящая добавка при примерно равной удалённости от центра.
       const score =
-        Math.min(safety[i], GRID) * 1000 +
-        (hasAnchor ? separation[i] * 10 : 0) -
-        centerDistance / CELLS;
+        Math.min(safety[i], GRID) * 1000 -
+        centerDistance +
+        (hasAnchor ? separation[i] * 4 : 0);
       if (score > bestScore) {
         best = i;
         bestScore = score;
