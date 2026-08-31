@@ -1314,31 +1314,11 @@ export default function Lobby({
     </>
   );
 
+  // Плашка инструмента: только то, чем пользуются. Ползунок, точное число
+  // и две кнопки — рассказывать про правила тут незачем.
   const arsenalBody = (
     <>
-      <p className="mb-3 text-neutral-400">
-        {t("arsenal.explain", { perCell: DRONES_PER_CELL })}
-      </p>
-      <dl className="mb-3 space-y-1 font-mono text-sm">
-        <Row label={t("arsenal.drones")} value={fmt(drones)} />
-        <Row label={t("scout.inStock")} value={fmt(scouts)} />
-        <Row label={t("arsenal.containers")} value={String(p.depots.length)} />
-        <Row label={t("arsenal.freeCells")} value={String(free)} />
-      </dl>
-      <div className="mb-3">
-        <div className="mb-1 flex items-center justify-between text-xs text-neutral-400">
-          <span>{t("arsenal.buyTitle")}</span>
-          <input
-            type="number"
-            min={1}
-            max={Math.max(1, maxBuyAmount)}
-            value={selectedBuyAmount}
-            disabled={maxBuyAmount < 1}
-            onChange={(event) => setBuyAmount(Number(event.target.value))}
-            className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-right font-mono text-neutral-100 outline-none focus:border-amber-500 disabled:opacity-40"
-            aria-label={t("arsenal.exactAmount")}
-          />
-        </div>
+      <div className="mb-4 flex items-center gap-3">
         <input
           type="range"
           min={1}
@@ -1347,55 +1327,49 @@ export default function Lobby({
           value={Math.max(1, selectedBuyAmount)}
           disabled={maxBuyAmount < 1}
           onChange={(event) => setBuyAmount(Number(event.target.value))}
-          className="h-8 w-full cursor-pointer accent-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
+          className="h-8 min-w-0 flex-1 cursor-pointer accent-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
           aria-label={t("arsenal.amountSlider")}
         />
-        <div className="flex justify-between font-mono text-[11px] text-neutral-500">
-          <span>1</span>
-          <span>{t("arsenal.max", { count: maxBuyAmount })}</span>
-        </div>
+        <input
+          type="number"
+          min={1}
+          max={Math.max(1, maxBuyAmount)}
+          value={selectedBuyAmount}
+          disabled={maxBuyAmount < 1}
+          onChange={(event) => setBuyAmount(Number(event.target.value))}
+          className="w-20 shrink-0 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-right font-mono text-neutral-100 outline-none focus:border-amber-500 disabled:opacity-40"
+          aria-label={t("arsenal.exactAmount")}
+        />
       </div>
-      <Button variant="neutral" block onClick={buyDrones} disabled={selectedBuyAmount < 1}>
-        {t("arsenal.buy", { count: selectedBuyAmount, cost: fmt(selectedBuyCost) })}
-      </Button>
-      <p className="mt-2 text-xs text-neutral-500">
-        {maxBuyAmount > 0
-          ? t("arsenal.unitAndSpace", { cost: DRONE_UNIT_COST, space: fmt(maxBySpace) })
-          : intact === 0
-          ? t("arsenal.noRoom")
-          : maxBySpace < 1
-          ? t("arsenal.noSpace")
-          : t("arsenal.cantAffordOne")}
-      </p>
-      {p.depots.length > 0 && (
-        <p className="mt-2 text-xs text-neutral-500">
-          {t("arsenal.dragTip")}
-        </p>
-      )}
+      <div className="flex gap-2">
+        <Button
+          variant="neutral"
+          className="flex-1"
+          onClick={buyDrones}
+          disabled={selectedBuyAmount < 1}
+        >
+          {t("arsenal.buy", { count: selectedBuyAmount, cost: fmt(selectedBuyCost) })}
+        </Button>
+        <Button onClick={() => setModal(null)}>{t("common.cancel")}</Button>
+      </div>
     </>
   );
 
   const upgradeBody = (
     <>
-      <p className="mb-3 text-neutral-400">{t("upgrade.explain")}</p>
-      <div className="space-y-2">
+      <div className="mb-4 space-y-2">
         {UPGRADE_KINDS.map((kind) => {
           const level = p.levels[kind];
           const maxed = level >= MAX_LEVEL;
           const cost = upgradeCost(level);
           return (
-            <Card key={kind} className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="truncate font-medium text-neutral-200">
-                  {t(`upgrade.${kind}` as Key)}
-                  <span className="ml-2 font-mono text-xs text-amber-300">
-                    {t("upgrade.level", { level })}
-                  </span>
-                </div>
-                <div className="text-xs text-neutral-500">
-                  {t(`upgrade.${kind}Effect` as Key)}
-                </div>
-              </div>
+            <div key={kind} className="flex items-center justify-between gap-3">
+              <span className="min-w-0 truncate text-neutral-200">
+                {t(`upgrade.${kind}` as Key)}
+                <span className="ml-2 font-mono text-xs text-amber-300">
+                  {t("upgrade.level", { level })}
+                </span>
+              </span>
               <Button
                 variant="build"
                 size="sm"
@@ -1404,10 +1378,13 @@ export default function Lobby({
               >
                 {maxed ? t("upgrade.max") : t("upgrade.buy", { cost: fmt(cost) })}
               </Button>
-            </Card>
+            </div>
           );
         })}
       </div>
+      <Button block onClick={() => setModal(null)}>
+        {t("common.cancel")}
+      </Button>
     </>
   );
 
@@ -1418,14 +1395,8 @@ export default function Lobby({
     return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
   };
 
-  const scoutsBody = (
-    <>
-      <p className="mb-3 text-neutral-400">
-        {t("scout.explain", { perCell: DRONES_PER_CELL })}
-      </p>
-      {arsenalBody}
-    </>
-  );
+  // Разведчики покупаются той же плашкой: вид берётся из выбранного инструмента.
+  const scoutsBody = arsenalBody;
 
   const attacksBody =
     p.incoming.length === 0 ? (
@@ -1804,17 +1775,17 @@ export default function Lobby({
       )}
 
       {modal === "arsenal" && (
-        <Modal title={t("panel.arsenal")} onClose={() => setModal(null)}>
+        <Modal title={t("tool.drones")} onClose={() => setModal(null)}>
           {p.founded ? arsenalBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}
         </Modal>
       )}
       {modal === "scouts" && (
-        <Modal title={t("scout.panel")} onClose={() => setModal(null)}>
+        <Modal title={t("tool.scouts")} onClose={() => setModal(null)}>
           {p.founded ? scoutsBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}
         </Modal>
       )}
       {modal === "upgrade" && (
-        <Modal title={t("panel.upgrade")} onClose={() => setModal(null)}>
+        <Modal title={t("tool.upgrade")} onClose={() => setModal(null)}>
           {p.founded ? upgradeBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}
         </Modal>
       )}
