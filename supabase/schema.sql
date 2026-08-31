@@ -200,6 +200,20 @@ update profiles
    set stats = '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,
                  "wipes":0,"raids":0,"looted":0}'::jsonb || stats;
 
+-- ---------- сносим устаревшие сигнатуры ----------
+-- create or replace не заменяет функцию, у которой изменился список
+-- аргументов или тип результата: он заводит вторую с тем же именем. Дальше
+-- PostgREST не может выбрать, какую звать, а grant падает на «name is not
+-- unique». Поэтому старые варианты убираем явно, до создания новых.
+
+drop function if exists buy_drones(int, jsonb);
+drop function if exists buy_scouts(int);
+drop function if exists spend_scouts(int);
+drop function if exists send_attack(text, int, text, int, int, jsonb);
+-- у pending_attacks менялся не список аргументов, а состав колонок:
+-- create or replace такого тоже не умеет
+drop function if exists pending_attacks();
+
 alter table profiles enable row level security;
 alter table bases enable row level security;
 alter table attacks enable row level security;
@@ -848,3 +862,8 @@ grant execute on function ensure_player, collect_income, save_base,
   buy_drones, apply_battle, complete_attack, wipe_base, rename_base, save_enemies,
   base_names, enemy_base, spend_scouts,
   send_attack, pending_attacks, attack_reports, ack_attack_report to authenticated;
+
+-- PostgREST держит список функций в кэше. Supabase обычно перечитывает его сам,
+-- но после смены сигнатур надёжнее попросить явно — иначе клиент ещё какое-то
+-- время будет звать функцию, которой уже нет.
+notify pgrst, 'reload schema';
