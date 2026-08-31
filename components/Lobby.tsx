@@ -5,11 +5,14 @@ import {
   GRID,
   G_BASE,
   G_BURNT,
+  G_GROUND,
   DRONES_PER_CELL,
   type Rect,
   applyRect,
   droneCount,
   countFreeCells,
+  isWhole,
+  scrapRect,
   freeCells,
   idx,
   isBuilding,
@@ -26,7 +29,14 @@ import {
   DRONE_UNIT_COST,
   INSURANCE_CELL,
   MAX_INSURANCE_LEVEL,
+  LOAN_HOURS,
+  LOAN_MAX,
+  LOAN_MIN,
+  LOAN_RATE,
+  LOAN_STEP,
   SALE_MULTIPLIER,
+  SCRAP_REWARD,
+  loanDebt,
   goodsValue,
   insurance,
   insuranceShare,
@@ -78,7 +88,16 @@ import MapCanvas, { type Pt } from "./MapCanvas";
 import AccountMenu, { SettingsList } from "./AccountMenu";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
-import { ChevronsUp, LayoutGrid, Plane, Rocket, ShieldCheck, Wrench } from "lucide-react";
+import {
+  Banknote,
+  ChevronsUp,
+  LayoutGrid,
+  Plane,
+  Hammer,
+  Rocket,
+  ShieldCheck,
+  Wrench,
+} from "lucide-react";
 import { autoDefend, type UnattendedOutcome } from "@/lib/unattended";
 import { decodeCells, decodeRle, encodeRle, type DroneKind, type Gun } from "@/lib/base";
 import {
@@ -104,13 +123,13 @@ import {
   IconDrone,
 } from "./ui";
 
-type Tool = "area" | "repair" | "gun" | "drones" | "scouts";
+type Tool = "area" | "repair" | "scrap" | "gun" | "drones" | "scouts";
 /** Кнопка «Апгрейд» карты не касается: она только открывает модалку. */
 type ToolId = Tool | "upgrade" | "insurance";
 /** Панели, которые на телефоне открываются шторкой снизу. */
 type SheetId = "found" | "attacks" | "enemies" | "menu";
 /** Панели инструментов: они всплывают модалкой и вёрстку не разрывают. */
-type ModalId = "upgrade" | "insurance";
+type ModalId = "upgrade" | "insurance" | "loan";
 
 const ICON = "h-5 w-5";
 
@@ -142,6 +161,15 @@ const TOOLS: {
     hint: "tool.repairHint",
     vars: { cost: REPAIR_COST },
     icon: <Wrench className={ICON} />,
+    countKind: "burnt",
+  },
+  {
+    id: "scrap",
+    label: "tool.scrap",
+    hint: "tool.scrapHint",
+    vars: { cost: SCRAP_REWARD },
+    priceKey: "tool.priceScrap",
+    icon: <Hammer className={ICON} />,
     countKind: "burnt",
   },
   {
@@ -215,6 +243,7 @@ export default function Lobby({
   const [naming, setNaming] = useState<"found" | null>(null);
   const [confirmWipe, setConfirmWipe] = useState(false);
   const [confirmRestart, setConfirmRestart] = useState(false);
+  const [loanAmount, setLoanAmount] = useState(LOAN_MIN);
   /** Чью снятую карту сейчас смотрим. */
   const [mapOf, setMapOf] = useState<Enemy | null>(null);
   /** Отчёт, повтор которого сейчас крутим. */
@@ -633,18 +662,35 @@ export default function Lobby({
 
   // Рамкой работают и «Площадь», и «Ремонт»: выделил, подправил, утвердил.
   // Разница только в том, что считается внутри рамки и почём.
-  const drafting = tool === "area" || tool === "repair";
+  const drafting = tool === "area" || tool === "repair" || tool === "scrap";
   const draft = draftRef.current;
   const draftRect = draft ? normRect(draft) : null;
   const draftCells = draftRect
-    ? tool === "repair"
+    ? tool === "repair" || tool === "scrap"
       ? burntCellsIn(p.cells, draftRect)
       : newCellsIn(p.cells, draftRect)
     : 0;
-  const draftCost = draftCells * (tool === "repair" ? REPAIR_COST : CELL_COST);
-  // ремонт ничего не пристраивает, поэтому разрывов создать не может
+  const draftCost =
+    draftCells * (tool === "scrap" ? -SCRAP_REWARD : tool === "repair" ? REPAIR_COST : CELL_COST);
+  // Снос не должен разваливать склад надвое: примеряем результат заранее.
+  const scrapWhole =
+    tool !== "scrap" || !draftRect || draftCells === 0
+      ? true
+      : (() => {
+          const next = p.cells.slice();
+          scrapRect(next, draftRect);
+          return isWhole(next);
+        })();
+  // ремонт ничего не пристраивает, поэтому разрывов создать не может;
+  // у сноса своя проверка — он их как раз создаёт
   const draftConnects =
-    tool === "repair" || (draftRect ? rectConnects(p.cells, draftRect, hasBuilding) : false);
+    tool === "repair"
+      ? true
+      : tool === "scrap"
+      ? scrapWhole
+      : draftRect
+      ? rectConnects(p.cells, draftRect, hasBuilding)
+      : false;
   const draftAfford = draftCost <= p.credits;
 
   const commitDraft = () => {
@@ -665,7 +711,10 @@ export default function Lobby({
     }
 
     const cells = p.cells.slice();
-    if (tool === "repair") {
+    if (tool === "scrap") {
+      scrapRect(cells, draftRect);
+      setMessage(t("scrap.done", { cells: draftCells, gain: fmt(draftCells * SCRAP_REWARD) }));
+    } else if (tool === "repair") {
       repairRect(cells, draftRect);
       p.stats.cellsRepaired += draftCells;
       setMessage(t("repair.done", { cells: draftCells, cost: fmt(draftCost) }));
@@ -695,6 +744,23 @@ export default function Lobby({
     }
     p.cells[i] = G_BASE;
     p.credits -= cost;
+    touch();
+  };
+
+  /** Снос одной клетки. Если она держит склад вместе — не даём. */
+  const scrapAt = (x: number, y: number) => {
+    if (x < 0 || y < 0 || x >= GRID || y >= GRID) return;
+    const i = idx(x, y);
+    if (p.cells[i] !== G_BURNT) return;
+    const cells = p.cells.slice();
+    cells[i] = G_GROUND;
+    if (!isWhole(cells)) {
+      setMessage(t("scrap.splits"));
+      return;
+    }
+    p.cells = cells;
+    p.credits += SCRAP_REWARD;
+    showPrice(x, y, SCRAP_REWARD);
     touch();
   };
 
@@ -1148,6 +1214,7 @@ export default function Lobby({
       draftRef.current = null;
       const c = cellOf(pt);
       if (tool === "repair") repairAt(c.x, c.y);
+      else if (tool === "scrap") scrapAt(c.x, c.y);
       else buildOne(c.x, c.y);
       return;
     }
@@ -1182,9 +1249,16 @@ export default function Lobby({
     );
 
     const d = draftRef.current ? normRect(draftRef.current) : null;
-    if (d && d.w > 0 && d.h > 0 && tool === "repair") {
+    if (d && d.w > 0 && d.h > 0 && (tool === "repair" || tool === "scrap")) {
       // закрашиваем именно те клетки, за которые спишутся деньги
-      ctx.fillStyle = draftAfford ? "rgba(140, 215, 255, 0.55)" : "rgba(229, 56, 59, 0.5)";
+      ctx.fillStyle =
+        tool === "scrap"
+          ? scrapWhole
+            ? "rgba(214, 168, 92, 0.55)"
+            : "rgba(229, 56, 59, 0.55)"
+          : draftAfford
+          ? "rgba(140, 215, 255, 0.55)"
+          : "rgba(229, 56, 59, 0.5)";
       for (let y = d.y; y < d.y + d.h; y++) {
         for (let x = d.x; x < d.x + d.w; x++) {
           if (x < 0 || y < 0 || x >= GRID || y >= GRID) continue;
@@ -1369,6 +1443,28 @@ export default function Lobby({
     }
   };
 
+  const takeLoan = async () => {
+    try {
+      await repo.takeLoan(p, loanAmount);
+      setMessage(t("loan.taken", { amount: fmt(loanAmount), debt: fmt(loanDebt(loanAmount)) }));
+      setModal(null);
+      forceRender((v) => v + 1);
+    } catch (e) {
+      setMessage(t("loan.failed", { error: (e as Error).message }));
+    }
+  };
+
+  const repayLoan = async () => {
+    try {
+      await repo.repayLoan(p);
+      setMessage(t("loan.repaid"));
+      setModal(null);
+      forceRender((v) => v + 1);
+    } catch (e) {
+      setMessage(t("loan.failed", { error: (e as Error).message }));
+    }
+  };
+
   const income = dailyIncome(p);
   const pickTool = (id: ToolId) => {
     // апгрейд ничего не рисует на карте — только открывает свою модалку
@@ -1510,6 +1606,66 @@ export default function Lobby({
 
   const activeTool = TOOLS.find((item) => item.id === tool) ?? TOOLS[0];
 
+  /** Сколько осталось до возврата — часами и минутами. */
+  const loanLeft = p.loanDue ? p.loanDue - now : 0;
+  const hoursLeft = () => {
+    const total = Math.max(0, Math.ceil(loanLeft / 60000));
+    return t("loan.left", {
+      h: Math.floor(total / 60),
+      m: String(total % 60).padStart(2, "0"),
+    });
+  };
+
+  const loanFooter = p.loan > 0 ? (
+    <div className="flex gap-2">
+      <Button
+        variant="build"
+        className="flex-1"
+        disabled={p.credits < p.loan}
+        onClick={repayLoan}
+      >
+        {t("loan.repay", { debt: fmt(p.loan) })}
+      </Button>
+      <Button onClick={() => setModal(null)}>{t("common.ok")}</Button>
+    </div>
+  ) : (
+    <div className="flex gap-2">
+      <Button variant="build" className="flex-1" onClick={takeLoan}>
+        {t("loan.take", { amount: fmt(loanAmount) })}
+      </Button>
+      <Button onClick={() => setModal(null)}>{t("common.cancel")}</Button>
+    </div>
+  );
+
+  const loanBody =
+    p.loan > 0 ? (
+      <div className="space-y-2 text-sm text-neutral-300">
+        <p>{t("loan.owed", { debt: fmt(p.loan) })}</p>
+        <p className="font-mono text-neutral-400">{hoursLeft()}</p>
+        <p className="text-neutral-500">{t("loan.overdue", { rate: LOAN_RATE })}</p>
+      </div>
+    ) : (
+      <div className="space-y-3 text-sm text-neutral-300">
+        <p className="text-neutral-400">
+          {t("loan.explain", { hours: LOAN_HOURS, rate: LOAN_RATE })}
+        </p>
+        <input
+          type="range"
+          min={LOAN_MIN}
+          max={LOAN_MAX}
+          step={LOAN_STEP}
+          value={loanAmount}
+          onChange={(e) => setLoanAmount(Number(e.target.value))}
+          className="h-8 w-full cursor-pointer accent-emerald-500"
+          aria-label={t("loan.amount")}
+        />
+        <dl className="space-y-1 font-mono">
+          <Row label={t("loan.amount")} value={fmt(loanAmount)} />
+          <Row label={t("loan.debt")} value={fmt(loanDebt(loanAmount))} />
+        </dl>
+      </div>
+    );
+
   const head = p.incoming[0] ?? null;
   const headLeft = head?.activatedAt ? head.activatedAt + RAID_TTL_MS - now : null;
   const countdown = (ms: number) => {
@@ -1626,18 +1782,29 @@ export default function Lobby({
     barBody = (
       <>
         <span className="font-mono">
-          {t(tool === "repair" ? "repair.summary" : "draft.summary", {
-            w: draftRect.w,
-            h: draftRect.h,
-            cells: draftCells,
-            cost: fmt(draftCost),
-          })}
+          {t(
+            tool === "scrap"
+              ? "scrap.summary"
+              : tool === "repair"
+              ? "repair.summary"
+              : "draft.summary",
+            {
+              w: draftRect.w,
+              h: draftRect.h,
+              cells: draftCells,
+              cost: fmt(Math.abs(draftCost)),
+            }
+          )}
         </span>
-        {!draftConnects && <span className="text-red-400">{t("draft.gap")}</span>}
+        {!draftConnects && (
+          <span className="text-red-400">
+            {t(tool === "scrap" ? "scrap.splits" : "draft.gap")}
+          </span>
+        )}
         {draftConnects && !draftAfford && (
           <span className="text-red-400">{t("draft.tooExpensive")}</span>
         )}
-        {tool === "repair" && draftCells === 0 && (
+        {(tool === "repair" || tool === "scrap") && draftCells === 0 && (
           <span className="text-neutral-400">{t("repair.nothing")}</span>
         )}
         <div className="ml-auto flex gap-2">
@@ -1750,6 +1917,9 @@ export default function Lobby({
           <Chip label={t("stat.creditsShort")} value={fmt(p.credits)} tone="text-emerald-300" />
           <Chip label={t("stat.incomeShort")} value={`+${fmt(income)}`} tone="text-emerald-300" />
         </ChipBar>
+        <IconButton label={t("loan.title")} onClick={() => setModal("loan")}>
+          <Banknote className={ICON} />
+        </IconButton>
         <IconButton label={t("panel.attacks")} badge={p.incoming.length} onClick={() => toggleSheet("attacks")}>
           <IconTarget />
         </IconButton>
@@ -1774,6 +1944,9 @@ export default function Lobby({
           <Chip label={t("stat.credits")} value={fmt(p.credits)} tone="text-emerald-300" />
           <Chip label={t("stat.income")} value={`+${fmt(income)}`} tone="text-emerald-300" />
         </ChipBar>
+        <Button size="sm" tone={p.loan > 0 ? "red" : undefined} onClick={() => setModal("loan")}>
+          {p.loan > 0 ? t("loan.owedShort", { debt: fmt(p.loan) }) : t("loan.title")}
+        </Button>
         {accountLine}
       </div>
 
@@ -1784,7 +1957,7 @@ export default function Lobby({
         */}
         <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
 
-          <div className="order-4 grid shrink-0 grid-cols-7 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(7,5.5rem)] lg:gap-2">
+          <div className="order-4 grid shrink-0 grid-cols-8 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(8,5.5rem)] lg:gap-2">
             {TOOLS.map((item) => (
               <ToolButton
                 key={item.id}
@@ -1935,6 +2108,15 @@ export default function Lobby({
         />
       )}
 
+      {modal === "loan" && (
+        <Modal
+          title={t("loan.title")}
+          footer={loanFooter}
+          onClose={() => setModal(null)}
+        >
+          {loanBody}
+        </Modal>
+      )}
       {modal === "insurance" && (
         <Modal
           title={`${t("tool.insurance")} · ${t("upgrade.level", { level: p.levels.insurance })}`}

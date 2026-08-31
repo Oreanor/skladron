@@ -3,13 +3,12 @@
 
 import { type DroneKind, CELLS, type Depot, decodeCells, encodeRle, regrowGround, type Gun } from "./base";
 
-import { CREDITS_START, MAX_LEVEL, upgradeCost } from "./economy";
+import { CREDITS_START, LOAN_HOURS, MAX_LEVEL, loanDebt, upgradeCost } from "./economy";
 import type { AttackOrder, AttackReport, Pattern } from "./attack";
 import type { BattleResult } from "./engine";
 import type { UpgradeKind } from "./economy";
 import {
   collectIncome as localIncome,
-  insure,
   load as localLoad,
   newPlayer,
   save as localSave,
@@ -35,6 +34,8 @@ export interface Repo {
     reports: AttackReport[];
     credits?: number;
     stats?: Player["stats"];
+    loan?: number;
+    loanDue?: number | null;
   }>;
   /** Склад после правок в лобби. Возвращает авторитетные цифры сервера. */
   saveBase(p: Player): Promise<Partial<Player>>;
@@ -52,6 +53,10 @@ export interface Repo {
    * ему нечем ответить. Возвращает его настоящее имя склада.
    */
   addRival(email: string): Promise<string | null>;
+  /** Взять заём: деньги сразу, долг с процентом и срок — на сутки. */
+  takeLoan(p: Player, amount: number): Promise<void>;
+  /** Отдать заём целиком и досрочно. */
+  repayLoan(p: Player): Promise<void>;
   /** Апгрейд класса на уровень выше. Цену считает сервер. */
   upgrade(p: Player, kind: UpgradeKind): Promise<Partial<Player>>;
   /** Вылет разведки: разведчиков снимает со склада сервер и отдаёт новый склад. */
@@ -94,7 +99,6 @@ class LocalRepo implements Repo {
   async load() {
     const player = localLoad();
     const income = localIncome(player, Date.now()) as Income;
-    insure(player);
     localSave(player);
     return { player, income, reports: [] };
   }
@@ -133,6 +137,21 @@ class LocalRepo implements Repo {
 
   async addRival(_email: string) {
     return null; // локально соперник живёт только у нас
+  }
+
+  async takeLoan(p: Player, amount: number) {
+    p.credits += amount;
+    p.loan = loanDebt(amount);
+    p.loanDue = Date.now() + LOAN_HOURS * 3600_000;
+    localSave(p);
+  }
+
+  async repayLoan(p: Player) {
+    if (p.credits < p.loan) throw new Error("not enough credits");
+    p.credits -= p.loan;
+    p.loan = 0;
+    p.loanDue = null;
+    localSave(p);
   }
 
   async upgrade(p: Player, kind: UpgradeKind) {
@@ -193,6 +212,8 @@ interface ProfileRow {
   stats: Partial<Player["stats"]> | null;
   enemies: Player["enemies"] | null;
   levels: Partial<Player["levels"]> | null;
+  loan: number | null;
+  loan_due: string | null;
 }
 
 /** collect_income отдаёт именно credits_added — имя колонки, а не поля Income. */
@@ -288,6 +309,8 @@ class CloudRepo implements Repo {
       // недостающие счётчики берём нулями: иначе fmt() падает на undefined
       stats: { ...fresh.stats, ...(row.stats ?? {}), ...(attacks.stats ?? {}) },
       levels: { ...fresh.levels, ...(row.levels ?? {}) },
+      loan: row.loan ?? 0,
+      loanDue: row.loan_due ? Date.parse(row.loan_due) : null,
       cells: fromPgBytea(b.cells),
       guns: b.guns ?? [],
       depots: b.drone_cells ?? [],
@@ -325,7 +348,7 @@ class CloudRepo implements Repo {
     const [incomingResult, reportResult, profileResult] = await Promise.all([
       db.rpc("pending_attacks"),
       db.rpc("attack_reports"),
-      db.from("profiles").select("credits, stats").single(),
+      db.from("profiles").select("credits, stats, loan, loan_due").single(),
     ]);
     if (incomingResult.error) throw incomingResult.error;
     if (reportResult.error) throw reportResult.error;
@@ -377,6 +400,10 @@ class CloudRepo implements Repo {
       reports,
       credits: profileResult.data.credits as number,
       stats: profileResult.data.stats as Player["stats"],
+      loan: (profileResult.data.loan as number) ?? 0,
+      loanDue: profileResult.data.loan_due
+        ? Date.parse(profileResult.data.loan_due as string)
+        : null,
     };
   }
 
@@ -416,6 +443,28 @@ class CloudRepo implements Repo {
     const row = (data as { cells: string; guns: Gun[]; gun_level: number }[] | null)?.[0];
     if (!row) throw new Error("no base");
     return { cells: decodeCells(row.cells), guns: row.guns ?? [], gunLevel: row.gun_level ?? 1 };
+  }
+
+  async takeLoan(p: Player, amount: number) {
+    const { data, error } = await this.db().rpc("take_loan", { amount });
+    if (error) throw error;
+    const row = (data as { credits: number; loan: number; loan_due: string }[] | null)?.[0];
+    if (row) {
+      p.credits = row.credits;
+      p.loan = row.loan;
+      p.loanDue = row.loan_due ? Date.parse(row.loan_due) : null;
+    }
+  }
+
+  async repayLoan(p: Player) {
+    const { data, error } = await this.db().rpc("repay_loan");
+    if (error) throw error;
+    const row = (data as { credits: number; loan: number }[] | null)?.[0];
+    if (row) {
+      p.credits = row.credits;
+      p.loan = row.loan;
+      p.loanDue = null;
+    }
   }
 
   async addRival(email: string) {
@@ -538,7 +587,7 @@ class CloudRepo implements Repo {
     // Уровни переживают пожар: на сервере они и не сбрасывались, а клиент
     // забывал их и потом предлагал апгрейд по цене первого уровня.
     fresh.levels = { ...p.levels };
-    fresh.credits = Math.max(p.credits, CREDITS_START);
+    fresh.credits = p.credits;
     fresh.stats = { ...p.stats, wipes: p.stats.wipes + 1 };
     fresh.enemies = p.enemies;
     return fresh;

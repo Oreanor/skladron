@@ -11,6 +11,7 @@ language sql immutable as $$
   select case kind
     when 'cell'   then 10
     when 'repair' then 5
+    when 'scrap'  then 5   -- за сданные во вторсырьё остатки сгоревшей клетки
     when 'gun'    then 100
     when 'refund' then 50
     when 'drones' then 1000
@@ -25,6 +26,10 @@ language sql immutable as $$
     when 'free'   then 25   -- стартовая площадь 5×5 достаётся даром
     when 'found'  then 25   -- столько же нужно, чтобы основаться
     when 'upgrade' then 5000 -- апгрейд на любую ступень стоит одинаково
+    when 'loan_min'   then 1000  -- меньше этого банк не выдаёт
+    when 'loan_max'   then 5000  -- и больше тоже
+    when 'loan_rate'  then 10    -- процент за сутки
+    when 'loan_hours' then 24    -- срок займа
     when 'max_raid' then 500 -- потолок одного налёта, тот же и на клиенте
   end;
 $$;
@@ -252,6 +257,9 @@ alter table attacks add column if not exists snap_guns jsonb;
 alter table attacks add column if not exists snap_depots jsonb;
 alter table attacks add column if not exists snap_levels jsonb;
 alter table attacks add column if not exists trace text;
+-- заём: сколько отдать и когда
+alter table profiles add column if not exists loan int not null default 0;
+alter table profiles add column if not exists loan_due timestamptz;
 -- потолок налёта подняли с 300 до 500: у существующей таблицы check
 -- сам не поменяется, поэтому пересоздаём его явно
 alter table attacks drop constraint if exists attacks_drones_check;
@@ -614,18 +622,13 @@ declare
   sale int;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
+  perform settle_loan(uid);
   select * into prof from profiles where id = uid for update;
   if not found then raise exception 'no profile'; end if;
 
   select b.intact_cells, b.drone_cells
     into intact, cur_depots
     from bases b where b.user_id = uid for update;
-
-  -- страховка: от склада ничего не осталось, а на подъём нет денег
-  if prof.founded and coalesce(intact, 0) = 0 and prof.credits < 10000 then
-    update profiles set credits = 10000 where profiles.id = uid;
-    prof.credits := 10000;
-  end if;
 
   passed := floor(extract(epoch from (now() - prof.last_income_at)) / 86400);
   if passed <= 0 then
@@ -678,6 +681,7 @@ declare
   new_v int;
   built int := 0;
   repaired int := 0;
+  scrapped int := 0;
   intact_now int := 0;
   claimed int := 0;   -- клетки, уже занятые зданием: от них считается лимит
   free_left int;
@@ -717,6 +721,9 @@ begin
     elsif old_v = 4 and new_v = 0 then
       -- следы падений на земле после боя мгновенно зарастают травой
       null;
+    elsif old_v = 3 and new_v = 0 then
+      -- снос: остатки сгоревшей клетки сданы во вторсырьё
+      scrapped := scrapped + 1;
     elsif new_v <> old_v then
       -- вне боя клетка не может стать хуже
       raise exception 'cell % may not degrade outside battle', i;
@@ -733,7 +740,8 @@ begin
   cost := paid * price('cell')
         + repaired * price('repair')
         + guns_added * price('gun')
-        - guns_removed * price('refund');
+        - guns_removed * price('refund')
+        - scrapped * price('scrap');
 
   if prof.credits < cost then
     raise exception 'not enough credits: need %, have %', cost, prof.credits;
@@ -930,11 +938,7 @@ begin
   -- погорельцу выплачивается страховка.
   update profiles
      set drones = depot_sum(new_depots),
-         -- сгорело всё до последней клетки — сразу поднимаем кассу
-         credits = greatest(
-           profiles.credits + payout,
-           case when intact_now = 0 then 10000 else 0 end
-         ),
+         credits = profiles.credits + payout,
          stats = profiles.stats
        || jsonb_build_object(
             'battles', (profiles.stats->>'battles')::int + 1,
@@ -1039,10 +1043,91 @@ begin
    where user_id = uid;
 
   update profiles
-     set credits = greatest(profiles.credits, 10000),
+     set credits = profiles.credits,
          drones = 0, founded = false, last_income_at = now(),
          stats = jsonb_set(stats, '{wipes}', to_jsonb((stats->>'wipes')::int + 1))
    where id = uid;
+end;
+$$;
+
+-- ---------- заём ----------
+-- Банк даёт от price('loan_min') до price('loan_max') на сутки под процент.
+-- Долг гасится при заходе в игру по сроку или руками в любой момент. Не
+-- расплатился вовремя — процент начисляется заново, и срок едет на сутки.
+
+create or replace function settle_loan(uid uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  prof profiles;
+  pay int;
+begin
+  select * into prof from profiles where id = uid for update;
+  if not found or prof.loan <= 0 then return; end if;
+  if prof.loan_due is null or now() < prof.loan_due then return; end if;
+
+  -- срок вышел: берём сколько есть
+  pay := least(prof.loan, greatest(0, prof.credits));
+  update profiles
+     set credits = profiles.credits - pay,
+         loan = profiles.loan - pay
+   where profiles.id = uid;
+
+  -- не хватило — долг растёт, срок едет дальше
+  if prof.loan - pay > 0 then
+    update profiles
+       set loan = profiles.loan + (profiles.loan * price('loan_rate')) / 100,
+           loan_due = profiles.loan_due + (price('loan_hours') || ' hours')::interval
+     where profiles.id = uid;
+  else
+    update profiles set loan_due = null where profiles.id = uid;
+  end if;
+end;
+$$;
+
+create or replace function take_loan(amount int)
+returns table (credits int, loan int, loan_due timestamptz)
+language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  perform settle_loan(uid);
+  if amount is null or amount < price('loan_min') or amount > price('loan_max') then
+    raise exception 'bad loan amount';
+  end if;
+  if (select p.loan from profiles p where p.id = uid) > 0 then
+    raise exception 'previous loan is not repaid';
+  end if;
+
+  update profiles
+     set credits = profiles.credits + amount,
+         loan = amount + (amount * price('loan_rate')) / 100,
+         loan_due = now() + (price('loan_hours') || ' hours')::interval
+   where profiles.id = uid
+   returning profiles.credits, profiles.loan, profiles.loan_due
+   into credits, loan, loan_due;
+  return next;
+end;
+$$;
+
+create or replace function repay_loan()
+returns table (credits int, loan int)
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  owed int;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  select p.loan into owed from profiles p where p.id = uid for update;
+  if coalesce(owed, 0) <= 0 then raise exception 'nothing to repay'; end if;
+
+  update profiles
+     set credits = profiles.credits - owed,
+         loan = 0,
+         loan_due = null
+   where profiles.id = uid and profiles.credits >= owed
+   returning profiles.credits, profiles.loan into credits, loan;
+  if not found then raise exception 'not enough credits'; end if;
+  return next;
 end;
 $$;
 
@@ -1141,6 +1226,8 @@ begin
   update profiles
      set credits = 10000,
          drones = 0,
+         loan = 0,
+         loan_due = null,
          founded = true,
          last_income_at = now(),
          levels = '{"drones":1,"guns":1,"scouts":1,"mg":1,"water":1}'::jsonb,
@@ -1155,7 +1242,7 @@ $$;
 
 grant execute on function ensure_player, collect_income, save_base,
   buy_drones, apply_battle, complete_attack, wipe_base, rename_base, save_enemies,
-  base_names, enemy_base, spend_scouts, upgrade, add_rival,
+  base_names, enemy_base, spend_scouts, upgrade, add_rival, take_loan, repay_loan,
   send_attack, pending_attacks, attack_reports, ack_attack_report, restart_game to authenticated;
 
 -- PostgREST держит список функций в кэше. Supabase обычно перечитывает его сам,

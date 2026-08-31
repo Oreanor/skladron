@@ -72,6 +72,9 @@ export interface Player {
   name: string;
   credits: number;
   levels: Levels;
+  /** Сколько должен банку и когда срок. Ноль — долгов нет. */
+  loan: number;
+  loanDue: number | null;
   cells: Uint8Array;
   guns: Gun[];
   depots: Depot[];
@@ -88,6 +91,8 @@ interface Stored {
   name?: string;
   credits: number;
   levels?: Partial<Levels>;
+  loan?: number;
+  loanDue?: number | null;
   cells: string;
   guns: Gun[];
   depots: Depot[];
@@ -106,6 +111,8 @@ export function newPlayer(now = Date.now()): Player {
     name: "",
     credits: CREDITS_START,
     levels: startLevels(),
+    loan: 0,
+    loanDue: null,
     cells: starterCells(STARTER_SIDE),
     guns: [],
     depots: [],
@@ -131,7 +138,10 @@ export function wipe(p: Player, now = Date.now()): Player {
   const fresh = newPlayer(now);
   fresh.name = p.name;
   fresh.levels = { ...p.levels };
-  fresh.credits = Math.max(p.credits, CREDITS_START);
+  // долг сносом склада не списывается
+  fresh.loan = p.loan;
+  fresh.loanDue = p.loanDue;
+  fresh.credits = p.credits;
   fresh.stats = { ...p.stats, wipes: p.stats.wipes + 1 };
   fresh.enemies = p.enemies;
   return fresh;
@@ -165,19 +175,6 @@ export const dailyIncome = (p: Player) => {
   return intactCells(p) * INCOME_PER_CELL + sale.dronesValue + sale.scoutsValue;
 };
 
-/**
- * Склад выгорел дотла — доводим кассу до стартовых 10 000. Без этого игрок
- * остаётся с горстью кредитов, нулевым доходом и без единой целой клетки:
- * дронам негде лежать, а на ремонт всей площади денег не хватает.
- */
-export function insure(p: Player) {
-  if (!p.founded) return false;
-  if (intactCells(p) > 0) return false;
-  if (p.credits >= CREDITS_START) return false;
-  p.credits = CREDITS_START;
-  return true;
-}
-
 /** Склад выгорел полностью и чинить не на что — дальше только заново. */
 export function isDoomed(p: Player, intact = intactCells(p)) {
   if (!p.founded) return false;
@@ -198,6 +195,8 @@ export function load(): Player {
       name: s.name ?? "",
       credits: s.credits,
       levels: { ...startLevels(), ...(s.levels ?? {}) },
+      loan: s.loan ?? 0,
+      loanDue: s.loanDue ?? null,
       cells,
       guns: s.guns ?? [],
       depots: s.depots ?? [],
@@ -220,6 +219,8 @@ export function save(p: Player) {
     name: p.name,
     credits: p.credits,
     levels: p.levels,
+    loan: p.loan,
+    loanDue: p.loanDue,
     cells: encodeCells(p.cells),
     guns: p.guns,
     depots: p.depots,

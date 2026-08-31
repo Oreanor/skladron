@@ -6,6 +6,20 @@ export const REPAIR_COST = 5; // ремонт сгоревшей клетки
 export const GUN_COST = 100;
 export const GUN_REFUND = 50; // возврат при снятии пушки
 export const DRONE_UNIT_COST = 10;
+/** Сколько платят за сданные во вторсырьё остатки сгоревшей клетки. */
+export const SCRAP_REWARD = 5;
+
+/** Заём: от и до, ставка за срок и сам срок. */
+export const LOAN_MIN = 1000;
+export const LOAN_MAX = 5000;
+export const LOAN_STEP = 500;
+export const LOAN_RATE = 10; // процентов
+export const LOAN_HOURS = 24;
+
+/** Сколько придётся вернуть за такой заём. */
+export const loanDebt = (amount: number) =>
+  amount + Math.floor((amount * LOAN_RATE) / 100);
+
 /** Каждая целая клетка склада приносит столько в сутки. */
 export const INCOME_PER_CELL = 10;
 /**

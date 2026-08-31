@@ -208,6 +208,44 @@ export function storeDrones(
   return [...next, ...added];
 }
 
+/**
+ * Всё здание одним куском? Проверяем перед сносом: продать середину и
+ * оставить две половинки на разных концах поля нельзя.
+ */
+export function isWhole(cells: Uint8Array) {
+  let start = -1;
+  let total = 0;
+  for (let i = 0; i < cells.length; i++) {
+    if (!isBuilding(cells[i])) continue;
+    total++;
+    if (start < 0) start = i;
+  }
+  if (total === 0) return true;
+
+  const seen = new Uint8Array(CELLS);
+  const queue = new Int32Array(total);
+  let head = 0;
+  let tail = 0;
+  queue[tail++] = start;
+  seen[start] = 1;
+  let found = 0;
+  while (head < tail) {
+    const i = queue[head++];
+    found++;
+    const x = i % GRID;
+    const step = (n: number) => {
+      if (seen[n] || !isBuilding(cells[n])) return;
+      seen[n] = 1;
+      queue[tail++] = n;
+    };
+    if (x > 0) step(i - 1);
+    if (x < GRID - 1) step(i + 1);
+    if (i >= GRID) step(i - GRID);
+    if (i < CELLS - GRID) step(i + GRID);
+  }
+  return found === total;
+}
+
 export interface Rect {
   x: number;
   y: number;
@@ -369,6 +407,18 @@ export function burntCellsIn(cells: Uint8Array, r: Rect) {
   let n = 0;
   forEachCell(r, (_x, _y, i) => {
     if (cells[i] === G_BURNT) n++;
+  });
+  return n;
+}
+
+/** Сносит сгоревшие клетки в рамке: остаётся голая земля. */
+export function scrapRect(cells: Uint8Array, r: Rect) {
+  let n = 0;
+  forEachCell(r, (_x, _y, i) => {
+    if (cells[i] === G_BURNT) {
+      cells[i] = G_GROUND;
+      n++;
+    }
   });
   return n;
 }
