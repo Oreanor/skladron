@@ -97,7 +97,7 @@ export default function ScoutMap({
           {t("scout.viewHint", { ago })}
         </span>
         <Button variant="neutral" size="sm" onClick={onClose}>
-          {t("common.close")}
+          {t("common.ok")}
         </Button>
       </div>
     </div>

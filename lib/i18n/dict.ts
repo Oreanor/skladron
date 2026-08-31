@@ -16,6 +16,11 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 };
 
 const en = {
+  "common.ok": "OK",
+  "upgrade.mg": "Machine gun",
+  "upgrade.water": "Fire hose",
+  "tool.scoutsHint": "A container of {perCell} recon planes for {cost} cr. Click a free cell of the warehouse; drag containers to move them.",
+  "depot.noCredits": "Not enough credits for a container: {cost} cr",
   "tool.upgrade": "Upgrade",
   "tool.upgradeHint": "Levels up guns, drones and recon planes. The first step costs {cost} cr and every next one more.",
   "tool.priceFrom": "from {cost} cr",
@@ -135,7 +140,7 @@ const en = {
   "tool.areaHint": "{cost} cr per new cell",
   "tool.repairHint": "{cost} cr per cell",
   "tool.gunHint": "{cost} cr, refund {refund}",
-  "tool.dronesHint": "{cost} cr each",
+  "tool.dronesHint": "A container of {perCell} drones for {cost} cr. Click a free cell of the warehouse; drag containers to move them.",
 
   "stat.credits": "credits",
   "stat.drones": "drones",
@@ -326,6 +331,11 @@ export type Key = keyof typeof en;
 type Dict = Record<Key, string>;
 
 const ru: Dict = {
+  "common.ok": "ОК",
+  "upgrade.mg": "Пулемёт",
+  "upgrade.water": "Брандспойт",
+  "tool.scoutsHint": "Контейнер на {perCell} разведчиков за {cost} кр. Ткни в свободную клетку склада; ящики можно перетаскивать.",
+  "depot.noCredits": "Не хватает кредитов на контейнер: {cost} кр",
   "tool.upgrade": "Апгрейд",
   "tool.upgradeHint": "Повышает уровень пушек, дронов и разведчиков. Первый шаг стоит {cost} кр, дальше дороже.",
   "tool.priceFrom": "от {cost} кр",
@@ -445,7 +455,7 @@ const ru: Dict = {
   "tool.areaHint": "{cost} кр за новую клетку",
   "tool.repairHint": "{cost} кр за клетку",
   "tool.gunHint": "{cost} кр, вернёт {refund}",
-  "tool.dronesHint": "{cost} кр за штуку",
+  "tool.dronesHint": "Контейнер на {perCell} дронов за {cost} кр. Ткни в свободную клетку склада; ящики можно перетаскивать.",
 
   "stat.credits": "кредиты",
   "stat.drones": "дроны",
@@ -636,6 +646,11 @@ const ru: Dict = {
 };
 
 const es: Dict = {
+  "common.ok": "OK",
+  "upgrade.mg": "Ametralladora",
+  "upgrade.water": "Manguera",
+  "tool.scoutsHint": "Un contenedor de {perCell} aviones de reconocimiento por {cost} cr. Pulsa una celda libre del almacén; los contenedores se arrastran.",
+  "depot.noCredits": "No hay créditos para un contenedor: {cost} cr",
   "tool.upgrade": "Mejora",
   "tool.upgradeHint": "Sube de nivel cañones, drones y aviones de reconocimiento. El primer paso cuesta {cost} cr y cada siguiente más.",
   "tool.priceFrom": "desde {cost} cr",
@@ -755,7 +770,7 @@ const es: Dict = {
   "tool.areaHint": "{cost} cr por celda nueva",
   "tool.repairHint": "{cost} cr por celda",
   "tool.gunHint": "{cost} cr, devuelve {refund}",
-  "tool.dronesHint": "{cost} cr cada uno",
+  "tool.dronesHint": "Un contenedor de {perCell} drones por {cost} cr. Pulsa una celda libre del almacén; los contenedores se arrastran.",
 
   "stat.credits": "créditos",
   "stat.drones": "drones",
@@ -946,6 +961,11 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+  "common.ok": "OK",
+  "upgrade.mg": "Metralhadora",
+  "upgrade.water": "Mangueira",
+  "tool.scoutsHint": "Um contentor de {perCell} aviões de reconhecimento por {cost} cr. Toca numa célula livre do armazém; os contentores arrastam-se.",
+  "depot.noCredits": "Sem créditos para um contentor: {cost} cr",
   "tool.upgrade": "Melhoria",
   "tool.upgradeHint": "Sobe o nível de canhões, drones e aviões de reconhecimento. O primeiro passo custa {cost} cr e os seguintes mais.",
   "tool.priceFrom": "a partir de {cost} cr",
@@ -1065,7 +1085,7 @@ const pt: Dict = {
   "tool.areaHint": "{cost} cr por célula nova",
   "tool.repairHint": "{cost} cr por célula",
   "tool.gunHint": "{cost} cr, devolve {refund}",
-  "tool.dronesHint": "{cost} cr cada",
+  "tool.dronesHint": "Um contentor de {perCell} drones por {cost} cr. Toca numa célula livre do armazém; os contentores arrastam-se.",
 
   "stat.credits": "créditos",
   "stat.drones": "drones",
@@ -1256,6 +1276,11 @@ const pt: Dict = {
 };
 
 const fr: Dict = {
+  "common.ok": "OK",
+  "upgrade.mg": "Mitrailleuse",
+  "upgrade.water": "Lance à incendie",
+  "tool.scoutsHint": "Un conteneur de {perCell} avions de reconnaissance pour {cost} cr. Clique une case libre de l’entrepôt ; les conteneurs se déplacent à la souris.",
+  "depot.noCredits": "Pas assez de crédits pour un conteneur : {cost} cr",
   "tool.upgrade": "Amélioration",
   "tool.upgradeHint": "Fait monter d’un niveau canons, drones et avions de reconnaissance. Le premier palier coûte {cost} cr, les suivants davantage.",
   "tool.priceFrom": "à partir de {cost} cr",
@@ -1375,7 +1400,7 @@ const fr: Dict = {
   "tool.areaHint": "{cost} cr par nouvelle case",
   "tool.repairHint": "{cost} cr par case",
   "tool.gunHint": "{cost} cr, rend {refund}",
-  "tool.dronesHint": "{cost} cr pièce",
+  "tool.dronesHint": "Un conteneur de {perCell} drones pour {cost} cr. Clique une case libre de l’entrepôt ; les conteneurs se déplacent à la souris.",
 
   "stat.credits": "crédits",
   "stat.drones": "drones",
@@ -1566,6 +1591,11 @@ const fr: Dict = {
 };
 
 const de: Dict = {
+  "common.ok": "OK",
+  "upgrade.mg": "Maschinengewehr",
+  "upgrade.water": "Löschschlauch",
+  "tool.scoutsHint": "Ein Container mit {perCell} Aufklärern für {cost} Cr. Auf ein freies Lagerfeld klicken; Container lassen sich ziehen.",
+  "depot.noCredits": "Zu wenig Kredite für einen Container: {cost} Cr",
   "tool.upgrade": "Ausbau",
   "tool.upgradeHint": "Hebt Geschütze, Drohnen und Aufklärer eine Stufe an. Der erste Schritt kostet {cost} Cr, jeder weitere mehr.",
   "tool.priceFrom": "ab {cost} Cr",
@@ -1685,7 +1715,7 @@ const de: Dict = {
   "tool.areaHint": "{cost} Cr pro neuem Feld",
   "tool.repairHint": "{cost} Cr pro Feld",
   "tool.gunHint": "{cost} Cr, bringt {refund} zurück",
-  "tool.dronesHint": "{cost} Cr pro Stück",
+  "tool.dronesHint": "Ein Container mit {perCell} Drohnen für {cost} Cr. Auf ein freies Lagerfeld klicken; Container lassen sich ziehen.",
 
   "stat.credits": "Kredite",
   "stat.drones": "Drohnen",
@@ -1876,6 +1906,11 @@ const de: Dict = {
 };
 
 const it: Dict = {
+  "common.ok": "OK",
+  "upgrade.mg": "Mitragliatrice",
+  "upgrade.water": "Manichetta",
+  "tool.scoutsHint": "Un container da {perCell} ricognitori per {cost} cr. Tocca una cella libera del magazzino; i container si trascinano.",
+  "depot.noCredits": "Crediti insufficienti per un container: {cost} cr",
   "tool.upgrade": "Potenziamento",
   "tool.upgradeHint": "Alza di un livello cannoni, droni e ricognitori. Il primo passo costa {cost} cr, i successivi di più.",
   "tool.priceFrom": "da {cost} cr",
@@ -1995,7 +2030,7 @@ const it: Dict = {
   "tool.areaHint": "{cost} cr per cella nuova",
   "tool.repairHint": "{cost} cr per cella",
   "tool.gunHint": "{cost} cr, ne rende {refund}",
-  "tool.dronesHint": "{cost} cr l’uno",
+  "tool.dronesHint": "Un container da {perCell} droni per {cost} cr. Tocca una cella libera del magazzino; i container si trascinano.",
 
   "stat.credits": "crediti",
   "stat.drones": "droni",

@@ -21,8 +21,8 @@ export const MAX_LEVEL = 10;
 
 export const upgradeCost = (level: number) => UPGRADE_STEP * level;
 
-export type UpgradeKind = "drones" | "guns" | "scouts";
-export const UPGRADE_KINDS: UpgradeKind[] = ["drones", "guns", "scouts"];
+export type UpgradeKind = "drones" | "guns" | "scouts" | "mg" | "water";
+export const UPGRADE_KINDS: UpgradeKind[] = ["drones", "guns", "scouts", "mg", "water"];
 
 /** Прибавка за уровень: первый уровень — множитель 1. */
 export const levelBonus = (level: number, perLevel: number) =>

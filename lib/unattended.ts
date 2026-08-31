@@ -25,14 +25,11 @@ export function autoDefend(
   order: AttackOrder,
   gunLevel = 1
 ): UnattendedOutcome {
-  const s = createBattle(
-    cells,
-    guns,
-    depots,
-    buildPlan(order),
-    order.droneLevel ?? 1,
-    gunLevel
-  );
+  // Пулемёта и брандспойта тут нет — некому: считаем только пушки.
+  const s = createBattle(cells, guns, depots, buildPlan(order), {
+    drones: order.droneLevel ?? 1,
+    guns: gunLevel,
+  });
 
   let t = 0;
   while (t < MAX_SECONDS && s.phase === "playing") {

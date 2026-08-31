@@ -495,7 +495,9 @@ export const TOAST_MS = 30_000;
 export function Toast({ text, onClose }: { text: string; onClose: () => void }) {
   const t = useT();
   return (
-    <div className="toast-in absolute left-1/2 top-2 z-20 w-[min(28rem,calc(100%-1rem))] -translate-x-1/2">
+    // Поверх всего: под модалкой сообщение просто не видно, а приходит оно
+    // как раз тогда, когда открыта панелька.
+    <div className="toast-in fixed left-1/2 top-2 z-50 w-[min(28rem,calc(100%-1rem))] -translate-x-1/2">
       <div className="flex items-center justify-between gap-2 rounded-md border border-neutral-700 bg-neutral-900/95 px-3 py-2 text-sm text-neutral-200 shadow-2xl backdrop-blur">
         <span className="min-w-0">{text}</span>
         <Button

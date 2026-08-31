@@ -23,6 +23,10 @@ export const GUN_RANGE = 5; // радиус поражения пушки пер
 export const GUN_PER_LEVEL = 0.25;
 /** Прибавка к скорости дрона за каждый уровень. */
 export const DRONE_PER_LEVEL = 0.25;
+/** Прибавка к меткости очереди за уровень пулемёта. */
+export const MG_PER_LEVEL = 0.25;
+/** Прибавка к ширине струи за уровень брандспойта. */
+export const WATER_PER_LEVEL = 0.25;
 export const GUN_COOLDOWN = 3; // с
 export const FIRE_SPREAD = 5; // с — горящая клетка поджигает соседей
 export const DRONE_SPEED = 4.2; // клеток/с
@@ -145,9 +149,11 @@ export interface GameState {
   /** Целые клетки склада — цели дронов. Список пересобираем, только когда он протух. */
   targets: number[];
   targetsStale: boolean;
-  /** Уровень дронов нападающего и пушек защитника. */
+  /** Уровень дронов нападающего и уровни защитника. */
   droneLevel: number;
   gunLevel: number;
+  mgLevel: number;
+  waterLevel: number;
   dirty: boolean;
 }
 
@@ -156,13 +162,20 @@ export interface GameState {
 export const gunRange = (s: { gunLevel: number }) =>
   GUN_RANGE * levelBonus(s.gunLevel, GUN_PER_LEVEL);
 
+/** Уровни, с которыми идёт бой. Чего нет — то первого уровня. */
+export interface BattleLevels {
+  drones?: number;
+  guns?: number;
+  mg?: number;
+  water?: number;
+}
+
 export function createBattle(
   cells: Uint8Array,
   guns: BaseGun[],
   depots: Depot[],
   plan: SpawnTicket[],
-  droneLevel = 1,
-  gunLevel = 1
+  levels: BattleLevels = {}
 ): GameState {
   const map = cells.slice();
   const baseCells: number[] = [];
@@ -189,8 +202,10 @@ export function createBattle(
     firing: false,
     mgCd: 0,
     plan,
-    droneLevel,
-    gunLevel,
+    droneLevel: levels.drones ?? 1,
+    gunLevel: levels.guns ?? 1,
+    mgLevel: levels.mg ?? 1,
+    waterLevel: levels.water ?? 1,
     planAt: 0,
     time: 0,
     baseTotal: baseCells.length,
@@ -275,10 +290,13 @@ function aimTick(s: GameState) {
   if (water) {
     s.shots.push({ x: a.x, y: a.y, t: 0, water: true, seed: Math.random() });
     if (s.shots.length > 60) s.shots.shift();
-    const r = Math.ceil(WATER_RADIUS);
+    const reach = WATER_RADIUS * levelBonus(s.waterLevel, WATER_PER_LEVEL);
+    const r = Math.ceil(reach);
     for (let y = cy - r; y <= cy + r; y++) {
       for (let x = cx - r; x <= cx + r; x++) {
-        if (Math.hypot(x + 0.5 - a.x, y + 0.5 - a.y) <= WATER_RADIUS) extinguish(s, x, y);
+        const ddx = x + 0.5 - a.x;
+        const ddy = y + 0.5 - a.y;
+        if (ddx * ddx + ddy * ddy <= reach * reach) extinguish(s, x, y);
       }
     }
     return;
@@ -309,7 +327,8 @@ function aimTick(s: GameState) {
     }
   }
   if (!best) return;
-  if (Math.random() > MG_HIT) return;
+  // Меткость очереди растёт с уровнем пулемёта, но не до безусловной.
+  if (Math.random() > Math.min(0.95, MG_HIT * levelBonus(s.mgLevel, MG_PER_LEVEL))) return;
 
   const len = Math.hypot(best.tx - best.x, best.ty - best.y) || 1;
   best.hit = true;

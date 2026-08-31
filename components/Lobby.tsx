@@ -18,7 +18,6 @@ import {
   normRect,
   rectConnects,
   repairRect,
-  storeDrones,
   touchesBuilding,
 } from "@/lib/base";
 import {
@@ -74,7 +73,7 @@ import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 import { ChevronsUp, LayoutGrid, Plane, Rocket, Wrench } from "lucide-react";
 import { autoDefend, type UnattendedOutcome } from "@/lib/unattended";
-import { decodeCells, decodeRle, depotKind, encodeRle, type DroneKind, type Gun } from "@/lib/base";
+import { decodeCells, decodeRle, encodeRle, type DroneKind, type Gun } from "@/lib/base";
 import {
   Button,
   Card,
@@ -105,7 +104,7 @@ type ToolId = Tool | "upgrade";
 /** Панели, которые на телефоне открываются шторкой снизу. */
 type SheetId = "found" | "attacks" | "enemies" | "menu";
 /** Панели инструментов: они всплывают модалкой и вёрстку не разрывают. */
-type ModalId = "arsenal" | "scouts" | "upgrade";
+type ModalId = "upgrade";
 
 const ICON = "h-5 w-5";
 
@@ -155,15 +154,15 @@ const TOOLS: {
     id: "drones",
     label: "tool.drones",
     hint: "tool.dronesHint",
-    vars: { cost: DRONE_UNIT_COST },
+    vars: { cost: DRONE_UNIT_COST * DRONES_PER_CELL, perCell: DRONES_PER_CELL },
     icon: <IconDrone />,
     levelKind: "drones",
   },
   {
     id: "scouts",
     label: "tool.scouts",
-    hint: "tool.dronesHint",
-    vars: { cost: SCOUT_UNIT_COST },
+    hint: "tool.scoutsHint",
+    vars: { cost: SCOUT_UNIT_COST * DRONES_PER_CELL, perCell: DRONES_PER_CELL },
     icon: <Plane className={ICON} />,
     levelKind: "scouts",
   },
@@ -212,7 +211,6 @@ export default function Lobby({
   const autoBusyRef = useRef(false);
   /** Когда последний раз сверяли имена чужих складов. */
   const namesAt = useRef(0);
-  const [buyAmount, setBuyAmount] = useState(1);
   const [reports, setReports] = useState<AttackReport[]>([]);
   const toggleSheet = (id: SheetId) => setSheet((cur) => (cur === id ? null : id));
 
@@ -470,25 +468,6 @@ export default function Lobby({
   const { intact, burnt, free, drones, scouts } = counts;
   const hasBuilding = intact + burnt > 0;
   const doomed = isDoomed(p, intact);
-  // магазин один, вид берём из выбранного инструмента
-  const buyKind: DroneKind = tool === "scouts" ? "scout" : "basic";
-  const unitCost = buyKind === "scout" ? SCOUT_UNIT_COST : DRONE_UNIT_COST;
-  // место есть только в неполных ящиках того же вида: смешивать нельзя
-  const roomInPartialDepots = p.depots.reduce(
-    (sum, depot) =>
-      depotKind(depot) === buyKind ? sum + Math.max(0, DRONES_PER_CELL - depot.n) : sum,
-    0
-  );
-  // Магазин ограничивает ползунок и кошельком, и реальной вместимостью:
-  // свободными местами в неполных контейнерах плюс новыми белыми клетками.
-  const maxBySpace = roomInPartialDepots + free * DRONES_PER_CELL;
-  const maxBuyAmount = Math.min(Math.floor(p.credits / unitCost), maxBySpace);
-  const selectedBuyAmount =
-    maxBuyAmount > 0
-      ? Math.max(1, Math.min(Math.floor(buyAmount) || 1, maxBuyAmount))
-      : 0;
-  const selectedBuyCost = selectedBuyAmount * unitCost;
-
   // ---------- бой ----------
 
   if (battle) {
@@ -498,7 +477,7 @@ export default function Lobby({
         guns={p.guns}
         depots={p.depots}
         order={battle}
-        gunLevel={p.levels.guns}
+        levels={{ guns: p.levels.guns, mg: p.levels.mg, water: p.levels.water }}
         onFinish={async (o: BattleOutcome) => {
           p.cells = o.cells;
           p.guns = o.guns;
@@ -687,34 +666,39 @@ export default function Lobby({
     touch();
   };
 
-  const buyDrones = async () => {
-    if (selectedBuyAmount < 1) return;
-    const previousDepots = p.depots;
-    const previousCredits = p.credits;
-    const nextDepots = storeDrones(
-      p.cells,
-      p.guns,
-      p.depots,
-      selectedBuyAmount,
-      buyKind
-    );
-    if (!nextDepots) {
-      setMessage(t("arsenal.needSpace"));
+  /**
+   * Контейнер покупается прямо на карте, как пушка: ткнул в свободную клетку —
+   * появился ящик на десять дронов, деньги списались. Никаких окошек.
+   */
+  const buyDepotAt = async (x: number, y: number, kind: DroneKind) => {
+    if (x < 0 || y < 0 || x >= GRID || y >= GRID) return;
+    if (p.cells[idx(x, y)] !== G_BASE) {
+      setMessage(t("depot.onlyIntact"));
       return;
     }
-    const newContainers = nextDepots.length - p.depots.length;
-    p.depots = nextDepots;
-    p.credits -= selectedBuyCost;
-    setMessage(
-      t("arsenal.bought", { count: selectedBuyAmount, cost: fmt(selectedBuyCost) }) +
-        (newContainers > 0 ? t("arsenal.newContainers", { count: newContainers }) : "")
-    );
-    // Купил — окно своё дело сделало и уходит: дальше смотрят на склад.
-    setModal(null);
+    if (p.guns.some((g) => g.cx === x && g.cy === y)) {
+      setMessage(t("depot.gunThere"));
+      return;
+    }
+    if (p.depots.some((d) => d.cx === x && d.cy === y)) return;
+    const cost = (kind === "scout" ? SCOUT_UNIT_COST : DRONE_UNIT_COST) * DRONES_PER_CELL;
+    if (p.credits < cost) {
+      setMessage(t("depot.noCredits", { cost: fmt(cost) }));
+      return;
+    }
+    const previousDepots = p.depots;
+    const previousCredits = p.credits;
+    p.depots = [
+      ...p.depots,
+      kind === "scout"
+        ? { cx: x, cy: y, n: DRONES_PER_CELL, kind }
+        : { cx: x, cy: y, n: DRONES_PER_CELL },
+    ];
+    p.credits -= cost;
     setVersion((v) => v + 1);
     forceRender((v) => v + 1);
     try {
-      const patch = await repo.buyDrones(p, selectedBuyAmount, buyKind);
+      const patch = await repo.buyDrones(p, DRONES_PER_CELL, kind);
       if (patch.credits !== undefined) p.credits = patch.credits;
       forceRender((v) => v + 1);
     } catch (e) {
@@ -925,11 +909,13 @@ export default function Lobby({
   const onDown = (pt: Pt, button: number) => {
     if (button !== 0) return;
     const c = cellOf(pt);
-    if (tool === "drones") {
+    if (tool === "drones" || tool === "scouts") {
       const d = p.depots.find((q) => q.cx === c.x && q.cy === c.y);
       if (d) {
         dragDepotRef.current = { cx: d.cx, cy: d.cy };
         forceRender((v) => v + 1);
+      } else {
+        void buyDepotAt(c.x, c.y, tool === "scouts" ? "scout" : "basic");
       }
       return;
     }
@@ -1041,7 +1027,7 @@ export default function Lobby({
       }
       return;
     }
-    if (tool === "drones") {
+    if (tool === "drones" || tool === "scouts") {
       const from = dragDepotRef.current;
       dragDepotRef.current = null;
       forceRender((v) => v + 1);
@@ -1085,7 +1071,7 @@ export default function Lobby({
     const cell = 7;
     // круг ПВО рисуем по прокачанной дальности, иначе апгрейд не виден
     drawCoverage(ctx, p.guns, cell, gunRange({ gunLevel: p.levels.guns }));
-    const dragged = tool === "drones" ? dragDepotRef.current : null;
+    const dragged = tool === "drones" || tool === "scouts" ? dragDepotRef.current : null;
     drawDepots(
       ctx,
       dragged
@@ -1152,7 +1138,7 @@ export default function Lobby({
     }
 
     // раскладка: подсвечиваем свободные клетки и тащим контейнер за курсором
-    if (tool === "drones") {
+    if (tool === "drones" || tool === "scouts") {
       ctx.fillStyle = "rgba(214, 168, 92, 0.18)";
       for (const i of freeCells(p.cells, p.guns, p.depots)) {
         ctx.fillRect((i % GRID) * cell, ((i / GRID) | 0) * cell, cell, cell);
@@ -1196,7 +1182,7 @@ export default function Lobby({
         if (tool === "area") ok = !isBuilding(v) && (!hasBuilding || touchesBuilding(p.cells, cx, cy));
         else if (tool === "repair") ok = v === G_BURNT;
         else if (tool === "gun") ok = v === G_BASE && !p.depots.some((q) => q.cx === cx && q.cy === cy);
-        if (tool !== "drones") {
+        if (tool !== "drones" && tool !== "scouts") {
           ctx.fillStyle = ok ? "rgba(140, 215, 255, 0.6)" : "rgba(229, 56, 59, 0.55)";
           ctx.fillRect(cx * cell, cy * cell, cell, cell);
         }
@@ -1255,10 +1241,7 @@ export default function Lobby({
     }
     setTool(id);
     draftRef.current = null;
-    // панель инструмента всплывает модалкой: колонка справа от неё не едет
-    if (id === "drones") setModal("arsenal");
-    else if (id === "scouts") setModal("scouts");
-    else setModal(null);
+    setModal(null);
   };
 
   const doUpgrade = async (kind: UpgradeKind) => {
@@ -1314,47 +1297,6 @@ export default function Lobby({
     </>
   );
 
-  // Плашка инструмента: только то, чем пользуются. Ползунок, точное число
-  // и две кнопки — рассказывать про правила тут незачем.
-  const arsenalBody = (
-    <>
-      <div className="mb-4 flex items-center gap-3">
-        <input
-          type="range"
-          min={1}
-          max={Math.max(1, maxBuyAmount)}
-          step={1}
-          value={Math.max(1, selectedBuyAmount)}
-          disabled={maxBuyAmount < 1}
-          onChange={(event) => setBuyAmount(Number(event.target.value))}
-          className="h-8 min-w-0 flex-1 cursor-pointer accent-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label={t("arsenal.amountSlider")}
-        />
-        <input
-          type="number"
-          min={1}
-          max={Math.max(1, maxBuyAmount)}
-          value={selectedBuyAmount}
-          disabled={maxBuyAmount < 1}
-          onChange={(event) => setBuyAmount(Number(event.target.value))}
-          className="w-20 shrink-0 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-right font-mono text-neutral-100 outline-none focus:border-amber-500 disabled:opacity-40"
-          aria-label={t("arsenal.exactAmount")}
-        />
-      </div>
-      <div className="flex gap-2">
-        <Button
-          variant="neutral"
-          className="flex-1"
-          onClick={buyDrones}
-          disabled={selectedBuyAmount < 1}
-        >
-          {t("arsenal.buy", { count: selectedBuyAmount, cost: fmt(selectedBuyCost) })}
-        </Button>
-        <Button onClick={() => setModal(null)}>{t("common.cancel")}</Button>
-      </div>
-    </>
-  );
-
   const upgradeBody = (
     <>
       <div className="mb-4 space-y-2">
@@ -1383,7 +1325,7 @@ export default function Lobby({
         })}
       </div>
       <Button block onClick={() => setModal(null)}>
-        {t("common.cancel")}
+        {t("common.ok")}
       </Button>
     </>
   );
@@ -1394,9 +1336,6 @@ export default function Lobby({
     const total = Math.max(0, Math.ceil(ms / 1000));
     return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
   };
-
-  // Разведчики покупаются той же плашкой: вид берётся из выбранного инструмента.
-  const scoutsBody = arsenalBody;
 
   const attacksBody =
     p.incoming.length === 0 ? (
@@ -1577,7 +1516,7 @@ export default function Lobby({
               paintingRef.current = false;
             }}
             cursor={
-              tool === "drones"
+              tool === "drones" || tool === "scouts"
                 ? dragDepotRef.current
                   ? "grabbing"
                   : "grab"
@@ -1732,7 +1671,7 @@ export default function Lobby({
             <Row label={t("battle.gunsLost")} value={String(autoReport.outcome.result.gunsLost)} />
           </dl>
           <Button variant="neutral" block onClick={() => setAutoReport(null)}>
-            {t("auto.ok")}
+            {t("common.ok")}
           </Button>
         </Modal>
       )}
@@ -1774,16 +1713,6 @@ export default function Lobby({
         />
       )}
 
-      {modal === "arsenal" && (
-        <Modal title={t("tool.drones")} onClose={() => setModal(null)}>
-          {p.founded ? arsenalBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}
-        </Modal>
-      )}
-      {modal === "scouts" && (
-        <Modal title={t("tool.scouts")} onClose={() => setModal(null)}>
-          {p.founded ? scoutsBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}
-        </Modal>
-      )}
       {modal === "upgrade" && (
         <Modal title={t("tool.upgrade")} onClose={() => setModal(null)}>
           {p.founded ? upgradeBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}
@@ -1875,7 +1804,7 @@ function AttackReportDialog({
         />
       </dl>
       <Button variant="neutral" block onClick={onClose}>
-        {t("common.close")}
+        {t("common.ok")}
       </Button>
     </Modal>
   );

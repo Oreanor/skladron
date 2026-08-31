@@ -9,6 +9,7 @@ import {
   setFiring,
   settle,
   update,
+  type BattleLevels,
   type BattleResult,
   type GameState,
 } from "@/lib/engine";
@@ -32,8 +33,8 @@ interface Props {
   guns: Gun[];
   depots: Depot[];
   order: AttackOrder;
-  /** Уровень своих пушек: дальность и скорость снаряда. */
-  gunLevel?: number;
+  /** Свои уровни: пушки, пулемёт, брандспойт. */
+  levels?: BattleLevels;
   onFinish: (o: BattleOutcome) => void;
 }
 
@@ -50,7 +51,7 @@ interface Hud {
   time: number;
 }
 
-export default function Battle({ cells, guns, depots, order, gunLevel = 1, onFinish }: Props) {
+export default function Battle({ cells, guns, depots, order, levels, onFinish }: Props) {
   const stateRef = useRef<GameState | null>(null);
   const hoverRef = useRef<{ x: number; y: number } | null>(null);
   const [hud, setHud] = useState<Hud | null>(null);
@@ -60,14 +61,10 @@ export default function Battle({ cells, guns, depots, order, gunLevel = 1, onFin
   const finished = useRef(false);
 
   if (!stateRef.current) {
-    stateRef.current = createBattle(
-      cells,
-      guns,
-      depots,
-      buildPlan(order),
-      order.droneLevel ?? 1,
-      gunLevel
-    );
+    stateRef.current = createBattle(cells, guns, depots, buildPlan(order), {
+      ...levels,
+      drones: order.droneLevel ?? 1,
+    });
   }
   const s = stateRef.current;
 

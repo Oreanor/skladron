@@ -226,8 +226,11 @@ alter table profiles add column if not exists base_name text;
 alter table profiles add column if not exists scouts int not null default 0;
 -- уровни классов: с ними растут скорость дронов, дальнобойность пушек и обзор разведки
 alter table profiles add column if not exists levels jsonb not null
-  default '{"drones":1,"guns":1,"scouts":1}'::jsonb;
-update profiles set levels = '{"drones":1,"guns":1,"scouts":1}'::jsonb || levels;
+  default '{"drones":1,"guns":1,"scouts":1,"mg":1,"water":1}'::jsonb;
+alter table profiles alter column levels set default
+  '{"drones":1,"guns":1,"scouts":1,"mg":1,"water":1}'::jsonb;
+-- пулемёт и брандспойт добавились позже: у заведённых профилей их нет
+update profiles set levels = '{"drones":1,"guns":1,"scouts":1,"mg":1,"water":1}'::jsonb || levels;
 -- уровень дронов запоминаем в самой атаке: у защитника они летят так,
 -- как их прокачал нападающий, даже если тот потом апгрейднулся ещё
 alter table attacks add column if not exists drone_level int not null default 1;
@@ -724,7 +727,9 @@ declare
   cost int;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
-  if kind not in ('drones', 'guns', 'scouts') then raise exception 'bad upgrade kind'; end if;
+  if kind not in ('drones', 'guns', 'scouts', 'mg', 'water') then
+    raise exception 'bad upgrade kind';
+  end if;
 
   select coalesce((p.levels->>kind)::int, 1) into cur
     from profiles p where p.id = uid for update;

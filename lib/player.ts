@@ -42,9 +42,19 @@ export interface Levels {
   drones: number;
   guns: number;
   scouts: number;
+  /** Пулемёт игрока: меткость очереди. */
+  mg: number;
+  /** Брандспойт: ширина струи. */
+  water: number;
 }
 
-export const startLevels = (): Levels => ({ drones: 1, guns: 1, scouts: 1 });
+export const startLevels = (): Levels => ({
+  drones: 1,
+  guns: 1,
+  scouts: 1,
+  mg: 1,
+  water: 1,
+});
 
 export interface Player {
   name: string;
