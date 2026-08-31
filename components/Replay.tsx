@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildPlan, type AttackOrder } from "@/lib/attack";
-import { decodeCells, type Depot, type Gun } from "@/lib/base";
+import { G_BURNT, decodeCells, type Depot, type Gun } from "@/lib/base";
 import { createBattle, setAim, setFiring, update, type GameState } from "@/lib/engine";
 import { drawFrame } from "@/lib/render";
 import { STEP, decodeTrace } from "@/lib/replay";
@@ -79,6 +79,16 @@ export default function Replay({
 
       let guard = 0;
       while (carry >= STEP && guard++ < 32 && s.phase === "playing") {
+        // Запись кончилась — кончился и бой. Дальше крутить нельзя: без рук
+        // защитника огонь дожёг бы склад, которого он на самом деле не терял.
+        if (frames.length && step >= frames.length) {
+          // что горело к этому мгновению — то и осталось пепелищем
+          for (const i of s.fire.keys()) s.cells[i] = G_BURNT;
+          s.fire.clear();
+          s.phase = s.baseOk > 0 ? "won" : "lost";
+          setVersion((v) => v + 1);
+          break;
+        }
         carry -= STEP;
         // руки защитника: что он делал на этом шаге, то и повторяем
         const f = frames[step++] ?? null;

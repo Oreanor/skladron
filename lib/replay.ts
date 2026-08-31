@@ -18,8 +18,10 @@ export interface Frame {
 
 const IDLE = "-";
 
+// Разделитель — двоеточие: точка спотыкалась об отрицательные координаты,
+// а прицел за краем карты — вполне законный кадр.
 const encodeFrame = (f: Frame | null) =>
-  !f || f.x < 0 ? IDLE : `${f.x}.${f.y}${f.firing ? "!" : ""}`;
+  f ? `${f.x}:${f.y}${f.firing ? "!" : ""}` : IDLE;
 
 /**
  * Кадры сжимаем повторами: прицел стоит на месте куда дольше, чем движется,
@@ -56,7 +58,7 @@ export function decodeTrace(src: string): (Frame | null)[] {
     let frame: Frame | null = null;
     if (code !== IDLE) {
       const firing = code.endsWith("!");
-      const [x, y] = (firing ? code.slice(0, -1) : code).split(".");
+      const [x, y] = (firing ? code.slice(0, -1) : code).split(":");
       frame = { x: Number(x), y: Number(y), firing };
     }
     for (let i = 0; i < n; i++) out.push(frame);

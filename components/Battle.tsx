@@ -156,6 +156,14 @@ export default function Battle({
     return () => cancelAnimationFrame(raf);
   }, [s]);
 
+  /**
+   * Целимся в середину клетки, а не в точку под курсором. Иначе запись боя
+   * (в ней клетка) и сам бой (в нём доли клетки) считают по-разному, и
+   * повтор у нападавшего расходится с тем, что видел защитник.
+   */
+  const aimAt = (c: { x: number; y: number } | null) =>
+    c ? { x: c.x + 0.5, y: c.y + 0.5 } : null;
+
   const toCell = (p: Pt) => {
     const x = Math.floor(p.x);
     const y = Math.floor(p.y);
@@ -184,12 +192,12 @@ export default function Battle({
           overlay={(ctx, now) => drawFrame(ctx, s, 7, hoverRef.current, now)}
           onMove={(p) => {
             hoverRef.current = toCell(p);
-            setAim(s, hoverRef.current ? p : null);
+            setAim(s, aimAt(hoverRef.current));
           }}
           onDown={(p, button) => {
             if (button !== 0) return;
             hoverRef.current = toCell(p);
-            setAim(s, p);
+            setAim(s, aimAt(hoverRef.current));
             setFiring(s, true);
           }}
           onUp={() => setFiring(s, false)}
