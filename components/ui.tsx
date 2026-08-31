@@ -447,6 +447,7 @@ export function ToolButton({
   active,
   icon,
   level,
+  count,
   ...rest
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   label: string;
@@ -456,6 +457,8 @@ export function ToolButton({
   icon: ReactNode;
   /** Уровень класса, если он у этого инструмента есть: рисуем уголком. */
   level?: number;
+  /** Сколько такого добра на складе: счётчик переехал сюда из шапки. */
+  count?: number;
 }) {
   return (
     <button
@@ -469,6 +472,11 @@ export function ToolButton({
           : "border-neutral-700 text-neutral-300 hover:bg-neutral-800"
       }`}
     >
+      {count !== undefined && (
+        <span className="absolute left-1.5 top-1 font-mono text-sm font-bold leading-none text-neutral-200">
+          {count}
+        </span>
+      )}
       {level !== undefined && level > 1 && (
         <span className="absolute right-1 top-1 rounded bg-neutral-800 px-1 font-mono text-[9px] leading-tight text-amber-300">
           {level}

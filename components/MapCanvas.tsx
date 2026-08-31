@@ -97,9 +97,12 @@ export default function MapCanvas({
   sceneVersionRef.current = sceneVersion;
   boxSize.current = box;
 
-  /** Рука на карте: ближайшие полсекунды рисуем каждый кадр. */
+  /**
+   * Рука на карте — рисуем каждый кадр ещё секунду с небольшим: столько
+   * живёт всплывающая цена после клика.
+   */
   const wake = useCallback(() => {
-    wakeUntil.current = performance.now() + 500;
+    wakeUntil.current = performance.now() + 1300;
   }, []);
 
   const clampPan = useCallback((v: View) => {

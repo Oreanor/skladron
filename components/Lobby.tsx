@@ -119,6 +119,8 @@ const TOOLS: {
   priceKey?: Key;
   /** Какой класс он показывает уровнем. */
   levelKind?: UpgradeKind;
+  /** Что считать в уголке кнопки: этого добра столько-то на складе. */
+  countKind?: "guns" | "drones" | "scouts";
 }[] = [
   {
     id: "area",
@@ -135,20 +137,13 @@ const TOOLS: {
     icon: <Wrench className={ICON} />,
   },
   {
-    id: "upgrade",
-    label: "tool.upgrade",
-    hint: "tool.upgradeHint",
-    vars: { cost: UPGRADE_STEP },
-    priceKey: "tool.priceFrom",
-    icon: <ChevronsUp className={ICON} />,
-  },
-  {
     id: "gun",
     label: "tool.gun",
     hint: "tool.gunHint",
     vars: { cost: GUN_COST, refund: GUN_REFUND },
     icon: <Rocket className={ICON} />,
     levelKind: "guns",
+    countKind: "guns",
   },
   {
     id: "drones",
@@ -157,6 +152,7 @@ const TOOLS: {
     vars: { cost: DRONE_UNIT_COST * DRONES_PER_CELL, perCell: DRONES_PER_CELL },
     icon: <IconDrone />,
     levelKind: "drones",
+    countKind: "drones",
   },
   {
     id: "scouts",
@@ -165,6 +161,15 @@ const TOOLS: {
     vars: { cost: SCOUT_UNIT_COST * DRONES_PER_CELL, perCell: DRONES_PER_CELL },
     icon: <Plane className={ICON} />,
     levelKind: "scouts",
+    countKind: "scouts",
+  },
+  {
+    id: "upgrade",
+    label: "tool.upgrade",
+    hint: "tool.upgradeHint",
+    vars: { cost: UPGRADE_STEP },
+    priceKey: "tool.priceFrom",
+    icon: <ChevronsUp className={ICON} />,
   },
 ];
 
@@ -225,6 +230,8 @@ export default function Lobby({
     moved: boolean;
   } | null>(null);
   const hoverRef = useRef<Pt | null>(null);
+  /** Ценники, всплывающие над клеткой в момент покупки. */
+  const priceTags = useRef<{ x: number; y: number; text: string; gain: boolean; at: number }[]>([]);
   /** Последняя нарисованная рамка: по ней решаем, нужен ли React-рендер. */
   const draftKey = useRef("");
   const paintingRef = useRef(false);
@@ -646,6 +653,7 @@ export default function Lobby({
     if (existing >= 0) {
       p.guns.splice(existing, 1);
       p.credits += GUN_REFUND;
+      showPrice(x, y, GUN_REFUND);
       touch();
       return;
     }
@@ -663,6 +671,7 @@ export default function Lobby({
     }
     p.guns.push({ cx: x, cy: y });
     p.credits -= GUN_COST;
+    showPrice(x, y, -GUN_COST);
     touch();
   };
 
@@ -695,6 +704,7 @@ export default function Lobby({
         : { cx: x, cy: y, n: DRONES_PER_CELL },
     ];
     p.credits -= cost;
+    showPrice(x, y, -cost);
     setVersion((v) => v + 1);
     forceRender((v) => v + 1);
     try {
@@ -884,6 +894,20 @@ export default function Lobby({
 
   const cellOf = (pt: Pt) => ({ x: Math.floor(pt.x), y: Math.floor(pt.y) });
 
+  /** Сколько живёт всплывающая цена, мс. */
+  const TAG_MS = 1000;
+
+  /** «−100 кр» над клеткой: видно, за что ушли деньги, и куда вернулись. */
+  const showPrice = (x: number, y: number, amount: number) => {
+    priceTags.current.push({
+      x,
+      y,
+      text: `${amount < 0 ? "−" : "+"}${fmt(Math.abs(amount))} ${t("battle.creditsSuffix")}`,
+      gain: amount > 0,
+      at: performance.now(),
+    });
+  };
+
   if (process.env.NODE_ENV !== "production") {
     (window as unknown as { __lobby: unknown }).__lobby = {
       player: p,
@@ -909,24 +933,46 @@ export default function Lobby({
   const onDown = (pt: Pt, button: number) => {
     if (button !== 0) return;
     const c = cellOf(pt);
-    if (tool === "drones" || tool === "scouts") {
-      const d = p.depots.find((q) => q.cx === c.x && q.cy === c.y);
-      if (d) {
-        dragDepotRef.current = { cx: d.cx, cy: d.cy };
-        forceRender((v) => v + 1);
-      } else {
-        void buyDepotAt(c.x, c.y, tool === "scouts" ? "scout" : "basic");
+
+    // Уголок рамки главнее всего: он маленький, специально под курсором, и
+    // рядом с ним вполне может стоять пушка.
+    const rect = drafting && draftRef.current ? normRect(draftRef.current) : null;
+    if (rect) {
+      const corner = cornerNear(rect, pt);
+      if (corner >= 0) {
+        dragRef.current = {
+          mode: "resize",
+          corner,
+          startX: pt.x,
+          startY: pt.y,
+          origin: rect,
+          moved: false,
+        };
+        return;
       }
+    }
+
+    // Что стоит на складе, то и берётся мышкой — в любом режиме. Иначе
+    // непонятно, почему пушка тащится при одной кнопке и не тащится при другой.
+    const depot = p.depots.find((q) => q.cx === c.x && q.cy === c.y);
+    if (depot) {
+      dragDepotRef.current = { cx: depot.cx, cy: depot.cy };
+      forceRender((v) => v + 1);
+      return;
+    }
+    const gun = p.guns.find((q) => q.cx === c.x && q.cy === c.y);
+    if (gun) {
+      dragGunRef.current = { cx: gun.cx, cy: gun.cy };
+      forceRender((v) => v + 1);
+      return;
+    }
+
+    if (tool === "drones" || tool === "scouts") {
+      void buyDepotAt(c.x, c.y, tool === "scouts" ? "scout" : "basic");
       return;
     }
     if (tool === "gun") {
-      const g = p.guns.find((q) => q.cx === c.x && q.cy === c.y);
-      if (g) {
-        dragGunRef.current = { cx: g.cx, cy: g.cy };
-        forceRender((v) => v + 1);
-      } else {
-        gunAt(c.x, c.y);
-      }
+      gunAt(c.x, c.y);
       return;
     }
     if (!drafting) return;
@@ -1015,27 +1061,27 @@ export default function Lobby({
 
   const onUp = (pt: Pt) => {
     paintingRef.current = false;
-    if (tool === "gun") {
-      const from = dragGunRef.current;
-      dragGunRef.current = null;
+
+    const fromDepot = dragDepotRef.current;
+    if (fromDepot) {
+      dragDepotRef.current = null;
+      const c = cellOf(pt);
+      if (c.x !== fromDepot.cx || c.y !== fromDepot.cy) moveDepot(fromDepot, c.x, c.y);
       forceRender((v) => v + 1);
-      if (from) {
-        const c = cellOf(pt);
-        // отпустил там же, откуда взял — значит просто снял пушку
-        if (c.x === from.cx && c.y === from.cy) gunAt(c.x, c.y);
-        else moveGun(from, c.x, c.y);
-      }
       return;
     }
-    if (tool === "drones" || tool === "scouts") {
-      const from = dragDepotRef.current;
-      dragDepotRef.current = null;
-      forceRender((v) => v + 1);
-      if (from) {
-        const c = cellOf(pt);
-        if (c.x !== from.cx || c.y !== from.cy) moveDepot(from, c.x, c.y);
-        else forceRender((v) => v + 1);
+    const fromGun = dragGunRef.current;
+    if (fromGun) {
+      dragGunRef.current = null;
+      const c = cellOf(pt);
+      // Отпустил там же, откуда взял: в режиме пушек это «снять и вернуть
+      // деньги», в остальных — просто передумал тащить.
+      if (c.x === fromGun.cx && c.y === fromGun.cy) {
+        if (tool === "gun") gunAt(c.x, c.y);
+      } else {
+        moveGun(fromGun, c.x, c.y);
       }
+      forceRender((v) => v + 1);
       return;
     }
     const drag = dragRef.current;
@@ -1067,11 +1113,11 @@ export default function Lobby({
 
   // ---------- отрисовка поверх карты ----------
 
-  const overlay = (ctx: CanvasRenderingContext2D) => {
+  const overlay = (ctx: CanvasRenderingContext2D, frameNow: number) => {
     const cell = 7;
     // круг ПВО рисуем по прокачанной дальности, иначе апгрейд не виден
     drawCoverage(ctx, p.guns, cell, gunRange({ gunLevel: p.levels.guns }));
-    const dragged = tool === "drones" || tool === "scouts" ? dragDepotRef.current : null;
+    const dragged = dragDepotRef.current;
     drawDepots(
       ctx,
       dragged
@@ -1111,7 +1157,7 @@ export default function Lobby({
     }
 
     // пушки переставляются так же, как контейнеры: тянем и роняем
-    if (tool === "gun") {
+    if (tool === "gun" || dragGunRef.current) {
       ctx.fillStyle = "rgba(140, 215, 255, 0.16)";
       for (const i of freeCells(p.cells, p.guns, p.depots)) {
         ctx.fillRect((i % GRID) * cell, ((i / GRID) | 0) * cell, cell, cell);
@@ -1138,7 +1184,7 @@ export default function Lobby({
     }
 
     // раскладка: подсвечиваем свободные клетки и тащим контейнер за курсором
-    if (tool === "drones" || tool === "scouts") {
+    if (tool === "drones" || tool === "scouts" || dragDepotRef.current) {
       ctx.fillStyle = "rgba(214, 168, 92, 0.18)";
       for (const i of freeCells(p.cells, p.guns, p.depots)) {
         ctx.fillRect((i % GRID) * cell, ((i / GRID) | 0) * cell, cell, cell);
@@ -1187,6 +1233,27 @@ export default function Lobby({
           ctx.fillRect(cx * cell, cy * cell, cell, cell);
         }
       }
+    }
+
+    // ценники: всплывают над клеткой, поднимаются и гаснут
+    if (priceTags.current.length) {
+      priceTags.current = priceTags.current.filter((tag) => frameNow - tag.at < TAG_MS);
+      ctx.save();
+      ctx.font = `600 ${cell * 1.7}px ui-monospace, SFMono-Regular, monospace`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.lineWidth = cell * 0.22;
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
+      for (const tag of priceTags.current) {
+        const k = (frameNow - tag.at) / TAG_MS;
+        const px = (tag.x + 0.5) * cell;
+        const py = (tag.y - k * 1.6) * cell;
+        ctx.globalAlpha = 1 - k * k;
+        ctx.strokeText(tag.text, px, py);
+        ctx.fillStyle = tag.gain ? "#7ee787" : "#ffb454";
+        ctx.fillText(tag.text, px, py);
+      }
+      ctx.restore();
     }
   };
 
@@ -1441,11 +1508,9 @@ export default function Lobby({
       <div className="flex shrink-0 items-center gap-2 lg:hidden">
         <ChipBar className="min-w-0 flex-1">
           <Chip label={t("stat.creditsShort")} value={fmt(p.credits)} tone="text-emerald-300" />
-          <Chip label={t("stat.dronesShort")} value={fmt(drones)} />
+          <Chip label={t("stat.incomeShort")} value={`+${fmt(income)}`} tone="text-emerald-300" />
           <Chip label={t("stat.intactShort")} value={fmt(intact)} />
           {burnt > 0 && <Chip label={t("stat.burntShort")} value={fmt(burnt)} tone="text-orange-300" />}
-          <Chip label={t("stat.gunsShort")} value={fmt(p.guns.length)} />
-          <Chip label={t("stat.incomeShort")} value={`+${fmt(income)}`} tone="text-emerald-300" />
         </ChipBar>
         <IconButton label={t("panel.attacks")} badge={p.incoming.length} onClick={() => toggleSheet("attacks")}>
           <IconTarget />
@@ -1469,11 +1534,9 @@ export default function Lobby({
         />
         <ChipBar bare className="min-w-0 flex-1 flex-wrap px-4 py-3 text-sm">
           <Chip label={t("stat.credits")} value={fmt(p.credits)} tone="text-emerald-300" />
-          <Chip label={t("stat.dronesShort")} value={fmt(drones)} />
+          <Chip label={t("stat.income")} value={`+${fmt(income)}`} tone="text-emerald-300" />
           <Chip label={t("stat.intact")} value={fmt(intact)} />
           <Chip label={t("stat.burnt")} value={fmt(burnt)} tone={burnt ? "text-orange-300" : undefined} />
-          <Chip label={t("stat.guns")} value={fmt(p.guns.length)} />
-          <Chip label={t("stat.income")} value={`+${fmt(income)}`} tone="text-emerald-300" />
         </ChipBar>
         {accountLine}
       </div>
@@ -1494,6 +1557,15 @@ export default function Lobby({
                 price={t(item.priceKey ?? "tool.price", { cost: item.vars.cost })}
                 hint={t(item.hint, item.vars)}
                 level={item.levelKind ? p.levels[item.levelKind] : undefined}
+                count={
+                  item.countKind
+                    ? item.countKind === "guns"
+                      ? p.guns.length
+                      : item.countKind === "drones"
+                      ? drones
+                      : scouts
+                    : undefined
+                }
                 active={tool === item.id}
                 disabled={!p.founded && item.id !== "area"}
                 onClick={() => pickTool(item.id)}
@@ -1515,17 +1587,7 @@ export default function Lobby({
               hoverRef.current = null;
               paintingRef.current = false;
             }}
-            cursor={
-              tool === "drones" || tool === "scouts"
-                ? dragDepotRef.current
-                  ? "grabbing"
-                  : "grab"
-                : tool === "gun"
-                ? dragGunRef.current
-                  ? "grabbing"
-                  : "crosshair"
-                : "crosshair"
-            }
+            cursor={dragDepotRef.current || dragGunRef.current ? "grabbing" : "crosshair"}
           >
             {message && <Toast key={message} text={message} onClose={() => setMessage(null)} />}
           </MapCanvas>
