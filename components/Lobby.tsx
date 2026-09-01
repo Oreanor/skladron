@@ -1129,6 +1129,7 @@ export default function Lobby({
       await repo.sendAttack(p, enemy.email, n, pattern, direction, seed);
       // счётчик налётов поднимает сам send_attack — второй раз здесь не нужно
       setMessage(t("raid.sent", { email: enemy.email }));
+      loadRaids();
       setVersion((value) => value + 1);
       forceRender((value) => value + 1);
       return null;
@@ -1919,39 +1920,44 @@ export default function Lobby({
         {raids.map((r) => (
           <li key={r.id} className="flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <div className="truncate text-neutral-200">
+              <div className={`truncate ${r.pending ? "text-neutral-400" : "text-neutral-200"}`}>
                 <span className={r.side === "attack" ? "text-red-300" : "text-sky-300"}>
                   {t(r.side === "attack" ? "replays.attack" : "replays.defence")}
                 </span>{" "}
                 {r.foe}
               </div>
               <div className="font-mono text-[11px] text-neutral-500">
-                {t("replays.line", { drones: r.drones, burned: fmt(r.burned) })}
-                {r.side === "attack" && r.loot > 0
+                {r.pending
+                  ? t("replays.pending", { drones: r.drones })
+                  : t("replays.line", { drones: r.drones, burned: fmt(r.burned) })}
+                {!r.pending && r.side === "attack" && r.loot > 0
                   ? ` · +${fmt(r.loot)} ${t("battle.creditsSuffix")}`
                   : ""}
               </div>
             </div>
-            <div className="flex shrink-0 gap-1">
-              {r.hasReplay && (
+            {/* пока налёт в пути, смотреть и убирать нечего */}
+            {!r.pending && (
+              <div className="flex shrink-0 gap-1">
+                {r.hasReplay && (
+                  <IconButton
+                    label={t("replay.watch")}
+                    title={t("replay.watch")}
+                    className="h-8 w-8"
+                    onClick={() => void openReplay(r)}
+                  >
+                    <Play className="h-4 w-4" />
+                  </IconButton>
+                )}
                 <IconButton
-                  label={t("replay.watch")}
-                  title={t("replay.watch")}
+                  label={t("replays.hide")}
+                  title={t("replays.hide")}
                   className="h-8 w-8"
-                  onClick={() => void openReplay(r)}
+                  onClick={() => void hideRaid(r.id)}
                 >
-                  <Play className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" />
                 </IconButton>
-              )}
-              <IconButton
-                label={t("replays.hide")}
-                title={t("replays.hide")}
-                className="h-8 w-8"
-                onClick={() => void hideRaid(r.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </IconButton>
-            </div>
+              </div>
+            )}
           </li>
         ))}
       </ul>

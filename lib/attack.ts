@@ -97,7 +97,10 @@ export interface RaidLog {
   side: "attack" | "defence";
   /** Вторая сторона: чей склад жгли или кто жёг твой. */
   foe: string;
-  resolvedAt: number;
+  /** Когда отгремел бой, а у неотыгранных — когда рой вылетел. */
+  at: number;
+  /** Налёт ещё в пути: защитник до него не дошёл. */
+  pending: boolean;
   drones: number;
   burned: number;
   loot: number;

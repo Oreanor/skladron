@@ -16,6 +16,7 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 };
 
 const en = {
+  "replays.pending": "{drones} drones on the way · not fought yet",
   "tool.priceBox": "{cost} cr/{perCell} pcs",
   "stat.creditsLine": "{credits} (+{income} cr/day)",
   "tool.loan": "Loan",
@@ -330,6 +331,7 @@ export type Key = keyof typeof en;
 type Dict = Record<Key, string>;
 
 const ru: Dict = {
+  "replays.pending": "{drones} дронов в пути · бой ещё не отыгран",
   "tool.priceBox": "{cost} кр/{perCell} шт",
   "stat.creditsLine": "{credits} (+{income} кр/сут)",
   "tool.loan": "Кредит",
@@ -643,6 +645,7 @@ const ru: Dict = {
 };
 
 const es: Dict = {
+  "replays.pending": "{drones} drones en camino · aún sin combatir",
   "tool.priceBox": "{cost} cr/{perCell} uds",
   "stat.creditsLine": "{credits} (+{income} cr/día)",
   "tool.loan": "Crédito",
@@ -956,6 +959,7 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+  "replays.pending": "{drones} drones a caminho · ainda por combater",
   "tool.priceBox": "{cost} cr/{perCell} un",
   "stat.creditsLine": "{credits} (+{income} cr/dia)",
   "tool.loan": "Crédito",
@@ -1269,6 +1273,7 @@ const pt: Dict = {
 };
 
 const fr: Dict = {
+  "replays.pending": "{drones} drones en route · combat pas encore joué",
   "tool.priceBox": "{cost} cr/{perCell} pcs",
   "stat.creditsLine": "{credits} (+{income} cr/j)",
   "tool.loan": "Crédit",
@@ -1582,6 +1587,7 @@ const fr: Dict = {
 };
 
 const de: Dict = {
+  "replays.pending": "{drones} Drohnen unterwegs · noch nicht ausgefochten",
   "tool.priceBox": "{cost} Cr/{perCell} St.",
   "stat.creditsLine": "{credits} (+{income} Cr/Tag)",
   "tool.loan": "Kredit",
@@ -1895,6 +1901,7 @@ const de: Dict = {
 };
 
 const it: Dict = {
+  "replays.pending": "{drones} droni in volo · combattimento non ancora giocato",
   "tool.priceBox": "{cost} cr/{perCell} pz",
   "stat.creditsLine": "{credits} (+{income} cr/g)",
   "tool.loan": "Prestito",
