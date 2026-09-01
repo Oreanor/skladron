@@ -330,7 +330,7 @@ export type Key = keyof typeof en;
 type Dict = Record<Key, string>;
 
 const ru: Dict = {
-  "tool.priceBox": "{cost} кр за {perCell} шт",
+  "tool.priceBox": "{cost} кр / {perCell} шт",
   "stat.creditsLine": "{credits} (+{income} кр/сут)",
   "tool.loan": "Кредит",
   "tool.loanHint": "Занять от {cost} кр на сутки под {rate}%. Купленный на них товар может сгореть, долг — нет.",
