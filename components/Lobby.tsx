@@ -120,7 +120,7 @@ import {
   Panel,
   Row,
   SectionTitle,
-  TOAST_MS,
+  MESSAGE_MS,
   Sheet,
   StatRow,
   ToolButton,
@@ -633,7 +633,7 @@ export default function Lobby({
 
   useEffect(() => {
     if (!message) return;
-    const timer = window.setTimeout(() => setMessage(null), TOAST_MS);
+    const timer = window.setTimeout(() => setMessage(null), MESSAGE_MS);
     return () => window.clearTimeout(timer);
   }, [message]);
 
@@ -2044,6 +2044,9 @@ export default function Lobby({
         </div>
       </>
     );
+  } else if (message) {
+    barTone = "border-neutral-700 bg-neutral-900 text-neutral-200";
+    barBody = <span className="min-w-0">{message}</span>;
   } else if (p.founded && intact === 0) {
     barTone = "border-red-900/70 bg-red-950/30 text-red-100";
     barBody = (
@@ -2057,22 +2060,6 @@ export default function Lobby({
             {t("burnt.raze")}
           </Button>
         </div>
-      </>
-    );
-  } else if (message) {
-    barTone = "border-neutral-700 bg-neutral-900 text-neutral-200";
-    barBody = (
-      <>
-        <span className="min-w-0">{message}</span>
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label={t("common.close")}
-          className="-mr-2 ml-auto shrink-0"
-          onClick={() => setMessage(null)}
-        >
-          ✕
-        </Button>
       </>
     );
   } else if (!p.founded) {
