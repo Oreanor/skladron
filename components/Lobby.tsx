@@ -237,7 +237,7 @@ const TOOLS: {
 const BOT_COUNT = 4;
 
 /** Панели правой колонки в порядке по умолчанию. */
-const DEFAULT_PANELS = ["attacks", "enemies", "replays", "stats"];
+const DEFAULT_PANELS = ["replays", "enemies", "stats"];
 const PANELS_KEY = "wb.panels.v1";
 
 function readPanels(): {
@@ -1838,55 +1838,52 @@ export default function Lobby({
     return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
   };
 
-  const attacksBody =
-    p.incoming.length === 0 ? (
-      <p className="text-neutral-500">
-        {t("attacks.quiet")}
-      </p>
-    ) : (
-      <ul className="space-y-2">
-        {p.incoming.map((a, i) => {
-          const first = i === 0;
-          const edge = a.pattern === "lines" ? ` ${t(`edge.${a.direction}` as Key)}` : "";
-          return (
-            <Card
-              key={a.id}
-              className={`flex items-center justify-between gap-2 ${first ? "" : "opacity-60"}`}
-            >
-              <div className="min-w-0">
-                <div className="truncate font-medium text-neutral-200">{a.from}</div>
-                <div className="font-mono text-xs text-neutral-500">
-                  {t("attacks.dronesPattern", {
-                    drones: a.drones,
-                    pattern: t(`pattern.${a.pattern}` as Key).toLowerCase(),
-                  })}
-                  {edge}
-                </div>
-                <div className="font-mono text-xs text-neutral-500">
-                  {first
-                    ? headLeft !== null
-                      ? t("attacks.timeLeft", { time: countdown(headLeft) })
-                      : t("attacks.starting")
-                    : t("attacks.queued", { position: i + 1 })}
-                </div>
+  const incomingRows = (
+    <>
+      {p.incoming.map((a, i) => {
+        const first = i === 0;
+        const edge = a.pattern === "lines" ? ` ${t(`edge.${a.direction}` as Key)}` : "";
+        return (
+          <li
+            key={a.id}
+            className={`flex items-center justify-between gap-2 ${first ? "" : "opacity-60"}`}
+          >
+            <div className="min-w-0">
+              <div className="truncate text-neutral-200">
+                <span className="text-red-300">{t("replays.incoming")}</span> {a.from}
               </div>
-              <Button
-                variant="danger"
-                size="sm"
-                disabled={!first || intact === 0}
-                title={first ? undefined : t("attacks.defendFirst")}
-                onClick={() => {
-                  setSheet(null);
-                  setBattle(a);
-                }}
-              >
-                {t("attacks.defend")}
-              </Button>
-            </Card>
-          );
-        })}
-      </ul>
-    );
+              <div className="font-mono text-[11px] text-neutral-500">
+                {t("attacks.dronesPattern", {
+                  drones: a.drones,
+                  pattern: t(`pattern.${a.pattern}` as Key).toLowerCase(),
+                })}
+                {edge}
+                {" · "}
+                {first
+                  ? headLeft !== null
+                    ? t("attacks.timeLeft", { time: countdown(headLeft) })
+                    : t("attacks.starting")
+                  : t("attacks.queued", { position: i + 1 })}
+              </div>
+            </div>
+            <Button
+              variant="danger"
+              size="sm"
+              className="shrink-0"
+              disabled={!first || intact === 0}
+              title={first ? undefined : t("attacks.defendFirst")}
+              onClick={() => {
+                setSheet(null);
+                setBattle(a);
+              }}
+            >
+              {t("attacks.defend")}
+            </Button>
+          </li>
+        );
+      })}
+    </>
+  );
 
   const summonButton = (
     <Button size="sm" onClick={summonAttack}>
@@ -1911,12 +1908,13 @@ export default function Lobby({
   );
 
   const raidsBody =
-    raids.length === 0 ? (
+    raids.length === 0 && p.incoming.length === 0 ? (
       <p className="text-neutral-500">{t("replays.empty")}</p>
     ) : (
       // Показываем три боя, остальное — прокруткой: журнал не должен
       // выдавливать список врагов за край экрана.
       <ul className="max-h-[10.5rem] space-y-2 overflow-y-auto overscroll-contain pr-1">
+        {incomingRows}
         {raids.map((r) => (
           <li key={r.id} className="flex items-center justify-between gap-2">
             <div className="min-w-0">
@@ -1979,9 +1977,8 @@ export default function Lobby({
     string,
     { title: Key; action?: ReactNode; body: ReactNode }
   > = {
-    attacks: { title: "panel.attacks", action: summonButton, body: attacksBody },
     enemies: { title: "panel.enemies", body: enemiesBody },
-    replays: { title: "panel.replays", body: raidsBody },
+    replays: { title: "panel.replays", action: summonButton, body: raidsBody },
     stats: { title: "panel.stats", body: statsBody },
   };
 
@@ -2131,7 +2128,7 @@ export default function Lobby({
         <span className="min-w-0 flex-1 truncate font-mono text-sm text-emerald-300">
           {t("stat.creditsLine", { credits: fmt(p.credits), income: fmt(income) })}
         </span>
-        <IconButton label={t("panel.attacks")} badge={p.incoming.length} onClick={() => toggleSheet("attacks")}>
+        <IconButton label={t("panel.replays")} badge={p.incoming.length} onClick={() => toggleSheet("attacks")}>
           <IconTarget />
         </IconButton>
         <IconButton label={t("panel.enemies")} onClick={() => toggleSheet("enemies")}>
@@ -2398,12 +2395,8 @@ export default function Lobby({
         </Modal>
       )}
 
-      <Sheet open={sheet === "attacks"} title={t("panel.attacks")} onClose={() => setSheet(null)}>
+      <Sheet open={sheet === "attacks"} title={t("panel.replays")} onClose={() => setSheet(null)}>
         <div className="mb-3 flex justify-end">{summonButton}</div>
-        {attacksBody}
-        <div className="mt-5 mb-2">
-          <SectionTitle>{t("panel.replays")}</SectionTitle>
-        </div>
         {raidsBody}
       </Sheet>
       <Sheet open={sheet === "enemies"} title={t("panel.enemies")} onClose={() => setSheet(null)}>

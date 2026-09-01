@@ -16,6 +16,7 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 };
 
 const en = {
+  "replays.incoming": "raid from",
   "replays.pending": "{drones} drones on the way · not fought yet",
   "tool.priceBox": "{cost} cr/{perCell} pcs",
   "stat.creditsLine": "{credits} (+{income} cr/day)",
@@ -173,7 +174,6 @@ const en = {
 
   "panel.base": "Warehouse",
   "panel.layout": "Warehouse layout",
-  "panel.attacks": "Incoming attacks",
   "panel.enemies": "Rivals",
   "panel.stats": "Statistics",
   "panel.controls": "Controls",
@@ -214,7 +214,6 @@ const en = {
   "gun.noCredits": "Not enough credits for a gun",
 
 
-  "attacks.quiet": "All quiet. The «+ raid» button sends a bot attack — that is how we check the balance at stage 1.",
   "attacks.summon": "+ raid",
   "attacks.defend": "Defend",
   "attacks.dronesPattern": "{drones} drones · {pattern}",
@@ -331,6 +330,7 @@ export type Key = keyof typeof en;
 type Dict = Record<Key, string>;
 
 const ru: Dict = {
+  "replays.incoming": "налёт от",
   "replays.pending": "{drones} дронов в пути · бой ещё не отыгран",
   "tool.priceBox": "{cost} кр/{perCell} шт",
   "stat.creditsLine": "{credits} (+{income} кр/сут)",
@@ -488,7 +488,6 @@ const ru: Dict = {
 
   "panel.base": "Склад",
   "panel.layout": "Разметка склада",
-  "panel.attacks": "Входящие атаки",
   "panel.enemies": "Враги",
   "panel.stats": "Статистика",
   "panel.controls": "Управление",
@@ -529,8 +528,6 @@ const ru: Dict = {
   "gun.noCredits": "Не хватает кредитов на пушку",
 
 
-  "attacks.quiet":
-    "Пока тихо. Кнопка «+ налёт» присылает атаку от бота — на этапе 1 так проверяем баланс.",
   "attacks.summon": "+ налёт",
   "attacks.defend": "Отбить",
   "attacks.dronesPattern": "{drones} дронов · {pattern}",
@@ -645,6 +642,7 @@ const ru: Dict = {
 };
 
 const es: Dict = {
+  "replays.incoming": "ataque de",
   "replays.pending": "{drones} drones en camino · aún sin combatir",
   "tool.priceBox": "{cost} cr/{perCell} uds",
   "stat.creditsLine": "{credits} (+{income} cr/día)",
@@ -802,7 +800,6 @@ const es: Dict = {
 
   "panel.base": "Almacén",
   "panel.layout": "Trazado del almacén",
-  "panel.attacks": "Ataques entrantes",
   "panel.enemies": "Rivales",
   "panel.stats": "Estadísticas",
   "panel.controls": "Controles",
@@ -843,8 +840,6 @@ const es: Dict = {
   "gun.noCredits": "No hay créditos para un cañón",
 
 
-  "attacks.quiet":
-    "Todo tranquilo. El botón «+ incursión» envía un ataque de bot: así probamos el balance en la etapa 1.",
   "attacks.summon": "+ incursión",
   "attacks.defend": "Defender",
   "attacks.dronesPattern": "{drones} drones · {pattern}",
@@ -959,6 +954,7 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+  "replays.incoming": "ataque de",
   "replays.pending": "{drones} drones a caminho · ainda por combater",
   "tool.priceBox": "{cost} cr/{perCell} un",
   "stat.creditsLine": "{credits} (+{income} cr/dia)",
@@ -1116,7 +1112,6 @@ const pt: Dict = {
 
   "panel.base": "Armazém",
   "panel.layout": "Traçado do armazém",
-  "panel.attacks": "Ataques recebidos",
   "panel.enemies": "Rivais",
   "panel.stats": "Estatísticas",
   "panel.controls": "Comandos",
@@ -1157,8 +1152,6 @@ const pt: Dict = {
   "gun.noCredits": "Sem créditos para um canhão",
 
 
-  "attacks.quiet":
-    "Tudo calmo. O botão «+ ataque» manda um ataque de bot — é assim que testamos o equilíbrio na etapa 1.",
   "attacks.summon": "+ ataque",
   "attacks.defend": "Defender",
   "attacks.dronesPattern": "{drones} drones · {pattern}",
@@ -1273,6 +1266,7 @@ const pt: Dict = {
 };
 
 const fr: Dict = {
+  "replays.incoming": "raid de",
   "replays.pending": "{drones} drones en route · combat pas encore joué",
   "tool.priceBox": "{cost} cr/{perCell} pcs",
   "stat.creditsLine": "{credits} (+{income} cr/j)",
@@ -1430,7 +1424,6 @@ const fr: Dict = {
 
   "panel.base": "Entrepôt",
   "panel.layout": "Tracé de l’entrepôt",
-  "panel.attacks": "Attaques entrantes",
   "panel.enemies": "Rivaux",
   "panel.stats": "Statistiques",
   "panel.controls": "Commandes",
@@ -1471,8 +1464,6 @@ const fr: Dict = {
   "gun.noCredits": "Pas assez de crédits pour un canon",
 
 
-  "attacks.quiet":
-    "Tout est calme. Le bouton « + raid » envoie une attaque de bot — c’est ainsi qu’on teste l’équilibre à l’étape 1.",
   "attacks.summon": "+ raid",
   "attacks.defend": "Défendre",
   "attacks.dronesPattern": "{drones} drones · {pattern}",
@@ -1587,6 +1578,7 @@ const fr: Dict = {
 };
 
 const de: Dict = {
+  "replays.incoming": "Angriff von",
   "replays.pending": "{drones} Drohnen unterwegs · noch nicht ausgefochten",
   "tool.priceBox": "{cost} Cr/{perCell} St.",
   "stat.creditsLine": "{credits} (+{income} Cr/Tag)",
@@ -1744,7 +1736,6 @@ const de: Dict = {
 
   "panel.base": "Lager",
   "panel.layout": "Lagerplanung",
-  "panel.attacks": "Eingehende Angriffe",
   "panel.enemies": "Gegner",
   "panel.stats": "Statistik",
   "panel.controls": "Steuerung",
@@ -1785,8 +1776,6 @@ const de: Dict = {
   "gun.noCredits": "Zu wenig Kredite für ein Geschütz",
 
 
-  "attacks.quiet":
-    "Alles ruhig. Die Taste «+ Angriff» schickt einen Bot-Angriff — so prüfen wir in Etappe 1 die Balance.",
   "attacks.summon": "+ Angriff",
   "attacks.defend": "Abwehren",
   "attacks.dronesPattern": "{drones} Drohnen · {pattern}",
@@ -1901,6 +1890,7 @@ const de: Dict = {
 };
 
 const it: Dict = {
+  "replays.incoming": "attacco da",
   "replays.pending": "{drones} droni in volo · combattimento non ancora giocato",
   "tool.priceBox": "{cost} cr/{perCell} pz",
   "stat.creditsLine": "{credits} (+{income} cr/g)",
@@ -2058,7 +2048,6 @@ const it: Dict = {
 
   "panel.base": "Magazzino",
   "panel.layout": "Tracciato del magazzino",
-  "panel.attacks": "Attacchi in arrivo",
   "panel.enemies": "Rivali",
   "panel.stats": "Statistiche",
   "panel.controls": "Comandi",
@@ -2099,8 +2088,6 @@ const it: Dict = {
   "gun.noCredits": "Crediti insufficienti per un cannone",
 
 
-  "attacks.quiet":
-    "Tutto tranquillo. Il pulsante «+ incursione» manda un attacco bot: così proviamo il bilanciamento alla fase 1.",
   "attacks.summon": "+ incursione",
   "attacks.defend": "Difendi",
   "attacks.dronesPattern": "{drones} droni · {pattern}",
