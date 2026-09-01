@@ -16,6 +16,7 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 };
 
 const en = {
+  "tool.priceBox": "{cost} cr / {perCell} pcs",
   "stat.creditsLine": "{credits} (+{income} cr/day)",
   "tool.loan": "Loan",
   "tool.loanHint": "Borrow from {cost} cr for a day at {rate}%. The goods you buy with it can burn — the debt will not.",
@@ -329,6 +330,7 @@ export type Key = keyof typeof en;
 type Dict = Record<Key, string>;
 
 const ru: Dict = {
+  "tool.priceBox": "{cost} кр за {perCell} шт",
   "stat.creditsLine": "{credits} (+{income} кр/сут)",
   "tool.loan": "Кредит",
   "tool.loanHint": "Занять от {cost} кр на сутки под {rate}%. Купленный на них товар может сгореть, долг — нет.",
@@ -641,6 +643,7 @@ const ru: Dict = {
 };
 
 const es: Dict = {
+  "tool.priceBox": "{cost} cr / {perCell} uds",
   "stat.creditsLine": "{credits} (+{income} cr/día)",
   "tool.loan": "Crédito",
   "tool.loanHint": "Pide desde {cost} cr por un día al {rate}%. La mercancía comprada puede arder; la deuda no.",
@@ -953,6 +956,7 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+  "tool.priceBox": "{cost} cr / {perCell} un",
   "stat.creditsLine": "{credits} (+{income} cr/dia)",
   "tool.loan": "Crédito",
   "tool.loanHint": "Pede a partir de {cost} cr por um dia a {rate}%. A mercadoria comprada pode arder; a dívida não.",
@@ -1265,6 +1269,7 @@ const pt: Dict = {
 };
 
 const fr: Dict = {
+  "tool.priceBox": "{cost} cr / {perCell} pcs",
   "stat.creditsLine": "{credits} (+{income} cr/j)",
   "tool.loan": "Crédit",
   "tool.loanHint": "Emprunte à partir de {cost} cr pour un jour à {rate} %. La marchandise achetée peut brûler, la dette non.",
@@ -1577,6 +1582,7 @@ const fr: Dict = {
 };
 
 const de: Dict = {
+  "tool.priceBox": "{cost} Cr / {perCell} St.",
   "stat.creditsLine": "{credits} (+{income} Cr/Tag)",
   "tool.loan": "Kredit",
   "tool.loanHint": "Ab {cost} Cr für einen Tag zu {rate} % leihen. Die dafür gekaufte Ware kann abbrennen — die Schuld nicht.",
@@ -1889,6 +1895,7 @@ const de: Dict = {
 };
 
 const it: Dict = {
+  "tool.priceBox": "{cost} cr / {perCell} pz",
   "stat.creditsLine": "{credits} (+{income} cr/g)",
   "tool.loan": "Prestito",
   "tool.loanHint": "Prendi da {cost} cr per un giorno al {rate}%. La merce comprata può bruciare, il debito no.",

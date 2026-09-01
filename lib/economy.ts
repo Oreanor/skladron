@@ -4,7 +4,7 @@ export const CREDITS_START = 10_000;
 export const CELL_COST = 10; // новая клетка склада
 export const REPAIR_COST = 5; // ремонт сгоревшей клетки
 export const GUN_COST = 100;
-export const DRONE_UNIT_COST = 10;
+export const DRONE_UNIT_COST = 25; // ударный дрон дороже разведчика
 /** Сколько платят за сданные во вторсырьё остатки сгоревшей клетки. */
 export const SCRAP_REWARD = 5;
 
@@ -59,7 +59,7 @@ export const insurance = (
 ) =>
   burned * INSURANCE_CELL +
   Math.floor((goodsLost + gunsLost * GUN_COST) * insuranceShare(level));
-export const SCOUT_UNIT_COST = 25; // разведчик дороже ударного дрона, но дешевле пушки
+export const SCOUT_UNIT_COST = 10; // разведчик проще: ни боеголовки, ни брони
 /**
  * Уровни. Апгрейд общий на класс: дорожает и уже лежащее на складе, и всё,
  * что купишь потом. Второй уровень стоит 5 000, третий 10 000, и так далее —
@@ -86,6 +86,16 @@ export const maxLevel = (kind: UpgradeKind) =>
   kind === "insurance" ? MAX_INSURANCE_LEVEL : MAX_LEVEL;
 
 /** Прибавка за уровень: первый уровень — множитель 1. */
+/** На столько дорожает единица товара за каждый уровень. */
+export const PRICE_PER_LEVEL = 0.25;
+
+/**
+ * Цена с учётом прокачки: что летит дальше и быстрее, то и стоит дороже.
+ * Округляем вниз — лишняя копейка на больших закупках ни к чему.
+ */
+export const priceAt = (base: number, level: number) =>
+  Math.floor(base * levelBonus(level, PRICE_PER_LEVEL));
+
 export const levelBonus = (level: number, perLevel: number) =>
   1 + perLevel * (Math.max(1, level) - 1);
 

@@ -36,6 +36,7 @@ import {
   LOAN_STEP,
   SALE_MULTIPLIER,
   SCRAP_REWARD,
+  priceAt,
   loanDebt,
   goodsValue,
   insurance,
@@ -143,7 +144,7 @@ const TOOLS: {
   hint: Key;
   vars: Record<string, number>;
   icon: ReactNode;
-  /** Цена этого инструмента — не фиксированная, а «от». */
+  /** Цена этого инструмента — не фиксированная, а «от» или «за десяток». */
   priceKey?: Key;
   /** Какой класс он показывает уровнем. */
   levelKind?: UpgradeKind;
@@ -185,22 +186,24 @@ const TOOLS: {
     countKind: "guns",
   },
   {
-    id: "drones",
-    label: "tool.drones",
-    hint: "tool.dronesHint",
-    vars: { cost: DRONE_UNIT_COST * DRONES_PER_CELL, perCell: DRONES_PER_CELL },
-    icon: <IconDrone />,
-    levelKind: "drones",
-    countKind: "drones",
-  },
-  {
     id: "scouts",
     label: "tool.scouts",
     hint: "tool.scoutsHint",
-    vars: { cost: SCOUT_UNIT_COST * DRONES_PER_CELL, perCell: DRONES_PER_CELL },
+    vars: { perCell: DRONES_PER_CELL },
+    priceKey: "tool.priceBox",
     icon: <Plane className={ICON} />,
     levelKind: "scouts",
     countKind: "scouts",
+  },
+  {
+    id: "drones",
+    label: "tool.drones",
+    hint: "tool.dronesHint",
+    vars: { perCell: DRONES_PER_CELL },
+    priceKey: "tool.priceBox",
+    icon: <IconDrone />,
+    levelKind: "drones",
+    countKind: "drones",
   },
   {
     id: "insurance",
@@ -665,6 +668,14 @@ export default function Lobby({
 
   const { intact, burnt, free, drones, scouts } = counts;
   // то же самое, но под ключи кнопок: у каждой в углу своё число
+  /** Во что обойдётся то, что ставит этот инструмент, с учётом прокачки. */
+  const toolPrice = (item: (typeof TOOLS)[number]) => {
+    if (item.id === "gun") return priceAt(GUN_COST, p.levels.guns);
+    if (item.id === "drones") return priceAt(DRONE_UNIT_COST, p.levels.drones) * DRONES_PER_CELL;
+    if (item.id === "scouts") return priceAt(SCOUT_UNIT_COST, p.levels.scouts) * DRONES_PER_CELL;
+    return item.vars.cost;
+  };
+
   const counters = {
     intact,
     burnt,
@@ -909,13 +920,14 @@ export default function Lobby({
       setMessage(t("gun.cellBusy"));
       return;
     }
-    if (p.credits < GUN_COST) {
+    const cost = priceAt(GUN_COST, p.levels.guns);
+    if (p.credits < cost) {
       setMessage(t("gun.noCredits"));
       return;
     }
     p.guns.push({ cx: x, cy: y });
-    p.credits -= GUN_COST;
-    showPrice(x, y, -GUN_COST);
+    p.credits -= cost;
+    showPrice(x, y, -cost);
     touch();
   };
 
@@ -934,7 +946,11 @@ export default function Lobby({
       return;
     }
     if (p.depots.some((d) => d.cx === x && d.cy === y)) return;
-    const cost = (kind === "scout" ? SCOUT_UNIT_COST : DRONE_UNIT_COST) * DRONES_PER_CELL;
+    const cost =
+      priceAt(
+        kind === "scout" ? SCOUT_UNIT_COST : DRONE_UNIT_COST,
+        kind === "scout" ? p.levels.scouts : p.levels.drones
+      ) * DRONES_PER_CELL;
     if (p.credits < cost) {
       setMessage(t("depot.noCredits", { cost: fmt(cost) }));
       return;
@@ -2171,7 +2187,10 @@ export default function Lobby({
                 key={item.id}
                 icon={item.icon}
                 label={t(item.label)}
-                price={t(item.priceKey ?? "tool.price", { cost: item.vars.cost })}
+                price={t(item.priceKey ?? "tool.price", {
+                  ...item.vars,
+                  cost: toolPrice(item),
+                })}
                 hint={t(item.hint, item.vars)}
                 level={item.levelKind ? p.levels[item.levelKind] : undefined}
                 count={item.countKind ? counters[item.countKind] : undefined}

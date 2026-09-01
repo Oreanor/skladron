@@ -15,8 +15,8 @@ language sql immutable as $$
     when 'gun'    then 100
     when 'refund' then 50
     when 'drones' then 1000
-    when 'scout'  then 25    -- разведчик дороже ударного дрона, но дешевле пушки
-    when 'drone'  then 10
+    when 'scout'  then 10    -- разведчик проще: ни боеголовки, ни брони
+    when 'drone'  then 25    -- ударный дрон дороже
     when 'income' then 10  -- кредитов в сутки с каждой целой клетки
     when 'sale'   then 2   -- отгрузка идёт вдвое дороже закупки
     when 'loot'   then 50   -- нападавшему за каждую сожжённую клетку склада
@@ -26,6 +26,7 @@ language sql immutable as $$
     when 'free'   then 25   -- стартовая площадь 5×5 достаётся даром
     when 'found'  then 25   -- столько же нужно, чтобы основаться
     when 'upgrade' then 5000 -- апгрейд на любую ступень стоит одинаково
+    when 'price_step' then 25 -- на столько процентов дорожает вещь за уровень
     when 'loan_min'   then 1000  -- меньше этого банк не выдаёт
     when 'loan_max'   then 5000  -- и больше тоже
     when 'loan_rate'  then 10    -- процент за сутки
@@ -154,6 +155,13 @@ end;
 $$;
 
 -- ---------- таблицы ----------
+
+-- Цена с учётом прокачки: что летит дальше и быстрее, то и дороже.
+-- Делим нацело — округление вниз, как и на клиенте.
+create or replace function price_at(base int, level int) returns int
+language sql immutable as $$
+  select (base * (100 + price('price_step') * greatest(0, coalesce(level, 1) - 1))) / 100;
+$$;
 
 -- Снимает со склада нужное число дронов заданного вида. Пустые ящики
 -- исчезают. Идём с конца: последние контейнеры опустошаются первыми — так же,
@@ -743,7 +751,7 @@ begin
 
   cost := paid * price('cell')
         + repaired * price('repair')
-        + guns_added * price('gun')
+        + guns_added * price_at(price('gun'), coalesce((prof.levels->>'guns')::int, 1))
         - guns_removed * price('refund')
         - scrapped * price('scrap');
 
@@ -829,7 +837,12 @@ begin
     raise exception 'bad drone amount';
   end if;
   if kind not in ('basic', 'scout') then raise exception 'bad drone kind'; end if;
-  cost := packs * price(case kind when 'scout' then 'scout' else 'drone' end);
+  select packs * price_at(
+           price(case kind when 'scout' then 'scout' else 'drone' end),
+           coalesce((p.levels->>(case kind when 'scout' then 'scouts' else 'drones' end))::int, 1)
+         )
+    into cost
+    from profiles p where p.id = uid;
 
   select b.cells, b.guns, b.drone_cells into cur, cur_guns, cur_depots
     from bases b where b.user_id = uid for update;
