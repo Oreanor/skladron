@@ -68,7 +68,7 @@ export interface Repo {
    */
   reloadBase(p: Player): Promise<void>;
   buyDrones(p: Player, amount: number, kind?: DroneKind): Promise<Partial<Player>>;
-  /** Налёт. Дронов снимает сервер, обратно приходит новый склад. */
+  /** Налёт. Дронов снимает сервер, обратно приходит id и новый склад. */
   sendAttack(
     p: Player,
     targetEmail: string,
@@ -76,7 +76,10 @@ export interface Repo {
     pattern: Pattern,
     direction: number,
     seed: number
-  ): Promise<Depot[]>;
+  ): Promise<string | null>;
+  /** Код привязки телеграма и то, привязан ли он уже. */
+  telegram(): Promise<{ code: string; linked: boolean } | null>;
+  telegramUnlink(): Promise<void>;
   acknowledgeReport(id: string): Promise<void>;
   /** Журнал боёв — и своих налётов, и чужих: из него открываются повторы. */
   raidLog(): Promise<RaidLog[]>;
@@ -176,9 +179,15 @@ class LocalRepo implements Repo {
     return {};
   }
 
-  async sendAttack(): Promise<Depot[]> {
+  async sendAttack(): Promise<string | null> {
     throw new Error("Атаки на друзей доступны после входа через Google");
   }
+
+  async telegram() {
+    return null;
+  }
+
+  async telegramUnlink() {}
 
   async acknowledgeReport() {}
 
@@ -557,7 +566,19 @@ class CloudRepo implements Repo {
     if (error) throw error;
     const row = (data as { id: string; depots: Depot[] }[] | null)?.[0];
     if (row?.depots) p.depots = row.depots;
-    return p.depots;
+    return row?.id ?? null;
+  }
+
+  async telegram() {
+    const { data, error } = await this.db().rpc("tg_code");
+    if (error) throw error;
+    const row = (data as { code: string; linked: boolean }[] | null)?.[0];
+    return row ?? null;
+  }
+
+  async telegramUnlink() {
+    const { error } = await this.db().rpc("tg_unlink");
+    if (error) throw error;
   }
 
   async raidLog() {

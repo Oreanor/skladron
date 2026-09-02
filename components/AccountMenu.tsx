@@ -5,7 +5,7 @@
 // показывается на телефоне внутри шторки меню.
 
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, LogOut, Moon, RotateCcw, Sun } from "lucide-react";
+import { BookOpen, LogOut, Moon, RotateCcw, Send, Sun } from "lucide-react";
 import { LOCALES, LOCALE_NAMES, useSettings, type Locale } from "@/lib/i18n";
 import { SectionTitle } from "./ui";
 
@@ -59,10 +59,13 @@ function ThemeSwitch() {
 
 /** Язык, тема и выход — одинаковые и в выпадашке, и в мобильной шторке. */
 export function SettingsList({
+  onTelegram,
   onRules,
   onRestart,
   onSignOut,
 }: {
+  /** Привязать телеграм для извещений. */
+  onTelegram?: () => void;
   /** Показать правила игры. */
   onRules?: () => void;
   /** Начать игру сначала — спрашивает подтверждение снаружи. */
@@ -97,12 +100,20 @@ export function SettingsList({
       </div>
       <ThemeSwitch />
 
-      {onRules && (
+      {(onTelegram || onRules) && (
         <div className="mt-1 border-t border-neutral-800 pt-1">
-          <button onClick={onRules} className={ROW}>
-            <BookOpen className="h-4 w-4" />
-            <span className="flex-1">{t("menu.rules")}</span>
-          </button>
+          {onTelegram && (
+            <button onClick={onTelegram} className={ROW}>
+              <Send className="h-4 w-4" />
+              <span className="flex-1">{t("tg.title")}</span>
+            </button>
+          )}
+          {onRules && (
+            <button onClick={onRules} className={ROW}>
+              <BookOpen className="h-4 w-4" />
+              <span className="flex-1">{t("menu.rules")}</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -130,12 +141,14 @@ export function SettingsList({
 export default function AccountMenu({
   name,
   email,
+  onTelegram,
   onRules,
   onRestart,
   onSignOut,
 }: {
   name: string | null;
   email: string | null;
+  onTelegram?: () => void;
   onRules?: () => void;
   onRestart?: () => void;
   /** Без аккаунта выхода нет — остаются язык и тема. */
@@ -184,6 +197,14 @@ export default function AccountMenu({
           )}
           <div className="border-t border-neutral-800" />
           <SettingsList
+            onTelegram={
+              onTelegram
+                ? () => {
+                    setOpen(false);
+                    onTelegram();
+                  }
+                : undefined
+            }
             onRules={
               onRules
                 ? () => {

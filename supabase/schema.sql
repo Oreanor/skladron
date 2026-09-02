@@ -280,6 +280,10 @@ alter table attacks add column if not exists snap_guns jsonb;
 alter table attacks add column if not exists snap_depots jsonb;
 alter table attacks add column if not exists snap_levels jsonb;
 alter table attacks add column if not exists trace text;
+-- телеграм: куда слать извещения и по какому коду привязывать
+alter table profiles add column if not exists tg_chat_id bigint;
+alter table profiles add column if not exists tg_code text;
+create unique index if not exists profiles_tg_code on profiles (tg_code) where tg_code is not null;
 -- заём: сколько отдать и когда
 alter table profiles add column if not exists loan int not null default 0;
 alter table profiles add column if not exists loan_due timestamptz;
@@ -1210,6 +1214,36 @@ begin
   return next;
 end;
 $$;
+
+-- ---------- телеграм ----------
+-- Код привязки: игрок открывает t.me/бот?start=код, бот запоминает чат.
+-- Код одноразовый по смыслу, но не по сроку: перепривязать можно всегда.
+
+create or replace function tg_code()
+returns table (code text, linked boolean)
+language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  update profiles
+     set tg_code = coalesce(tg_code, encode(gen_random_bytes(9), 'base64'))
+   where profiles.id = uid;
+  select p.tg_code, p.tg_chat_id is not null
+    into code, linked
+    from profiles p where p.id = uid;
+  return next;
+end;
+$$;
+
+create or replace function tg_unlink()
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'not authenticated'; end if;
+  update profiles set tg_chat_id = null where id = auth.uid();
+end;
+$$;
+
+grant execute on function tg_code, tg_unlink to authenticated;
 
 -- ---------- разговор о бою ----------
 

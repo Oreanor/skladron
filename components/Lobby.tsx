@@ -86,6 +86,10 @@ import Scout, { type ScoutOutcome } from "./Scout";
 import ScoutMap from "./ScoutMap";
 import Replay, { type ReplayData } from "./Replay";
 import Rules from "./Rules";
+import { notifyBattle } from "@/lib/notify";
+
+/** Имя бота из настроек сборки: без него привязывать некуда. */
+const TG_BOT = process.env.NEXT_PUBLIC_TELEGRAM_BOT;
 import MapCanvas, { type Pt } from "./MapCanvas";
 import AccountMenu, { SettingsList } from "./AccountMenu";
 import { useT } from "@/lib/i18n";
@@ -133,7 +137,7 @@ type ToolId = Tool | "upgrade" | "insurance" | "loan";
 /** Панели, которые на телефоне открываются шторкой снизу. */
 type SheetId = "attacks" | "enemies" | "menu";
 /** Панели инструментов: они всплывают модалкой и вёрстку не разрывают. */
-type ModalId = "upgrade" | "insurance" | "loan";
+type ModalId = "upgrade" | "insurance" | "loan" | "telegram";
 
 const ICON = "h-5 w-5";
 
@@ -298,6 +302,7 @@ export default function Lobby({
     { id: string; name: string; replay: ReplayData } | null
   >(null);
   const [showRules, setShowRules] = useState(false);
+  const [telegram, setTelegram] = useState<{ code: string; linked: boolean } | null>(null);
   const [panelOrder, setPanelOrder] = useState(DEFAULT_PANELS);
   const [hidden, setHidden] = useState<Record<string, boolean>>({});
   const [dragPanel, setDragPanel] = useState<string | null>(null);
@@ -615,6 +620,7 @@ export default function Lobby({
             head.remote ? head.id : undefined,
             "" // некому было ни тушить, ни стрелять: запись пустая
           );
+          if (head.remote) notifyBattle(head.id, "resolved");
           if (patch.credits !== undefined) cur.credits = patch.credits;
           forceRender((v) => v + 1);
         } catch (e) {
@@ -736,6 +742,7 @@ export default function Lobby({
               battle.remote ? battle.id : undefined,
               o.trace
             );
+            if (battle.remote) notifyBattle(battle.id, "resolved");
             if (patch.credits !== undefined) p.credits = patch.credits;
             forceRender((v) => v + 1);
           } catch (e) {
@@ -1126,7 +1133,8 @@ export default function Lobby({
       // Склад должен лежать на сервере до вылета: дронов снимает он сам,
       // со своей копии, и обратно присылает уже новый склад.
       await flushPersist();
-      await repo.sendAttack(p, enemy.email, n, pattern, direction, seed);
+      const id = await repo.sendAttack(p, enemy.email, n, pattern, direction, seed);
+      if (id) notifyBattle(id, "sent");
       // счётчик налётов поднимает сам send_attack — второй раз здесь не нужно
       setMessage(t("raid.sent", { email: enemy.email }));
       loadRaids();
@@ -2115,6 +2123,10 @@ export default function Lobby({
     <AccountMenu
       name={account?.name ?? null}
       email={account?.email ?? null}
+      onTelegram={() => {
+        setModal("telegram");
+        void repo.telegram().then(setTelegram).catch(() => setTelegram(null));
+      }}
       onRules={() => setShowRules(true)}
       onRestart={() => setConfirmRestart(true)}
       onSignOut={account ? onSignOut : undefined}
@@ -2363,6 +2375,47 @@ export default function Lobby({
         />
       )}
 
+      {modal === "telegram" && (
+        <Modal
+          title={t("tg.title")}
+          onClose={() => setModal(null)}
+          footer={
+            <div className="flex gap-2">
+              {telegram?.linked ? (
+                <Button
+                  variant="danger"
+                  className="flex-1"
+                  onClick={() => {
+                    void repo.telegramUnlink().then(() => setTelegram({ code: telegram.code, linked: false }));
+                  }}
+                >
+                  {t("tg.unlink")}
+                </Button>
+              ) : (
+                telegram &&
+                TG_BOT && (
+                  <a
+                    className="flex-1"
+                    href={`https://t.me/${TG_BOT}?start=${encodeURIComponent(telegram.code)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Button variant="build" block>
+                      {t("tg.link")}
+                    </Button>
+                  </a>
+                )
+              )}
+              <Button onClick={() => setModal(null)}>{t("common.ok")}</Button>
+            </div>
+          }
+        >
+          <p className="text-sm text-neutral-300">
+            {telegram?.linked ? t("tg.linked") : t("tg.explain")}
+          </p>
+          {!TG_BOT && <p className="mt-2 text-xs text-neutral-500">{t("tg.noBot")}</p>}
+        </Modal>
+      )}
       {modal === "loan" && (
         <Modal
           title={t("loan.title")}
