@@ -13,7 +13,14 @@ import { STEP, TAIL_FRAMES, decodeTrace } from "@/lib/replay";
 import { fmt } from "@/lib/economy";
 import { useT } from "@/lib/i18n";
 import MapCanvas, { CELL } from "./MapCanvas";
-import { Button, Chip, ChipBar } from "./ui";
+import { Button, Chip, ChipBar, inputClass } from "./ui";
+import {
+  addComment,
+  deleteComment,
+  loadComments,
+  signedIn,
+  type BattleComment,
+} from "@/lib/comments";
 
 /** Во сколько раз крутим бой. Живьём он идёт минуты — смотреть столько незачем. */
 const SPEEDS = [1, 2, 4] as const;
@@ -25,6 +32,100 @@ export interface ReplayData {
   depots: { cx: number; cy: number; n: number; kind?: string }[];
   levels: { guns?: number; mg?: number; water?: number };
   trace: string;
+}
+
+/** Разговор под боем: список заметок и поле для своей. */
+function Talk({ battleId }: { battleId: string }) {
+  const t = useT();
+  const [items, setItems] = useState<BattleComment[]>([]);
+  const [draft, setDraft] = useState("");
+  const [canWrite, setCanWrite] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    void loadComments(battleId)
+      .then((rows) => alive && setItems(rows))
+      .catch(() => {});
+    void signedIn().then((yes) => alive && setCanWrite(yes));
+    return () => {
+      alive = false;
+    };
+  }, [battleId]);
+
+  const send = async () => {
+    const body = draft.trim();
+    if (!body || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const fresh = await addComment(battleId, body);
+      setItems((cur) => [...cur, fresh]);
+      setDraft("");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (id: string) => {
+    setItems((cur) => cur.filter((c) => c.id !== id));
+    try {
+      await deleteComment(id);
+    } catch {
+      void loadComments(battleId).then(setItems);
+    }
+  };
+
+  return (
+    <div className="min-h-0 shrink-0 border-t border-neutral-800 pt-2">
+      <div className="max-h-24 space-y-1 overflow-y-auto overscroll-contain pr-1 text-sm">
+        {items.length === 0 ? (
+          <p className="text-neutral-600">{t("talk.empty")}</p>
+        ) : (
+          items.map((c) => (
+            <p key={c.id} className="text-neutral-300">
+              <span className="text-neutral-500">{c.author}: </span>
+              {c.body}
+              {c.mine && (
+                <button
+                  type="button"
+                  onClick={() => void remove(c.id)}
+                  aria-label={t("talk.remove")}
+                  title={t("talk.remove")}
+                  className="ml-1 cursor-pointer text-neutral-600 hover:text-neutral-300"
+                >
+                  ×
+                </button>
+              )}
+            </p>
+          ))
+        )}
+      </div>
+      {canWrite ? (
+        <div className="mt-2 flex gap-2">
+          <input
+            value={draft}
+            maxLength={500}
+            placeholder={t("talk.placeholder")}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void send();
+            }}
+            className={inputClass}
+          />
+          <Button size="sm" disabled={busy || !draft.trim()} onClick={() => void send()}>
+            {t("talk.send")}
+          </Button>
+        </div>
+      ) : (
+        <p className="mt-2 text-xs text-neutral-600">{t("talk.signIn")}</p>
+      )}
+      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+    </div>
+  );
 }
 
 export default function Replay({
@@ -136,6 +237,8 @@ export default function Replay({
         overlay={overlay}
         cursor="default"
       />
+
+      {shareId && <Talk battleId={shareId} />}
 
       <div className="flex shrink-0 items-center gap-2">
         {SPEEDS.map((v) => (

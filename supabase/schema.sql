@@ -239,6 +239,19 @@ create table if not exists attacks (
   reported_at timestamptz
 );
 
+-- Разговор о бою: короткие текстовые заметки под повтором. Читает всякий,
+-- у кого есть ссылка; пишет только вошедший.
+create table if not exists battle_comments (
+  id uuid primary key default gen_random_uuid(),
+  attack_id uuid not null references attacks on delete cascade,
+  author_id uuid not null references profiles on delete cascade,
+  body text not null check (length(btrim(body)) between 1 and 500),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists battle_comments_attack
+  on battle_comments (attack_id, created_at);
+
 create index if not exists attacks_defender_pending
   on attacks (defender_id, created_at) where status = 'pending';
 create index if not exists attacks_attacker_reports
@@ -1197,6 +1210,56 @@ begin
   return next;
 end;
 $$;
+
+-- ---------- разговор о бою ----------
+
+create or replace function battle_comments(target uuid)
+returns table (id uuid, author text, body text, created_at timestamptz, mine boolean)
+language sql security definer set search_path = public stable as $$
+  select c.id,
+         coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
+         c.body, c.created_at, c.author_id = auth.uid()
+    from battle_comments c
+    join profiles p on p.id = c.author_id
+   where c.attack_id = target
+   order by c.created_at;
+$$;
+
+create or replace function add_battle_comment(target uuid, message text)
+returns table (id uuid, author text, body text, created_at timestamptz, mine boolean)
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  fresh battle_comments;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  if not exists (select 1 from attacks a where a.id = target) then
+    raise exception 'no such battle';
+  end if;
+
+  insert into battle_comments (attack_id, author_id, body)
+  values (target, uid, btrim(message))
+  returning * into fresh;
+
+  select fresh.id,
+         coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
+         fresh.body, fresh.created_at, true
+    into id, author, body, created_at, mine
+    from profiles p where p.id = uid;
+  return next;
+end;
+$$;
+
+create or replace function delete_battle_comment(comment_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'not authenticated'; end if;
+  delete from battle_comments where id = comment_id and author_id = auth.uid();
+end;
+$$;
+
+grant execute on function battle_comments to anon, authenticated;
+grant execute on function add_battle_comment, delete_battle_comment to authenticated;
 
 -- ---------- журнал боёв ----------
 -- И свои налёты, и те, где отбивался ты: по журналу открываются повторы.

@@ -16,6 +16,11 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 };
 
 const en = {
+  "talk.empty": "No comments on this battle yet.",
+  "talk.placeholder": "Say something about this battle",
+  "talk.send": "Send",
+  "talk.remove": "Delete",
+  "talk.signIn": "Sign in to leave a comment.",
   "replays.incoming": "raid from",
   "replays.pending": "{drones} drones on the way · not fought yet",
   "tool.priceBox": "{cost} cr/{perCell} pcs",
@@ -330,6 +335,11 @@ export type Key = keyof typeof en;
 type Dict = Record<Key, string>;
 
 const ru: Dict = {
+  "talk.empty": "К этому бою пока никто ничего не написал.",
+  "talk.placeholder": "Сказать что-нибудь об этом бое",
+  "talk.send": "Отправить",
+  "talk.remove": "Удалить",
+  "talk.signIn": "Войди, чтобы оставить комментарий.",
   "replays.incoming": "налёт от",
   "replays.pending": "{drones} дронов в пути · бой ещё не отыгран",
   "tool.priceBox": "{cost} кр/{perCell} шт",
@@ -642,6 +652,11 @@ const ru: Dict = {
 };
 
 const es: Dict = {
+  "talk.empty": "Nadie ha comentado este combate todavía.",
+  "talk.placeholder": "Di algo sobre este combate",
+  "talk.send": "Enviar",
+  "talk.remove": "Eliminar",
+  "talk.signIn": "Inicia sesión para comentar.",
   "replays.incoming": "ataque de",
   "replays.pending": "{drones} drones en camino · aún sin combatir",
   "tool.priceBox": "{cost} cr/{perCell} uds",
@@ -954,6 +969,11 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+  "talk.empty": "Ainda ninguém comentou este combate.",
+  "talk.placeholder": "Diz algo sobre este combate",
+  "talk.send": "Enviar",
+  "talk.remove": "Eliminar",
+  "talk.signIn": "Entra para deixar um comentário.",
   "replays.incoming": "ataque de",
   "replays.pending": "{drones} drones a caminho · ainda por combater",
   "tool.priceBox": "{cost} cr/{perCell} un",
@@ -1266,6 +1286,11 @@ const pt: Dict = {
 };
 
 const fr: Dict = {
+  "talk.empty": "Personne n’a encore commenté ce combat.",
+  "talk.placeholder": "Dis quelque chose sur ce combat",
+  "talk.send": "Envoyer",
+  "talk.remove": "Supprimer",
+  "talk.signIn": "Connecte-toi pour laisser un commentaire.",
   "replays.incoming": "raid de",
   "replays.pending": "{drones} drones en route · combat pas encore joué",
   "tool.priceBox": "{cost} cr/{perCell} pcs",
@@ -1578,6 +1603,11 @@ const fr: Dict = {
 };
 
 const de: Dict = {
+  "talk.empty": "Zu diesem Gefecht hat noch niemand etwas geschrieben.",
+  "talk.placeholder": "Sag etwas zu diesem Gefecht",
+  "talk.send": "Senden",
+  "talk.remove": "Löschen",
+  "talk.signIn": "Melde dich an, um zu kommentieren.",
   "replays.incoming": "Angriff von",
   "replays.pending": "{drones} Drohnen unterwegs · noch nicht ausgefochten",
   "tool.priceBox": "{cost} Cr/{perCell} St.",
@@ -1890,6 +1920,11 @@ const de: Dict = {
 };
 
 const it: Dict = {
+  "talk.empty": "Nessuno ha ancora commentato questo combattimento.",
+  "talk.placeholder": "Di’ qualcosa su questo combattimento",
+  "talk.send": "Invia",
+  "talk.remove": "Elimina",
+  "talk.signIn": "Accedi per lasciare un commento.",
   "replays.incoming": "attacco da",
   "replays.pending": "{drones} droni in volo · combattimento non ancora giocato",
   "tool.priceBox": "{cost} cr/{perCell} pz",
