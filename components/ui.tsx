@@ -4,7 +4,6 @@ import {
   useEffect,
   useState,
   type ButtonHTMLAttributes,
-  type HTMLAttributes,
   type ReactNode,
 } from "react";
 import { fmt } from "@/lib/economy";
@@ -131,9 +130,11 @@ export function Panel({
   collapsed,
   onToggle,
   dragging,
+  onGrab,
+  onDrop,
+  onOver,
   children,
   className = "",
-  ...rest
 }: {
   title?: string;
   action?: ReactNode;
@@ -143,12 +144,27 @@ export function Panel({
   onToggle?: () => void;
   /** Панель тащат — показываем это бледностью. */
   dragging?: boolean;
+  /** Взяли за заголовок. */
+  onGrab?: () => void;
+  /** Отпустили. */
+  onDrop?: () => void;
+  /** Над этой панелью тащат другую. */
+  onOver?: () => void;
   children: ReactNode;
   className?: string;
-} & Omit<HTMLAttributes<HTMLDivElement>, "title" | "children">) {
+}) {
   return (
     <div
-      {...rest}
+      // Тащат только за заголовок: повесь draggable на всю панель — и любой
+      // ползунок внутри начнёт таскать её вместо бегунка.
+      onDragOver={
+        onOver
+          ? (e) => {
+              e.preventDefault();
+              onOver();
+            }
+          : undefined
+      }
       className={`rounded-md border border-neutral-700 bg-neutral-900/60 p-4 transition-opacity ${
         dragging ? "opacity-40" : ""
       } ${className}`}
@@ -160,7 +176,9 @@ export function Panel({
               <button
                 type="button"
                 onClick={onToggle}
-                // Заголовок — он же ручка: за него панель и сворачивают, и таскают.
+                draggable={Boolean(onGrab)}
+                onDragStart={onGrab}
+                onDragEnd={onDrop}
                 className="flex min-w-0 flex-1 cursor-grab items-center gap-1 text-left active:cursor-grabbing"
               >
                 <span className="text-neutral-600">{collapsed ? "▸" : "▾"}</span>

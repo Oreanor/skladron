@@ -2250,13 +2250,9 @@ export default function Lobby({
                     collapsed={hidden[id]}
                     dragging={dragPanel === id}
                     onToggle={() => togglePanel(id)}
-                    draggable
-                    onDragStart={() => setDragPanel(id)}
-                    onDragEnd={() => setDragPanel(null)}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      movePanel(id);
-                    }}
+                    onGrab={() => setDragPanel(id)}
+                    onDrop={() => setDragPanel(null)}
+                    onOver={() => movePanel(id)}
                   >
                     {panel.body}
                   </Panel>
