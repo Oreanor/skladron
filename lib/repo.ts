@@ -58,6 +58,11 @@ export interface Repo {
   takeLoan(p: Player, amount: number): Promise<void>;
   /** Отдать заём целиком и досрочно. */
   repayLoan(p: Player): Promise<void>;
+  /**
+   * Что на чужом складе изменилось с нашей прошлой разведки. Отдаются
+   * квадраты, а не карта: знать чужую раскладку клиенту не положено.
+   */
+  stalePatches(email: string, snapCells: string): Promise<number[]>;
   /** Апгрейд класса на уровень выше. Цену считает сервер. */
   upgrade(p: Player, kind: UpgradeKind): Promise<Partial<Player>>;
   /** Вылет разведки: разведчиков снимает со склада сервер и отдаёт новый склад. */
@@ -147,6 +152,10 @@ class LocalRepo implements Repo {
 
   async addRival(_email: string) {
     return null; // локально соперник живёт только у нас
+  }
+
+  async stalePatches() {
+    return [] as number[];
   }
 
   async takeLoan(p: Player, amount: number) {
@@ -491,6 +500,15 @@ class CloudRepo implements Repo {
       p.loan = row.loan;
       p.loanDue = null;
     }
+  }
+
+  async stalePatches(email: string, snapCells: string) {
+    const { data, error } = await this.db().rpc("stale_patches", {
+      target_email: email,
+      snap: snapCells,
+    });
+    if (error) throw error;
+    return (data as number[] | null) ?? [];
   }
 
   async addRival(email: string) {

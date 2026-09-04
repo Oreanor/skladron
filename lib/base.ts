@@ -99,6 +99,27 @@ export function isWhole(cells: Uint8Array) {
   return found === total;
 }
 
+/** Сторона квадрата, которым меряется устаревание разведданных. */
+export const PATCH = 5;
+
+/**
+ * Возвращает снятое поле, из которого выкинуты квадраты, изменившиеся с
+ * прошлой разведки: там, где враг что-то переставил, снова туман.
+ */
+export function fogPatches(seen: Uint8Array, patches: number[]) {
+  if (!patches.length) return seen;
+  const next = seen.slice();
+  const perRow = GRID / PATCH;
+  for (const block of patches) {
+    const x0 = (block % perRow) * PATCH;
+    const y0 = ((block / perRow) | 0) * PATCH;
+    for (let y = y0; y < y0 + PATCH; y++) {
+      for (let x = x0; x < x0 + PATCH; x++) next[y * GRID + x] = 0;
+    }
+  }
+  return next;
+}
+
 export interface Rect {
   x: number;
   y: number;

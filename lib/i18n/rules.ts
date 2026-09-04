@@ -56,7 +56,7 @@ const en: RuleSection[] = [
       "Recon planes live in their own containers and are spent by flying.",
       "A flight takes you over the rival's map under fog of war. The plane comes in from a random edge and uncovers a circle around itself; steer with the left and right arrows.",
       "Their guns can shoot it down. Out of planes — the sortie is over.",
-      "What you mapped stays yours, gaps and all. Look at it later with the «Map» button on the rival's card.",
+      "What you mapped stays yours, gaps and all — the «Map» button on the rival's card. But it goes stale: wherever they have rebuilt since your flight, the fog creeps back over that patch.",
     ],
   },
   {
@@ -117,7 +117,7 @@ const ru: RuleSection[] = [
       "Разведчики лежат в своих контейнерах и тратятся вылетом.",
       "Вылет уносит тебя на карту соперника под туманом войны. Самолёт заходит со случайного края и открывает круг вокруг себя; рулишь стрелками влево-вправо.",
       "Его могут сбить чужие пушки. Кончились разведчики — вылет окончен.",
-      "Снятое остаётся твоим вместе с пробелами. Посмотреть потом — кнопкой «Карта» в карточке соперника.",
+      "Снятое остаётся твоим вместе с пробелами — кнопка «Карта» в карточке соперника. Но данные стареют: где враг с тех пор перестраивался, тот участок снова затягивает туманом.",
     ],
   },
   {
@@ -178,7 +178,7 @@ const es: RuleSection[] = [
       "Los aviones de reconocimiento están en sus contenedores y se gastan al volar.",
       "El vuelo te lleva sobre el mapa del rival bajo niebla de guerra. El avión entra por un borde al azar y descubre un círculo a su alrededor; guía con las flechas.",
       "Sus cañones pueden derribarlo. Sin aviones, la salida termina.",
-      "Lo cartografiado es tuyo, huecos incluidos. Míralo después con el botón «Mapa» en la ficha del rival.",
+      "Lo cartografiado es tuyo, huecos incluidos: botón «Mapa» en la ficha del rival. Pero envejece: donde el rival haya reconstruido desde tu vuelo, la niebla vuelve a cubrir esa zona.",
     ],
   },
   {
@@ -239,7 +239,7 @@ const pt: RuleSection[] = [
       "Os aviões de reconhecimento ficam nos seus contentores e gastam-se a voar.",
       "O voo leva-te sobre o mapa do rival sob nevoeiro de guerra. O avião entra por um bordo ao acaso e descobre um círculo à sua volta; guia com as setas.",
       "Os canhões dele podem abatê-lo. Sem aviões, a saída acaba.",
-      "O que mapeaste fica teu, falhas incluídas. Vês depois com o botão «Mapa» na ficha do rival.",
+      "O que mapeaste fica teu, falhas incluídas — botão «Mapa» na ficha do rival. Mas envelhece: onde ele reconstruiu depois do teu voo, o nevoeiro volta a cobrir essa zona.",
     ],
   },
   {
@@ -300,7 +300,7 @@ const fr: RuleSection[] = [
       "Les avions de reconnaissance tiennent dans leurs conteneurs et se dépensent en vol.",
       "Le vol t’emmène au-dessus de la carte du rival sous brouillard de guerre. L’avion entre par un bord au hasard et dégage un cercle autour de lui ; tu diriges avec les flèches.",
       "Ses canons peuvent l’abattre. Plus d’avions, la sortie est finie.",
-      "Ce que tu as cartographié reste à toi, trous compris. À revoir avec le bouton « Carte » sur la fiche du rival.",
+      "Ce que tu as cartographié reste à toi, trous compris — bouton « Carte » sur la fiche du rival. Mais cela vieillit : là où il a rebâti depuis ton vol, le brouillard revient sur la zone.",
     ],
   },
   {
@@ -361,7 +361,7 @@ const de: RuleSection[] = [
       "Aufklärer liegen in eigenen Containern und werden durch Flüge verbraucht.",
       "Ein Flug führt dich über die Karte des Gegners im Nebel des Krieges. Das Flugzeug kommt von einer zufälligen Kante und deckt einen Kreis um sich auf; gesteuert wird mit den Pfeiltasten.",
       "Seine Geschütze können es abschießen. Sind die Aufklärer alle, ist der Einsatz vorbei.",
-      "Das Kartierte bleibt deins, samt Lücken. Später anzusehen über «Karte» in der Karte des Gegners.",
+      "Das Kartierte bleibt deins, samt Lücken — Knopf «Karte» beim Gegner. Es veraltet aber: wo er seit deinem Flug umgebaut hat, kriecht der Nebel über dieses Feld zurück.",
     ],
   },
   {
@@ -422,7 +422,7 @@ const it: RuleSection[] = [
       "I ricognitori stanno nei loro container e si consumano volando.",
       "Il volo ti porta sulla mappa del rivale sotto la nebbia di guerra. L’aereo entra da un bordo a caso e scopre un cerchio attorno a sé; si guida con le frecce.",
       "I suoi cannoni possono abbatterlo. Finiti i ricognitori, la sortita è chiusa.",
-      "Quello che hai mappato resta tuo, buchi compresi. Si rivede con il pulsante «Mappa» nella scheda del rivale.",
+      "Quello che hai mappato resta tuo, buchi compresi — pulsante «Mappa» nella scheda del rivale. Ma invecchia: dove lui ha ricostruito dopo il tuo volo, la nebbia torna su quella zona.",
     ],
   },
   {

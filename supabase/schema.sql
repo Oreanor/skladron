@@ -506,6 +506,43 @@ begin
 end;
 $$;
 
+-- Что изменилось на чужом складе с прошлой разведки. Отдаём не карту, а
+-- список квадратов 5×5, где стало не так, как на снимке: по ним разведданные
+-- снова затягивает туманом. Саму карту клиенту знать незачем.
+create or replace function stale_patches(target_email text, snap text)
+returns int[]
+language plpgsql security definer set search_path = public stable as $$
+declare
+  uid uuid := auth.uid();
+  tid uuid;
+  now_map bytea;
+  was bytea := rle_decode(snap);
+  out int[] := '{}';
+  i int;
+  block int;
+  changed boolean[] := array_fill(false, array[400]);
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  select p.id into tid from profiles p where lower(p.email) = lower(btrim(target_email));
+  if tid is null then raise exception 'no such player'; end if;
+  select b.cells into now_map from bases b where b.user_id = tid;
+  if now_map is null or octet_length(was) <> 10000 then return out; end if;
+
+  for i in 0..9999 loop
+    if get_byte(now_map, i) <> get_byte(was, i) then
+      -- квадрат 5×5: двадцать на двадцать таких накрывают всё поле
+      block := ((i / 100) / 5) * 20 + ((i % 100) / 5);
+      changed[block + 1] := true;
+    end if;
+  end loop;
+
+  for block in 0..399 loop
+    if changed[block + 1] then out := array_append(out, block); end if;
+  end loop;
+  return out;
+end;
+$$;
+
 create or replace function pending_attacks()
 returns table (
   id uuid, from_name text, created_at timestamptz, activated_at timestamptz,
@@ -1408,7 +1445,8 @@ $$;
 
 grant execute on function ensure_player, collect_income, save_base,
   buy_drones, apply_battle, complete_attack, wipe_base, rename_base, save_enemies,
-  base_names, enemy_base, spend_scouts, upgrade, add_rival, take_loan, repay_loan, raid_log, hide_raid,
+  base_names, enemy_base, stale_patches, spend_scouts, upgrade, add_rival,
+  take_loan, repay_loan, raid_log, hide_raid,
   send_attack, pending_attacks, attack_reports, ack_attack_report, restart_game to authenticated;
 
 -- PostgREST держит список функций в кэше. Supabase обычно перечитывает его сам,

@@ -4,7 +4,7 @@
 // привёз последний разведвылет, вместе с пробелами, которые он оставил.
 
 import { useMemo } from "react";
-import { GRID, decodeRle, type Gun } from "@/lib/base";
+import { GRID, decodeRle, fogPatches, type Gun } from "@/lib/base";
 import { COLORS, drawCoverage } from "@/lib/render";
 import { seenShare } from "@/lib/scout";
 import { useT } from "@/lib/i18n";
@@ -15,10 +15,13 @@ import { Button, Chip, ChipBar } from "./ui";
 export default function ScoutMap({
   name,
   snapshot,
+  stale = [],
   onClose,
 }: {
   name: string;
   snapshot: ScoutSnapshot;
+  /** Квадраты, где враг что-то менял после съёмки: они снова под туманом. */
+  stale?: number[];
   onClose: () => void;
 }) {
   const t = useT();
@@ -26,10 +29,11 @@ export default function ScoutMap({
   const { cells, seen, guns } = useMemo(
     () => ({
       cells: decodeRle(snapshot.cells),
-      seen: decodeRle(snapshot.seen),
+      // что устарело, то и не снято: старым данным верить нельзя
+      seen: fogPatches(decodeRle(snapshot.seen), stale),
       guns: snapshot.guns as Gun[],
     }),
-    [snapshot]
+    [snapshot, stale]
   );
 
   // туман рисуем разом: карта не меняется, перерисовывать его каждый кадр незачем
@@ -94,7 +98,7 @@ export default function ScoutMap({
           {guns.length}
         </span>
         <span className="min-w-0 flex-1 truncate text-xs text-neutral-500">
-          {t("scout.viewHint", { ago })}
+          {stale.length > 0 ? t("scout.stale", { patches: stale.length }) : t("scout.viewHint", { ago })}
         </span>
         <Button variant="neutral" size="sm" onClick={onClose}>
           {t("common.ok")}

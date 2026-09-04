@@ -107,7 +107,14 @@ import {
   Wrench,
 } from "lucide-react";
 import { autoDefend, type UnattendedOutcome } from "@/lib/unattended";
-import { decodeCells, decodeRle, encodeRle, type DroneKind, type Gun } from "@/lib/base";
+import {
+  decodeCells,
+  decodeRle,
+  encodeRle,
+  fogPatches,
+  type DroneKind,
+  type Gun,
+} from "@/lib/base";
 import {
   Button,
   Card,
@@ -295,8 +302,9 @@ export default function Lobby({
   const [confirmWipe, setConfirmWipe] = useState(false);
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [loanAmount, setLoanAmount] = useState(LOAN_MIN);
-  /** Чью снятую карту сейчас смотрим. */
+  /** Чью снятую карту сейчас смотрим и что на ней успело устареть. */
   const [mapOf, setMapOf] = useState<Enemy | null>(null);
+  const [stale, setStale] = useState<number[]>([]);
   /** Что сейчас крутим: чей бой и сама запись. */
   const [watching, setWatching] = useState<
     { id: string; name: string; replay: ReplayData } | null
@@ -316,6 +324,8 @@ export default function Lobby({
     planes: number;
     /** Уровень пушек противника — они стреляют дальше и точнее. */
     gunLevel: number;
+    /** Квадраты, устаревшие с прошлой разведки: летим смотреть заново. */
+    stale: number[];
   } | null>(null);
   /** Итог налёта, который прошёл без игрока. */
   const [autoReport, setAutoReport] = useState<
@@ -758,12 +768,19 @@ export default function Lobby({
 
   if (mapOf?.scout) {
     return (
-      <ScoutMap name={mapOf.name} snapshot={mapOf.scout} onClose={() => setMapOf(null)} />
+      <ScoutMap
+        name={mapOf.name}
+        snapshot={mapOf.scout}
+        stale={stale}
+        onClose={() => setMapOf(null)}
+      />
     );
   }
 
   if (scout) {
-    const known = scout.enemy.scout ? decodeRle(scout.enemy.scout.seen) : null;
+    const known = scout.enemy.scout
+      ? fogPatches(decodeRle(scout.enemy.scout.seen), scout.stale)
+      : null;
     return (
       <Scout
         name={scout.enemy.name}
@@ -1112,7 +1129,17 @@ export default function Lobby({
           : { cells: decodeCells(enemy.cells), guns: enemy.guns, gunLevel: 1 };
       // разведчиков снимает со склада сервер: взлетели — значит потрачены
       await repo.spendScouts(p, planes);
-      setScout({ enemy, cells: base.cells, guns: base.guns, planes, gunLevel: base.gunLevel });
+      const outdated = enemy.scout
+        ? await repo.stalePatches(enemy.email, enemy.scout.cells).catch(() => [])
+        : [];
+      setScout({
+        enemy,
+        cells: base.cells,
+        guns: base.guns,
+        planes,
+        gunLevel: base.gunLevel,
+        stale: outdated,
+      });
       setVersion((v) => v + 1);
       forceRender((v) => v + 1);
       return null;
@@ -1909,7 +1936,15 @@ export default function Lobby({
       onScout={doScout}
       onShowMap={(enemy) => {
         setSheet(null);
+        setStale([]);
         setMapOf(enemy);
+        // сверяем снимок с тем, что у врага сейчас: изменённое затянет туманом
+        if (enemy.scout) {
+          void repo
+            .stalePatches(enemy.email, enemy.scout.cells)
+            .then(setStale)
+            .catch(() => setStale([]));
+        }
       }}
       onChanged={() => forceRender((v) => v + 1)}
     />

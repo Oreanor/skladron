@@ -16,6 +16,7 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 };
 
 const en = {
+  "scout.stale": "{patches} patches have changed since your flight — they are back under fog.",
   "tg.title": "Telegram",
   "tg.explain": "Link Telegram and the bot will write to you when a raid is heading your way and when your own raid has been fought off.",
   "tg.linked": "Telegram is linked — the bot will write about raids on your warehouse and about the outcome of yours.",
@@ -341,6 +342,7 @@ export type Key = keyof typeof en;
 type Dict = Record<Key, string>;
 
 const ru: Dict = {
+  "scout.stale": "С прошлого вылета изменилось участков: {patches} — они снова под туманом.",
   "tg.title": "Телеграм",
   "tg.explain": "Привяжи телеграм — бот напишет, когда к тебе летит налёт и когда отбили твой.",
   "tg.linked": "Телеграм привязан: бот напишет про налёты на твой склад и про исход твоих.",
@@ -664,6 +666,7 @@ const ru: Dict = {
 };
 
 const es: Dict = {
+  "scout.stale": "Han cambiado {patches} zonas desde tu vuelo: vuelven a estar bajo niebla.",
   "tg.title": "Telegram",
   "tg.explain": "Vincula Telegram y el bot te escribirá cuando venga un ataque y cuando repelan el tuyo.",
   "tg.linked": "Telegram vinculado: el bot escribirá sobre los ataques a tu almacén y el resultado de los tuyos.",
@@ -987,6 +990,7 @@ const es: Dict = {
 };
 
 const pt: Dict = {
+  "scout.stale": "Mudaram {patches} zonas desde o teu voo — voltaram para debaixo do nevoeiro.",
   "tg.title": "Telegram",
   "tg.explain": "Liga o Telegram e o bot avisa quando vem um ataque e quando o teu for repelido.",
   "tg.linked": "Telegram ligado: o bot avisa sobre ataques ao teu armazém e sobre o desfecho dos teus.",
@@ -1310,6 +1314,7 @@ const pt: Dict = {
 };
 
 const fr: Dict = {
+  "scout.stale": "{patches} zones ont changé depuis ton vol : elles repassent sous le brouillard.",
   "tg.title": "Telegram",
   "tg.explain": "Relie Telegram et le bot t’écrira quand un raid arrive et quand le tien a été repoussé.",
   "tg.linked": "Telegram est relié : le bot écrira pour les raids sur ton entrepôt et pour l’issue des tiens.",
@@ -1633,6 +1638,7 @@ const fr: Dict = {
 };
 
 const de: Dict = {
+  "scout.stale": "{patches} Felder haben sich seit deinem Flug verändert — sie liegen wieder im Nebel.",
   "tg.title": "Telegram",
   "tg.explain": "Verknüpfe Telegram, dann schreibt der Bot, wenn ein Angriff unterwegs ist und wenn deiner abgewehrt wurde.",
   "tg.linked": "Telegram ist verknüpft: der Bot schreibt über Angriffe auf dein Lager und über den Ausgang deiner.",
@@ -1956,6 +1962,7 @@ const de: Dict = {
 };
 
 const it: Dict = {
+  "scout.stale": "{patches} zone sono cambiate dal tuo volo: tornano sotto la nebbia.",
   "tg.title": "Telegram",
   "tg.explain": "Collega Telegram e il bot ti scriverà quando arriva un attacco e quando il tuo viene respinto.",
   "tg.linked": "Telegram collegato: il bot scriverà degli attacchi al tuo magazzino e dell’esito dei tuoi.",
