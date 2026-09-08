@@ -26,7 +26,7 @@ language sql immutable as $$
     when 'free'   then 25   -- стартовая площадь 5×5 достаётся даром
     when 'found'  then 25   -- столько же нужно, чтобы основаться
     when 'upgrade' then 5000 -- апгрейд на любую ступень стоит одинаково
-    when 'price_step' then 25 -- на столько процентов дорожает вещь за уровень
+    when 'price_step' then 10 -- на столько процентов дорожает вещь за уровень
     when 'loan_min'   then 1000  -- меньше этого банк не выдаёт
     when 'loan_max'   then 5000  -- и больше тоже
     when 'loan_rate'  then 10    -- процент за сутки
