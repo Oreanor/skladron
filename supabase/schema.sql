@@ -272,12 +272,12 @@ alter table profiles add column if not exists base_name text;
 alter table profiles add column if not exists scouts int not null default 0;
 -- уровни классов: с ними растут скорость дронов, дальнобойность пушек и обзор разведки
 alter table profiles add column if not exists levels jsonb not null
-  default '{"drones":1,"guns":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb;
+  default '{"drones":1,"guns":1,"sprays":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb;
 alter table profiles alter column levels set default
-  '{"drones":1,"guns":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb;
--- пулемёт, брандспойт и полис добавились позже: у заведённых профилей их нет
+  '{"drones":1,"guns":1,"sprays":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb;
+-- пулемёт, брандспойт, полис и огнетушители добавились позже: у заведённых профилей их нет
 update profiles set levels =
-  '{"drones":1,"guns":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb || levels;
+  '{"drones":1,"guns":1,"sprays":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb || levels;
 -- уровень дронов запоминаем в самой атаке: у защитника они летят так,
 -- как их прокачал нападающий, даже если тот потом апгрейднулся ещё
 alter table attacks add column if not exists drone_level int not null default 1;
@@ -820,7 +820,7 @@ begin
   cost := paid * price('cell')
         + repaired * price('repair')
         + guns_added * price_at(price('gun'), coalesce((prof.levels->>'guns')::int, 1))
-        + sprays_added * price('spray')
+        + sprays_added * price_at(price('spray'), coalesce((prof.levels->>'sprays')::int, 1))
         - guns_removed * price('refund')
         - scrapped * price('scrap');
 
@@ -863,7 +863,7 @@ declare
   cost int;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
-  if kind not in ('drones', 'guns', 'scouts', 'mg', 'water', 'insurance') then
+  if kind not in ('drones', 'guns', 'sprays', 'scouts', 'mg', 'water', 'insurance') then
     raise exception 'bad upgrade kind';
   end if;
 
@@ -1448,7 +1448,7 @@ begin
          loan_due = null,
          founded = true,
          last_income_at = now(),
-         levels = '{"drones":1,"guns":1,"scouts":1,"mg":1,"water":1}'::jsonb,
+         levels = '{"drones":1,"guns":1,"sprays":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb,
          stats = '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,
                    "wipes":0,"raids":0,"looted":0}'::jsonb
    where id = uid;

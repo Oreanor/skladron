@@ -10,6 +10,7 @@ import {
 } from "./base";
 import {
   GUN_RANGE,
+  sprayRange,
   SHOT_LIFE,
   SMOKE_LIFE,
   SPRAY_JETS,
@@ -195,7 +196,8 @@ export function drawSpray(
   cell: number,
   angle: number,
   wet: number,
-  alive = true
+  alive = true,
+  range = SPRAY_RANGE
 ) {
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
@@ -207,7 +209,7 @@ export function drawSpray(
     for (let j = 0; j < SPRAY_JETS; j++) {
       const a = angle + (j * Math.PI * 2) / SPRAY_JETS;
       ctx.moveTo(x + Math.cos(a) * cell * 0.5, y + Math.sin(a) * cell * 0.5);
-      ctx.lineTo(x + Math.cos(a) * cell * SPRAY_RANGE, y + Math.sin(a) * cell * SPRAY_RANGE);
+      ctx.lineTo(x + Math.cos(a) * cell * range, y + Math.sin(a) * cell * range);
     }
     ctx.stroke();
   }
@@ -267,7 +269,8 @@ export function drawCoverage(
   ctx: CanvasRenderingContext2D,
   guns: Gun[] | { cx: number; cy: number; alive?: boolean; kind?: string; spray?: boolean }[],
   cell: number,
-  range = GUN_RANGE
+  range = GUN_RANGE,
+  spraysRange = SPRAY_RANGE
 ) {
   const live = guns.filter((g) => (g as { alive?: boolean }).alive !== false);
   if (!live.length) return;
@@ -277,7 +280,7 @@ export function drawCoverage(
   for (const spray of [false, true]) {
     const part = live.filter((g) => isSpray(g) === spray);
     if (!part.length) continue;
-    const r = ((spray ? SPRAY_RANGE : range) + 0.5) * cell;
+    const r = ((spray ? spraysRange : range) + 0.5) * cell;
     ctx.beginPath();
     for (const g of part) {
       const cx = (g.cx + 0.5) * cell;
@@ -312,9 +315,10 @@ export function drawFrame(
     ctx.fill();
   }
 
-  drawCoverage(ctx, s.guns, cell, gunRange(s));
+  const reach = sprayRange(s);
+  drawCoverage(ctx, s.guns, cell, gunRange(s), reach);
   for (const g of s.guns) {
-    if (g.spray) drawSpray(ctx, g.cx, g.cy, cell, g.angle, g.wet, g.alive);
+    if (g.spray) drawSpray(ctx, g.cx, g.cy, cell, g.angle, g.wet, g.alive, reach);
     else drawTurret(ctx, g.cx, g.cy, cell, g.angle, g.alive);
   }
 

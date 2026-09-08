@@ -57,10 +57,13 @@ export const insurance = (
   burned: number,
   goodsLost: number,
   gunsLost: number,
-  level = 1
+  level = 1,
+  spraysLost = 0
 ) =>
   burned * INSURANCE_CELL +
-  Math.floor((goodsLost + gunsLost * GUN_COST) * insuranceShare(level));
+  Math.floor(
+    (goodsLost + gunsLost * GUN_COST + spraysLost * SPRAY_COST) * insuranceShare(level)
+  );
 export const SCOUT_UNIT_COST = 10; // разведчик проще: ни боеголовки, ни брони
 /**
  * Уровни. Апгрейд общий на класс: дорожает и уже лежащее на складе, и всё,
@@ -73,10 +76,18 @@ export const MAX_LEVEL = 10;
 /** Цена следующего уровня. Одна и та же на всех ступенях. */
 export const upgradeCost = (_level: number) => UPGRADE_STEP;
 
-export type UpgradeKind = "drones" | "guns" | "scouts" | "mg" | "water" | "insurance";
+export type UpgradeKind =
+  | "drones"
+  | "guns"
+  | "sprays"
+  | "scouts"
+  | "mg"
+  | "water"
+  | "insurance";
 export const UPGRADE_KINDS: UpgradeKind[] = [
   "drones",
   "guns",
+  "sprays",
   "scouts",
   "mg",
   "water",

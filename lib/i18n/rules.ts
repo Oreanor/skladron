@@ -64,7 +64,7 @@ const en: RuleSection[] = [
     title: "Upgrades",
     lines: [
       "Six classes, {upgrade} cr per level. Ten levels each, except the insurance policy: it tops out at five, where cover is already full.",
-      "Drones fly faster, guns reach further and shoot quicker, recon planes see more and fly faster, the machine gun aims better, the hose covers more.",
+      "Drones fly faster, guns reach further and shoot quicker, recon planes see more and fly faster, the machine gun aims better, the hose covers more, sprinklers douse a wider circle.",
       "A level applies to everything at once — to what is already in stock and to everything bought later.",
     ],
   },
@@ -126,7 +126,7 @@ const ru: RuleSection[] = [
     title: "Прокачка",
     lines: [
       "Шесть классов, {upgrade} кр за уровень. У каждого по десять уровней, кроме полиса: у него пять, дальше покрывать нечего.",
-      "Дроны летят быстрее, пушки бьют дальше и резвее, разведчики видят дальше и летят быстрее, пулемёт точнее, струя шире.",
+      "Дроны летят быстрее, пушки бьют дальше и резвее, разведчики видят дальше и летят быстрее, пулемёт точнее, струя шире, огнетушители заливают круг побольше.",
       "Уровень достаётся всему классу разом — и тому, что уже на складе, и тому, что купишь потом.",
     ],
   },
@@ -188,7 +188,7 @@ const es: RuleSection[] = [
     title: "Mejoras",
     lines: [
       "Seis clases, {upgrade} cr por nivel. Diez niveles cada una, salvo la póliza: la suya acaba en el quinto, cuando la cobertura ya es total.",
-      "Los drones vuelan más rápido, los cañones llegan más lejos y disparan antes, los exploradores ven más y vuelan más, la ametralladora apunta mejor, la manguera cubre más.",
+      "Los drones vuelan más rápido, los cañones llegan más lejos y disparan antes, los exploradores ven más y vuelan más, la ametralladora apunta mejor, la manguera cubre más, los extintores riegan un círculo mayor.",
       "El nivel vale para toda la clase a la vez: lo que ya tienes y lo que compres después.",
     ],
   },
@@ -250,7 +250,7 @@ const pt: RuleSection[] = [
     title: "Melhorias",
     lines: [
       "Seis classes, {upgrade} cr por nível. Dez níveis cada, exceto a apólice: a dela acaba no quinto, quando a cobertura já é total.",
-      "Os drones voam mais depressa, os canhões alcançam mais longe e disparam mais rápido, os reconhecedores veem mais e voam mais, a metralhadora acerta melhor, a mangueira cobre mais.",
+      "Os drones voam mais depressa, os canhões alcançam mais longe e disparam mais rápido, os reconhecedores veem mais e voam mais, a metralhadora acerta melhor, a mangueira cobre mais, os extintores regam um círculo maior.",
       "O nível vale para toda a classe de uma vez: o que já tens e o que comprares depois.",
     ],
   },
@@ -312,7 +312,7 @@ const fr: RuleSection[] = [
     title: "Améliorations",
     lines: [
       "Six classes, {upgrade} cr le niveau. Dix niveaux chacune, sauf la police d’assurance : elle s’arrête au cinquième, la couverture y est déjà totale.",
-      "Les drones volent plus vite, les canons portent plus loin et tirent plus vite, les éclaireurs voient plus et volent plus vite, la mitrailleuse vise mieux, la lance couvre plus.",
+      "Les drones volent plus vite, les canons portent plus loin et tirent plus vite, les éclaireurs voient plus et volent plus vite, la mitrailleuse vise mieux, la lance couvre plus, les extincteurs arrosent un cercle plus large.",
       "Le niveau vaut pour toute la classe d’un coup : ce que tu as déjà et ce que tu achèteras ensuite.",
     ],
   },
@@ -374,7 +374,7 @@ const de: RuleSection[] = [
     title: "Ausbau",
     lines: [
       "Sechs Klassen, {upgrade} Cr pro Stufe. Je zehn Stufen, außer der Police: sie endet bei fünf, dort ist die Deckung schon voll.",
-      "Drohnen fliegen schneller, Geschütze reichen weiter und schießen zügiger, Aufklärer sehen mehr und fliegen schneller, das MG trifft besser, der Schlauch deckt mehr ab.",
+      "Drohnen fliegen schneller, Geschütze reichen weiter und schießen zügiger, Aufklärer sehen mehr und fliegen schneller, das MG trifft besser, der Schlauch deckt mehr ab, Löschanlagen begießen einen größeren Kreis.",
       "Eine Stufe gilt für die ganze Klasse auf einmal — für Vorhandenes und für später Gekauftes.",
     ],
   },
@@ -436,7 +436,7 @@ const it: RuleSection[] = [
     title: "Potenziamenti",
     lines: [
       "Sei classi, {upgrade} cr per livello. Dieci livelli ciascuna, tranne la polizza: la sua finisce al quinto, dove la copertura è già piena.",
-      "I droni volano più veloci, i cannoni arrivano più lontano e sparano prima, i ricognitori vedono di più e volano più veloci, la mitragliatrice mira meglio, la manichetta copre di più.",
+      "I droni volano più veloci, i cannoni arrivano più lontano e sparano prima, i ricognitori vedono di più e volano più veloci, la mitragliatrice mira meglio, la manichetta copre di più, gli estintori bagnano un cerchio più ampio.",
       "Il livello vale per tutta la classe in una volta: per ciò che hai già e per ciò che comprerai poi.",
     ],
   },

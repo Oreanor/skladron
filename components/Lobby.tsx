@@ -84,8 +84,7 @@ import {
 import type { Account } from "./AuthGate";
 import Enemies from "./Enemies";
 import { drawCoverage, drawDepots } from "@/lib/render";
-import { SPRAY_RANGE } from "@/lib/engine";
-import { gunRange } from "@/lib/engine";
+import { SPRAY_RANGE, gunRange, sprayRange } from "@/lib/engine";
 import Battle, { type BattleOutcome } from "./Battle";
 import Scout, { type ScoutOutcome } from "./Scout";
 import ScoutMap from "./ScoutMap";
@@ -228,6 +227,7 @@ const TOOLS: {
     hint: "tool.sprayHint",
     vars: { cost: SPRAY_COST, range: SPRAY_RANGE },
     icon: <CircleDotDashed className={ICON} />,
+    levelKind: "sprays",
     countKind: "sprays",
   },
   {
@@ -630,7 +630,8 @@ export default function Lobby({
           o.result.burned,
           goodsBefore - goodsValue(o.depots),
           o.result.gunsLost,
-          cur.levels.insurance
+          cur.levels.insurance,
+          o.result.spraysLost
         );
         const foe = cur.enemies.find((e) => e.name === head.from);
         if (foe) {
@@ -704,12 +705,17 @@ export default function Lobby({
   /** Во что обойдётся то, что ставит этот инструмент, с учётом прокачки. */
   const toolPrice = (item: (typeof TOOLS)[number]) => {
     if (item.id === "gun") return priceAt(GUN_COST, p.levels.guns);
-    // Огнетушитель прокачки не знает: цена у него одна на все уровни.
-    if (item.id === "spray") return SPRAY_COST;
+    if (item.id === "spray") return priceAt(SPRAY_COST, p.levels.sprays);
     if (item.id === "drones") return priceAt(DRONE_UNIT_COST, p.levels.drones) * DRONES_PER_CELL;
     if (item.id === "scouts") return priceAt(SCOUT_UNIT_COST, p.levels.scouts) * DRONES_PER_CELL;
     return item.vars.cost;
   };
+
+  /** Числа для подсказки: что прокачано, то показываем по уровню. */
+  const toolVars = (item: (typeof TOOLS)[number]) =>
+    item.id === "spray"
+      ? { ...item.vars, range: Math.round(sprayRange({ sprayLevel: p.levels.sprays })) }
+      : item.vars;
 
   const counters = {
     intact,
@@ -732,7 +738,12 @@ export default function Lobby({
         guns={p.guns}
         depots={p.depots}
         order={battle}
-        levels={{ guns: p.levels.guns, mg: p.levels.mg, water: p.levels.water }}
+        levels={{
+          guns: p.levels.guns,
+          sprays: p.levels.sprays,
+          mg: p.levels.mg,
+          water: p.levels.water,
+        }}
         insuranceLevel={p.levels.insurance}
         onFinish={async (o: BattleOutcome) => {
           const goodsBefore = goodsValue(p.depots);
@@ -748,7 +759,8 @@ export default function Lobby({
             o.result.burned,
             goodsBefore - goodsValue(o.depots),
             o.result.gunsLost,
-            p.levels.insurance
+            p.levels.insurance,
+            o.result.spraysLost
           );
           // счёт вражды: записываем, сколько он у нас сжёг
           const foe = p.enemies.find((e) => e.name === battle.from);
@@ -964,7 +976,10 @@ export default function Lobby({
       setMessage(t("gun.cellBusy"));
       return;
     }
-    const cost = kind === "spray" ? SPRAY_COST : priceAt(GUN_COST, p.levels.guns);
+    const cost =
+      kind === "spray"
+        ? priceAt(SPRAY_COST, p.levels.sprays)
+        : priceAt(GUN_COST, p.levels.guns);
     if (p.credits < cost) {
       setMessage(t("gun.noCredits"));
       return;
@@ -1433,8 +1448,14 @@ export default function Lobby({
 
   const overlay = (ctx: CanvasRenderingContext2D, frameNow: number) => {
     const cell = 7;
-    // круг ПВО рисуем по прокачанной дальности, иначе апгрейд не виден
-    drawCoverage(ctx, p.guns, cell, gunRange({ gunLevel: p.levels.guns }));
+    // круги рисуем по прокачанной дальности, иначе апгрейд не виден
+    drawCoverage(
+      ctx,
+      p.guns,
+      cell,
+      gunRange({ gunLevel: p.levels.guns }),
+      sprayRange({ sprayLevel: p.levels.sprays })
+    );
     const dragged = dragDepotRef.current;
     drawDepots(
       ctx,
@@ -2248,7 +2269,7 @@ export default function Lobby({
               ...item.vars,
               cost: toolPrice(item),
             })}
-            hint={t(item.hint, item.vars)}
+            hint={t(item.hint, toolVars(item))}
             level={item.levelKind ? p.levels[item.levelKind] : undefined}
             count={item.countKind ? counters[item.countKind] : undefined}
             active={tool === item.id}

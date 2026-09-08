@@ -285,7 +285,8 @@ export default function Battle({
                       done.result.burned,
                       goodsValue(depots) - goodsValue(done.depots),
                       done.result.gunsLost,
-                      insuranceLevel
+                      insuranceLevel,
+                      done.result.spraysLost
                     )
                   )} ${t("battle.creditsSuffix")}`}
                 />

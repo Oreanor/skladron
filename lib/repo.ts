@@ -292,7 +292,7 @@ interface AttackReportRow {
   snap_cells: string | null;
   snap_guns: Gun[] | null;
   snap_depots: Depot[] | null;
-  snap_levels: { guns?: number; mg?: number; water?: number } | null;
+  snap_levels: { guns?: number; sprays?: number; mg?: number; water?: number } | null;
   trace: string | null;
 }
 
@@ -646,7 +646,7 @@ class CloudRepo implements Repo {
       snap_cells: string;
       snap_guns: Gun[] | null;
       snap_depots: Depot[] | null;
-      snap_levels: { guns?: number; mg?: number; water?: number } | null;
+      snap_levels: { guns?: number; sprays?: number; mg?: number; water?: number } | null;
       trace: string | null;
       resolved_at: string;
     }[] | null)?.[0];

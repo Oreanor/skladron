@@ -72,6 +72,7 @@ export const TURRET_TURN = 4;
 
 /** Огнетушитель: радиус струи, число струй, скорость вращения и выбег. */
 export const SPRAY_RANGE = 4;
+export const SPRAY_PER_LEVEL = 0.25;
 export const SPRAY_JETS = 8;
 export const SPRAY_SPIN = 3.2; // рад/с
 export const SPRAY_HOLD = 3; // с работает после того, как рядом всё потушено
@@ -137,6 +138,8 @@ export interface BattleResult {
   burned: number; // клеток потеряно за бой
   extinguished: number; // потушено водой
   gunsLost: number;
+  /** Сколько огнетушителей сгорело: страховка платит за них по своей цене. */
+  spraysLost: number;
   dronesLost: number; // сгорело в контейнерах на складе
   depotsLost: number; // сколько контейнеров сгорело вместе с клетками
 }
@@ -172,6 +175,7 @@ export interface GameState {
   /** Уровень дронов нападающего и уровни защитника. */
   droneLevel: number;
   gunLevel: number;
+  sprayLevel: number;
   mgLevel: number;
   waterLevel: number;
   dirty: boolean;
@@ -182,10 +186,15 @@ export interface GameState {
 export const gunRange = (s: { gunLevel: number }) =>
   GUN_RANGE * levelBonus(s.gunLevel, GUN_PER_LEVEL);
 
+/** Дальность струи с учётом уровня — по ней же рисуется красный круг. */
+export const sprayRange = (s: { sprayLevel: number }) =>
+  SPRAY_RANGE * levelBonus(s.sprayLevel, SPRAY_PER_LEVEL);
+
 /** Уровни, с которыми идёт бой. Чего нет — то первого уровня. */
 export interface BattleLevels {
   drones?: number;
   guns?: number;
+  sprays?: number;
   mg?: number;
   water?: number;
   /**
@@ -240,6 +249,7 @@ export function createBattle(
     plan,
     droneLevel: levels.drones ?? 1,
     gunLevel: levels.guns ?? 1,
+    sprayLevel: levels.sprays ?? 1,
     mgLevel: levels.mg ?? 1,
     waterLevel: levels.water ?? 1,
     planAt: 0,
@@ -257,6 +267,7 @@ export function createBattle(
       burned: 0,
       extinguished: 0,
       gunsLost: 0,
+      spraysLost: 0,
       dronesLost: 0,
       depotsLost: 0,
     },
@@ -314,7 +325,8 @@ function ignite(s: GameState, i: number) {
   const g = gunAt(s, x, y);
   if (g) {
     g.alive = false;
-    s.result.gunsLost++;
+    if (g.spray) s.result.spraysLost++;
+    else s.result.gunsLost++;
   }
 }
 
@@ -534,7 +546,8 @@ export function update(s: GameState, dt: number) {
       const g = gunAt(s, cx, cy);
       if (g && s.rnd() < GUN_HIT_CHANCE) {
         g.alive = false;
-        s.result.gunsLost++;
+        if (g.spray) s.result.spraysLost++;
+        else s.result.gunsLost++;
         s.booms.push({ x: cx + 0.5, y: cy + 0.5, t: 0, r: 3 });
         s.drones.splice(i, 1);
         s.dirty = true;
@@ -545,6 +558,7 @@ export function update(s: GameState, dt: number) {
   // --- огнетушители ---
   // Загорелось в радиусе — установка раскручивается и льёт восемью струями
   // звездой. Пока крутится, тушит всё, что успело заняться в её круге.
+  const reach = sprayRange(s);
   for (const g of s.guns) {
     if (!g.alive || !g.spray) continue;
     const gx = g.cx + 0.5;
@@ -554,7 +568,7 @@ export function update(s: GameState, dt: number) {
     for (const i of s.fire.keys()) {
       const dx = (i % GRID) + 0.5 - gx;
       const dy = ((i / GRID) | 0) + 0.5 - gy;
-      if (dx * dx + dy * dy <= SPRAY_RANGE * SPRAY_RANGE) {
+      if (dx * dx + dy * dy <= reach * reach) {
         fireNear = true;
         break;
       }
@@ -569,7 +583,7 @@ export function update(s: GameState, dt: number) {
       const a = g.angle + (j * Math.PI * 2) / SPRAY_JETS;
       const dx = Math.cos(a);
       const dy = Math.sin(a);
-      for (let r = 0.5; r <= SPRAY_RANGE; r += 0.5) {
+      for (let r = 0.5; r <= reach; r += 0.5) {
         extinguish(s, Math.floor(gx + dx * r), Math.floor(gy + dy * r));
       }
     }
