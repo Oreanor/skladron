@@ -285,9 +285,9 @@ export function drawCoverage(
       ctx.moveTo(cx + r, cy);
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
     }
-    ctx.fillStyle = spray ? "rgba(56, 152, 214, 0.12)" : COLORS.range;
+    ctx.fillStyle = spray ? "rgba(214, 64, 56, 0.12)" : COLORS.range;
     ctx.fill();
-    ctx.strokeStyle = spray ? "rgba(121, 199, 255, 0.35)" : COLORS.rangeLine;
+    ctx.strokeStyle = spray ? "rgba(255, 128, 121, 0.4)" : COLORS.rangeLine;
     ctx.lineWidth = 1;
     ctx.stroke();
   }

@@ -2197,7 +2197,7 @@ export default function Lobby({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 lg:gap-3">
       {/* шапка телефона: счётчики одной строкой плюс кнопки панелей */}
-      <div className="flex shrink-0 items-center gap-2 lg:hidden">
+      <div className="order-1 flex shrink-0 items-center gap-2 lg:hidden">
         <span className="min-w-0 flex-1 truncate font-mono text-sm text-emerald-300">
           {t("stat.creditsLine", { credits: fmt(p.credits), income: fmt(income) })}
         </span>
@@ -2213,7 +2213,7 @@ export default function Lobby({
       </div>
 
       {/* шапка десктопа: логотип, счётчики и аккаунт одной строкой */}
-      <div className="hidden items-center gap-3 lg:flex">
+      <div className="order-1 hidden items-center gap-3 lg:flex">
         <BaseName
           value={p.name}
           placeholder={t("base.unnamed")}
@@ -2233,36 +2233,34 @@ export default function Lobby({
         {accountLine}
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-4">
-        {/*
-          Левая колонка. На телефоне порядок задаём через order-*: карта наверху
-          забирает всю свободную высоту, инструменты прижаты к низу под большой палец.
-        */}
-        <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
+      {/*
+        Инструменты — отдельная строка во всю ширину, кнопки прижаты влево.
+        На телефоне она уезжает под карту, под большой палец, и складывается
+        в два ряда по пять.
+      */}
+      <div className="order-3 grid shrink-0 grid-cols-5 gap-1.5 lg:order-2 lg:grid-cols-[repeat(auto-fill,5rem)] lg:gap-2">
+        {TOOLS.map((item) => (
+          <ToolButton
+            key={item.id}
+            icon={item.icon}
+            label={t(item.label)}
+            price={t(item.priceKey ?? "tool.price", {
+              ...item.vars,
+              cost: toolPrice(item),
+            })}
+            hint={t(item.hint, item.vars)}
+            level={item.levelKind ? p.levels[item.levelKind] : undefined}
+            count={item.countKind ? counters[item.countKind] : undefined}
+            active={tool === item.id}
+            disabled={!p.founded && item.id !== "area"}
+            onClick={() => pickTool(item.id)}
+          />
+        ))}
+      </div>
 
-          {/*
-            На телефоне девять кнопок в ряд превращаются в марки: кладём их
-            в два ряда, отняв высоту у пустого поля вокруг склада.
-          */}
-          <div className="order-4 grid shrink-0 grid-cols-5 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(10,5rem)] lg:gap-2">
-            {TOOLS.map((item) => (
-              <ToolButton
-                key={item.id}
-                icon={item.icon}
-                label={t(item.label)}
-                price={t(item.priceKey ?? "tool.price", {
-                  ...item.vars,
-                  cost: toolPrice(item),
-                })}
-                hint={t(item.hint, item.vars)}
-                level={item.levelKind ? p.levels[item.levelKind] : undefined}
-                count={item.countKind ? counters[item.countKind] : undefined}
-                active={tool === item.id}
-                disabled={!p.founded && item.id !== "area"}
-                onClick={() => pickTool(item.id)}
-              />
-            ))}
-          </div>
+      <div className="order-2 flex min-h-0 flex-1 flex-col gap-2 lg:order-3 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-4">
+        {/* Левая колонка: карта забирает всю свободную высоту. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
 
           {/*
             Одна полоса на все разговоры игры: и подтверждение рамки, и
