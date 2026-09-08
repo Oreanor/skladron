@@ -141,8 +141,8 @@ export default function Battle({
           goodsLost: startGoods - goodsValue(s.depots),
           gunsLost: s.result.gunsLost,
           integrity: s.baseTotal ? Math.round((s.baseOk / s.baseTotal) * 100) : 0,
-          gunsAlive: s.guns.filter((g) => g.alive).length,
-          gunsTotal: s.guns.length,
+          gunsAlive: s.guns.filter((g) => g.alive && !g.spray).length,
+          gunsTotal: s.guns.filter((g) => !g.spray).length,
           time: s.time,
         });
       }

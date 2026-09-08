@@ -9,6 +9,7 @@ import {
   CREDITS_START,
   DRONE_UNIT_COST,
   GUN_COST,
+  SPRAY_COST,
   INCOME_CAP_SHIFTS,
   SHIFT_HOURS,
   INCOME_PER_CELL,
@@ -29,7 +30,7 @@ import {
 } from "@/lib/economy";
 import { MAX_RAID } from "@/lib/attack";
 import { DRONES_PER_CELL } from "@/lib/base";
-import { FIRE_SPREAD, GUN_COOLDOWN, GUN_RANGE } from "@/lib/engine";
+import { FIRE_SPREAD, GUN_COOLDOWN, GUN_RANGE, SPRAY_RANGE } from "@/lib/engine";
 import { RULES } from "@/lib/i18n/rules";
 import { useSettings } from "@/lib/i18n";
 import { Button, Modal, SectionTitle } from "./ui";
@@ -45,6 +46,8 @@ const values: Record<string, string> = {
   cell: String(CELL_COST),
   repair: String(REPAIR_COST),
   gun: String(GUN_COST),
+  spray: String(SPRAY_COST),
+  sprayRange: String(SPRAY_RANGE),
   perCell: String(DRONES_PER_CELL),
   droneBox: String(DRONE_UNIT_COST * DRONES_PER_CELL),
   scoutBox: String(SCOUT_UNIT_COST * DRONES_PER_CELL),

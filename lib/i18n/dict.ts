@@ -176,11 +176,13 @@ const en = {
   "tool.area": "Area",
   "tool.repair": "Repair",
   "tool.gun": "Gun",
+  "tool.spray": "Sprinkler",
   "tool.drones": "Drones",
   "tool.price": "{cost} cr",
   "tool.areaHint": "{cost} cr per new cell",
   "tool.repairHint": "{cost} cr per cell",
   "tool.gunHint": "{cost} cr per gun",
+  "tool.sprayHint": "{cost} cr per sprinkler: it puts out fire within {range} cells.",
   "tool.dronesHint": "A container of {perCell} drones for {cost} cr. Click a free cell of the warehouse; drag containers to move them.",
 
 
@@ -502,11 +504,13 @@ const ru: Dict = {
   "tool.area": "Площадь",
   "tool.repair": "Ремонт",
   "tool.gun": "Пушка",
+  "tool.spray": "Огнетушитель",
   "tool.drones": "Дроны",
   "tool.price": "{cost} кр",
   "tool.areaHint": "{cost} кр за новую клетку",
   "tool.repairHint": "{cost} кр за клетку",
   "tool.gunHint": "{cost} кр за пушку",
+  "tool.sprayHint": "{cost} кр за установку: тушит огонь в радиусе {range} клеток.",
   "tool.dronesHint": "Контейнер на {perCell} дронов за {cost} кр. Ткни в свободную клетку склада; ящики можно перетаскивать.",
 
 
@@ -826,11 +830,13 @@ const es: Dict = {
   "tool.area": "Área",
   "tool.repair": "Reparar",
   "tool.gun": "Cañón",
+  "tool.spray": "Extintor",
   "tool.drones": "Drones",
   "tool.price": "{cost} cr",
   "tool.areaHint": "{cost} cr por celda nueva",
   "tool.repairHint": "{cost} cr por celda",
   "tool.gunHint": "{cost} cr por cañón",
+  "tool.sprayHint": "{cost} cr por extintor: apaga el fuego a {range} celdas.",
   "tool.dronesHint": "Un contenedor de {perCell} drones por {cost} cr. Pulsa una celda libre del almacén; los contenedores se arrastran.",
 
 
@@ -1150,11 +1156,13 @@ const pt: Dict = {
   "tool.area": "Área",
   "tool.repair": "Reparar",
   "tool.gun": "Canhão",
+  "tool.spray": "Extintor",
   "tool.drones": "Drones",
   "tool.price": "{cost} cr",
   "tool.areaHint": "{cost} cr por célula nova",
   "tool.repairHint": "{cost} cr por célula",
   "tool.gunHint": "{cost} cr por canhão",
+  "tool.sprayHint": "{cost} cr por extintor: apaga o fogo a {range} células.",
   "tool.dronesHint": "Um contentor de {perCell} drones por {cost} cr. Toca numa célula livre do armazém; os contentores arrastam-se.",
 
 
@@ -1474,11 +1482,13 @@ const fr: Dict = {
   "tool.area": "Surface",
   "tool.repair": "Réparer",
   "tool.gun": "Canon",
+  "tool.spray": "Extincteur",
   "tool.drones": "Drones",
   "tool.price": "{cost} cr",
   "tool.areaHint": "{cost} cr par nouvelle case",
   "tool.repairHint": "{cost} cr par case",
   "tool.gunHint": "{cost} cr le canon",
+  "tool.sprayHint": "{cost} cr l’extincteur : il éteint le feu dans un rayon de {range} cases.",
   "tool.dronesHint": "Un conteneur de {perCell} drones pour {cost} cr. Clique une case libre de l’entrepôt ; les conteneurs se déplacent à la souris.",
 
 
@@ -1798,11 +1808,13 @@ const de: Dict = {
   "tool.area": "Fläche",
   "tool.repair": "Reparieren",
   "tool.gun": "Geschütz",
+  "tool.spray": "Löschanlage",
   "tool.drones": "Drohnen",
   "tool.price": "{cost} Cr",
   "tool.areaHint": "{cost} Cr pro neuem Feld",
   "tool.repairHint": "{cost} Cr pro Feld",
   "tool.gunHint": "{cost} Cr je Geschütz",
+  "tool.sprayHint": "{cost} Cr je Löschanlage: löscht Feuer im Umkreis von {range} Feldern.",
   "tool.dronesHint": "Ein Container mit {perCell} Drohnen für {cost} Cr. Auf ein freies Lagerfeld klicken; Container lassen sich ziehen.",
 
 
@@ -2122,11 +2134,13 @@ const it: Dict = {
   "tool.area": "Area",
   "tool.repair": "Riparare",
   "tool.gun": "Cannone",
+  "tool.spray": "Estintore",
   "tool.drones": "Droni",
   "tool.price": "{cost} cr",
   "tool.areaHint": "{cost} cr per cella nuova",
   "tool.repairHint": "{cost} cr per cella",
   "tool.gunHint": "{cost} cr per cannone",
+  "tool.sprayHint": "{cost} cr per estintore: spegne il fuoco entro {range} celle.",
   "tool.dronesHint": "Un container da {perCell} droni per {cost} cr. Tocca una cella libera del magazzino; i container si trascinano.",
 
 

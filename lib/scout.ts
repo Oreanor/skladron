@@ -2,7 +2,7 @@
 // летит вперёд и снимает карту вокруг себя. Мешают ему пушки противника —
 // они бьют настоящими снарядами, и сбивает только прямое попадание.
 
-import { CELLS, GRID, type Gun } from "./base";
+import { CELLS, GRID, gunKind, type Gun } from "./base";
 import { levelBonus } from "./economy";
 import { GUN_PER_LEVEL, GUN_RANGE } from "./engine";
 
@@ -89,6 +89,8 @@ export function createScout(
   gunLevel = 1
 ): ScoutState {
   const k = levelBonus(level, SCOUT_PER_LEVEL);
+  // огнетушители по самолётам не стреляют — в разведке их просто нет
+  guns = guns.filter((g) => gunKind(g) !== "spray");
   return {
     cells,
     guns,

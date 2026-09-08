@@ -11,6 +11,8 @@ import {
   applyRect,
   droneCount,
   countFreeCells,
+  countKind,
+  type GunKind,
   isWhole,
   scrapRect,
   freeCells,
@@ -43,6 +45,7 @@ import {
   insurance,
   insuranceShare,
   GUN_COST,
+  SPRAY_COST,
   MIN_BASE_CELLS,
   REPAIR_COST,
   SCOUT_UNIT_COST,
@@ -81,6 +84,7 @@ import {
 import type { Account } from "./AuthGate";
 import Enemies from "./Enemies";
 import { drawCoverage, drawDepots } from "@/lib/render";
+import { SPRAY_RANGE } from "@/lib/engine";
 import { gunRange } from "@/lib/engine";
 import Battle, { type BattleOutcome } from "./Battle";
 import Scout, { type ScoutOutcome } from "./Scout";
@@ -103,6 +107,7 @@ import {
   LayoutGrid,
   Plane,
   Hammer,
+  CircleDotDashed,
   Rocket,
   ShieldCheck,
   Wrench,
@@ -139,7 +144,7 @@ import {
   IconDrone,
 } from "./ui";
 
-type Tool = "area" | "repair" | "scrap" | "gun" | "drones" | "scouts";
+type Tool = "area" | "repair" | "scrap" | "gun" | "spray" | "drones" | "scouts";
 /** Кнопка «Апгрейд» карты не касается: она только открывает модалку. */
 type ToolId = Tool | "upgrade" | "insurance" | "loan";
 /** Панели, которые на телефоне открываются шторкой снизу. */
@@ -161,7 +166,7 @@ const TOOLS: {
   /** Какой класс он показывает уровнем. */
   levelKind?: UpgradeKind;
   /** Что считать в уголке кнопки: этого добра столько-то на складе. */
-  countKind?: "intact" | "burnt" | "guns" | "drones" | "scouts" | "loan";
+  countKind?: "intact" | "burnt" | "guns" | "sprays" | "drones" | "scouts" | "loan";
 }[] = [
   {
     id: "area",
@@ -216,6 +221,14 @@ const TOOLS: {
     icon: <IconDrone />,
     levelKind: "drones",
     countKind: "drones",
+  },
+  {
+    id: "spray",
+    label: "tool.spray",
+    hint: "tool.sprayHint",
+    vars: { cost: SPRAY_COST, range: SPRAY_RANGE },
+    icon: <CircleDotDashed className={ICON} />,
+    countKind: "sprays",
   },
   {
     id: "insurance",
@@ -691,6 +704,8 @@ export default function Lobby({
   /** Во что обойдётся то, что ставит этот инструмент, с учётом прокачки. */
   const toolPrice = (item: (typeof TOOLS)[number]) => {
     if (item.id === "gun") return priceAt(GUN_COST, p.levels.guns);
+    // Огнетушитель прокачки не знает: цена у него одна на все уровни.
+    if (item.id === "spray") return SPRAY_COST;
     if (item.id === "drones") return priceAt(DRONE_UNIT_COST, p.levels.drones) * DRONES_PER_CELL;
     if (item.id === "scouts") return priceAt(SCOUT_UNIT_COST, p.levels.scouts) * DRONES_PER_CELL;
     return item.vars.cost;
@@ -699,7 +714,8 @@ export default function Lobby({
   const counters = {
     intact,
     burnt,
-    guns: p.guns.length,
+    guns: countKind(p.guns, "gun"),
+    sprays: countKind(p.guns, "spray"),
     drones,
     scouts,
     // у кредита в углу висит долг, а если долгов нет — ничего
@@ -938,7 +954,7 @@ export default function Lobby({
     touch();
   };
 
-  const gunAt = (x: number, y: number) => {
+  const gunAt = (x: number, y: number, kind: GunKind = "gun") => {
     if (x < 0 || y < 0 || x >= GRID || y >= GRID) return;
     if (p.cells[idx(x, y)] !== G_BASE) {
       setMessage(t("gun.onlyIntact"));
@@ -948,12 +964,12 @@ export default function Lobby({
       setMessage(t("gun.cellBusy"));
       return;
     }
-    const cost = priceAt(GUN_COST, p.levels.guns);
+    const cost = kind === "spray" ? SPRAY_COST : priceAt(GUN_COST, p.levels.guns);
     if (p.credits < cost) {
       setMessage(t("gun.noCredits"));
       return;
     }
-    p.guns.push({ cx: x, cy: y });
+    p.guns.push(kind === "spray" ? { cx: x, cy: y, kind } : { cx: x, cy: y });
     p.credits -= cost;
     showPrice(x, y, -cost);
     touch();
@@ -1180,7 +1196,12 @@ export default function Lobby({
   const summonAttack = () => {
     const pattern = PATTERNS[(Math.random() * PATTERNS.length) | 0];
     // рой подбираем под оборону: сколько пушек и сколько склада прикрывать
-    const size = raidSize(p.guns.length, intact, raidDifficulty(), p.levels);
+    const size = raidSize(
+      countKind(p.guns, "gun") + countKind(p.guns, "spray") / 2,
+      intact,
+      raidDifficulty(),
+      p.levels
+    );
     const order = makeOrder(
       t(`bot.${(Math.random() * BOT_COUNT) | 0}` as Key),
       size,
@@ -1272,8 +1293,8 @@ export default function Lobby({
       void buyDepotAt(c.x, c.y, tool === "scouts" ? "scout" : "basic");
       return;
     }
-    if (tool === "gun") {
-      gunAt(c.x, c.y);
+    if (tool === "gun" || tool === "spray") {
+      gunAt(c.x, c.y, tool === "spray" ? "spray" : "gun");
       return;
     }
     if (!drafting) return;
@@ -1461,7 +1482,7 @@ export default function Lobby({
     }
 
     // пушки переставляются так же, как контейнеры: тянем и роняем
-    if (tool === "gun" || dragGunRef.current) {
+    if (tool === "gun" || tool === "spray" || dragGunRef.current) {
       ctx.fillStyle = "rgba(140, 215, 255, 0.16)";
       for (const i of freeCells(p.cells, p.guns, p.depots)) {
         ctx.fillRect((i % GRID) * cell, ((i / GRID) | 0) * cell, cell, cell);
@@ -1531,7 +1552,8 @@ export default function Lobby({
         let ok = false;
         if (tool === "area") ok = !isBuilding(v) && (!hasBuilding || touchesBuilding(p.cells, cx, cy));
         else if (tool === "repair") ok = v === G_BURNT;
-        else if (tool === "gun") ok = v === G_BASE && !p.depots.some((q) => q.cx === cx && q.cy === cy);
+        else if (tool === "gun" || tool === "spray")
+          ok = v === G_BASE && !p.depots.some((q) => q.cx === cx && q.cy === cy);
         if (tool !== "drones" && tool !== "scouts") {
           ctx.fillStyle = ok ? "rgba(140, 215, 255, 0.6)" : "rgba(229, 56, 59, 0.55)";
           ctx.fillRect(cx * cell, cy * cell, cell, cell);
@@ -2222,7 +2244,7 @@ export default function Lobby({
             На телефоне девять кнопок в ряд превращаются в марки: кладём их
             в два ряда, отняв высоту у пустого поля вокруг склада.
           */}
-          <div className="order-4 grid shrink-0 grid-cols-5 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(9,5rem)] lg:gap-2">
+          <div className="order-4 grid shrink-0 grid-cols-5 gap-1.5 lg:order-1 lg:w-fit lg:grid-cols-[repeat(10,5rem)] lg:gap-2">
             {TOOLS.map((item) => (
               <ToolButton
                 key={item.id}

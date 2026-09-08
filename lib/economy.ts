@@ -4,6 +4,8 @@ export const CREDITS_START = 10_000;
 export const CELL_COST = 10; // новая клетка склада
 export const REPAIR_COST = 5; // ремонт сгоревшей клетки
 export const GUN_COST = 100;
+/** Огнетушитель дороже зенитки: он и площадь бережёт, и товар. */
+export const SPRAY_COST = 150;
 export const DRONE_UNIT_COST = 25; // ударный дрон дороже разведчика
 /** Сколько платят за сданные во вторсырьё остатки сгоревшей клетки. */
 export const SCRAP_REWARD = 5;

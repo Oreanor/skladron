@@ -8,7 +8,14 @@ import {
   type Gun,
   isBuilding,
 } from "./base";
-import { GUN_RANGE, SHOT_LIFE, SMOKE_LIFE, type GameState } from "./engine";
+import {
+  GUN_RANGE,
+  SHOT_LIFE,
+  SMOKE_LIFE,
+  SPRAY_JETS,
+  SPRAY_RANGE,
+  type GameState,
+} from "./engine";
 
 export const COLORS = {
   groundA: "#3d6b3a",
@@ -31,7 +38,7 @@ export const COLORS = {
 /** Всё, что нужно для отрисовки карты — и бою, и редактору. */
 export interface Scene {
   cells: Uint8Array;
-  guns: { cx: number; cy: number; alive?: boolean }[];
+  guns: { cx: number; cy: number; alive?: boolean; kind?: string }[];
   depots?: { cx: number; cy: number; n: number }[];
 }
 
@@ -172,17 +179,46 @@ export function drawStatic(
   }
 
   for (const g of s.guns) {
+    const angle = Math.atan2(g.cy + 0.5 - GRID / 2, g.cx + 0.5 - GRID / 2);
     // Ствол смотрит наружу от середины склада, пока не начался бой: в бою
     // поверх этого слоя рисуется живая башня со своим углом.
-    drawTurret(
-      ctx,
-      g.cx,
-      g.cy,
-      cell,
-      Math.atan2(g.cy + 0.5 - GRID / 2, g.cx + 0.5 - GRID / 2),
-      g.alive !== false
-    );
+    if (g.kind === "spray") drawSpray(ctx, g.cx, g.cy, cell, angle, 0, g.alive !== false);
+    else drawTurret(ctx, g.cx, g.cy, cell, angle, g.alive !== false);
   }
+}
+
+/** Огнетушитель: круглая тумба, а когда работает — звезда струй. */
+export function drawSpray(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  cell: number,
+  angle: number,
+  wet: number,
+  alive = true
+) {
+  const x = (cx + 0.5) * cell;
+  const y = (cy + 0.5) * cell;
+
+  if (alive && wet > 0) {
+    ctx.strokeStyle = "rgba(121, 199, 255, 0.75)";
+    ctx.lineWidth = Math.max(1, cell * 0.22);
+    ctx.beginPath();
+    for (let j = 0; j < SPRAY_JETS; j++) {
+      const a = angle + (j * Math.PI * 2) / SPRAY_JETS;
+      ctx.moveTo(x + Math.cos(a) * cell * 0.5, y + Math.sin(a) * cell * 0.5);
+      ctx.lineTo(x + Math.cos(a) * cell * SPRAY_RANGE, y + Math.sin(a) * cell * SPRAY_RANGE);
+    }
+    ctx.stroke();
+  }
+
+  ctx.beginPath();
+  ctx.arc(x, y, cell * 0.42, 0, Math.PI * 2);
+  ctx.fillStyle = alive ? "#1d4e6b" : "#3f3f3f";
+  ctx.fill();
+  ctx.strokeStyle = alive ? COLORS.water : "#555";
+  ctx.lineWidth = Math.max(0.6, cell * 0.14);
+  ctx.stroke();
 }
 
 /**
@@ -229,25 +265,32 @@ export function drawTurret(
  */
 export function drawCoverage(
   ctx: CanvasRenderingContext2D,
-  guns: Gun[] | { cx: number; cy: number; alive?: boolean }[],
+  guns: Gun[] | { cx: number; cy: number; alive?: boolean; kind?: string; spray?: boolean }[],
   cell: number,
   range = GUN_RANGE
 ) {
   const live = guns.filter((g) => (g as { alive?: boolean }).alive !== false);
   if (!live.length) return;
-  ctx.beginPath();
-  for (const g of live) {
-    const cx = (g.cx + 0.5) * cell;
-    const cy = (g.cy + 0.5) * cell;
-    const r = (range + 0.5) * cell;
-    ctx.moveTo(cx + r, cy);
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  // Круги двух видов: зенитки достают дальше, огнетушители льют ближе, и
+  // сразу видно, какой угол склада без воды.
+  const isSpray = (g: { kind?: string; spray?: boolean }) => g.kind === "spray" || g.spray === true;
+  for (const spray of [false, true]) {
+    const part = live.filter((g) => isSpray(g) === spray);
+    if (!part.length) continue;
+    const r = ((spray ? SPRAY_RANGE : range) + 0.5) * cell;
+    ctx.beginPath();
+    for (const g of part) {
+      const cx = (g.cx + 0.5) * cell;
+      const cy = (g.cy + 0.5) * cell;
+      ctx.moveTo(cx + r, cy);
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    }
+    ctx.fillStyle = spray ? "rgba(56, 152, 214, 0.12)" : COLORS.range;
+    ctx.fill();
+    ctx.strokeStyle = spray ? "rgba(121, 199, 255, 0.35)" : COLORS.rangeLine;
+    ctx.lineWidth = 1;
+    ctx.stroke();
   }
-  ctx.fillStyle = COLORS.range;
-  ctx.fill();
-  ctx.strokeStyle = COLORS.rangeLine;
-  ctx.lineWidth = 1;
-  ctx.stroke();
 }
 
 /** Динамика боя: прицел, огонь, дроны, ракеты, взрывы. */
@@ -270,7 +313,10 @@ export function drawFrame(
   }
 
   drawCoverage(ctx, s.guns, cell, gunRange(s));
-  for (const g of s.guns) drawTurret(ctx, g.cx, g.cy, cell, g.angle, g.alive);
+  for (const g of s.guns) {
+    if (g.spray) drawSpray(ctx, g.cx, g.cy, cell, g.angle, g.wet, g.alive);
+    else drawTurret(ctx, g.cx, g.cy, cell, g.angle, g.alive);
+  }
 
   // прицел: над зданием он водяной, над землёй стрелковый
   if (s.phase === "playing" && hover) {

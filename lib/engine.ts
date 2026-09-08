@@ -14,6 +14,7 @@ import {
   isBuilding,
 } from "./base";
 import { mulberry32, type SpawnTicket } from "./attack";
+import { gunKind } from "./base";
 
 export { GRID, G_BASE, G_FIRE, G_GROUND, G_SCORCH, idx, isBuilding };
 export { G_BURNT } from "./base";
@@ -60,10 +61,20 @@ export interface Gun {
   /** Куда сейчас смотрит ствол и куда доворачивает. */
   angle: number;
   aim: number;
+  /** Огнетушитель вместо зенитки: он не стреляет, а поливает. */
+  spray: boolean;
+  /** Сколько ещё секунд крутиться и лить. */
+  wet: number;
 }
 
 /** Скорость доворота башни, рад/с. */
 export const TURRET_TURN = 4;
+
+/** Огнетушитель: радиус струи, число струй, скорость вращения и выбег. */
+export const SPRAY_RANGE = 4;
+export const SPRAY_JETS = 8;
+export const SPRAY_SPIN = 3.2; // рад/с
+export const SPRAY_HOLD = 3; // с работает после того, как рядом всё потушено
 
 export interface Drone {
   id: number;
@@ -213,6 +224,8 @@ export function createBattle(
       // изначально стволы смотрят наружу от середины карты
       angle: Math.atan2(g.cy + 0.5 - GRID / 2, g.cx + 0.5 - GRID / 2),
       aim: Math.atan2(g.cy + 0.5 - GRID / 2, g.cx + 0.5 - GRID / 2),
+      spray: gunKind(g) === "spray",
+      wet: 0,
     })),
     depots: depots.map((d) => ({ ...d })),
     drones: [],
@@ -529,9 +542,42 @@ export function update(s: GameState, dt: number) {
     }
   }
 
+  // --- огнетушители ---
+  // Загорелось в радиусе — установка раскручивается и льёт восемью струями
+  // звездой. Пока крутится, тушит всё, что успело заняться в её круге.
+  for (const g of s.guns) {
+    if (!g.alive || !g.spray) continue;
+    const gx = g.cx + 0.5;
+    const gy = g.cy + 0.5;
+
+    let fireNear = false;
+    for (const i of s.fire.keys()) {
+      const dx = (i % GRID) + 0.5 - gx;
+      const dy = ((i / GRID) | 0) + 0.5 - gy;
+      if (dx * dx + dy * dy <= SPRAY_RANGE * SPRAY_RANGE) {
+        fireNear = true;
+        break;
+      }
+    }
+    if (fireNear) g.wet = SPRAY_HOLD;
+    if (g.wet <= 0) continue;
+
+    g.wet -= dt;
+    g.angle += SPRAY_SPIN * dt;
+    // струи — восемь лучей звездой; что попало под луч, то и потушено
+    for (let j = 0; j < SPRAY_JETS; j++) {
+      const a = g.angle + (j * Math.PI * 2) / SPRAY_JETS;
+      const dx = Math.cos(a);
+      const dy = Math.sin(a);
+      for (let r = 0.5; r <= SPRAY_RANGE; r += 0.5) {
+        extinguish(s, Math.floor(gx + dx * r), Math.floor(gy + dy * r));
+      }
+    }
+  }
+
   // --- пушки ---
   for (const g of s.guns) {
-    if (!g.alive) continue;
+    if (!g.alive || g.spray) continue;
 
     // Башня доворачивает к последней цели — по ней видно, куда пушка смотрит.
     let da = g.aim - g.angle;
@@ -680,7 +726,9 @@ export function settle(s: GameState) {
   for (const i of s.fire.keys()) cells[i] = 3; // G_BURNT
   return {
     cells,
-    guns: s.guns.filter((g) => g.alive).map((g) => ({ cx: g.cx, cy: g.cy })),
+    guns: s.guns
+      .filter((g) => g.alive)
+      .map((g) => (g.spray ? { cx: g.cx, cy: g.cy, kind: "spray" as const } : { cx: g.cx, cy: g.cy })),
     depots: s.depots.map((d) => ({ ...d })),
     result: s.result,
   };

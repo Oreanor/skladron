@@ -13,6 +13,7 @@ language sql immutable as $$
     when 'repair' then 5
     when 'scrap'  then 5   -- за сданные во вторсырьё остатки сгоревшей клетки
     when 'gun'    then 100
+    when 'spray'  then 150  -- огнетушитель дороже зенитки: бережёт и площадь, и товар
     when 'refund' then 50
     when 'drones' then 1000
     when 'scout'  then 10    -- разведчик проще: ни боеголовки, ни брони
@@ -33,6 +34,14 @@ language sql immutable as $$
     when 'loan_hours' then 24    -- срок займа
     when 'max_raid' then 500 -- потолок одного налёта, тот же и на клиенте
   end;
+$$;
+
+-- сколько установок такого вида стоит на складе: без поля kind это зенитка
+create or replace function gun_count(g jsonb, want text) returns int
+language sql immutable as $$
+  select count(*)::int
+    from jsonb_array_elements(coalesce(g, '[]'::jsonb)) e
+   where coalesce(e->>'kind', 'gun') = want;
 $$;
 
 -- сколько всего дронов лежит в контейнерах
@@ -756,6 +765,7 @@ declare
   free_left int;
   paid int;
   guns_added int;
+  sprays_added int;
   guns_removed int;
   cost int;
 begin
@@ -799,7 +809,8 @@ begin
     end if;
   end loop;
 
-  guns_added := greatest(0, jsonb_array_length(new_guns) - jsonb_array_length(cur_guns));
+  guns_added := greatest(0, gun_count(new_guns, 'gun') - gun_count(cur_guns, 'gun'));
+  sprays_added := greatest(0, gun_count(new_guns, 'spray') - gun_count(cur_guns, 'spray'));
   guns_removed := greatest(0, jsonb_array_length(cur_guns) - jsonb_array_length(new_guns));
 
   -- первые price('free') клеток склада бесплатны, считаем от того, что уже стоит
@@ -809,6 +820,7 @@ begin
   cost := paid * price('cell')
         + repaired * price('repair')
         + guns_added * price_at(price('gun'), coalesce((prof.levels->>'guns')::int, 1))
+        + sprays_added * price('spray')
         - guns_removed * price('refund')
         - scrapped * price('scrap');
 
@@ -1005,8 +1017,10 @@ begin
     from profiles p where p.id = uid;
   payout := burned * price('insure_cell')
           + ((depots_lost
-              + greatest(0, jsonb_array_length(cur_guns) - jsonb_array_length(new_guns))
-                * price('gun')) * cover) / 100;
+              + greatest(0, gun_count(cur_guns, 'gun') - gun_count(new_guns, 'gun'))
+                * price('gun')
+              + greatest(0, gun_count(cur_guns, 'spray') - gun_count(new_guns, 'spray'))
+                * price('spray')) * cover) / 100;
 
   -- За сбитых не платят: деньги приносит товар, а не стрельба. Зато
   -- погорельцу выплачивается страховка.

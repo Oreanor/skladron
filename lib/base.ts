@@ -13,10 +13,19 @@ export const idx = (x: number, y: number) => y * GRID + x;
 export const isBuilding = (v: number) =>
   v === G_BASE || v === G_FIRE || v === G_BURNT;
 
+/** Что стоит на клетке склада: зенитка или огнетушитель. */
+export type GunKind = "gun" | "spray";
+
 export interface Gun {
   cx: number;
   cy: number;
+  /** Вид не указан — значит зенитка: так читаются склады, стоявшие раньше. */
+  kind?: GunKind;
 }
+
+export const gunKind = (g: Gun): GunKind => g.kind ?? "gun";
+export const countKind = (guns: Gun[], kind: GunKind) =>
+  guns.reduce((n, g) => (gunKind(g) === kind ? n + 1 : n), 0);
 
 /** Контейнер с дронами: занимает клетку склада, вмещает DRONES_PER_CELL штук. */
 /** Что лежит в контейнере: ударные дроны или разведчики. */
