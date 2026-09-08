@@ -31,7 +31,7 @@ const en = {
   "replays.incoming": "raid from",
   "replays.pending": "{drones} drones on the way · not fought yet",
   "tool.priceBox": "{cost} cr/{perCell} pcs",
-  "stat.creditsLine": "{credits} (+{income} cr/day)",
+  "stat.creditsLine": "{credits} (+{income} cr/12h)",
   "tool.loan": "Loan",
   "tool.loanHint": "Borrow from {cost} cr for a day at {rate}%. The goods you buy with it can burn — the debt will not.",
   "panel.replays": "Battle log",
@@ -322,7 +322,7 @@ const en = {
   "doomed.restarted": "A new warehouse, a fresh 10 000 cr",
   "doomed.failed": "Could not start over: {error}",
 
-  "income.collected": "Income for {days} days: +{credits} cr",
+  "income.collected": "Income for {hours} h: +{credits} cr",
   "load.failed": "Could not load the warehouse: {error}",
   "save.rejected": "The server rejected the change: {error}",
 
@@ -357,7 +357,7 @@ const ru: Dict = {
   "replays.incoming": "налёт от",
   "replays.pending": "{drones} дронов в пути · бой ещё не отыгран",
   "tool.priceBox": "{cost} кр/{perCell} шт",
-  "stat.creditsLine": "{credits} (+{income} кр/сут)",
+  "stat.creditsLine": "{credits} (+{income} кр/12ч)",
   "tool.loan": "Кредит",
   "tool.loanHint": "Занять от {cost} кр на сутки под {rate}%. Купленный на них товар может сгореть, долг — нет.",
   "panel.replays": "Журнал боёв",
@@ -649,7 +649,7 @@ const ru: Dict = {
   "doomed.restarted": "Новый склад, новые 10 000 кр",
   "doomed.failed": "Не удалось начать заново: {error}",
 
-  "income.collected": "Доход за {days} сут: +{credits} кр",
+  "income.collected": "Доход за {hours} ч: +{credits} кр",
   "load.failed": "Не удалось загрузить склад: {error}",
   "save.rejected": "Сервер отклонил правку: {error}",
 
@@ -681,7 +681,7 @@ const es: Dict = {
   "replays.incoming": "ataque de",
   "replays.pending": "{drones} drones en camino · aún sin combatir",
   "tool.priceBox": "{cost} cr/{perCell} uds",
-  "stat.creditsLine": "{credits} (+{income} cr/día)",
+  "stat.creditsLine": "{credits} (+{income} cr/12h)",
   "tool.loan": "Crédito",
   "tool.loanHint": "Pide desde {cost} cr por un día al {rate}%. La mercancía comprada puede arder; la deuda no.",
   "panel.replays": "Registro de combates",
@@ -973,7 +973,7 @@ const es: Dict = {
   "doomed.restarted": "Un almacén nuevo y 10 000 cr frescos",
   "doomed.failed": "No se pudo empezar de nuevo: {error}",
 
-  "income.collected": "Ingresos de {days} días: +{credits} cr",
+  "income.collected": "Ingresos de {hours} h: +{credits} cr",
   "load.failed": "No se pudo cargar el almacén: {error}",
   "save.rejected": "El servidor rechazó el cambio: {error}",
 
@@ -1005,7 +1005,7 @@ const pt: Dict = {
   "replays.incoming": "ataque de",
   "replays.pending": "{drones} drones a caminho · ainda por combater",
   "tool.priceBox": "{cost} cr/{perCell} un",
-  "stat.creditsLine": "{credits} (+{income} cr/dia)",
+  "stat.creditsLine": "{credits} (+{income} cr/12h)",
   "tool.loan": "Crédito",
   "tool.loanHint": "Pede a partir de {cost} cr por um dia a {rate}%. A mercadoria comprada pode arder; a dívida não.",
   "panel.replays": "Registo de combates",
@@ -1297,7 +1297,7 @@ const pt: Dict = {
   "doomed.restarted": "Um armazém novo e 10 000 cr frescos",
   "doomed.failed": "Não foi possível recomeçar: {error}",
 
-  "income.collected": "Receita de {days} dias: +{credits} cr",
+  "income.collected": "Receita de {hours} h: +{credits} cr",
   "load.failed": "Não foi possível carregar o armazém: {error}",
   "save.rejected": "O servidor recusou a alteração: {error}",
 
@@ -1329,7 +1329,7 @@ const fr: Dict = {
   "replays.incoming": "raid de",
   "replays.pending": "{drones} drones en route · combat pas encore joué",
   "tool.priceBox": "{cost} cr/{perCell} pcs",
-  "stat.creditsLine": "{credits} (+{income} cr/j)",
+  "stat.creditsLine": "{credits} (+{income} cr/12h)",
   "tool.loan": "Crédit",
   "tool.loanHint": "Emprunte à partir de {cost} cr pour un jour à {rate} %. La marchandise achetée peut brûler, la dette non.",
   "panel.replays": "Journal des combats",
@@ -1621,7 +1621,7 @@ const fr: Dict = {
   "doomed.restarted": "Un entrepôt neuf, 10 000 cr frais",
   "doomed.failed": "Impossible de recommencer : {error}",
 
-  "income.collected": "Revenu de {days} jours : +{credits} cr",
+  "income.collected": "Revenu de {hours} h : +{credits} cr",
   "load.failed": "Impossible de charger l’entrepôt : {error}",
   "save.rejected": "Le serveur a refusé la modification : {error}",
 
@@ -1653,7 +1653,7 @@ const de: Dict = {
   "replays.incoming": "Angriff von",
   "replays.pending": "{drones} Drohnen unterwegs · noch nicht ausgefochten",
   "tool.priceBox": "{cost} Cr/{perCell} St.",
-  "stat.creditsLine": "{credits} (+{income} Cr/Tag)",
+  "stat.creditsLine": "{credits} (+{income} Cr/12Std)",
   "tool.loan": "Kredit",
   "tool.loanHint": "Ab {cost} Cr für einen Tag zu {rate} % leihen. Die dafür gekaufte Ware kann abbrennen — die Schuld nicht.",
   "panel.replays": "Gefechtsbuch",
@@ -1945,7 +1945,7 @@ const de: Dict = {
   "doomed.restarted": "Neues Lager, frische 10 000 Cr",
   "doomed.failed": "Neustart fehlgeschlagen: {error}",
 
-  "income.collected": "Ertrag für {days} Tage: +{credits} Cr",
+  "income.collected": "Ertrag für {hours} Std: +{credits} Cr",
   "load.failed": "Lager konnte nicht geladen werden: {error}",
   "save.rejected": "Der Server hat die Änderung abgelehnt: {error}",
 
@@ -1977,7 +1977,7 @@ const it: Dict = {
   "replays.incoming": "attacco da",
   "replays.pending": "{drones} droni in volo · combattimento non ancora giocato",
   "tool.priceBox": "{cost} cr/{perCell} pz",
-  "stat.creditsLine": "{credits} (+{income} cr/g)",
+  "stat.creditsLine": "{credits} (+{income} cr/12h)",
   "tool.loan": "Prestito",
   "tool.loanHint": "Prendi da {cost} cr per un giorno al {rate}%. La merce comprata può bruciare, il debito no.",
   "panel.replays": "Diario dei combattimenti",
@@ -2269,7 +2269,7 @@ const it: Dict = {
   "doomed.restarted": "Magazzino nuovo, 10 000 cr freschi",
   "doomed.failed": "Non è stato possibile ricominciare: {error}",
 
-  "income.collected": "Reddito di {days} giorni: +{credits} cr",
+  "income.collected": "Reddito di {hours} h: +{credits} cr",
   "load.failed": "Non è stato possibile caricare il magazzino: {error}",
   "save.rejected": "Il server ha rifiutato la modifica: {error}",
 

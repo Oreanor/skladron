@@ -26,7 +26,7 @@ export const INCOME_PER_CELL = 10;
  * уходят вдвое дороже закупки. Не успел пустить их в дело — они проданы.
  */
 export const SALE_MULTIPLIER = 2;
-export const INCOME_CAP_DAYS = 14; // потолок накопления
+export const INCOME_CAP_SHIFTS = 28; // потолок накопления — две недели смен
 export const CELL_LOOT_REWARD = 50; // нападавшему за каждую сожжённую клетку склада
 export const INSURANCE_CELL = 5; // страховка за сгоревшую клетку — ровно на ремонт
 /** Прибавка к покрытию за каждый уровень страховки. */
@@ -103,7 +103,12 @@ export const STARTER_SIDE = 5; // стартовый склад 5×5 уже ст
 export const STARTER_CELLS = STARTER_SIDE * STARTER_SIDE;
 export const MIN_BASE_CELLS = STARTER_CELLS; // меньше стартового склада не основываемся
 
-export const DAY_MS = 24 * 60 * 60 * 1000;
+/**
+ * Смена — двенадцать часов. Столько живёт товар на складе и за столько же
+ * набегает аренда: две отгрузки в сутки.
+ */
+export const SHIFT_HOURS = 12;
+export const SHIFT_MS = SHIFT_HOURS * 60 * 60 * 1000;
 
 
 /**
@@ -111,14 +116,14 @@ export const DAY_MS = 24 * 60 * 60 * 1000;
  * Считаем по целым суткам UTC, остаток переносим на следующий заход.
  */
 export function accrue(intactCells: number, lastIncomeAt: number, now: number) {
-  const days = Math.floor((now - lastIncomeAt) / DAY_MS);
-  if (days <= 0) return { credits: 0, days: 0, nextAt: lastIncomeAt };
-  const paid = Math.min(days, INCOME_CAP_DAYS);
+  const shifts = Math.floor((now - lastIncomeAt) / SHIFT_MS);
+  if (shifts <= 0) return { credits: 0, days: 0, nextAt: lastIncomeAt };
+  const paid = Math.min(shifts, INCOME_CAP_SHIFTS);
   return {
     credits: paid * intactCells * INCOME_PER_CELL,
     days: paid,
     // сдвигаем на все прошедшие сутки, иначе сверх потолка копилось бы дальше
-    nextAt: lastIncomeAt + days * DAY_MS,
+    nextAt: lastIncomeAt + shifts * SHIFT_MS,
   };
 }
 

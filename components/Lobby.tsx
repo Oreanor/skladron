@@ -35,6 +35,7 @@ import {
   LOAN_RATE,
   LOAN_STEP,
   SALE_MULTIPLIER,
+  SHIFT_HOURS,
   SCRAP_REWARD,
   priceAt,
   loanDebt,
@@ -478,7 +479,10 @@ export default function Lobby({
         if (income.credits > 0) {
           const sold = income.sold;
           setMessage(
-            t("income.collected", { days: income.days, credits: fmt(income.credits) }) +
+            t("income.collected", {
+              hours: income.days * SHIFT_HOURS,
+              credits: fmt(income.credits),
+            }) +
               (sold && (sold.drones || sold.scouts)
                 ? t("income.sold", {
                     drones: sold.drones,

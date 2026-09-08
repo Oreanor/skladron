@@ -13,7 +13,7 @@ const en: RuleSection[] = [
     title: "The warehouse and the money",
     lines: [
       "You start with {credits} cr and a {starter}×{starter} warehouse standing in the middle of the field — it is yours for free.",
-      "Once a day the warehouse pays rent: {income} cr for every intact cell.",
+      "Every {shift} hours the warehouse pays rent: {income} cr for every intact cell.",
       "The same moment everything stored ships out at double the purchase price: drones at {droneSale} cr, recon planes at {scoutSale} cr. Whatever you did not send into battle is sold.",
       "Away for a while? The rent accrues for at most {capDays} days.",
       "Short of money? The bank lends {loanMin}–{loanMax} cr for {loanHours} hours at {loanRate}%. The goods you buy with it can burn in a raid — the debt will not.",
@@ -74,7 +74,7 @@ const ru: RuleSection[] = [
     title: "Склад и деньги",
     lines: [
       "Начинаешь с {credits} кр и складом {starter}×{starter} посреди поля — он твой даром.",
-      "Раз в сутки склад приносит аренду: {income} кр с каждой целой клетки.",
+      "Каждые {shift} часов склад приносит аренду: {income} кр с каждой целой клетки.",
       "Тогда же уходит отгрузка: всё, что лежит, продаётся вдвое дороже закупки — дроны по {droneSale} кр, разведчики по {scoutSale}. Что не пустил в дело, то продано.",
       "Не заходил долго — аренда копится не больше чем за {capDays} суток.",
       "Не хватает денег — банк даёт {loanMin}–{loanMax} кр на {loanHours} часа под {loanRate}%. Купленный на них товар может сгореть в налёте, долг — нет.",
@@ -135,7 +135,7 @@ const es: RuleSection[] = [
     title: "El almacén y el dinero",
     lines: [
       "Empiezas con {credits} cr y un almacén de {starter}×{starter} en medio del campo: es tuyo gratis.",
-      "Una vez al día el almacén paga renta: {income} cr por cada celda intacta.",
+      "Cada {shift} horas el almacén paga renta: {income} cr por cada celda intacta.",
       "En ese mismo momento se expide todo lo almacenado al doble del precio de compra: drones a {droneSale} cr, aviones a {scoutSale}. Lo que no enviaste al combate, se vende.",
       "¿Estuviste fuera? La renta se acumula como mucho {capDays} días.",
       "¿Falta dinero? El banco presta {loanMin}–{loanMax} cr por {loanHours} horas al {loanRate}%. La mercancía comprada puede arder en un ataque; la deuda no.",
@@ -196,7 +196,7 @@ const pt: RuleSection[] = [
     title: "O armazém e o dinheiro",
     lines: [
       "Começas com {credits} cr e um armazém de {starter}×{starter} no meio do campo — é teu de graça.",
-      "Uma vez por dia o armazém paga renda: {income} cr por cada célula intacta.",
+      "A cada {shift} horas o armazém paga renda: {income} cr por cada célula intacta.",
       "No mesmo momento sai a expedição: tudo o que está guardado vende-se ao dobro da compra — drones a {droneSale} cr, aviões a {scoutSale}. O que não mandaste ao combate, foi vendido.",
       "Estiveste fora? A renda acumula no máximo {capDays} dias.",
       "Falta dinheiro? O banco empresta {loanMin}–{loanMax} cr por {loanHours} horas a {loanRate}%. A mercadoria comprada pode arder num ataque; a dívida não.",
@@ -257,7 +257,7 @@ const fr: RuleSection[] = [
     title: "L’entrepôt et l’argent",
     lines: [
       "Tu commences avec {credits} cr et un entrepôt de {starter}×{starter} au milieu du terrain — il est à toi gratuitement.",
-      "Une fois par jour l’entrepôt rapporte un loyer : {income} cr par case intacte.",
+      "Toutes les {shift} heures l’entrepôt rapporte un loyer : {income} cr par case intacte.",
       "Au même moment part l’expédition : tout ce qui est stocké se vend au double du prix d’achat — drones à {droneSale} cr, avions à {scoutSale}. Ce que tu n’as pas envoyé au combat est vendu.",
       "Absent longtemps ? Le loyer s’accumule sur {capDays} jours au maximum.",
       "À court d’argent ? La banque prête {loanMin}–{loanMax} cr pour {loanHours} heures à {loanRate} %. La marchandise achetée peut brûler dans un raid, la dette non.",
@@ -318,7 +318,7 @@ const de: RuleSection[] = [
     title: "Lager und Geld",
     lines: [
       "Du startest mit {credits} Cr und einem {starter}×{starter}-Lager mitten im Feld — es gehört dir umsonst.",
-      "Einmal am Tag bringt das Lager Miete: {income} Cr pro heilem Feld.",
+      "Alle {shift} Stunden bringt das Lager Miete: {income} Cr pro heilem Feld.",
       "Im selben Moment geht die Verladung raus: alles Eingelagerte wird zum doppelten Einkaufspreis verkauft — Drohnen zu {droneSale} Cr, Aufklärer zu {scoutSale}. Was du nicht in den Einsatz geschickt hast, ist verkauft.",
       "Länger weg gewesen? Die Miete läuft höchstens {capDays} Tage auf.",
       "Zu wenig Geld? Die Bank leiht {loanMin}–{loanMax} Cr für {loanHours} Stunden zu {loanRate} %. Die dafür gekaufte Ware kann bei einem Angriff verbrennen — die Schuld nicht.",
@@ -379,7 +379,7 @@ const it: RuleSection[] = [
     title: "Il magazzino e i soldi",
     lines: [
       "Parti con {credits} cr e un magazzino {starter}×{starter} in mezzo al campo: è tuo gratis.",
-      "Una volta al giorno il magazzino rende affitto: {income} cr per ogni cella intatta.",
+      "Ogni {shift} ore il magazzino rende affitto: {income} cr per ogni cella intatta.",
       "Nello stesso momento parte la spedizione: tutto ciò che è stoccato si vende al doppio dell’acquisto — droni a {droneSale} cr, ricognitori a {scoutSale}. Quello che non hai mandato in battaglia è venduto.",
       "Sei stato via? L’affitto si accumula al massimo per {capDays} giorni.",
       "Soldi finiti? La banca presta {loanMin}–{loanMax} cr per {loanHours} ore al {loanRate}%. La merce comprata può bruciare in un attacco, il debito no.",
