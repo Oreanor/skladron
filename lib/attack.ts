@@ -4,7 +4,15 @@ import { GRID } from "./base";
 import { levelBonus } from "./economy";
 import type { BattleResult } from "./engine";
 
-export type Pattern = "swarm" | "lines" | "random" | "drip";
+export type Pattern =
+  | "swarm"
+  | "lines"
+  | "random"
+  | "drip"
+  | "rings"
+  | "spiral"
+  | "flower"
+  | "sweep";
 
 /** Сколько атака ждёт живого защитника, прежде чем пройти сама. */
 export const RAID_TTL_MS = 30 * 60 * 1000;
@@ -134,10 +142,40 @@ export interface SpawnTicket {
   oy: number; // отступ за кадр
 }
 
-export const PATTERNS: Pattern[] = ["swarm", "lines", "random", "drip"];
+export const PATTERNS: Pattern[] = [
+  "swarm",
+  "lines",
+  "random",
+  "drip",
+  "rings",
+  "spiral",
+  "flower",
+  "sweep",
+];
 
 /** За сколько примерно секунд «капель» высыпает весь рой, каким бы он ни был. */
 const DRIP_SECONDS = 60;
+
+/** Колец в налёте: меньше пяти не кольца, больше десяти — уже капель. */
+const RINGS_MIN = 5;
+const RINGS_MAX = 10;
+/** Пауза между первым и последним кольцом: к концу они идут всё чаще. */
+const RING_GAP_FIRST = 6;
+const RING_GAP_LAST = 1.2;
+/** За столько секунд спираль делает полный оборот вокруг склада. */
+const SPIRAL_TURN = 3;
+
+/** Лепестков у «цветка»: столько ручьёв идёт одновременно. */
+const FLOWER_ARMS_MIN = 4;
+const FLOWER_ARMS_MAX = 6;
+/** На столько круга проворачивается цветок за одну волну. */
+const FLOWER_TWIST = 0.045;
+/** Примерно столько секунд цветок раскрывается: иначе он неотличим от роя. */
+const FLOWER_SECONDS = 30;
+/** Сколько раз «метла» проходит туда-обратно и какую долю круга захватывает. */
+const SWEEP_PASSES_MIN = 3;
+const SWEEP_PASSES_MAX = 6;
+const SWEEP_ARC = 0.4;
 
 /** Стороны в том же порядке, что и direction: 0 верх, 1 низ, 2 слева, 3 справа. */
 export const EDGES = [0, 1, 2, 3] as const;
@@ -183,6 +221,67 @@ export function buildPlan(order: AttackOrder): SpawnTicket[] {
       for (let i = 0; i < size; i++) push(t + i * 0.1, edge, 6);
       left -= size;
       t += gap;
+    }
+  } else if (order.pattern === "rings" || order.pattern === "spiral") {
+    // Кольцо — это рой, заходящий разом со всего периметра: дроны встают по
+    // кругу через равные промежутки. Колец несколько, и с каждым пауза короче.
+    // Спираль — то же кольцо, только дроны в нём стартуют не разом, а один за
+    // другим по кругу, и кольцо к кольцу проворачивается.
+    const rings = RINGS_MIN + Math.floor(rnd() * (RINGS_MAX - RINGS_MIN + 1));
+    const per = Math.ceil(n / rings);
+    const spiral = order.pattern === "spiral";
+    let t = 2;
+    let left = n;
+    for (let i = 0; i < rings && left > 0; i++) {
+      const size = Math.min(left, per);
+      // кольца не должны ложиться след в след: каждое повёрнуто
+      const phase = spiral ? (i * 0.37) % 1 : rnd();
+      for (let j = 0; j < size; j++) {
+        const u = (((j + 0.5) / size + phase) % 1) * GRID * 4;
+        plan.push({
+          at: t + (spiral ? (j / size) * SPIRAL_TURN : 0),
+          edge: Math.min(3, Math.floor(u / GRID)),
+          ox: u % GRID,
+          oy: (rnd() - 0.5) * 4,
+        });
+      }
+      left -= size;
+      const k = i / Math.max(1, rings - 1);
+      t += RING_GAP_FIRST - k * (RING_GAP_FIRST - RING_GAP_LAST);
+    }
+  } else if (order.pattern === "flower") {
+    // Цветок: несколько ручьёв разом, и все вместе проворачиваются вокруг
+    // склада. Между лепестками остаются живые коридоры, но они уезжают.
+    const arms = FLOWER_ARMS_MIN + Math.floor(rnd() * (FLOWER_ARMS_MAX - FLOWER_ARMS_MIN + 1));
+    const waves = Math.ceil(n / arms);
+    const step = Math.min(1.2, Math.max(0.15, FLOWER_SECONDS / waves));
+    for (let i = 0; i < n; i++) {
+      const wave = Math.floor(i / arms);
+      const u = (((i % arms) / arms + wave * FLOWER_TWIST) % 1) * GRID * 4;
+      plan.push({
+        at: 2 + wave * step,
+        edge: Math.min(3, Math.floor(u / GRID)),
+        ox: u % GRID,
+        oy: (rnd() - 0.5) * 4,
+      });
+    }
+  } else if (order.pattern === "sweep") {
+    // Метла: плотный ручей ходит по кругу туда-обратно, как дворник по стеклу.
+    // Стоять надо там, откуда он только что ушёл.
+    const passes = SWEEP_PASSES_MIN + Math.floor(rnd() * (SWEEP_PASSES_MAX - SWEEP_PASSES_MIN + 1));
+    const start = rnd();
+    const step = Math.max(0.06, 40 / n);
+    for (let i = 0; i < n; i++) {
+      const k = (i / Math.max(1, n - 1)) * passes;
+      // треугольная волна: доходит до края дуги и идёт обратно
+      const wave = 2 * Math.abs(k - Math.floor(k + 0.5));
+      const u = ((start + (wave - 0.5) * SWEEP_ARC + 1) % 1) * GRID * 4;
+      plan.push({
+        at: 2 + i * step,
+        edge: Math.min(3, Math.floor(u / GRID)),
+        ox: u % GRID,
+        oy: (rnd() - 0.5) * 3,
+      });
     }
   } else {
     // Капель: интервал сжимается к концу вдвенадцатеро, но весь налёт

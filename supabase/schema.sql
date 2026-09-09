@@ -236,7 +236,7 @@ create table if not exists attacks (
   attacker_id uuid not null references profiles on delete cascade,
   defender_id uuid not null references profiles on delete cascade,
   drones int not null check (drones between 1 and 500),
-  pattern text not null check (pattern in ('swarm', 'lines', 'random', 'drip')),
+  pattern text not null check (pattern in ('swarm', 'lines', 'random', 'drip', 'rings', 'spiral', 'flower', 'sweep')),
   direction int not null check (direction between 0 and 3),
   seed int not null,
   status text not null default 'pending' check (status in ('pending', 'resolved')),
@@ -278,6 +278,11 @@ alter table profiles alter column levels set default
 -- пулемёт, брандспойт, полис и огнетушители добавились позже: у заведённых профилей их нет
 update profiles set levels =
   '{"drones":1,"guns":1,"sprays":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb || levels;
+-- кольца и спираль появились позже: у заведённой таблицы ограничение старое,
+-- а create table if not exists его не трогает
+alter table attacks drop constraint if exists attacks_pattern_check;
+alter table attacks add constraint attacks_pattern_check
+  check (pattern in ('swarm', 'lines', 'random', 'drip', 'rings', 'spiral', 'flower', 'sweep'));
 -- уровень дронов запоминаем в самой атаке: у защитника они летят так,
 -- как их прокачал нападающий, даже если тот потом апгрейднулся ещё
 alter table attacks add column if not exists drone_level int not null default 1;
@@ -415,7 +420,7 @@ begin
   if drone_count is null or drone_count < 1 or drone_count > price('max_raid') then
     raise exception 'bad drone count';
   end if;
-  if attack_pattern not in ('swarm', 'lines', 'random', 'drip') then
+  if attack_pattern not in ('swarm', 'lines', 'random', 'drip', 'rings', 'spiral', 'flower', 'sweep') then
     raise exception 'bad attack pattern';
   end if;
   if attack_direction < 0 or attack_direction > 3 then raise exception 'bad direction'; end if;

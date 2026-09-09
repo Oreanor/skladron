@@ -260,6 +260,8 @@ const TOOLS: {
 
 /** Имена ботов для отладочной кнопки «+ налёт»: настоящие атаки приходят с именем склада. */
 const BOT_COUNT = 4;
+/** Потолок пробного налёта по ссылке: посмотреть режим, а не похоронить склад. */
+const TEST_RAID_MAX = 250;
 
 /** Панели правой колонки в порядке по умолчанию. */
 const DEFAULT_PANELS = ["replays", "enemies", "stats"];
@@ -664,6 +666,39 @@ export default function Lobby({
     const timer = window.setInterval(() => void tick(), 1000);
     return () => window.clearInterval(timer);
   }, [repo]);
+
+  /**
+   * Пробные налёты по ссылке: ?raid=flower,sweep&n=220 кладёт в очередь по
+   * налёту на каждый названный режим. Нужны, чтобы посмотреть новую раскладку
+   * на своём складе, не дожидаясь бота. Параметр сразу убираем из адреса —
+   * иначе обновление страницы сыпало бы новые рои.
+   */
+  useEffect(() => {
+    const cur = playerRef.current;
+    if (!ready || !cur) return;
+    const q = new URLSearchParams(window.location.search);
+    const list = (q.get("raid") ?? "")
+      .split(",")
+      .map((name) => name.trim())
+      .filter((name) => (PATTERNS as string[]).includes(name)) as Pattern[];
+    if (!list.length) return;
+    const size = Math.min(TEST_RAID_MAX, Math.max(30, Number(q.get("n")) || 200));
+    for (const pattern of list) {
+      cur.incoming.push(
+        makeOrder(
+          t(`bot.${(Math.random() * BOT_COUNT) | 0}` as Key),
+          size,
+          pattern,
+          (Math.random() * 4) | 0
+        )
+      );
+    }
+    window.history.replaceState({}, "", window.location.pathname);
+    touch();
+    setMessage(t("raid.testQueued", { count: list.length, size }));
+    // разовый запуск: как только игрок загрузился, налёты уже в очереди
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
 
   useEffect(() => {
     if (!message) return;
