@@ -11,6 +11,7 @@ import {
   aimMode,
   GUN_RANGE,
   sprayRange,
+  SPRAY_TANK,
   SHOT_LIFE,
   SMOKE_LIFE,
   SPRAY_JETS,
@@ -197,7 +198,9 @@ export function drawSpray(
   angle: number,
   wet: number,
   alive = true,
-  range = SPRAY_RANGE
+  range = SPRAY_RANGE,
+  /** Сколько воды осталось в баке, от нуля до единицы. */
+  tank = 1
 ) {
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
@@ -216,11 +219,19 @@ export function drawSpray(
 
   ctx.beginPath();
   ctx.arc(x, y, cell * 0.42, 0, Math.PI * 2);
-  ctx.fillStyle = alive ? "#1d4e6b" : "#3f3f3f";
+  ctx.fillStyle = alive ? (tank > 0 ? "#1d4e6b" : "#2a2f33") : "#3f3f3f";
   ctx.fill();
-  ctx.strokeStyle = alive ? COLORS.water : "#555";
+  ctx.strokeStyle = alive ? "#3c5566" : "#555";
   ctx.lineWidth = Math.max(0.6, cell * 0.14);
   ctx.stroke();
+
+  // остаток воды — дугой по ободу: пустой бак виден сразу
+  if (alive && tank > 0) {
+    ctx.beginPath();
+    ctx.arc(x, y, cell * 0.42, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * tank);
+    ctx.strokeStyle = COLORS.water;
+    ctx.stroke();
+  }
 }
 
 /**
@@ -318,7 +329,8 @@ export function drawFrame(
   const reach = sprayRange(s);
   drawCoverage(ctx, s.guns, cell, gunRange(s), reach);
   for (const g of s.guns) {
-    if (g.spray) drawSpray(ctx, g.cx, g.cy, cell, g.angle, g.wet, g.alive, reach);
+    if (g.spray)
+      drawSpray(ctx, g.cx, g.cy, cell, g.angle, g.wet, g.alive, reach, g.tank / SPRAY_TANK);
     else drawTurret(ctx, g.cx, g.cy, cell, g.angle, g.alive);
   }
 

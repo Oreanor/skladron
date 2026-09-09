@@ -30,7 +30,7 @@ import {
 } from "@/lib/economy";
 import { MAX_RAID } from "@/lib/attack";
 import { DRONES_PER_CELL } from "@/lib/base";
-import { FIRE_SPREAD, GUN_COOLDOWN, GUN_RANGE, SPRAY_RANGE } from "@/lib/engine";
+import { FIRE_SPREAD, GUN_COOLDOWN, GUN_RANGE, SPRAY_RANGE, SPRAY_TANK } from "@/lib/engine";
 import { RULES } from "@/lib/i18n/rules";
 import { useSettings } from "@/lib/i18n";
 import { Button, Modal, SectionTitle } from "./ui";
@@ -48,6 +48,7 @@ const values: Record<string, string> = {
   gun: String(GUN_COST),
   spray: String(SPRAY_COST),
   sprayRange: String(SPRAY_RANGE),
+  sprayTank: String(SPRAY_TANK),
   perCell: String(DRONES_PER_CELL),
   droneBox: String(DRONE_UNIT_COST * DRONES_PER_CELL),
   scoutBox: String(SCOUT_UNIT_COST * DRONES_PER_CELL),

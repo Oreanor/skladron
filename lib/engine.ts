@@ -68,6 +68,8 @@ export interface Gun {
   spray: boolean;
   /** Сколько ещё секунд крутиться и лить. */
   wet: number;
+  /** Сколько секунд воды осталось в баке. */
+  tank: number;
 }
 
 /** Скорость доворота башни, рад/с. */
@@ -78,7 +80,15 @@ export const SPRAY_RANGE = 4;
 export const SPRAY_PER_LEVEL = 0.25;
 export const SPRAY_JETS = 8;
 export const SPRAY_SPIN = 3.2; // рад/с
-export const SPRAY_HOLD = 3; // с работает после того, как рядом всё потушено
+export const SPRAY_HOLD = 1.5; // с крутится вхолостую после того, как рядом потушено
+/**
+ * Бак: столько секунд установка может лить за бой. Не пополняется — потому
+ * плотный ковёр из огнетушителей и не спасает от долгого налёта: воды у него
+ * ровно столько же, сколько у редкого, просто разлита она гуще.
+ */
+export const SPRAY_TANK = 14;
+/** Сколько секунд воды нужно клетке, чтобы погаснуть. Струя не гасит с ходу. */
+export const SPRAY_SOAK = 0.8;
 
 export interface Drone {
   id: number;
@@ -238,6 +248,7 @@ export function createBattle(
       aim: Math.atan2(g.cy + 0.5 - GRID / 2, g.cx + 0.5 - GRID / 2),
       spray: gunKind(g) === "spray",
       wet: 0,
+      tank: SPRAY_TANK,
     })),
     depots: depots.map((d) => ({ ...d })),
     drones: [],
@@ -579,8 +590,11 @@ export function update(s: GameState, dt: number) {
 
   // --- огнетушители ---
   // Загорелось в радиусе — установка раскручивается и льёт восемью струями
-  // звездой. Пока крутится, тушит всё, что успело заняться в её круге.
+  // звездой. Струя не гасит с ходу: клетку надо пролить, а луч упирается в
+  // первый же огонь на своём пути. Отсюда и потолок: восемь очагов разом, не
+  // больше, — широкий фронт огня установку обходит.
   const reach = sprayRange(s);
+  const douse = dt / SPRAY_SOAK;
   for (const g of s.guns) {
     if (!g.alive || !g.spray) continue;
     const gx = g.cx + 0.5;
@@ -595,18 +609,24 @@ export function update(s: GameState, dt: number) {
         break;
       }
     }
-    if (fireNear) g.wet = SPRAY_HOLD;
-    if (g.wet <= 0) continue;
+    if (fireNear && g.tank > 0) g.wet = SPRAY_HOLD;
+    if (g.wet <= 0 || g.tank <= 0) continue;
 
     g.wet -= dt;
+    g.tank -= dt;
     g.angle += SPRAY_SPIN * dt;
-    // струи — восемь лучей звездой; что попало под луч, то и потушено
     for (let j = 0; j < SPRAY_JETS; j++) {
       const a = g.angle + (j * Math.PI * 2) / SPRAY_JETS;
       const dx = Math.cos(a);
       const dy = Math.sin(a);
       for (let r = 0.5; r <= reach; r += 0.5) {
-        extinguish(s, Math.floor(gx + dx * r), Math.floor(gy + dy * r));
+        const x = Math.floor(gx + dx * r);
+        const y = Math.floor(gy + dy * r);
+        if (x < 0 || y < 0 || x >= GRID || y >= GRID) break;
+        if (s.cells[idx(x, y)] !== G_FIRE) continue;
+        // вода льётся в первый очаг на луче и дальше не идёт
+        if (s.rnd() < douse) extinguish(s, x, y);
+        break;
       }
     }
   }
