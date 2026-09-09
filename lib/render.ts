@@ -189,6 +189,53 @@ export function drawStatic(
   }
 }
 
+/**
+ * Разведывательный БПЛА сверху: узкий корпус, стреловидное крыло и хвостовое
+ * оперение. Рисуется в начале координат носом по +x — поворот и перенос
+ * делает вызывающий.
+ */
+export function drawScoutPlane(ctx: CanvasRenderingContext2D, cell: number) {
+  const wing = (side: 1 | -1) => {
+    ctx.beginPath();
+    ctx.moveTo(cell * 0.55, side * cell * 0.2);
+    ctx.lineTo(-cell * 0.6, side * cell * 1.65);
+    ctx.lineTo(-cell * 1.05, side * cell * 1.65);
+    ctx.lineTo(-cell * 0.35, side * cell * 0.2);
+    ctx.closePath();
+    ctx.fill();
+  };
+  const tail = (side: 1 | -1) => {
+    ctx.beginPath();
+    ctx.moveTo(-cell * 0.95, side * cell * 0.15);
+    ctx.lineTo(-cell * 1.4, side * cell * 0.75);
+    ctx.lineTo(-cell * 1.6, side * cell * 0.75);
+    ctx.lineTo(-cell * 1.35, side * cell * 0.15);
+    ctx.closePath();
+    ctx.fill();
+  };
+
+  ctx.fillStyle = "#5f96b4";
+  wing(1);
+  wing(-1);
+  tail(1);
+  tail(-1);
+
+  // корпус
+  ctx.fillStyle = "#8ecae6";
+  ctx.beginPath();
+  ctx.moveTo(cell * 1.9, 0);
+  ctx.quadraticCurveTo(cell * 0.7, -cell * 0.32, -cell * 1.6, -cell * 0.2);
+  ctx.lineTo(-cell * 1.6, cell * 0.2);
+  ctx.quadraticCurveTo(cell * 0.7, cell * 0.32, cell * 1.9, 0);
+  ctx.fill();
+
+  // фонарь кабины — по нему видно, где у машины нос
+  ctx.fillStyle = "#e8f6ff";
+  ctx.beginPath();
+  ctx.ellipse(cell * 0.5, 0, cell * 0.3, cell * 0.17, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 /** Огнетушитель: круглая тумба, а когда работает — звезда струй. */
 export function drawSpray(
   ctx: CanvasRenderingContext2D,

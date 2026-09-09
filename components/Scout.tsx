@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CELLS, GRID, type Gun } from "@/lib/base";
-import { COLORS, drawCoverage } from "@/lib/render";
+import { COLORS, drawCoverage, drawScoutPlane } from "@/lib/render";
 import {
   createScout,
   seenShare,
@@ -220,14 +220,7 @@ export default function Scout({
     ctx.save();
     ctx.translate(p.x * CELL, p.y * CELL);
     ctx.rotate(p.heading);
-    ctx.fillStyle = "#8ecae6";
-    ctx.beginPath();
-    ctx.moveTo(CELL * 1.6, 0);
-    ctx.lineTo(-CELL * 0.9, -CELL * 0.9);
-    ctx.lineTo(-CELL * 0.4, 0);
-    ctx.lineTo(-CELL * 0.9, CELL * 0.9);
-    ctx.closePath();
-    ctx.fill();
+    drawScoutPlane(ctx, CELL);
     ctx.restore();
 
 
