@@ -6,9 +6,9 @@ import {
   G_FIRE,
   G_SCORCH,
   type Gun,
-  isBuilding,
 } from "./base";
 import {
+  aimMode,
   GUN_RANGE,
   sprayRange,
   SHOT_LIFE,
@@ -322,9 +322,12 @@ export function drawFrame(
     else drawTurret(ctx, g.cx, g.cy, cell, g.angle, g.alive);
   }
 
-  // прицел: над зданием он водяной, над землёй стрелковый
+  // прицел красим тем же правилом, по которому игра и стреляет: захваченный
+  // дрон делает его стрелковым даже над складом
   if (s.phase === "playing" && hover) {
-    const water = isBuilding(s.cells[hover.y * GRID + hover.x]);
+    const ax = s.aim ? s.aim.x : hover.x + 0.5;
+    const ay = s.aim ? s.aim.y : hover.y + 0.5;
+    const water = aimMode(s, ax, ay) === "water";
     const px = (hover.x + 0.5) * cell;
     const py = (hover.y + 0.5) * cell;
     ctx.strokeStyle = water ? COLORS.water : COLORS.flash;

@@ -36,7 +36,7 @@ const en: RuleSection[] = [
     lines: [
       "Raids queue up and are fought strictly in order. The first one has half an hour on the clock.",
       "Miss that window and the raid plays out without you: the guns fire on their own, but there is nobody at the hose or the machine gun.",
-      "In battle the guns work by themselves — {gunRange} cells of range, {reload} s to reload. Your mouse over the ground is the machine gun, over the warehouse it is the fire hose.",
+      "In battle the guns work by themselves — {gunRange} cells of range, {reload} s to reload. Your mouse is the machine gun when a drone is in the crosshair — over the warehouse too; otherwise over the warehouse it is the fire hose.",
       "Fire spreads to neighbouring cells every {spread} s. A container on a burning cell is lost with the drones inside; a gun there dies too.",
     ],
   },
@@ -98,7 +98,7 @@ const ru: RuleSection[] = [
     lines: [
       "Налёты встают в очередь и отбиваются строго по порядку. У первого идут часы — полчаса.",
       "Не успел — налёт проходит сам: пушки стреляют, но брандспойт и пулемёт держать некому.",
-      "В бою пушки работают сами — радиус {gunRange} клеток, перезарядка {reload} с. Мышь над землёй — пулемётная очередь, над складом — брандспойт.",
+      "В бою пушки работают сами — радиус {gunRange} клеток, перезарядка {reload} с. Дрон в перекрестье — мышь бьёт очередью, хоть над складом; нет дрона — над складом брандспойт, над землёй пулемёт.",
       "Огонь перекидывается на соседние клетки каждые {spread} с. Контейнер на горящей клетке пропадает вместе с дронами, пушка там же гибнет.",
     ],
   },
@@ -160,7 +160,7 @@ const es: RuleSection[] = [
     lines: [
       "Los ataques hacen cola y se combaten en orden estricto. El primero tiene media hora de reloj.",
       "Si no llegas, el ataque se resuelve sin ti: los cañones disparan solos, pero nadie sostiene la manguera ni la ametralladora.",
-      "En combate los cañones actúan solos: {gunRange} celdas de alcance, {reload} s de recarga. El ratón sobre el suelo es la ametralladora; sobre el almacén, la manguera.",
+      "En combate los cañones actúan solos: {gunRange} celdas de alcance, {reload} s de recarga. Con un dron en el punto de mira el ratón dispara la ametralladora, incluso sobre el almacén; si no hay dron, sobre el almacén va la manguera y sobre el suelo la ametralladora.",
       "El fuego pasa a las celdas vecinas cada {spread} s. Un contenedor en una celda ardiendo se pierde con sus drones; un cañón allí también muere.",
     ],
   },
@@ -222,7 +222,7 @@ const pt: RuleSection[] = [
     lines: [
       "Os ataques formam fila e são travados por ordem estrita. O primeiro tem meia hora no relógio.",
       "Se não chegares a tempo, o ataque decorre sem ti: os canhões disparam sozinhos, mas ninguém segura a mangueira nem a metralhadora.",
-      "Em combate os canhões trabalham sozinhos — {gunRange} células de alcance, {reload} s de recarga. O rato sobre o chão é a metralhadora; sobre o armazém, a mangueira.",
+      "Em combate os canhões trabalham sozinhos — {gunRange} células de alcance, {reload} s de recarga. Com um drone na mira o rato dispara a metralhadora, mesmo sobre o armazém; sem drone, sobre o armazém vai a mangueira e sobre o chão a metralhadora.",
       "O fogo passa às células vizinhas a cada {spread} s. Um contentor numa célula a arder perde-se com os drones; um canhão ali também morre.",
     ],
   },
@@ -284,7 +284,7 @@ const fr: RuleSection[] = [
     lines: [
       "Les raids font la queue et se jouent strictement dans l’ordre. Le premier a une demi-heure au compteur.",
       "Passé ce délai, le raid se déroule sans toi : les canons tirent seuls, mais personne ne tient la lance ni la mitrailleuse.",
-      "Au combat les canons agissent seuls — {gunRange} cases de portée, {reload} s de recharge. La souris au sol, c’est la mitrailleuse ; sur l’entrepôt, la lance à incendie.",
+      "Au combat les canons agissent seuls — {gunRange} cases de portée, {reload} s de recharge. Un drone dans le viseur et la souris tire à la mitrailleuse, même au-dessus de l’entrepôt ; sinon c’est la lance sur l’entrepôt et la mitrailleuse au sol.",
       "Le feu gagne les cases voisines toutes les {spread} s. Un conteneur sur une case en feu est perdu avec ses drones ; un canon y meurt aussi.",
     ],
   },
@@ -346,7 +346,7 @@ const de: RuleSection[] = [
     lines: [
       "Angriffe stellen sich in eine Schlange und werden streng der Reihe nach abgewehrt. Beim ersten läuft eine halbe Stunde.",
       "Verpasst du sie, läuft der Angriff ohne dich ab: die Geschütze feuern von selbst, aber niemand hält Schlauch oder MG.",
-      "Im Gefecht arbeiten die Geschütze allein — {gunRange} Felder Reichweite, {reload} s Nachladen. Die Maus über dem Boden ist das MG, über dem Lager der Löschschlauch.",
+      "Im Gefecht arbeiten die Geschütze allein — {gunRange} Felder Reichweite, {reload} s Nachladen. Ist eine Drohne im Fadenkreuz, feuert die Maus das MG — auch über dem Lager; sonst über dem Lager der Löschschlauch, über dem Boden das MG.",
       "Feuer springt alle {spread} s auf Nachbarfelder über. Ein Container auf brennendem Feld geht mit seinen Drohnen verloren, ein Geschütz dort ebenfalls.",
     ],
   },
@@ -408,7 +408,7 @@ const it: RuleSection[] = [
     lines: [
       "Gli attacchi si mettono in coda e si affrontano rigorosamente in ordine. Il primo ha mezz’ora di orologio.",
       "Se non fai in tempo, l’attacco si svolge senza di te: i cannoni sparano da soli, ma nessuno tiene la manichetta né la mitragliatrice.",
-      "In battaglia i cannoni lavorano da soli — {gunRange} celle di gittata, {reload} s di ricarica. Il mouse sul terreno è la mitragliatrice, sul magazzino è la manichetta.",
+      "In battaglia i cannoni lavorano da soli — {gunRange} celle di gittata, {reload} s di ricarica. Con un drone nel mirino il mouse spara la mitragliatrice, anche sopra il magazzino; senza drone, sul magazzino c’è la manichetta e sul terreno la mitragliatrice.",
       "Il fuoco passa alle celle vicine ogni {spread} s. Un container su una cella in fiamme si perde con i suoi droni; anche un cannone lì muore.",
     ],
   },

@@ -38,6 +38,9 @@ export const GUN_HIT_CHANCE = 0.15; // шанс случайно врезать�
 // прицел игрока
 export const MG_INTERVAL = 0.09; // с между выстрелами
 export const MG_RADIUS = 1.8; // клеток — зона захвата дрона прицелом
+// Курсор прямо на дроне — стреляем, даже если под ним склад. Радиус захвата
+// тут уже, чем у самой очереди: случайный дрон в стороне тушение не срывает.
+export const MG_LOCK = 1;
 export const MG_SPREAD = 1.2; // клеток — разброс пуль
 export const MG_HIT = 0.35; // шанс попадания одним выстрелом; одного попадания достаточно
 // Струя накрывает пятно, а не одну клетку под курсором: вести мышь точно по
@@ -330,13 +333,44 @@ function ignite(s: GameState, i: number) {
   }
 }
 
+/** Ближайший дрон к точке прицела и близко ли он настолько, что это захват. */
+function lockOn(s: GameState, x: number, y: number) {
+  let best: Drone | null = null;
+  let bestD = MG_RADIUS * MG_RADIUS;
+  for (const d of s.drones) {
+    if (d.hit) continue;
+    const dx = d.x - x;
+    const dy = d.y - y;
+    const dd = dx * dx + dy * dy;
+    if (dd < bestD) {
+      bestD = dd;
+      best = d;
+    }
+  }
+  return { best, locked: best !== null && bestD <= MG_LOCK * MG_LOCK };
+}
+
+/**
+ * Чем игрок работает по этой точке. Дрон под прицелом важнее пожара: пока он
+ * в перекрестье, бьёт очередь — хоть над складом. Нет дрона — над складом
+ * брандспойт, над землёй пулемёт.
+ */
+export function aimMode(s: GameState, x: number, y: number): "mg" | "water" {
+  const cx = Math.floor(x);
+  const cy = Math.floor(y);
+  if (cx < 0 || cy < 0 || cx >= GRID || cy >= GRID) return "mg";
+  if (lockOn(s, x, y).locked) return "mg";
+  return isBuilding(s.cells[idx(cx, cy)]) ? "water" : "mg";
+}
+
 function aimTick(s: GameState) {
   const a = s.aim;
   if (!a) return;
   const cx = Math.floor(a.x);
   const cy = Math.floor(a.y);
   if (cx < 0 || cy < 0 || cx >= GRID || cy >= GRID) return;
-  const water = isBuilding(s.cells[idx(cx, cy)]);
+  const { best, locked } = lockOn(s, a.x, a.y);
+  const water = !locked && isBuilding(s.cells[idx(cx, cy)]);
 
   if (water) {
     s.shots.push({ x: a.x, y: a.y, t: 0, water: true, seed: s.rnd() });
@@ -365,18 +399,6 @@ function aimTick(s: GameState) {
     if (s.holes.length > MAX_HOLES) s.holes.shift();
   }
 
-  let best: Drone | null = null;
-  let bestD = MG_RADIUS * MG_RADIUS;
-  for (const d of s.drones) {
-    if (d.hit) continue;
-    const ddx = d.x - a.x;
-    const ddy = d.y - a.y;
-    const dd = ddx * ddx + ddy * ddy;
-    if (dd < bestD) {
-      bestD = dd;
-      best = d;
-    }
-  }
   if (!best) return;
   // Меткость очереди растёт с уровнем пулемёта, но не до безусловной.
   if (s.rnd() > Math.min(0.95, MG_HIT * levelBonus(s.mgLevel, MG_PER_LEVEL))) return;
