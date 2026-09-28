@@ -1758,17 +1758,19 @@ export default function Lobby({
           ctx.save();
           ctx.translate(px, py);
           ctx.scale(1 / zoom, 1 / zoom);
-          ctx.font = "600 12px ui-monospace, SFMono-Regular, monospace";
+          ctx.font = "600 12px ui-sans-serif, system-ui, sans-serif";
           ctx.textAlign = "center";
-          ctx.textBaseline = "bottom";
+          ctx.textBaseline = "middle";
           const tw = ctx.measureText(label).width;
           const padX = 6;
           const padY = 3;
           const th = 12;
+          const boxH = th + padY * 2;
+          const boxY = -boxH;
           ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
-          ctx.fillRect(-tw / 2 - padX, -th - padY, tw + padX * 2, th + padY * 2);
+          ctx.fillRect(-tw / 2 - padX, boxY, tw + padX * 2, boxH);
           ctx.fillStyle = "#f5f5f5";
-          ctx.fillText(label, 0, -padY);
+          ctx.fillText(label, 0, boxY + boxH / 2);
           ctx.restore();
         }
       }
