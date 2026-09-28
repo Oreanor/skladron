@@ -21,7 +21,7 @@ export const COLORS = {
   // Огнетушитель красный, как ему и положено: тем же красным обведена его
   // зона тушения, и на карте сразу видно, чей это круг.
   spray: "#6e2320",
-  sprayTop: "#d64038",
+  sprayTop: "#8f2c28",
   range: "rgba(120, 200, 255, 0.16)",
   rangeLine: "rgba(140, 215, 255, 0.55)",
   drone: "#2b2b2b",
@@ -283,11 +283,12 @@ export function drawSpray(
   ctx.lineWidth = Math.max(0.6, cell * 0.14);
   ctx.stroke();
 
-  // остаток воды — дугой по ободу: пустой бак виден сразу
+  // Остаток воды — дугой по ободу: пустой бак виден сразу. Обод остаётся
+  // тёмно-красным, чтобы огнетушитель не выглядел голубой установкой.
   if (alive && tank > 0) {
     ctx.beginPath();
     ctx.arc(x, y, cell * 0.42, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * tank);
-    ctx.strokeStyle = COLORS.water;
+    ctx.strokeStyle = COLORS.sprayTop;
     ctx.stroke();
   }
 }

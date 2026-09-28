@@ -294,6 +294,7 @@ function RaidDialog({
         stock={drones}
         max={MAX_ATTACK_DRONES}
         unitCost={droneCost}
+        credits={credits}
       />
       {problem && <p className="mt-2 text-xs text-red-400">{problem}</p>}
       {sendError && <p className="mt-2 text-xs text-red-400">{sendError}</p>}

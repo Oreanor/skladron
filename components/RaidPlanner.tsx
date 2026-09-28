@@ -50,6 +50,8 @@ export interface PlannerProps {
   max: number;
   /** Во что обходится один дрон сейчас: от этого считается надбавка. */
   unitCost: number;
+  /** Текущий кошелёк: недоступные начинки и итоговая доплата краснеют. */
+  credits?: number;
   /** Пробный налёт на себя ничего не стоит, и надбавку показывать незачем. */
   free?: boolean;
   /**
@@ -68,6 +70,7 @@ export default function RaidPlanner({
   stock,
   max,
   unitCost,
+  credits,
   free = false,
   droneLevel = 1,
   onDroneLevel,
@@ -75,6 +78,7 @@ export default function RaidPlanner({
   const t = useT();
   const total = raidTotal(waves);
   const surcharge = free ? 0 : payloadCost(unitCost, waves);
+  const canAfford = free || credits === undefined || surcharge <= credits;
 
   const patch = (i: number, next: Partial<WavePlan>) =>
     onChange(waves.map((w, k) => (k === i ? { ...w, ...next } : w)));
@@ -166,49 +170,65 @@ export default function RaidPlanner({
             </div>
 
             <div className="space-y-2">
-              {wave.groups.map((group, gi) => (
-                <div key={gi} className="flex items-center gap-2">
-                  <select
-                    value={group.payload}
-                    aria-label={t("raid.payload")}
-                    onChange={(e) => patchGroup(wi, gi, group.n, e.target.value as Payload)}
-                    className={`${selectClass} min-w-0 flex-1`}
-                  >
-                    {PAYLOADS.map((p) => (
-                      <option key={p} value={p}>
-                        {t(`payload.${p}` as Key)}
-                        {PAYLOAD[p].cost > 0 && ` +${Math.round(PAYLOAD[p].cost * 100)}%`}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min={1}
-                    max={max}
-                    value={group.n}
-                    aria-label={t("raid.groupSize")}
-                    onChange={(e) =>
-                      patchGroup(wi, gi, Math.max(0, Math.min(max, Number(e.target.value) || 0)))
-                    }
-                    className={numberClass}
-                  />
-                  {/* последнюю группу не убираем: пустая волна ни о чём.
-                      Не нужна волна целиком — у неё свой крестик. */}
-                  {wave.groups.length > 1 && (
-                    <button
-                      type="button"
-                      aria-label={t("raid.removeGroup")}
-                      title={t("raid.removeGroup")}
-                      onClick={() =>
-                        patch(wi, { groups: wave.groups.filter((_, k) => k !== gi) })
-                      }
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-neutral-500 transition hover:bg-neutral-800 hover:text-neutral-200"
+              {wave.groups.map((group, gi) => {
+                const currentGroupCost =
+                  Math.floor(unitCost * PAYLOAD[group.payload].cost) * group.n;
+                const availableForGroup =
+                  credits === undefined ? Infinity : credits - (surcharge - currentGroupCost);
+                return (
+                  <div key={gi} className="flex items-center gap-2">
+                    <select
+                      value={group.payload}
+                      aria-label={t("raid.payload")}
+                      onChange={(e) => patchGroup(wi, gi, group.n, e.target.value as Payload)}
+                      className={`${selectClass} min-w-0 flex-1`}
+                      style={!canAfford ? { color: "#f87171" } : undefined}
                     >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
+                      {PAYLOADS.map((p) => {
+                        const extra = Math.floor(unitCost * PAYLOAD[p].cost) * group.n;
+                        const unavailable = !free && extra > availableForGroup;
+                        return (
+                          <option
+                            key={p}
+                            value={p}
+                            style={unavailable ? { color: "#f87171" } : undefined}
+                          >
+                            {t(`payload.${p}` as Key)}
+                            {!free && extra > 0 &&
+                              ` +${fmt(extra)} ${t("battle.creditsSuffix")}`}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <input
+                      type="number"
+                      min={1}
+                      max={max}
+                      value={group.n}
+                      aria-label={t("raid.groupSize")}
+                      onChange={(e) =>
+                        patchGroup(wi, gi, Math.max(0, Math.min(max, Number(e.target.value) || 0)))
+                      }
+                      className={numberClass}
+                    />
+                    {/* последнюю группу не убираем: пустая волна ни о чём.
+                        Не нужна волна целиком — у неё свой крестик. */}
+                    {wave.groups.length > 1 && (
+                      <button
+                        type="button"
+                        aria-label={t("raid.removeGroup")}
+                        title={t("raid.removeGroup")}
+                        onClick={() =>
+                          patch(wi, { groups: wave.groups.filter((_, k) => k !== gi) })
+                        }
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-neutral-500 transition hover:bg-neutral-800 hover:text-neutral-200"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
               <p className="text-[11px] leading-snug text-neutral-500">
                 {t(`payload.${wave.groups[0]?.payload ?? "plain"}Hint` as Key)}
               </p>
@@ -248,7 +268,7 @@ export default function RaidPlanner({
         {!free && (
           <div className="flex items-center justify-between gap-3">
             <dt className="text-neutral-400">{t("raid.surcharge")}</dt>
-            <dd className="text-neutral-100">
+            <dd className={canAfford ? "text-neutral-100" : "text-red-400"}>
               {fmt(surcharge)} {t("battle.creditsSuffix")}
             </dd>
           </div>
