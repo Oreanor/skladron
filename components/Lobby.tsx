@@ -5,9 +5,7 @@ import {
   GRID,
   G_BASE,
   G_BURNT,
-  G_FIRE,
   G_GROUND,
-  G_SCORCH,
   DRONES_PER_CELL,
   type Rect,
   applyRect,
@@ -1735,14 +1733,14 @@ export default function Lobby({
       ctx.restore();
     }
 
-    // подпись клетки под курсором — при любом инструменте
+    // подпись только у установок/контейнеров — землю и пустые клетки не подписываем
     if (h) {
       const cx = Math.floor(h.x);
       const cy = Math.floor(h.y);
       if (cx >= 0 && cy >= 0 && cx < GRID && cy < GRID) {
         const gun = p.guns.find((g) => g.cx === cx && g.cy === cy);
         const depot = p.depots.find((item) => item.cx === cx && item.cy === cy);
-        let label: string;
+        let label: string | null = null;
         if (gun) {
           const kind = gunKind(gun);
           label = t(
@@ -1752,37 +1750,27 @@ export default function Lobby({
           label = t(depotKind(depot) === "scout" ? "map.hover.scouts" : "map.hover.drones", {
             n: depot.n,
           });
-        } else {
-          const v = p.cells[idx(cx, cy)];
-          label =
-            v === G_BASE
-              ? t("map.hover.warehouse")
-              : v === G_BURNT
-              ? t("map.hover.burnt")
-              : v === G_FIRE
-              ? t("map.hover.fire")
-              : v === G_SCORCH
-              ? t("map.hover.scorch")
-              : t("map.hover.ground");
         }
-        const zoom = view?.zoom || 1;
-        const px = (cx + 0.5) * cell;
-        const py = cy * cell - cell * 0.35;
-        ctx.save();
-        ctx.translate(px, py);
-        ctx.scale(1 / zoom, 1 / zoom);
-        ctx.font = "600 12px ui-monospace, SFMono-Regular, monospace";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "bottom";
-        const tw = ctx.measureText(label).width;
-        const padX = 6;
-        const padY = 3;
-        const th = 12;
-        ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
-        ctx.fillRect(-tw / 2 - padX, -th - padY, tw + padX * 2, th + padY * 2);
-        ctx.fillStyle = "#f5f5f5";
-        ctx.fillText(label, 0, -padY);
-        ctx.restore();
+        if (label) {
+          const zoom = view?.zoom || 1;
+          const px = (cx + 0.5) * cell;
+          const py = cy * cell - cell * 0.35;
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.scale(1 / zoom, 1 / zoom);
+          ctx.font = "600 12px ui-monospace, SFMono-Regular, monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "bottom";
+          const tw = ctx.measureText(label).width;
+          const padX = 6;
+          const padY = 3;
+          const th = 12;
+          ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+          ctx.fillRect(-tw / 2 - padX, -th - padY, tw + padX * 2, th + padY * 2);
+          ctx.fillStyle = "#f5f5f5";
+          ctx.fillText(label, 0, -padY);
+          ctx.restore();
+        }
       }
     }
   };
