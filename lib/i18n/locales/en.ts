@@ -283,8 +283,10 @@ const en = {
   "controls.mgHold": "Hold — machine-gun burst (also over the warehouse if a drone is near the crosshair).",
   "controls.waterHold": "Hold over the building with no drone nearby — water jet.",
   "controls.fallingDrone": "A hit drone falls three cells on — do not shoot it over your warehouse.",
-  "controls.zoomDesktop": "Wheel or pinch to zoom, right button drags the map.",
-  "controls.zoomTouch": "Two fingers — zoom and drag the map.",
+  "map.zoomIn": "Zoom in",
+  "map.zoomOut": "Zoom out",
+  "controls.zoomDesktop": "Scroll or drag with the middle button to move the map; pinch, Ctrl+wheel or the +/− buttons to zoom.",
+  "controls.zoomTouch": "Two fingers move the map, pinch zooms; the +/− buttons on the map zoom too.",
   "controls.tapCell": "Tap a cell next to the building — build it.",
   "controls.dragDraft": "Drag — an area draft, it has to be confirmed.",
 

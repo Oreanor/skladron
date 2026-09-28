@@ -282,8 +282,10 @@ const fr: Dict = {
   "controls.mgHold": "Maintiens au-dessus du sol — rafale de mitrailleuse.",
   "controls.waterHold": "Maintiens au-dessus du bâtiment — jet d’eau, éteint la case.",
   "controls.fallingDrone": "Un drone touché tombe trois cases plus loin — ne l’abats pas au-dessus de l’entrepôt.",
-  "controls.zoomDesktop": "Molette ou pincement pour zoomer, clic droit pour déplacer la carte.",
-  "controls.zoomTouch": "Deux doigts — zoom et déplacement de la carte.",
+  "map.zoomIn": "Zoom avant",
+  "map.zoomOut": "Zoom arrière",
+  "controls.zoomDesktop": "Défile ou fais glisser avec le bouton du milieu pour déplacer la carte ; pincement, Ctrl+molette ou les boutons +/− pour le zoom.",
+  "controls.zoomTouch": "Deux doigts déplacent la carte, le pincement zoome ; il y a aussi les boutons +/− sur la carte.",
   "controls.tapCell": "Touche une case voisine du bâtiment pour la construire.",
   "controls.dragDraft": "Le glisser crée une ébauche de surface, à valider.",
 

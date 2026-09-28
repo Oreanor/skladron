@@ -282,8 +282,10 @@ const de: Dict = {
   "controls.mgHold": "Über dem Boden halten — MG-Feuerstoß.",
   "controls.waterHold": "Über dem Gebäude halten — Wasserstrahl, löscht das Feld.",
   "controls.fallingDrone": "Eine getroffene Drohne fällt drei Felder weiter — schieß sie nicht überm Lager ab.",
-  "controls.zoomDesktop": "Rad oder Pinch zum Zoomen, rechte Taste zieht die Karte.",
-  "controls.zoomTouch": "Zwei Finger — Zoom und Verschieben der Karte.",
+  "map.zoomIn": "Heranzoomen",
+  "map.zoomOut": "Herauszoomen",
+  "controls.zoomDesktop": "Scrollen oder mit der mittleren Taste ziehen bewegt die Karte; Pinch, Strg+Rad oder die +/−-Tasten zoomen.",
+  "controls.zoomTouch": "Zwei Finger bewegen die Karte, Pinch zoomt; auf der Karte gibt es auch +/−-Tasten.",
   "controls.tapCell": "Tippe ein Feld neben dem Gebäude an, um es zu bauen.",
   "controls.dragDraft": "Ziehen erzeugt einen Flächenentwurf, der bestätigt werden muss.",
 

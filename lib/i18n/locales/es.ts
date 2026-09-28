@@ -282,8 +282,10 @@ const es: Dict = {
   "controls.mgHold": "Mantén sobre el suelo: ráfaga de ametralladora.",
   "controls.waterHold": "Mantén sobre el edificio: chorro de agua, apaga la celda.",
   "controls.fallingDrone": "Un dron tocado cae tres celdas más allá: no lo derribes sobre el almacén.",
-  "controls.zoomDesktop": "Rueda o pellizco para el zoom, botón derecho arrastra el mapa.",
-  "controls.zoomTouch": "Dos dedos: zoom y arrastre del mapa.",
+  "map.zoomIn": "Acercar",
+  "map.zoomOut": "Alejar",
+  "controls.zoomDesktop": "Desplaza o arrastra con el botón central para mover el mapa; pellizco, Ctrl+rueda o los botones +/− para el zoom.",
+  "controls.zoomTouch": "Dos dedos mueven el mapa, el pellizco acerca; también hay botones +/− en el mapa.",
   "controls.tapCell": "Toca una celda junto al edificio para construirla.",
   "controls.dragDraft": "Arrastrar crea un borrador de área que hay que confirmar.",
 

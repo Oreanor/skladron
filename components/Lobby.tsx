@@ -2506,6 +2506,8 @@ export default function Lobby({
               <li>{t("controls.tapCell")}</li>
               <li>{t("controls.dragDraft")}</li>
               <li>{t("gun.dragTip")}</li>
+              {/* Обе подсказки сразу: панель одна и на мышь, и на палец. */}
+              <li>{t("controls.zoomDesktop")}</li>
               <li>{t("controls.zoomTouch")}</li>
             </ul>
           </div>

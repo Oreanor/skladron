@@ -282,8 +282,10 @@ const it: Dict = {
   "controls.mgHold": "Tieni premuto sul terreno: raffica di mitragliatrice.",
   "controls.waterHold": "Tieni premuto sull’edificio: getto d’acqua, spegne la cella.",
   "controls.fallingDrone": "Un drone colpito cade tre celle più in là: non abbatterlo sopra il magazzino.",
-  "controls.zoomDesktop": "Rotella o pizzico per lo zoom, tasto destro trascina la mappa.",
-  "controls.zoomTouch": "Due dita: zoom e trascinamento della mappa.",
+  "map.zoomIn": "Ingrandisci",
+  "map.zoomOut": "Riduci",
+  "controls.zoomDesktop": "Scorri o trascina col tasto centrale per muovere la mappa; pizzico, Ctrl+rotella o i pulsanti +/− per lo zoom.",
+  "controls.zoomTouch": "Due dita muovono la mappa, il pizzico ingrandisce; sulla mappa ci sono anche i pulsanti +/−.",
   "controls.tapCell": "Tocca una cella vicina all’edificio per costruirla.",
   "controls.dragDraft": "Trascinando si crea una bozza d’area da confermare.",
 

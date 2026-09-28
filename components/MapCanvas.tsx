@@ -178,19 +178,37 @@ export default function MapCanvas({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    /**
+     * Колесо и тачпад приходят одним и тем же событием, и различает их
+     * только ctrlKey: щипок по тачпаду браузер присылает как wheel с
+     * ctrlKey, обычная прокрутка двумя пальцами — без него.
+     *
+     * Поэтому щипок и ctrl+колесо зумят, а простая прокрутка тащит карту —
+     * как во всяком редакторе. Раньше колесо зумило всегда, и на тачпаде
+     * карту нельзя было сдвинуть вовсе: два пальца давали зум.
+     */
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       wake();
-      const r = canvas.getBoundingClientRect();
-      zoomAt(
-        Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0022)),
-        e.clientX - r.left,
-        e.clientY - r.top
-      );
+      if (e.ctrlKey) {
+        const r = canvas.getBoundingClientRect();
+        zoomAt(Math.exp(-e.deltaY * 0.01), e.clientX - r.left, e.clientY - r.top);
+        return;
+      }
+      // Строки и страницы приводим к пикселям: мышь шлёт строки, тачпад — пиксели.
+      const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? boxSize.current.h : 1;
+      const v = viewRef.current;
+      // Shift — общая привычка: прокрутка вбок, когда её нечем дать.
+      const dx = e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX;
+      const dy = e.shiftKey && !e.deltaX ? 0 : e.deltaY;
+      v.panX += (dx * k) / v.zoom;
+      v.panY += (dy * k) / v.zoom;
+      clampPan(v);
+      viewDirty.current = true;
     };
     canvas.addEventListener("wheel", onWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", onWheel);
-  }, [zoomAt, wake]);
+  }, [zoomAt, wake, clampPan]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -274,7 +292,9 @@ export default function MapCanvas({
       onLeave?.(); // второй палец — это жест камеры, а не игра
       return;
     }
-    if (e.button === 2) {
+    // Тащат средней кнопкой или правой: средняя — привычка любого редактора,
+    // правая осталась ради тех, у кого средней нет.
+    if (e.button === 1 || e.button === 2) {
       pan.current = { x: e.clientX, y: e.clientY };
       panMoved.current = false;
       return;
@@ -377,8 +397,28 @@ export default function MapCanvas({
         style={{ cursor, width: box.w || undefined, height: box.h || undefined }}
         className="block touch-none select-none [image-rendering:pixelated]"
       />
-      <div className="pointer-events-none absolute left-2 top-2 rounded bg-black/50 px-2 py-1 font-mono text-xs text-white">
-        {shown.toFixed(1)}×
+      {/* Зум кнопками: колесо теперь тащит, и иначе на тачпаде без щипка
+          приблизиться было бы нечем. */}
+      <div className="absolute left-2 top-2 flex items-center gap-1 rounded bg-black/50 px-1 py-0.5 font-mono text-xs text-white">
+        <button
+          type="button"
+          aria-label={t("map.zoomOut")}
+          title={t("map.zoomOut")}
+          onClick={() => zoomAt(1 / 1.4, box.w / 2, box.h / 2)}
+          className="flex h-5 w-5 items-center justify-center rounded transition hover:bg-white/20"
+        >
+          −
+        </button>
+        <span className="min-w-8 text-center">{shown.toFixed(1)}×</span>
+        <button
+          type="button"
+          aria-label={t("map.zoomIn")}
+          title={t("map.zoomIn")}
+          onClick={() => zoomAt(1.4, box.w / 2, box.h / 2)}
+          className="flex h-5 w-5 items-center justify-center rounded transition hover:bg-white/20"
+        >
+          +
+        </button>
       </div>
       {shown > 1.01 && (
         <Button
