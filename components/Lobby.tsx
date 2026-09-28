@@ -118,7 +118,6 @@ import {
 } from "lucide-react";
 import { autoDefend, type UnattendedOutcome } from "@/lib/unattended";
 import {
-  decodeCells,
   decodeRle,
   encodeRle,
   fogPatches,
