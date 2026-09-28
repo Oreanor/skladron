@@ -1669,8 +1669,13 @@ language plpgsql security definer set search_path = public as $$
 declare uid uuid := auth.uid();
 begin
   if uid is null then raise exception 'not authenticated'; end if;
+  -- Без pgcrypto: gen_random_bytes живёт в схеме extensions и при
+  -- search_path=public его не видно. UUID хватает как одноразового кода.
   update profiles
-     set tg_code = coalesce(tg_code, encode(gen_random_bytes(9), 'base64'))
+     set tg_code = coalesce(
+       tg_code,
+       substr(replace(gen_random_uuid()::text, '-', ''), 1, 12)
+     )
    where profiles.id = uid;
   select p.tg_code, p.tg_chat_id is not null
     into code, linked
