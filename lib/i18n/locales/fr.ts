@@ -235,18 +235,11 @@ const fr: Dict = {
   "attacks.summon": "+ raid",
   "attacks.defend": "Défendre",
   "attacks.dronesPattern": "{drones} drones · {pattern}",
-  "attacks.timeLeft": "il reste {time}",
-  "attacks.starting": "le compte à rebours démarre",
+  "attacks.ready": "en attente de défense",
   "attacks.queued": "{position}e dans la file",
   "attacks.defendFirst": "Défends d’abord la précédente",
   "attacks.incoming": "Raid : {from} · {drones} drones",
   "attacks.defendCount": "Défendre ({count})",
-
-  "auto.wonTitle": "Le raid de {from} s’est joué sans toi",
-  "auto.lostTitle": "Entrepôt brûlé : {from}",
-  "auto.subtitle":
-    "La demi-heure est écoulée. Les canons ont tiré seuls — personne pour arroser les foyers ni tenir la mitrailleuse.",
-  "auto.notSaved": "Le résultat du combat automatique n’a pas été enregistré : {error}",
 
   "battle.won": "RAID REPOUSSÉ",
   "battle.lost": "ENTREPÔT BRÛLÉ",

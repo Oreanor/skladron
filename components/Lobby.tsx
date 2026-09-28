@@ -89,7 +89,6 @@ import type { Account } from "./AuthGate";
 import Enemies from "./Enemies";
 import { drawCoverage, drawDepots, type CoverageKind, type View } from "@/lib/render";
 import { gunRange, sprayRange, trapRange } from "@/lib/engine";
-import { RAID } from "@/lib/tuning";
 import Battle, { type BattleOutcome } from "./Battle";
 import TestRaidDialog from "./lobby/TestRaidDialog";
 import AttackReportDialog from "./lobby/AttackReportDialog";
@@ -135,7 +134,6 @@ import {
   Play,
   Trash2,
 } from "lucide-react";
-import { type UnattendedOutcome } from "@/lib/unattended";
 import {
   decodeRle,
   encodeRle,
@@ -221,12 +219,7 @@ export default function Lobby({
     /** Квадраты, устаревшие с прошлой разведки: летим смотреть заново. */
     stale: number[];
   } | null>(null);
-  /** Итог налёта, который прошёл без игрока. */
-  const [autoReport, setAutoReport] = useState<
-    { from: string; outcome: UnattendedOutcome } | null
-  >(null);
   const [now, setNow] = useState(() => Date.now());
-  /** Атаки, которые уже прошли автоматом: опрос не должен их воскрешать. */
   /** Когда последний раз сверяли имена чужих складов. */
   const [reports, setReports] = useState<AttackReport[]>([]);
   const toggleSheet = (id: SheetId) => setSheet((cur) => (cur === id ? null : id));
@@ -336,7 +329,6 @@ export default function Lobby({
     refreshMap: () => setVersion((v) => v + 1),
     say: setMessage,
     setReports,
-    setAutoReport,
     setNow,
     reloadBase: resyncBase,
     loadRaids,
@@ -1746,13 +1738,6 @@ export default function Lobby({
       </div>
     );
 
-  const head = p.incoming[0] ?? null;
-  const headLeft = head?.activatedAt ? head.activatedAt + RAID.ttlMs - now : null;
-  const countdown = (ms: number) => {
-    const total = Math.max(0, Math.ceil(ms / 1000));
-    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
-  };
-
   const incomingRows = (
     <>
       {p.incoming.map((a, i) => {
@@ -1774,11 +1759,7 @@ export default function Lobby({
                 })}
                 {edge}
                 {" · "}
-                {first
-                  ? headLeft !== null
-                    ? t("attacks.timeLeft", { time: countdown(headLeft) })
-                    : t("attacks.starting")
-                  : t("attacks.queued", { position: i + 1 })}
+                {first ? t("attacks.ready") : t("attacks.queued", { position: i + 1 })}
               </div>
             </div>
             <Button
@@ -2027,7 +2008,6 @@ export default function Lobby({
         <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-500" />
         <span className="min-w-0 truncate">
           {t("attacks.incoming", { from: p.incoming[0].from, drones: p.incoming[0].drones })}
-          {headLeft !== null ? ` · ${countdown(headLeft)}` : ""}
         </span>
         <Button
           variant="danger"
@@ -2190,34 +2170,6 @@ export default function Lobby({
       </div>
 
       {/* мобильные шторки */}
-      {autoReport && (
-        <Modal
-          title={
-            autoReport.outcome.won
-              ? t("auto.wonTitle", { from: autoReport.from })
-              : t("auto.lostTitle", { from: autoReport.from })
-          }
-          subtitle={t("auto.subtitle")}
-          onClose={() => setAutoReport(null)}
-          footer={
-            <Button variant="neutral" block onClick={() => setAutoReport(null)}>
-              {t("common.ok")}
-            </Button>
-          }
-        >
-          <dl className="mb-4 space-y-1 font-mono text-sm">
-            <Row
-              label={t("battle.killedByGuns")}
-              value={String(autoReport.outcome.result.killedByGuns)}
-            />
-            <Row label={t("battle.leaked")} value={String(autoReport.outcome.result.leaked)} />
-            <Row label={t("battle.burned")} value={String(autoReport.outcome.result.burned)} />
-            <Row label={t("battle.dronesLost")} value={String(autoReport.outcome.result.dronesLost)} />
-            <Row label={t("battle.gunsLost")} value={String(autoReport.outcome.result.gunsLost)} />
-          </dl>
-        </Modal>
-      )}
-
       {showRules && <Rules onClose={() => setShowRules(false)} />}
 
       {confirmRestart && (

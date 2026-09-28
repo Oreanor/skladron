@@ -235,18 +235,11 @@ const ru: Dict = {
   "attacks.summon": "+ налёт",
   "attacks.defend": "Отбить",
   "attacks.dronesPattern": "{drones} дронов · {pattern}",
-  "attacks.timeLeft": "осталось {time}",
-  "attacks.starting": "часы вот-вот пойдут",
+  "attacks.ready": "ждёт ответа",
   "attacks.queued": "{position}-я в очереди",
   "attacks.defendFirst": "Сначала отбей предыдущую",
   "attacks.incoming": "Налёт: {from} · {drones} дронов",
   "attacks.defendCount": "Отбить ({count})",
-
-  "auto.wonTitle": "Налёт {from} прошёл без тебя",
-  "auto.lostTitle": "Склад выгорел: {from}",
-  "auto.subtitle":
-    "Полчаса на ответ истекли. Пушки отстрелялись сами, тушить и бить очередью было некому.",
-  "auto.notSaved": "Итог автобоя не сохранён: {error}",
 
   "battle.won": "НАЛЁТ ОТБИТ",
   "battle.lost": "СКЛАД ВЫГОРЕЛ",

@@ -13,22 +13,17 @@
  */
 
 import { useEffect, useRef } from "react";
-import { goodsValue, insurance } from "@/lib/economy";
-import { RAID } from "@/lib/tuning";
-import { autoDefend, type UnattendedOutcome } from "@/lib/unattended";
 import { blankEnemy } from "@/lib/enemy";
-import { notifyBattle } from "@/lib/notify";
 import type { AttackReport } from "@/lib/attack";
 import type { Player } from "@/lib/player";
 import type { Repo } from "@/lib/repo";
 import type { Key } from "@/lib/i18n/dict";
-import { findFoe } from "./tools";
 
 /** Как часто спрашиваем сервер, не летит ли к нам что-нибудь. */
 const POLL_MS = 10_000;
 /** Как часто сверяем имена чужих складов: их переименовывают редко. */
 const NAMES_MS = 5 * 60_000;
-/** Шаг часов очереди: по ним же идёт срок займа. */
+/** Шаг часов: по ним же идёт срок займа. */
 const TICK_MS = 1000;
 
 type Translate = (key: Key, vars?: Record<string, string | number>) => string;
@@ -46,8 +41,7 @@ export interface AttacksOptions {
   /** Сказать что-нибудь игроку в полосу сообщений. */
   say: (text: string) => void;
   setReports: (reports: AttackReport[]) => void;
-  setAutoReport: (r: { from: string; outcome: UnattendedOutcome }) => void;
-  /** Часы: по ним лобби считает остаток времени на ответ и срок займа. */
+  /** Часы: по ним лобби считает срок займа. */
   setNow: (at: number) => void;
   /** Перечитать склад с сервера, когда он отверг нашу запись. */
   reloadBase: () => Promise<void>;
@@ -77,8 +71,6 @@ export function useAttacks(o: AttacksOptions): Attacks {
 
   /** Налёты, отбитые нами, но ещё не закрытые сервером. */
   const resolved = useRef(new Set<string>());
-  /** Автобой идёт: второй раз параллельно его запускать нельзя. */
-  const busy = useRef(false);
   const namesAt = useRef(0);
 
   // ---------- опрос сервера ----------
@@ -160,96 +152,16 @@ export function useAttacks(o: AttacksOptions): Attacks {
 
   // ---------- очередь налётов ----------
   /*
-   * Отбиваются строго по очереди. У первой в списке идут часы: не успел за
-   * RAID.ttlMs — налёт проходит сам, без брандспойта и пулемёта, и очередь
-   * двигается дальше.
+   * Отбиваются строго по очереди, без срока: первый ждёт, пока игрок сам
+   * не пойдёт в бой. Пропустить или переставить нельзя — это делает лобби.
    */
   useEffect(() => {
-    const tick = async () => {
-      const {
-        repo, player, t, refresh, refreshMap, say,
-        setAutoReport, setNow, reloadBase,
-      } = opt.current;
-      const cur = player.current;
-      const head = cur?.incoming[0];
-      // время нужно не только очереди налётов: по нему же идёт срок займа
-      if (cur?.loan) setNow(Date.now());
-      if (!cur || !head) return;
-      if (!head.activatedAt) {
-        // сервер отметит своим временем при ближайшем опросе, а бот-атаки
-        // живут только на клиенте — часы им заводим здесь
-        head.activatedAt = Date.now();
-        refresh();
-        return;
-      }
-      setNow(Date.now());
-      if (Date.now() < head.activatedAt + RAID.ttlMs) return;
-      if (busy.current) return;
-
-      busy.current = true;
-      try {
-        // Уровни передаём все: пушки и огнетушители работают сами, и сервер
-        // пересчитает бой ровно с ними же. Пошли бы одни пушки — показанный
-        // игроку исход разошёлся бы с посчитанным на сервере.
-        const out = autoDefend(cur.cells, cur.guns, cur.depots, head, {
-          guns: cur.levels.guns,
-          sprays: cur.levels.sprays,
-          traps: cur.levels.traps,
-          mg: cur.levels.mg,
-          water: cur.levels.water,
-        });
-        resolved.current.add(head.id);
-
-        const goodsBefore = goodsValue(cur.depots);
-        cur.cells = out.cells;
-        cur.guns = out.guns;
-        cur.depots = out.depots;
-        cur.incoming = cur.incoming.filter((a) => a.id !== head.id);
-        cur.stats.battles++;
-        cur.stats.dronesKilled += out.result.killedByGuns + out.result.killedByMg;
-        cur.stats.cellsBurned += out.result.burned;
-        // страховка погорельцу: ремонт клеток и доля сгоревшего добра
-        cur.credits += insurance(
-          out.result.burned,
-          goodsBefore - goodsValue(out.depots),
-          out.result.gunsLost,
-          cur.levels.insurance,
-          out.result.spraysLost,
-          out.result.trapsLost
-        );
-
-        const foe = findFoe(cur, head);
-        if (foe) {
-          foe.burnedByThem += out.result.burned;
-          void repo.saveEnemies(cur).catch(() => {});
-        }
-        setAutoReport({ from: head.from, outcome: out });
-        refreshMap();
-        refresh();
-
-        try {
-          const patch = await repo.applyBattle(
-            cur,
-            out.result,
-            head.remote ? head.id : undefined,
-            "" // некому было ни тушить, ни стрелять: запись пустая
-          );
-          if (head.remote) notifyBattle(head.id, "resolved");
-          if (patch.credits !== undefined) cur.credits = patch.credits;
-          refresh();
-        } catch (e) {
-          say(t.current("auto.notSaved", { error: (e as Error).message }));
-          resolved.current.delete(head.id);
-          // урон не записался — не тащим сгоревшую карту дальше, иначе
-          // отвергаться будет и ремонт, и всё остальное
-          await reloadBase();
-        }
-      } finally {
-        busy.current = false;
-      }
+    const tick = () => {
+      const { player, setNow } = opt.current;
+      if (player.current?.loan) setNow(Date.now());
     };
 
-    const timer = window.setInterval(() => void tick(), TICK_MS);
+    const timer = window.setInterval(tick, TICK_MS);
     return () => window.clearInterval(timer);
   }, []);
 

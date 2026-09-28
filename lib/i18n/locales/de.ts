@@ -235,18 +235,11 @@ const de: Dict = {
   "attacks.summon": "+ Angriff",
   "attacks.defend": "Abwehren",
   "attacks.dronesPattern": "{drones} Drohnen · {pattern}",
-  "attacks.timeLeft": "noch {time}",
-  "attacks.starting": "die Uhr läuft gleich",
+  "attacks.ready": "wartet auf Abwehr",
   "attacks.queued": "{position}. in der Schlange",
   "attacks.defendFirst": "Wehre zuerst den vorigen ab",
   "attacks.incoming": "Angriff: {from} · {drones} Drohnen",
   "attacks.defendCount": "Abwehren ({count})",
-
-  "auto.wonTitle": "Der Angriff von {from} lief ohne dich ab",
-  "auto.lostTitle": "Lager abgebrannt: {from}",
-  "auto.subtitle":
-    "Die halbe Stunde ist um. Die Geschütze schossen allein — niemand war da zum Löschen oder am MG.",
-  "auto.notSaved": "Das Ergebnis des Autokampfs wurde nicht gespeichert: {error}",
 
   "battle.won": "ANGRIFF ABGEWEHRT",
   "battle.lost": "LAGER ABGEBRANNT",

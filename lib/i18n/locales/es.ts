@@ -235,18 +235,11 @@ const es: Dict = {
   "attacks.summon": "+ incursión",
   "attacks.defend": "Defender",
   "attacks.dronesPattern": "{drones} drones · {pattern}",
-  "attacks.timeLeft": "quedan {time}",
-  "attacks.starting": "el reloj arranca enseguida",
+  "attacks.ready": "esperando defensa",
   "attacks.queued": "{position}.º en la cola",
   "attacks.defendFirst": "Defiende antes el anterior",
   "attacks.incoming": "Incursión: {from} · {drones} drones",
   "attacks.defendCount": "Defender ({count})",
-
-  "auto.wonTitle": "La incursión de {from} pasó sin ti",
-  "auto.lostTitle": "El almacén ardió: {from}",
-  "auto.subtitle":
-    "Se acabó la media hora. Los cañones dispararon solos: no había nadie para apagar el fuego ni usar la ametralladora.",
-  "auto.notSaved": "El resultado del combate automático no se guardó: {error}",
 
   "battle.won": "INCURSIÓN RECHAZADA",
   "battle.lost": "ALMACÉN ARDIDO",

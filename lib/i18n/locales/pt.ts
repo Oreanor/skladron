@@ -235,18 +235,11 @@ const pt: Dict = {
   "attacks.summon": "+ ataque",
   "attacks.defend": "Defender",
   "attacks.dronesPattern": "{drones} drones · {pattern}",
-  "attacks.timeLeft": "faltam {time}",
-  "attacks.starting": "o relógio arranca já",
+  "attacks.ready": "à espera de defesa",
   "attacks.queued": "{position}.º na fila",
   "attacks.defendFirst": "Defende primeiro o anterior",
   "attacks.incoming": "Ataque: {from} · {drones} drones",
   "attacks.defendCount": "Defender ({count})",
-
-  "auto.wonTitle": "O ataque de {from} passou sem ti",
-  "auto.lostTitle": "O armazém ardeu: {from}",
-  "auto.subtitle":
-    "A meia hora acabou. Os canhões dispararam sozinhos — não havia ninguém para apagar o fogo nem para a metralhadora.",
-  "auto.notSaved": "O resultado do combate automático não ficou guardado: {error}",
 
   "battle.won": "ATAQUE REPELIDO",
   "battle.lost": "ARMAZÉM ARDIDO",

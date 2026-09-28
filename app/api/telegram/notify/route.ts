@@ -129,7 +129,7 @@ export async function POST(request: Request) {
   const text =
     event === "sent"
       ? `На твой склад летит налёт от «${nameOf(from)}» — ${attack.drones} дронов. ` +
-        `Полчаса на то, чтобы отбиться: ${SITE}`
+        `Отбивай, когда готов: очередь не пропускается. ${SITE}`
       : `«${nameOf(from)}» отбил твой налёт. Сгорело клеток: ${burned}, премия ${attack.loot} кр. ` +
         `Повтор боя: ${SITE}/replay/${attack.id}`;
 

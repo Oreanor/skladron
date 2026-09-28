@@ -236,18 +236,11 @@ const en = {
   "attacks.summon": "+ raid",
   "attacks.defend": "Defend",
   "attacks.dronesPattern": "{drones} drones · {pattern}",
-  "attacks.timeLeft": "{time} left",
-  "attacks.starting": "the clock starts in a moment",
+  "attacks.ready": "awaiting defence",
   "attacks.queued": "#{position} in the queue",
   "attacks.defendFirst": "Defend the previous one first",
   "attacks.incoming": "Raid: {from} · {drones} drones",
   "attacks.defendCount": "Defend ({count})",
-
-  "auto.wonTitle": "The raid by {from} went through without you",
-  "auto.lostTitle": "Warehouse burnt down: {from}",
-  "auto.subtitle":
-    "Your half hour ran out. The guns fired on their own — nobody was there to hose the fires or work the machine gun.",
-  "auto.notSaved": "Auto-battle result was not saved: {error}",
 
   "battle.won": "RAID REPELLED",
   "battle.lost": "WAREHOUSE BURNT",
