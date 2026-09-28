@@ -15,9 +15,10 @@ import {
   encodeCells,
   normRect,
 } from "./base";
-import { MAX_RAID, mulberry32 } from "./attack";
+import { mulberry32 } from "./attack";
+import { RAID } from "./tuning";
 
-export const MAX_ATTACK_DRONES = MAX_RAID;
+export const MAX_ATTACK_DRONES = RAID.max;
 
 /** Что удалось снять разведкой: карта врага и маска того, что мы видели. */
 export interface ScoutSnapshot {
@@ -77,7 +78,7 @@ function genBase(rnd: () => number) {
       x = base.x + ((rnd() * base.w) | 0) - (w >> 1);
       y = base.y + base.h - over;
     } else {
-      x = base.x + ((rnd() * base.w) | 0) - (h >> 1);
+      x = base.x + ((rnd() * base.w) | 0) - (w >> 1);
       y = base.y - h + over;
     }
     rects.push({
@@ -94,6 +95,25 @@ function genBase(rnd: () => number) {
 /** Пока склад не назван, зовём врага по адресу — но не выдуманным именем. */
 export const nameFromEmail = (email: string) => email.split("@")[0] || email;
 
+/**
+ * Соперник без выдуманного склада. Настоящую карту живого игрока отдаёт
+ * сервер (enemyBase), и генерировать ему фиктивную — это проход по десяти
+ * тысячам клеток ради поля, которое потом никто не прочтёт.
+ */
+export function blankEnemy(email: string, name = nameFromEmail(email)): Enemy {
+  return {
+    id: `${Date.now().toString(36)}-${(Math.random() * 1e6) | 0}`,
+    name,
+    email,
+    cells: "",
+    guns: [],
+    depots: [],
+    burnedByMe: 0,
+    burnedByThem: 0,
+    lastRaidAt: 0,
+  };
+}
+
 export function makeEnemy(
   email: string,
   name = nameFromEmail(email),
@@ -108,11 +128,14 @@ export function makeEnemy(
   const guns: Gun[] = [];
   const gunCount = 6 + ((rnd() * 8) | 0);
   for (let k = 0; k < gunCount && spots.length; k++) {
-    const i = spots[(rnd() * spots.length) | 0];
-    const gx = i % GRID;
-    const gy = (i / GRID) | 0;
-    if (guns.some((g) => g.cx === gx && g.cy === gy)) continue;
-    guns.push({ cx: gx, cy: gy });
+    // Занятую клетку вычёркиваем из списка: иначе одно и то же место
+    // выпадало повторно, попытка тратилась впустую и пушек выходило
+    // меньше заказанного.
+    const at = (rnd() * spots.length) | 0;
+    const i = spots[at];
+    spots[at] = spots[spots.length - 1];
+    spots.pop();
+    guns.push({ cx: i % GRID, cy: (i / GRID) | 0 });
   }
 
   return {

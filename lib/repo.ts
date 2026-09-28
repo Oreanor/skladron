@@ -3,8 +3,8 @@
 
 import { type DroneKind, CELLS, type Depot, decodeCells, encodeRle, regrowGround, type Gun } from "./base";
 
-import { CREDITS_START, LOAN_HOURS, MAX_LEVEL, loanDebt, upgradeCost } from "./economy";
-import type { AttackOrder, AttackReport, Pattern, RaidLog } from "./attack";
+import { LOAN_HOURS, MAX_LEVEL, loanDebt, upgradeCost } from "./economy";
+import type { AttackOrder, AttackReport, Pattern, RaidLog, WavePlan } from "./attack";
 import type { ReplayData } from "@/components/Replay";
 import type { BattleResult } from "./engine";
 import type { UpgradeKind } from "./economy";
@@ -73,13 +73,14 @@ export interface Repo {
    */
   reloadBase(p: Player): Promise<void>;
   buyDrones(p: Player, amount: number, kind?: DroneKind): Promise<Partial<Player>>;
-  /** Налёт. Дронов снимает сервер, обратно приходит id и новый склад. */
+  /**
+   * Налёт волнами. Дронов снимает сервер со своей копии склада, надбавку за
+   * начинку списывает кредитами, обратно приходит id и новый склад.
+   */
   sendAttack(
     p: Player,
     targetEmail: string,
-    drones: number,
-    pattern: Pattern,
-    direction: number,
+    waves: WavePlan[],
     seed: number
   ): Promise<string | null>;
   /** Код привязки телеграма и то, привязан ли он уже. */
@@ -274,6 +275,7 @@ interface IncomingAttackRow {
   pattern: Pattern;
   direction: number;
   seed: number;
+  waves: WavePlan[] | null;
   drone_level: number | null;
   from_email: string | null;
 }
@@ -293,6 +295,7 @@ interface AttackReportRow {
   snap_guns: Gun[] | null;
   snap_depots: Depot[] | null;
   snap_levels: { guns?: number; sprays?: number; mg?: number; water?: number } | null;
+  waves: WavePlan[] | null;
   trace: string | null;
 }
 
@@ -303,7 +306,7 @@ function fromPgBytea(text: string): Uint8Array {
   if (!text.startsWith("\\x")) return regrowGround(decodeCells(text));
   const hex = text.slice(2);
   for (let i = 0; i < CELLS && i * 2 + 1 < hex.length; i++) {
-    out[i] = parseInt(hex.substr(i * 2, 2), 16);
+    out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
   }
   return regrowGround(out);
 }
@@ -357,8 +360,8 @@ class CloudRepo implements Repo {
     try {
       const names = await this.baseNames(player.enemies.map((e) => e.email));
       for (const e of player.enemies) {
-        const fresh = names.get(e.email.toLowerCase());
-        if (fresh && fresh !== e.name) e.name = fresh;
+        const actual = names.get(e.email.toLowerCase());
+        if (actual && actual !== e.name) e.name = actual;
       }
     } catch {
       // имена — украшение списка, из-за них вход в игру ломаться не должен
@@ -398,6 +401,9 @@ class CloudRepo implements Repo {
       pattern: row.pattern,
       direction: row.direction,
       seed: row.seed,
+      // Волн может не быть у старых налётов — тогда заказ читается одной
+      // волной простых дронов, как и писался.
+      waves: row.waves ?? undefined,
       // дроны летят на том уровне, до какого их довёл нападающий
       droneLevel: row.drone_level ?? 1,
       fromEmail: row.from_email ?? undefined,
@@ -421,6 +427,7 @@ class CloudRepo implements Repo {
               pattern: row.pattern,
               direction: row.direction,
               seed: row.seed,
+              waves: row.waves ?? undefined,
             },
             cells: row.snap_cells,
             guns: row.snap_guns ?? [],
@@ -566,24 +573,16 @@ class CloudRepo implements Repo {
     return row ? { credits: row.credits } : {};
   }
 
-  async sendAttack(
-    p: Player,
-    targetEmail: string,
-    drones: number,
-    pattern: Pattern,
-    direction: number,
-    seed: number
-  ) {
+  async sendAttack(p: Player, targetEmail: string, waves: WavePlan[], seed: number) {
     const { data, error } = await this.db().rpc("send_attack", {
       target_email: targetEmail,
-      drone_count: drones,
-      attack_pattern: pattern,
-      attack_direction: direction,
+      attack_waves: waves,
       attack_seed: seed,
     });
     if (error) throw error;
-    const row = (data as { id: string; depots: Depot[] }[] | null)?.[0];
+    const row = (data as { id: string; depots: Depot[]; credits: number }[] | null)?.[0];
     if (row?.depots) p.depots = row.depots;
+    if (row?.credits !== undefined) p.credits = row.credits;
     return row?.id ?? null;
   }
 
@@ -643,6 +642,7 @@ class CloudRepo implements Repo {
       direction: number;
       seed: number;
       drone_level: number | null;
+      waves: WavePlan[] | null;
       snap_cells: string;
       snap_guns: Gun[] | null;
       snap_depots: Depot[] | null;
@@ -660,6 +660,7 @@ class CloudRepo implements Repo {
         pattern: row.pattern,
         direction: row.direction,
         seed: row.seed,
+        waves: row.waves ?? undefined,
         droneLevel: row.drone_level ?? 1,
       },
       cells: row.snap_cells,

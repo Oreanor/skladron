@@ -33,6 +33,15 @@ language sql immutable as $$
     when 'loan_rate'  then 10    -- процент за сутки
     when 'loan_hours' then 24    -- срок займа
     when 'max_raid' then 500 -- потолок одного налёта, тот же и на клиенте
+    when 'start'    then 10000 -- с чего начинает новый склад и к чему сбрасывает restart_game
+    when 'queued'   then 3   -- столько своих налётов можно держать в чужой очереди разом
+    -- Надбавка за начинку, процентов от цены дрона. Те же числа в PAYLOAD
+    -- на клиенте: их обязаны считать одинаково, иначе окно налёта покажет
+    -- одну сумму, а спишется другая.
+    when 'pay_plain'  then 0
+    when 'pay_heavy'  then 50
+    when 'pay_jammer' then 40
+    when 'pay_foamer' then 30
   end;
 $$;
 
@@ -295,6 +304,10 @@ alter table attacks add column if not exists snap_depots jsonb;
 alter table attacks add column if not exists snap_levels jsonb;
 alter table attacks add column if not exists trace text;
 -- телеграм: куда слать извещения и по какому коду привязывать
+-- Налёт теперь идёт волнами: у каждой своя форма и свой состав по начинкам.
+-- Колонка пустая у старых строк — их читают как одну волну простых дронов.
+alter table attacks add column if not exists waves jsonb;
+
 alter table profiles add column if not exists tg_chat_id bigint;
 alter table profiles add column if not exists tg_code text;
 create unique index if not exists profiles_tg_code on profiles (tg_code) where tg_code is not null;
@@ -357,6 +370,9 @@ drop function if exists my_raids();
 -- в журнал добавились ещё не отыгранные налёты: состав колонок другой
 drop function if exists raid_log();
 
+-- public_replay тоже отдаёт теперь волны: возвращаемый тип сменился
+drop function if exists public_replay(uuid);
+
 alter table profiles enable row level security;
 alter table bases enable row level security;
 alter table attacks enable row level security;
@@ -399,13 +415,70 @@ $$;
 
 -- ---------- настоящие налёты между аккаунтами ----------
 
+-- ---------- состав налёта ----------
+-- Волны приходят от клиента, поэтому проверяем их целиком: форма из списка,
+-- сторона в пределах, начинка известная, счёт неотрицательный.
+
+create or replace function waves_drones(w jsonb) returns int
+language sql immutable as $$
+  select coalesce(sum(greatest(0, coalesce((g->>'n')::int, 0))), 0)::int
+    from jsonb_array_elements(coalesce(w, '[]'::jsonb)) wave,
+         jsonb_array_elements(coalesce(wave->'groups', '[]'::jsonb)) g;
+$$;
+
+/** Надбавка за начинку по всему налёту, в кредитах, при такой цене дрона. */
+create or replace function waves_surcharge(w jsonb, unit int) returns int
+language sql immutable as $$
+  select coalesce(sum(
+           floor(unit * price('pay_' || coalesce(g->>'payload', 'plain')) / 100.0)
+           * greatest(0, coalesce((g->>'n')::int, 0))
+         ), 0)::int
+    from jsonb_array_elements(coalesce(w, '[]'::jsonb)) wave,
+         jsonb_array_elements(coalesce(wave->'groups', '[]'::jsonb)) g;
+$$;
+
+/** Валит налёт с внятной причиной, если состав кривой. */
+create or replace function check_waves(w jsonb) returns void
+language plpgsql immutable as $$
+declare wave jsonb; g jsonb;
+begin
+  if w is null or jsonb_typeof(w) <> 'array' or jsonb_array_length(w) = 0 then
+    raise exception 'raid must have at least one wave';
+  end if;
+  if jsonb_array_length(w) > 8 then raise exception 'too many waves'; end if;
+  for wave in select * from jsonb_array_elements(w) loop
+    if coalesce(wave->>'pattern', '') not in
+       ('swarm', 'lines', 'random', 'drip', 'rings', 'spiral', 'flower', 'sweep') then
+      raise exception 'bad wave pattern';
+    end if;
+    if coalesce((wave->>'direction')::int, 0) < 0
+       or coalesce((wave->>'direction')::int, 0) > 3 then
+      raise exception 'bad wave direction';
+    end if;
+    if jsonb_typeof(coalesce(wave->'groups', 'null'::jsonb)) <> 'array'
+       or jsonb_array_length(wave->'groups') = 0
+       or jsonb_array_length(wave->'groups') > 8 then
+      raise exception 'bad wave groups';
+    end if;
+    for g in select * from jsonb_array_elements(wave->'groups') loop
+      if coalesce(g->>'payload', '') not in ('plain', 'heavy', 'jammer', 'foamer') then
+        raise exception 'bad drone payload';
+      end if;
+      if coalesce((g->>'n')::int, -1) < 0 then raise exception 'bad group size'; end if;
+    end loop;
+  end loop;
+end;
+$$;
+
+-- Старая подпись уходит целиком: PostgREST не выбирает между перегрузками,
+-- а аргументы сменились.
+drop function if exists send_attack(text, int, text, int, int);
+
 create or replace function send_attack(
   target_email text,
-  drone_count int,
-  attack_pattern text,
-  attack_direction int,
+  attack_waves jsonb,
   attack_seed int
-) returns table (id uuid, depots jsonb)
+) returns table (id uuid, depots jsonb, credits int)
 language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
@@ -415,15 +488,17 @@ declare
   cur_depots jsonb;
   next_depots jsonb;
   order_id uuid;
+  drone_count int;
+  surcharge int;
+  head jsonb;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
-  if drone_count is null or drone_count < 1 or drone_count > price('max_raid') then
+  perform check_waves(attack_waves);
+  drone_count := waves_drones(attack_waves);
+  if drone_count < 1 or drone_count > price('max_raid') then
     raise exception 'bad drone count';
   end if;
-  if attack_pattern not in ('swarm', 'lines', 'random', 'drip', 'rings', 'spiral', 'flower', 'sweep') then
-    raise exception 'bad attack pattern';
-  end if;
-  if attack_direction < 0 or attack_direction > 3 then raise exception 'bad direction'; end if;
+  head := attack_waves -> 0;
 
   select p.* into target
     from profiles p
@@ -432,6 +507,15 @@ begin
   if not found then raise exception 'player with this email has not joined yet'; end if;
   if target.id = uid then raise exception 'cannot attack yourself'; end if;
   if not target.founded then raise exception 'target warehouse is not founded'; end if;
+
+  -- Очередь у защитника одна и разбирается по одному налёту за раз, по
+  -- получасу на каждый. Без потолка один нападающий запирал бы чужую игру
+  -- на часы, просто поставив в очередь десяток роёв.
+  if (select count(*) from attacks a
+       where a.attacker_id = uid and a.defender_id = target.id
+         and a.status = 'pending') >= price('queued') then
+    raise exception 'too many raids already queued against this warehouse';
+  end if;
 
   select b.cells, b.guns, b.drone_cells into cur, cur_guns, cur_depots
     from bases b where b.user_id = uid for update;
@@ -442,14 +526,29 @@ begin
   -- автосохранением — валило налёт с «sent drones do not match».
   next_depots := take_from_depots(cur_depots, drone_count, 'basic');
 
+  -- Со склада уходят обычные дроны, а за начинку доплачивается кредитами:
+  -- по цене дрона на нынешнем уровне, той же, по какой он и покупался.
+  select waves_surcharge(
+           attack_waves,
+           price_at(price('drone'), coalesce((p.levels->>'drones')::int, 1))
+         )
+    into surcharge
+    from profiles p where p.id = uid;
+
   update bases set drone_cells = next_depots, updated_at = now() where user_id = uid;
   update profiles
      set drones = depot_sum(next_depots),
+         credits = profiles.credits - surcharge,
          stats = jsonb_set(stats, '{raids}', to_jsonb((stats->>'raids')::int + 1))
-   where profiles.id = uid;
+   where profiles.id = uid and profiles.credits >= surcharge
+   returning profiles.credits into credits;
 
-  insert into attacks (attacker_id, defender_id, drones, pattern, direction, seed, drone_level)
-  values (uid, target.id, drone_count, attack_pattern, attack_direction, attack_seed,
+  if not found then raise exception 'not enough credits for these warheads'; end if;
+
+  insert into attacks (attacker_id, defender_id, drones, pattern, direction, seed, waves, drone_level)
+  values (uid, target.id, drone_count,
+          head->>'pattern', coalesce((head->>'direction')::int, 0),
+          attack_seed, attack_waves,
           (select coalesce((p.levels->>'drones')::int, 1) from profiles p where p.id = uid))
   returning attacks.id into order_id;
   id := order_id;
@@ -560,7 +659,7 @@ $$;
 create or replace function pending_attacks()
 returns table (
   id uuid, from_name text, created_at timestamptz, activated_at timestamptz,
-  drones int, pattern text, direction int, seed int, drone_level int,
+  drones int, pattern text, direction int, seed int, waves jsonb, drone_level int,
   from_email text
 )
 language plpgsql security definer set search_path = public as $$
@@ -588,7 +687,7 @@ begin
     select a.id,
            coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
            a.created_at, a.activated_at, a.drones, a.pattern, a.direction, a.seed,
-           a.drone_level, p.email
+           a.waves, a.drone_level, p.email
       from attacks a
       join profiles p on p.id = a.attacker_id
      where a.defender_id = uid and a.status = 'pending'
@@ -600,14 +699,14 @@ create or replace function attack_reports()
 returns table (
   id uuid, target_name text, resolved_at timestamptz,
   result jsonb, loot int, destroyed boolean,
-  drones int, pattern text, direction int, seed int,
+  drones int, pattern text, direction int, seed int, waves jsonb,
   snap_cells text, snap_guns jsonb, snap_depots jsonb, snap_levels jsonb, trace text
 )
 language sql security definer set search_path = public as $$
   select a.id,
          coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)) as target_name,
          a.resolved_at, a.result, a.loot, a.destroyed,
-         a.drones, a.pattern, a.direction, a.seed,
+         a.drones, a.pattern, a.direction, a.seed, a.waves,
          a.snap_cells, a.snap_guns, a.snap_depots, a.snap_levels, a.trace
     from attacks a
     join profiles p on p.id = a.defender_id
@@ -630,7 +729,7 @@ $$;
 -- Старые аккаунты, которые ещё не основали и не начали строить склад,
 -- тоже получают бесплатный центральный квадрат после обновления схемы.
 update bases b
-   set cells = starter_map(), intact_cells = 25, updated_at = now()
+   set cells = starter_map(), intact_cells = price('free'), updated_at = now()
   from profiles p
  where p.id = b.user_id
    and not p.founded
@@ -725,9 +824,14 @@ begin
 
   -- А раз в отгрузку склад продаёт всё, что на нём лежит, вдвое дороже
   -- закупки. Продаётся то, что есть сейчас, а не за каждые прошедшие сутки.
+  -- Цену берём с учётом уровня, ту же, по какой товар и покупался: иначе
+  -- прокачка съедала бы маржу — на десятом уровне дрон обходился в 47, а
+  -- уходил за те же 50.
   drones_out := depot_sum_kind(cur_depots, 'basic');
   scouts_out := depot_sum_kind(cur_depots, 'scout');
-  sale := (drones_out * price('drone') + scouts_out * price('scout')) * price('sale');
+  sale := (drones_out * price_at(price('drone'), coalesce((prof.levels->>'drones')::int, 1))
+         + scouts_out * price_at(price('scout'), coalesce((prof.levels->>'scouts')::int, 1)))
+         * price('sale');
 
   update bases
      set drone_cells = '[]'::jsonb, updated_at = now()
@@ -1110,7 +1214,7 @@ begin
    where id = order_row.attacker_id;
 
   update attacks
-     set status = 'resolved', result = $5, loot = earned,
+     set status = 'resolved', result = complete_attack.result, loot = earned,
          destroyed = defender_intact = 0, resolved_at = now(),
          snap_cells = snap_map, snap_guns = snap_g,
          snap_depots = snap_d, snap_levels = snap_lv,
@@ -1132,7 +1236,7 @@ begin
   update bases
      set cells = starter_map(),
          guns = '[]'::jsonb, drone_cells = '[]'::jsonb,
-         intact_cells = 25, updated_at = now()
+         intact_cells = price('free'), updated_at = now()
    where user_id = uid;
 
   update profiles
@@ -1409,14 +1513,14 @@ $$;
 create or replace function public_replay(attack_id uuid)
 returns table (
   attacker text, defender text,
-  drones int, pattern text, direction int, seed int, drone_level int,
+  drones int, pattern text, direction int, seed int, waves jsonb, drone_level int,
   snap_cells text, snap_guns jsonb, snap_depots jsonb, snap_levels jsonb,
   trace text, result jsonb, resolved_at timestamptz
 )
 language sql security definer set search_path = public stable as $$
   select coalesce(att.base_name, att.display_name, split_part(att.email, '@', 1)),
          coalesce(def.base_name, def.display_name, split_part(def.email, '@', 1)),
-         a.drones, a.pattern, a.direction, a.seed, a.drone_level,
+         a.drones, a.pattern, a.direction, a.seed, a.waves, a.drone_level,
          a.snap_cells, a.snap_guns, a.snap_depots, a.snap_levels,
          a.trace, a.result, a.resolved_at
     from attacks a
@@ -1443,11 +1547,11 @@ begin
   update bases
      set cells = starter_map(),
          guns = '[]'::jsonb, drone_cells = '[]'::jsonb,
-         intact_cells = 25, updated_at = now()
+         intact_cells = price('free'), updated_at = now()
    where user_id = uid;
 
   update profiles
-     set credits = 10000,
+     set credits = price('start'),
          drones = 0,
          loan = 0,
          loan_due = null,

@@ -58,19 +58,21 @@ import {
 } from "@/lib/economy";
 import {
   PATTERNS,
-  RAID_TTL_MS,
+  payloadCost,
   raidDifficulty,
   raidSize,
+  raidTotal,
   type AttackOrder,
   type AttackReport,
   type Pattern,
   type RaidLog,
+  type WavePlan,
   makeOrder,
 } from "@/lib/attack";
 import {
   MAX_BASE_NAME,
   burntCells,
-  dailyIncome,
+  shiftIncome,
   intactCells,
   isDoomed,
   normName,
@@ -79,13 +81,16 @@ import {
 import { getRepo } from "@/lib/repo";
 import {
   type Enemy,
+  blankEnemy,
   makeEnemy,
 } from "@/lib/enemy";
 import type { Account } from "./AuthGate";
 import Enemies from "./Enemies";
 import { drawCoverage, drawDepots } from "@/lib/render";
-import { SPRAY_RANGE, gunRange, sprayRange } from "@/lib/engine";
+import { gunRange, sprayRange } from "@/lib/engine";
+import { RAID, SPRAY } from "@/lib/tuning";
 import Battle, { type BattleOutcome } from "./Battle";
+import RaidPlanner, { newWave } from "./RaidPlanner";
 import Scout, { type ScoutOutcome } from "./Scout";
 import ScoutMap from "./ScoutMap";
 import Replay, { type ReplayData } from "./Replay";
@@ -122,16 +127,12 @@ import {
 } from "@/lib/base";
 import {
   Button,
-  Card,
-  Chip,
-  ChipBar,
   IconButton,
   IconMenu,
   IconTarget,
   IconUsers,
   ConfirmDialog,
   NameDialog,
-  Notice,
   Modal,
   Panel,
   Row,
@@ -225,7 +226,7 @@ const TOOLS: {
     id: "spray",
     label: "tool.spray",
     hint: "tool.sprayHint",
-    vars: { cost: SPRAY_COST, range: SPRAY_RANGE },
+    vars: { cost: SPRAY_COST, range: SPRAY.range },
     icon: <CircleDotDashed className={ICON} />,
     levelKind: "sprays",
     countKind: "sprays",
@@ -267,6 +268,18 @@ const TEST_RAID_MAX = 250;
 const DEFAULT_PANELS = ["replays", "enemies", "stats"];
 const PANELS_KEY = "wb.panels.v1";
 
+/**
+ * Соперник, приславший этот налёт. Ищем по почте, а не по имени склада:
+ * имена не уникальны и меняются переименованием, а почта — то же самое,
+ * по чему соперника и заводят. У ботов почты нет, для них имя и остаётся
+ * единственной приметой.
+ */
+function findFoe(p: Player, order: AttackOrder) {
+  const mail = order.fromEmail?.toLowerCase();
+  if (mail) return p.enemies.find((e) => e.email.toLowerCase() === mail);
+  return p.enemies.find((e) => e.name === order.from);
+}
+
 function readPanels(): {
   order: string[];
   hidden: Record<string, boolean>;
@@ -300,6 +313,13 @@ export default function Lobby({
   onSignOut: () => void;
 }) {
   const t = useT();
+  /**
+   * Опросы заводятся один раз на всю игру, а переводчик меняется вместе с
+   * языком. Читаем его через ref, иначе интервалы замыкают самый первый t
+   * и до перезагрузки говорят на языке, с которого игрок уже ушёл.
+   */
+  const tRef = useRef(t);
+  tRef.current = t;
   const repo = getRepo();
   const playerRef = useRef<Player | null>(null);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -310,6 +330,8 @@ export default function Lobby({
   toolRef.current = tool;
   const [message, setMessage] = useState<string | null>(null);
   const [battle, setBattle] = useState<AttackOrder | null>(null);
+  /** Открыт ли планировщик пробного налёта на себя. */
+  const [testRaidOpen, setTestRaid] = useState(false);
   const [ready, setReady] = useState(false);
   const [version, setVersion] = useState(0);
   const [sheet, setSheet] = useState<SheetId | null>(null);
@@ -501,9 +523,20 @@ export default function Lobby({
               (sold && (sold.drones || sold.scouts)
                 ? t("income.sold", {
                     drones: sold.drones,
-                    dronesValue: fmt(sold.drones * DRONE_UNIT_COST * SALE_MULTIPLIER),
+                    // Считаем по тем же ценам, что и сервер: с учётом уровня.
+                    // Иначе в сообщении стояла бы одна сумма, а на счёт
+                    // приходила другая.
+                    dronesValue: fmt(
+                      sold.drones *
+                        priceAt(DRONE_UNIT_COST, player.levels.drones) *
+                        SALE_MULTIPLIER
+                    ),
                     scouts: sold.scouts,
-                    scoutsValue: fmt(sold.scouts * SCOUT_UNIT_COST * SALE_MULTIPLIER),
+                    scoutsValue: fmt(
+                      sold.scouts *
+                        priceAt(SCOUT_UNIT_COST, player.levels.scouts) *
+                        SALE_MULTIPLIER
+                    ),
                   })
                 : "")
           );
@@ -517,6 +550,10 @@ export default function Lobby({
     return () => {
       alive = false;
     };
+    // Загрузка профиля бывает ровно одна на заход: t и loadRaids тут нужны
+    // такими, какими были в этот момент, и перезапуск по их смене только
+    // заново дёрнул бы сервер.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repo]);
 
   useEffect(() => {
@@ -547,7 +584,7 @@ export default function Lobby({
           const mail = a.fromEmail;
           if (!mail) continue;
           if (cur.enemies.some((e) => e.email.toLowerCase() === mail.toLowerCase())) continue;
-          cur.enemies.push(makeEnemy(mail, a.from));
+          cur.enemies.push(blankEnemy(mail, a.from));
           met = true;
         }
         if (met) void repo.saveEnemies(cur).catch(() => {});
@@ -593,7 +630,7 @@ export default function Lobby({
 
   /**
    * Атаки отбиваются строго по очереди. У первой в списке идут часы: не успел
-   * за RAID_TTL_MS — налёт проходит сам, без брандспойта и пулемёта, и очередь
+   * за RAID.ttlMs — налёт проходит сам, без брандспойта и пулемёта, и очередь
    * двигается дальше. Тикаем раз в секунду, но только когда есть что считать.
    */
   useEffect(() => {
@@ -611,7 +648,7 @@ export default function Lobby({
         return;
       }
       setNow(Date.now());
-      if (Date.now() < head.activatedAt + RAID_TTL_MS) return;
+      if (Date.now() < head.activatedAt + RAID.ttlMs) return;
       if (autoBusyRef.current) return;
 
       autoBusyRef.current = true;
@@ -635,7 +672,7 @@ export default function Lobby({
           cur.levels.insurance,
           o.result.spraysLost
         );
-        const foe = cur.enemies.find((e) => e.name === head.from);
+        const foe = findFoe(cur, head);
         if (foe) {
           foe.burnedByThem += o.result.burned;
           void repo.saveEnemies(cur).catch(() => {});
@@ -654,7 +691,7 @@ export default function Lobby({
           if (patch.credits !== undefined) cur.credits = patch.credits;
           forceRender((v) => v + 1);
         } catch (e) {
-          setMessage(t("auto.notSaved", { error: (e as Error).message }));
+          setMessage(tRef.current("auto.notSaved", { error: (e as Error).message }));
           // урон не записался — не тащим сгоревшую карту дальше, иначе
           // отвергаться будет и ремонт, и всё остальное
           await resyncBase();
@@ -665,6 +702,10 @@ export default function Lobby({
     };
     const timer = window.setInterval(() => void tick(), 1000);
     return () => window.clearInterval(timer);
+    // Таймер один на всю игру. Всё, что он зовёт, он берёт через ref или из
+    // playerRef, а resyncBase пересоздаётся каждым рендером — перезаводить
+    // из-за него секундный интервал незачем.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repo]);
 
   /**
@@ -735,7 +776,9 @@ export default function Lobby({
     return <div className="p-6 text-sm text-neutral-500">{t("app.loading")}</div>;
   }
 
-  const { intact, burnt, free, drones, scouts } = counts;
+  const { intact, burnt, drones, scouts } = counts;
+  /** Во что обходится дрон при нынешнем уровне: от него считается надбавка. */
+  const droneCost = priceAt(DRONE_UNIT_COST, p.levels.drones);
   // то же самое, но под ключи кнопок: у каждой в углу своё число
   /** Во что обойдётся то, что ставит этот инструмент, с учётом прокачки. */
   const toolPrice = (item: (typeof TOOLS)[number]) => {
@@ -786,6 +829,10 @@ export default function Lobby({
           p.guns = o.guns;
           p.depots = o.depots;
           p.incoming = p.incoming.filter((a) => a.id !== battle.id);
+          // Сервер узнает об исходе только из applyBattle ниже, а опрос идёт
+          // раз в десять секунд и собирает очередь заново. Без этой отметки
+          // только что отбитый рой успевал вернуться в список.
+          resolvedRef.current.add(battle.id);
           p.stats.battles++;
           const killed = o.result.killedByGuns + o.result.killedByMg;
           p.stats.dronesKilled += killed;
@@ -797,8 +844,9 @@ export default function Lobby({
             p.levels.insurance,
             o.result.spraysLost
           );
-          // счёт вражды: записываем, сколько он у нас сжёг
-          const foe = p.enemies.find((e) => e.name === battle.from);
+          // Счёт вражды: записываем, сколько он у нас сжёг. Ищем по почте —
+          // имя склада не уникально и меняется переименованием.
+          const foe = findFoe(p, battle);
           if (foe) {
             foe.burnedByThem += o.result.burned;
             void repo.saveEnemies(p).catch(() => {});
@@ -1174,7 +1222,9 @@ export default function Lobby({
     } catch (e) {
       return t("enemies.notSaved", { error: (e as Error).message });
     }
-    const enemy = makeEnemy(email, name);
+    // В облаке склад соперника живёт на сервере; выдумывать ему карту нужно
+    // только локально, где настоящих противников нет и бой идёт с ботом.
+    const enemy = repo.mode === "cloud" ? blankEnemy(email, name) : makeEnemy(email, name);
     p.enemies.push(enemy);
     forceRender((v) => v + 1);
     try {
@@ -1218,19 +1268,17 @@ export default function Lobby({
     }
   };
 
-  const doRaid = async (
-    enemy: Enemy,
-    n: number,
-    pattern: Pattern,
-    direction: number
-  ): Promise<string | null> => {
+  const doRaid = async (enemy: Enemy, waves: WavePlan[]): Promise<string | null> => {
+    const n = raidTotal(waves);
     if (drones < n) return t("raid.notEnough");
+    if (payloadCost(droneCost, waves) > p.credits) return t("raid.noCredits");
     const seed = (Math.random() * 1e9) | 0;
     try {
       // Склад должен лежать на сервере до вылета: дронов снимает он сам,
-      // со своей копии, и обратно присылает уже новый склад.
+      // со своей копии, и обратно присылает уже новый склад. Надбавку за
+      // начинку тоже считает и списывает он.
       await flushPersist();
-      const id = await repo.sendAttack(p, enemy.email, n, pattern, direction, seed);
+      const id = await repo.sendAttack(p, enemy.email, waves, seed);
       if (id) notifyBattle(id, "sent");
       // счётчик налётов поднимает сам send_attack — второй раз здесь не нужно
       setMessage(t("raid.sent", { email: enemy.email }));
@@ -1241,6 +1289,23 @@ export default function Lobby({
     } catch (error) {
       return t("raid.sendFailed", { error: (error as Error).message });
     }
+  };
+
+  /**
+   * Пробный налёт на свой же склад: та же панель, но ничего не стоит и
+   * никуда не пишется. Заказ кладём прямо в свою очередь — сервер о нём не
+   * знает, как и о ботах с кнопки «+ налёт».
+   */
+  const testRaid = (waves: WavePlan[]): string | null => {
+    const n = raidTotal(waves);
+    if (n < 1) return t("raid.empty");
+    const order = makeOrder(t("raid.testTitle"), n, waves[0].pattern, waves[0].direction);
+    order.waves = waves;
+    p.incoming.push(order);
+    setTestRaid(false);
+    setMessage(t("raid.testQueued", { count: 1, size: n }));
+    touch();
+    return null;
   };
 
   const summonAttack = () => {
@@ -1746,7 +1811,7 @@ export default function Lobby({
     }
   };
 
-  const income = dailyIncome(p);
+  const income = shiftIncome(p);
   const pickTool = (id: ToolId) => {
     // апгрейд ничего не рисует на карте — только открывает свою модалку
     if (id === "upgrade" || id === "insurance" || id === "loan") {
@@ -1797,7 +1862,7 @@ export default function Lobby({
       </p>
       <div className="mb-3 flex items-center justify-between font-mono">
         <span className="text-neutral-400">{t("base.area")}</span>
-        <span className={intact >= MIN_BASE_CELLS ? "text-emerald-400" : "text-neutral-100"}>
+        <span className={intact >= MIN_BASE_CELLS ? "text-emerald-300" : "text-neutral-100"}>
           {intact}/{MIN_BASE_CELLS}
         </span>
       </div>
@@ -1949,7 +2014,7 @@ export default function Lobby({
     );
 
   const head = p.incoming[0] ?? null;
-  const headLeft = head?.activatedAt ? head.activatedAt + RAID_TTL_MS - now : null;
+  const headLeft = head?.activatedAt ? head.activatedAt + RAID.ttlMs - now : null;
   const countdown = (ms: number) => {
     const total = Math.max(0, Math.ceil(ms / 1000));
     return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
@@ -2003,9 +2068,14 @@ export default function Lobby({
   );
 
   const summonButton = (
-    <Button size="sm" onClick={summonAttack}>
-      {t("attacks.summon")}
-    </Button>
+    <div className="flex gap-2">
+      <Button size="sm" onClick={summonAttack}>
+        {t("attacks.summon")}
+      </Button>
+      <Button size="sm" onClick={() => setTestRaid(true)}>
+        {t("raid.test")}
+      </Button>
+    </div>
   );
 
   const enemiesBody = (
@@ -2013,6 +2083,8 @@ export default function Lobby({
       enemies={p.enemies}
       drones={drones}
       scouts={scouts}
+      credits={p.credits}
+      droneCost={droneCost}
       onAdd={addEnemy}
       onRaid={doRaid}
       onScout={doScout}
@@ -2196,7 +2268,7 @@ export default function Lobby({
       <>
         <span className="font-mono">
           <span className="text-neutral-400">{t("base.areaShort")} </span>
-          <span className={intact >= MIN_BASE_CELLS ? "text-emerald-400" : "text-neutral-100"}>
+          <span className={intact >= MIN_BASE_CELLS ? "text-emerald-300" : "text-neutral-100"}>
             {intact}/{MIN_BASE_CELLS}
           </span>
         </span>
@@ -2429,6 +2501,10 @@ export default function Lobby({
         />
       )}
 
+      {testRaidOpen && (
+        <TestRaidDialog onCancel={() => setTestRaid(false)} onSend={testRaid} />
+      )}
+
       {watching && (
         // Повтор — почти во весь экран: смотреть бой в полоске внизу нечего.
         <div
@@ -2615,6 +2691,55 @@ export default function Lobby({
         </div>
       </Sheet>
     </div>
+  );
+}
+
+/**
+ * Пробный налёт на свой склад. Панель та же, что и у настоящего налёта, но
+ * складом и кошельком он не ограничен: это песочница, чтобы посмотреть, как
+ * выглядит волна на своей карте.
+ */
+function TestRaidDialog({
+  onCancel,
+  onSend,
+}: {
+  onCancel: () => void;
+  onSend: (waves: WavePlan[]) => string | null;
+}) {
+  const t = useT();
+  const [waves, setWaves] = useState<WavePlan[]>(() => [newWave(60)]);
+  const [error, setError] = useState<string | null>(null);
+  const total = raidTotal(waves);
+
+  return (
+    <Modal
+      title={t("raid.testTitle")}
+      subtitle={t("raid.testSubtitle")}
+      onClose={onCancel}
+      footer={
+        <div className="flex gap-2">
+          <Button
+            variant="danger"
+            className="flex-1"
+            disabled={total < 1}
+            onClick={() => setError(onSend(waves))}
+          >
+            {t("raid.testSend")}
+          </Button>
+          <Button onClick={onCancel}>{t("common.cancel")}</Button>
+        </div>
+      }
+    >
+      <RaidPlanner
+        waves={waves}
+        onChange={setWaves}
+        stock={TEST_RAID_MAX}
+        max={TEST_RAID_MAX}
+        unitCost={0}
+        free
+      />
+      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+    </Modal>
   );
 }
 

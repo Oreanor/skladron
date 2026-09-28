@@ -5,10 +5,7 @@
 import { type Depot, type Gun } from "./base";
 import { type AttackOrder, buildPlan } from "./attack";
 import { type BattleResult, createBattle, settle, update } from "./engine";
-
-/** Хватает на любой рой: дальше догорание уже ничего не меняет. */
-const MAX_SECONDS = 900;
-const STEP = 1 / 60;
+import { SIM } from "./tuning";
 
 export interface UnattendedOutcome {
   cells: Uint8Array;
@@ -33,10 +30,10 @@ export function autoDefend(
   });
 
   let t = 0;
-  while (t < MAX_SECONDS && s.phase === "playing") {
+  while (t < SIM.unattendedSeconds && s.phase === "playing") {
     // никакого setAim и setFiring: склад отбивается одними пушками
-    update(s, STEP);
-    t += STEP;
+    update(s, SIM.step);
+    t += SIM.step;
   }
 
   // settle сам дотушивает: что горело к концу боя, становится пепелищем

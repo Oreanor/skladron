@@ -4,11 +4,13 @@
 import {
   CREDITS_START,
   DRONE_UNIT_COST,
+  REPAIR_COST,
   INCOME_PER_CELL,
   SALE_MULTIPLIER,
   SCOUT_UNIT_COST,
   STARTER_SIDE,
   accrue,
+  priceAt,
 } from "./economy";
 import {
   CELLS,
@@ -20,7 +22,6 @@ import {
   droneCount,
   countCells,
   decodeCells,
-  emptyCells,
   encodeCells,
   regrowGround,
   starterCells,
@@ -153,7 +154,11 @@ export function wipe(p: Player, now = Date.now()): Player {
 export const drones = (p: Player) => droneCount(p.depots);
 export const intactCells = (p: Player) => countCells(p.cells, G_BASE);
 export const burntCells = (p: Player) => countCells(p.cells, G_BURNT);
-/** Что уйдёт с отгрузкой: сколько чего лежит и на какую сумму. */
+/**
+ * Что уйдёт с отгрузкой: сколько чего лежит и на какую сумму. Цена продажи
+ * считается от закупочной с учётом уровня — иначе прокачка съедала бы всю
+ * маржу: на десятом уровне дрон покупался за 47, а продавался за те же 50.
+ */
 export function saleOf(p: Player) {
   let drones = 0;
   let scouts = 0;
@@ -164,16 +169,17 @@ export function saleOf(p: Player) {
   return {
     drones,
     scouts,
-    dronesValue: drones * DRONE_UNIT_COST * SALE_MULTIPLIER,
-    scoutsValue: scouts * SCOUT_UNIT_COST * SALE_MULTIPLIER,
+    dronesValue: drones * priceAt(DRONE_UNIT_COST, p.levels.drones) * SALE_MULTIPLIER,
+    scoutsValue: scouts * priceAt(SCOUT_UNIT_COST, p.levels.scouts) * SALE_MULTIPLIER,
   };
 }
 
 /**
- * Сколько принесут ближайшие сутки: аренда со всей целой площади плюс
- * отгрузка того, что к тому времени будет лежать на складе.
+ * Сколько принесёт ближайшая смена: аренда со всей целой площади плюс
+ * отгрузка того, что к тому времени будет лежать на складе. Смена — это
+ * двенадцать часов, то есть за сутки столько набегает дважды.
  */
-export const dailyIncome = (p: Player) => {
+export const shiftIncome = (p: Player) => {
   const sale = saleOf(p);
   return intactCells(p) * INCOME_PER_CELL + sale.dronesValue + sale.scoutsValue;
 };
@@ -182,7 +188,7 @@ export const dailyIncome = (p: Player) => {
 export function isDoomed(p: Player, intact = intactCells(p)) {
   if (!p.founded) return false;
   if (intact > 0) return false;
-  return p.credits < 5; // не хватает даже на одну клетку ремонта
+  return p.credits < REPAIR_COST; // не хватает даже на одну клетку ремонта
 }
 
 export function load(): Player {

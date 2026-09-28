@@ -9,7 +9,8 @@ import { buildPlan, type AttackOrder } from "@/lib/attack";
 import { G_BURNT, decodeCells, type Depot, type Gun } from "@/lib/base";
 import { createBattle, setAim, setFiring, update, type GameState } from "@/lib/engine";
 import { drawFrame } from "@/lib/render";
-import { STEP, TAIL_FRAMES, decodeTrace } from "@/lib/replay";
+import { decodeTrace } from "@/lib/replay";
+import { SIM } from "@/lib/tuning";
 import { fmt } from "@/lib/economy";
 import { useT } from "@/lib/i18n";
 import MapCanvas, { CELL } from "./MapCanvas";
@@ -179,10 +180,10 @@ export default function Replay({
       carry += dt * speedRef.current;
 
       let guard = 0;
-      while (carry >= STEP && guard++ < 32 && s.phase === "playing") {
+      while (carry >= SIM.step && guard++ < 32 && s.phase === "playing") {
         // Запись кончилась — доигрываем хвост без рук защитника и на этом
         // всё: дожигать склад, которого он не терял, повтор не должен.
-        if (frames.length && step >= frames.length + TAIL_FRAMES) {
+        if (frames.length && step >= frames.length + SIM.tailFrames) {
           // что горело к этому мгновению — то и осталось пепелищем
           for (const i of s.fire.keys()) s.cells[i] = G_BURNT;
           s.fire.clear();
@@ -190,12 +191,12 @@ export default function Replay({
           setVersion((v) => v + 1);
           break;
         }
-        carry -= STEP;
+        carry -= SIM.step;
         // руки защитника: что он делал на этом шаге, то и повторяем
         const f = frames[step++] ?? null;
         setAim(s, f ? { x: f.x + 0.5, y: f.y + 0.5 } : null);
         setFiring(s, Boolean(f?.firing));
-        update(s, STEP);
+        update(s, SIM.step);
       }
 
       if (s.dirty && now - mapAt > 100) {

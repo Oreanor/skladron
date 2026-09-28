@@ -19,7 +19,11 @@ async function reply(chatId: number, text: string) {
 }
 
 export async function POST(request: Request) {
-  if (SECRET && request.headers.get("x-telegram-bot-api-secret-token") !== SECRET) {
+  // Падаем закрыто: без секрета ручку не пускаем вовсе. Раньше при пустой
+  // переменной проверка просто пропускалась, и недонастроенный деплой
+  // оказывался открытым вебхуком.
+  if (!SECRET) return new Response("not configured", { status: 500 });
+  if (request.headers.get("x-telegram-bot-api-secret-token") !== SECRET) {
     return new Response("no", { status: 401 });
   }
   if (!URL || !SERVICE) return new Response("not configured", { status: 500 });

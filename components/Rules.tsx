@@ -28,9 +28,9 @@ import {
   UPGRADE_STEP,
   fmt,
 } from "@/lib/economy";
-import { MAX_RAID } from "@/lib/attack";
+
 import { DRONES_PER_CELL } from "@/lib/base";
-import { FIRE_SPREAD, GUN_COOLDOWN, GUN_RANGE, SPRAY_RANGE, SPRAY_TANK } from "@/lib/engine";
+import { FIRE, GUN, RAID, SPRAY } from "@/lib/tuning";
 import { RULES } from "@/lib/i18n/rules";
 import { useSettings } from "@/lib/i18n";
 import { Button, Modal, SectionTitle } from "./ui";
@@ -47,15 +47,15 @@ const values: Record<string, string> = {
   repair: String(REPAIR_COST),
   gun: String(GUN_COST),
   spray: String(SPRAY_COST),
-  sprayRange: String(SPRAY_RANGE),
-  sprayTank: String(SPRAY_TANK),
+  sprayRange: String(SPRAY.range),
+  sprayTank: String(SPRAY.tank),
   perCell: String(DRONES_PER_CELL),
   droneBox: String(DRONE_UNIT_COST * DRONES_PER_CELL),
   scoutBox: String(SCOUT_UNIT_COST * DRONES_PER_CELL),
-  gunRange: String(GUN_RANGE),
-  reload: String(GUN_COOLDOWN),
-  spread: String(FIRE_SPREAD),
-  maxRaid: String(MAX_RAID),
+  gunRange: String(GUN.range),
+  reload: String(GUN.cooldown),
+  spread: String(FIRE.spread),
+  maxRaid: String(RAID.max),
   loot: String(CELL_LOOT_REWARD),
   insureCell: String(INSURANCE_CELL),
   insureShare: String(Math.round(INSURANCE_PER_LEVEL * 100)),

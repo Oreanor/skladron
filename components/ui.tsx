@@ -37,7 +37,7 @@ const VARIANTS: Record<Variant, string> = {
     "bg-red-600 text-white hover:bg-red-500 " +
     "disabled:bg-neutral-800 disabled:text-neutral-500",
   neutral:
-    "bg-neutral-100 text-neutral-900 hover:bg-white " +
+    "bg-neutral-100 text-neutral-900 hover:bg-neutral-50 " +
     "disabled:bg-neutral-800 disabled:text-neutral-500",
   outline:
     "border border-neutral-700 text-neutral-300 hover:bg-neutral-800 " +

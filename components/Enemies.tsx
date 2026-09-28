@@ -1,26 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { EDGES, PATTERNS, type Pattern } from "@/lib/attack";
+import { payloadCost, raidTotal, type WavePlan } from "@/lib/attack";
 import { MAX_ATTACK_DRONES, type Enemy } from "@/lib/enemy";
-import { MAX_SCOUTS } from "@/lib/scout";
+import { SCOUT } from "@/lib/tuning";
 import { Crosshair, Map, Plane } from "lucide-react";
 import { Button, Card, IconButton, Modal, inputClass } from "./ui";
+import RaidPlanner, { newWave } from "./RaidPlanner";
 import { useT } from "@/lib/i18n";
-import type { Key } from "@/lib/i18n/dict";
 
 interface Props {
   enemies: Enemy[];
   drones: number;
   /** Сколько разведчиков лежит в контейнерах: больше не отправить. */
   scouts: number;
+  /** Кредиты и цена дрона: из них считается надбавка за начинку. */
+  credits: number;
+  droneCost: number;
   onAdd: (email: string) => Promise<string | null>; // текст ошибки или null
-  onRaid: (
-    enemy: Enemy,
-    drones: number,
-    pattern: Pattern,
-    direction: number
-  ) => Promise<string | null>;
+  onRaid: (enemy: Enemy, waves: WavePlan[]) => Promise<string | null>;
   /** Разведка: сколько самолётов послать. Вернёт текст ошибки или null. */
   onScout: (enemy: Enemy, planes: number) => Promise<string | null>;
   /** Показать снятую карту врага. */
@@ -32,6 +30,8 @@ export default function Enemies({
   enemies,
   drones,
   scouts,
+  credits,
+  droneCost,
   onAdd,
   onRaid,
   onScout,
@@ -144,9 +144,11 @@ export default function Enemies({
         <RaidDialog
           enemy={target}
           drones={drones}
+          credits={credits}
+          droneCost={droneCost}
           onCancel={() => setTarget(null)}
-          onSend={async (n, pattern, dir) => {
-            const error = await onRaid(target, n, pattern, dir);
+          onSend={async (waves) => {
+            const error = await onRaid(target, waves);
             if (!error) {
               setTarget(null);
               onChanged();
@@ -171,7 +173,7 @@ function ScoutDialog({
   onSend: (planes: number) => Promise<string | null>;
 }) {
   const t = useT();
-  const max = Math.min(stock, MAX_SCOUTS);
+  const max = Math.min(stock, SCOUT.maxPlanes);
   const [n, setN] = useState(Math.min(3, Math.max(1, max)));
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -219,32 +221,50 @@ function ScoutDialog({
   );
 }
 
+/**
+ * Окно налёта. Волны набираются планировщиком: сколько волн, какой формы и
+ * с какой начинкой — решает игрок, а окно только сторожит запас дронов и
+ * кошелёк.
+ */
 function RaidDialog({
   enemy,
   drones,
+  credits,
+  droneCost,
   onCancel,
   onSend,
 }: {
   enemy: Enemy;
   drones: number;
+  credits: number;
+  droneCost: number;
   onCancel: () => void;
-  onSend: (n: number, p: Pattern, dir: number) => Promise<string | null>;
+  onSend: (waves: WavePlan[]) => Promise<string | null>;
 }) {
   const t = useT();
   const max = Math.min(drones, MAX_ATTACK_DRONES);
-  const [n, setN] = useState(Math.min(50, max));
-  // Запас мог измениться, пока окно открыто, — держим ползунок в его границах.
-  const count = Math.max(1, Math.min(n, max));
-  const [pattern, setPattern] = useState<Pattern>("swarm");
-  const [dir, setDir] = useState(0);
+  const [waves, setWaves] = useState<WavePlan[]>(() => [newWave(Math.min(50, Math.max(1, max)))]);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
 
+  const total = raidTotal(waves);
+  const surcharge = payloadCost(droneCost, waves);
+  // Запас и деньги могли измениться, пока окно открыто, — проверяем перед
+  // самой отправкой, а не только при наборе.
+  const problem =
+    total < 1
+      ? t("raid.empty")
+      : total > max
+      ? t("raid.tooMany")
+      : surcharge > credits
+      ? t("raid.noCredits")
+      : null;
+
   const send = async () => {
-    if (sending) return;
+    if (sending || problem) return;
     setSending(true);
     setSendError(null);
-    const error = await onSend(count, pattern, dir);
+    const error = await onSend(waves);
     setSending(false);
     setSendError(error);
   };
@@ -260,70 +280,22 @@ function RaidDialog({
             variant="danger"
             className="flex-1"
             onClick={() => void send()}
-            disabled={sending || max < 1}
+            disabled={sending || problem !== null}
           >
-            {sending ? t("raid.sending") : t("raid.send", { n: count })}
+            {sending ? t("raid.sending") : t("raid.send", { n: total })}
           </Button>
           <Button onClick={onCancel}>{t("common.cancel")}</Button>
         </div>
       }
     >
-      <label className="mb-1 block text-xs uppercase tracking-wider text-neutral-400">
-        {t("raid.dronesOf", { n: count, max })}
-      </label>
-      <input
-        type="range"
-        min={1}
-        max={Math.max(1, max)}
-        step={1}
-        value={count}
-        disabled={max < 1}
-        onChange={(e) => setN(Number(e.target.value))}
-        className="h-8 w-full cursor-pointer accent-red-500 disabled:opacity-40"
+      <RaidPlanner
+        waves={waves}
+        onChange={setWaves}
+        stock={drones}
+        max={MAX_ATTACK_DRONES}
+        unitCost={droneCost}
       />
-      <div className="mb-4 flex justify-between font-mono text-[11px] text-neutral-500">
-        <span>1</span>
-        <span>{t("arsenal.max", { count: max })}</span>
-      </div>
-
-      <div className="mb-1 text-xs uppercase tracking-wider text-neutral-400">{t("raid.pattern")}</div>
-      <div className="mb-4 grid grid-cols-2 gap-2">
-        {PATTERNS.map((id) => (
-          <Button
-            key={id}
-            active={pattern === id}
-            tone="red"
-            onClick={() => setPattern(id)}
-            className="flex-col items-start gap-0 px-2 text-left"
-          >
-            <span className="text-xs">{t(`pattern.${id}` as Key)}</span>
-            <span className="text-[11px] font-normal text-neutral-500">
-              {t(`pattern.${id}Hint` as Key)}
-            </span>
-          </Button>
-        ))}
-      </div>
-
-      {(pattern === "swarm" || pattern === "lines") && (
-        <>
-          <div className="mb-1 text-xs uppercase tracking-wider text-neutral-400">{t("raid.from")}</div>
-          <div className="mb-4 flex gap-2">
-            {EDGES.map((i) => (
-              <Button
-                key={i}
-                size="sm"
-                active={dir === i}
-                tone="red"
-                onClick={() => setDir(i)}
-                className="flex-1 px-2"
-              >
-                {t(`edge.${i}` as Key)}
-              </Button>
-            ))}
-          </div>
-        </>
-      )}
-
+      {problem && <p className="mt-2 text-xs text-red-400">{problem}</p>}
       {sendError && <p className="mt-2 text-xs text-red-400">{sendError}</p>}
     </Modal>
   );

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GRID, type Depot, type Gun } from "@/lib/base";
-import { buildPlan, type AttackOrder, PATTERNS } from "@/lib/attack";
+import { buildPlan, type AttackOrder } from "@/lib/attack";
 import {
   createBattle,
   setAim,
@@ -17,7 +17,8 @@ import { drawFrame } from "@/lib/render";
 import { goodsValue, insurance, fmt } from "@/lib/economy";
 import MapCanvas, { type Pt } from "./MapCanvas";
 import { Button, Chip, ChipBar, IconButton, Panel, Row } from "./ui";
-import { MAX_FRAMES, STEP, encodeTrace, type Frame } from "@/lib/replay";
+import { encodeTrace, type Frame } from "@/lib/replay";
+import { SIM } from "@/lib/tuning";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 
@@ -110,15 +111,15 @@ export default function Battle({
       // нападавшего разошёлся бы с тем, что видел защитник.
       carry += dt;
       let steps = 0;
-      while (carry >= STEP && steps++ < 8) {
-        carry -= STEP;
-        if (trace.current.length < MAX_FRAMES) {
+      while (carry >= SIM.step && steps++ < 8) {
+        carry -= SIM.step;
+        if (trace.current.length < SIM.maxFrames) {
           const a = s.aim;
           trace.current.push(
             a ? { x: Math.floor(a.x), y: Math.floor(a.y), firing: s.firing } : null
           );
         }
-        update(s, STEP);
+        update(s, SIM.step);
       }
 
       // Перерисовка карты стоит десяти тысяч заливок, а пожар ползёт
@@ -154,7 +155,7 @@ export default function Battle({
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [s]);
+  }, [s, startGoods]);
 
   /**
    * Целимся в середину клетки, а не в точку под курсором. Иначе запись боя
@@ -241,7 +242,7 @@ export default function Battle({
           label={t("panel.controls")}
           round
           onClick={() => setHints((v) => !v)}
-          className="absolute right-2 top-12 z-10 h-8 w-8 bg-black/60 lg:hidden"
+          className="absolute right-2 top-12 z-10 h-8 w-8 bg-neutral-900/80 lg:hidden"
         >
           ?
         </IconButton>
@@ -258,11 +259,11 @@ export default function Battle({
         )}
 
         {done && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center overflow-y-auto rounded-md bg-black/80 p-4 sm:p-6">
+          <div className="absolute inset-0 z-20 flex items-center justify-center overflow-y-auto rounded-md bg-neutral-950/90 p-4 sm:p-6">
             <div className="w-full max-w-sm">
               <div
                 className={`mb-1 text-2xl font-bold tracking-wide ${
-                  done.won ? "text-emerald-400" : "text-red-400"
+                  done.won ? "text-emerald-300" : "text-red-400"
                 }`}
               >
                 {done.won ? t("battle.won") : t("battle.lost")}

@@ -4,27 +4,7 @@
 
 import { CELLS, GRID, gunKind, type Gun } from "./base";
 import { levelBonus } from "./economy";
-import { GUN_PER_LEVEL, GUN_RANGE } from "./engine";
-
-/** Радиус съёмки в клетках у первого уровня: коридор в двадцать клеток. */
-export const SCOUT_RADIUS = 10;
-/** Клеток в секунду. Дрон летит 4,2 — самолёт почти вдвое быстрее. */
-export const SCOUT_SPEED = 8;
-/** Прибавка к обзору и скорости разведчика за уровень. */
-export const SCOUT_PER_LEVEL = 0.25;
-/** Насколько быстро самолёт доворачивает, радиан в секунду. */
-export const SCOUT_TURN = 2.2;
-/** Сколько разведчиков можно послать за раз. */
-export const MAX_SCOUTS = 10;
-
-/** Снаряд быстрый, но не мгновенный: на упреждении и ошибке прицела мажет. */
-export const SHELL_SPEED = 30;
-/** Разброс прицела в радианах: чем дальше пушка, тем шире промах. */
-export const SHELL_SPREAD = 0.13;
-/** Перезарядка одной пушки по воздушной цели. */
-export const GUN_RELOAD = 1.1;
-/** Насколько близко снаряд должен пройти, чтобы это считалось попаданием. */
-export const SHELL_HIT = 0.9;
+import { GUN, SCOUT } from "./tuning";
 
 export interface ScoutPlane {
   x: number; // клетки, дробные
@@ -88,7 +68,7 @@ export function createScout(
   level = 1,
   gunLevel = 1
 ): ScoutState {
-  const k = levelBonus(level, SCOUT_PER_LEVEL);
+  const k = levelBonus(level, SCOUT.perLevel);
   // огнетушители по самолётам не стреляют — в разведке их просто нет
   guns = guns.filter((g) => gunKind(g) !== "spray");
   return {
@@ -96,10 +76,10 @@ export function createScout(
     guns,
     level,
     gunLevel,
-    radius: SCOUT_RADIUS * k,
-    speed: SCOUT_SPEED * k,
-    gunRange: GUN_RANGE * levelBonus(gunLevel, GUN_PER_LEVEL),
-    cool: guns.map(() => Math.random() * GUN_RELOAD),
+    radius: SCOUT.radius * k,
+    speed: SCOUT.speed * k,
+    gunRange: GUN.range * levelBonus(gunLevel, GUN.perLevel),
+    cool: guns.map(() => Math.random() * SCOUT.shell.reload),
     seen: new Uint8Array(CELLS),
     fresh: [],
     shells: [],
@@ -148,17 +128,17 @@ function distToSegment(px: number, py: number, ax: number, ay: number, bx: numbe
 function fire(s: ScoutState, g: Gun, p: ScoutPlane) {
   const gx = g.cx + 0.5;
   const gy = g.cy + 0.5;
-  const flight = Math.hypot(p.x - gx, p.y - gy) / SHELL_SPEED;
+  const flight = Math.hypot(p.x - gx, p.y - gy) / SCOUT.shell.speed;
   const aimX = p.x + Math.cos(p.heading) * s.speed * flight;
   const aimY = p.y + Math.sin(p.heading) * s.speed * flight;
   const angle =
-    Math.atan2(aimY - gy, aimX - gx) + (Math.random() - 0.5) * 2 * SHELL_SPREAD;
+    Math.atan2(aimY - gy, aimX - gx) + (Math.random() - 0.5) * 2 * SCOUT.shell.spread;
   s.shells.push({
     x: gx,
     y: gy,
-    vx: Math.cos(angle) * SHELL_SPEED,
-    vy: Math.sin(angle) * SHELL_SPEED,
-    life: (s.gunRange * 2.5) / SHELL_SPEED,
+    vx: Math.cos(angle) * SCOUT.shell.speed,
+    vy: Math.sin(angle) * SCOUT.shell.speed,
+    life: (s.gunRange * 2.5) / SCOUT.shell.speed,
   });
 }
 
@@ -179,7 +159,7 @@ export function updateScout(s: ScoutState, dt: number) {
     const sh = s.shells[i];
     const nx = sh.x + sh.vx * dt;
     const ny = sh.y + sh.vy * dt;
-    if (p && distToSegment(p.x, p.y, sh.x, sh.y, nx, ny) <= SHELL_HIT) {
+    if (p && distToSegment(p.x, p.y, sh.x, sh.y, nx, ny) <= SCOUT.shell.hit) {
       s.shells.splice(i, 1);
       downPlane(s);
       return;
@@ -200,7 +180,7 @@ export function updateScout(s: ScoutState, dt: number) {
     return;
   }
 
-  p.heading += s.steer * SCOUT_TURN * dt;
+  p.heading += s.steer * SCOUT.turn * dt;
   p.x += Math.cos(p.heading) * s.speed * dt;
   p.y += Math.sin(p.heading) * s.speed * dt;
 
@@ -216,7 +196,7 @@ export function updateScout(s: ScoutState, dt: number) {
     const d = Math.hypot(g.cx + 0.5 - p.x, g.cy + 0.5 - p.y);
     if (d <= s.gunRange && s.cool[i] <= 0) {
       fire(s, g, p);
-      s.cool[i] = GUN_RELOAD;
+      s.cool[i] = SCOUT.shell.reload;
     }
   }
 

@@ -7,17 +7,8 @@ import {
   G_SCORCH,
   type Gun,
 } from "./base";
-import {
-  aimMode,
-  GUN_RANGE,
-  sprayRange,
-  SPRAY_TANK,
-  SHOT_LIFE,
-  SMOKE_LIFE,
-  SPRAY_JETS,
-  SPRAY_RANGE,
-  type GameState,
-} from "./engine";
+import { aimMode, sprayRange, suppressRange, type GameState } from "./engine";
+import { FX, GUN, SPRAY } from "./tuning";
 
 export const COLORS = {
   groundA: "#3d6b3a",
@@ -27,10 +18,30 @@ export const COLORS = {
   scorch: "#1c1a14",
   gun: "#1b2a41",
   gunTop: "#8ecae6",
+  // Огнетушитель красный, как ему и положено: тем же красным обведена его
+  // зона тушения, и на карте сразу видно, чей это круг.
+  spray: "#6e2320",
+  sprayTop: "#d64038",
   range: "rgba(120, 200, 255, 0.16)",
   rangeLine: "rgba(140, 215, 255, 0.55)",
   drone: "#2b2b2b",
   droneAccent: "#e5383b",
+  /**
+   * Начинка видна по цвету боеголовки. Корпус у всех одинаково тёмный —
+   * по нему дрон и читается дроном, — а вот пятно в середине разное, и на
+   * подлёте сразу понятно, что именно летит.
+   */
+  payload: {
+    plain: "#e5383b", // красный — обычная взрывчатка
+    heavy: "#f59f00", // оранжевый — двойной заряд
+    jammer: "#a855f7", // фиолетовый — глушилка зениток
+    foamer: "#22d3ee", // голубой — глушилка огнетушителей
+  } as Record<string, string>,
+  /** Круг подавления у зависшей глушилки. */
+  jam: "rgba(168, 85, 247, 0.5)",
+  jamFill: "rgba(168, 85, 247, 0.1)",
+  foam: "rgba(34, 211, 238, 0.5)",
+  foamFill: "rgba(34, 211, 238, 0.1)",
   missile: "#ffd166",
   water: "#79c7ff",
   flash: "#ffe9a8",
@@ -245,7 +256,7 @@ export function drawSpray(
   angle: number,
   wet: number,
   alive = true,
-  range = SPRAY_RANGE,
+  range: number = SPRAY.range,
   /** Сколько воды осталось в баке, от нуля до единицы. */
   tank = 1
 ) {
@@ -256,8 +267,8 @@ export function drawSpray(
     ctx.strokeStyle = "rgba(121, 199, 255, 0.75)";
     ctx.lineWidth = Math.max(1, cell * 0.22);
     ctx.beginPath();
-    for (let j = 0; j < SPRAY_JETS; j++) {
-      const a = angle + (j * Math.PI * 2) / SPRAY_JETS;
+    for (let j = 0; j < SPRAY.jets; j++) {
+      const a = angle + (j * Math.PI * 2) / SPRAY.jets;
       ctx.moveTo(x + Math.cos(a) * cell * 0.5, y + Math.sin(a) * cell * 0.5);
       ctx.lineTo(x + Math.cos(a) * cell * range, y + Math.sin(a) * cell * range);
     }
@@ -266,9 +277,9 @@ export function drawSpray(
 
   ctx.beginPath();
   ctx.arc(x, y, cell * 0.42, 0, Math.PI * 2);
-  ctx.fillStyle = alive ? (tank > 0 ? "#1d4e6b" : "#2a2f33") : "#3f3f3f";
+  ctx.fillStyle = alive ? (tank > 0 ? COLORS.spray : "#2a2f33") : "#3f3f3f";
   ctx.fill();
-  ctx.strokeStyle = alive ? "#3c5566" : "#555";
+  ctx.strokeStyle = alive ? COLORS.sprayTop : "#555";
   ctx.lineWidth = Math.max(0.6, cell * 0.14);
   ctx.stroke();
 
@@ -327,8 +338,8 @@ export function drawCoverage(
   ctx: CanvasRenderingContext2D,
   guns: Gun[] | { cx: number; cy: number; alive?: boolean; kind?: string; spray?: boolean }[],
   cell: number,
-  range = GUN_RANGE,
-  spraysRange = SPRAY_RANGE
+  range: number = GUN.range,
+  spraysRange: number = SPRAY.range
 ) {
   const live = guns.filter((g) => (g as { alive?: boolean }).alive !== false);
   if (!live.length) return;
@@ -377,7 +388,7 @@ export function drawFrame(
   drawCoverage(ctx, s.guns, cell, gunRange(s), reach);
   for (const g of s.guns) {
     if (g.spray)
-      drawSpray(ctx, g.cx, g.cy, cell, g.angle, g.wet, g.alive, reach, g.tank / SPRAY_TANK);
+      drawSpray(ctx, g.cx, g.cy, cell, g.angle, g.wet, g.alive, reach, g.tank / SPRAY.tank);
     else drawTurret(ctx, g.cx, g.cy, cell, g.angle, g.alive);
   }
 
@@ -417,7 +428,7 @@ export function drawFrame(
 
   // чёрный дым за подбитыми
   for (const p of s.puffs) {
-    const k = p.t / SMOKE_LIFE;
+    const k = p.t / FX.smokeLife;
     ctx.fillStyle = `rgba(${COLORS.smoke}, ${0.5 * (1 - k)})`;
     ctx.beginPath();
     ctx.arc(p.x * cell, p.y * cell, p.r * cell * (0.6 + k * 1.6), 0, Math.PI * 2);
@@ -458,15 +469,33 @@ export function drawFrame(
       ctx.arc(px + ox, py + oy, r * 0.4, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.fillStyle = COLORS.droneAccent;
+    ctx.fillStyle = COLORS.payload[d.payload] ?? COLORS.droneAccent;
     ctx.beginPath();
     ctx.arc(px, py, r * 0.45, 0, Math.PI * 2);
     ctx.fill();
   }
 
+  // Круг подавления у тех, кто уже встал над своей жертвой: по нему видно,
+  // какие установки сейчас молчат и куда вести прицел.
+  const jammers = s.drones.filter((d) => d.over && !d.hit);
+  if (jammers.length) {
+    const reach = suppressRange(s) * cell;
+    for (const d of jammers) {
+      const guns = d.payload === "foamer";
+      ctx.beginPath();
+      ctx.arc(d.x * cell, d.y * cell, reach, 0, Math.PI * 2);
+      ctx.fillStyle = guns ? COLORS.foamFill : COLORS.jamFill;
+      ctx.fill();
+      ctx.strokeStyle = guns ? COLORS.foam : COLORS.jam;
+      ctx.lineWidth = Math.max(1, cell * 0.12);
+      ctx.stroke();
+    }
+    ctx.lineWidth = Math.max(1, cell * 0.18);
+  }
+
   // вспышки очередей и всплески воды
   for (const sh of s.shots) {
-    const k = 1 - sh.t / SHOT_LIFE;
+    const k = 1 - sh.t / FX.shotLife;
     const px = sh.x * cell;
     const py = sh.y * cell;
     if (sh.water) {

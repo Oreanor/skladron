@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://skladron.vercel.app";
 
@@ -22,13 +23,30 @@ async function send(chatId: number, text: string) {
 const nameOf = (p: { base_name: string | null; display_name: string | null; email: string | null }) =>
   p.base_name ?? p.display_name ?? p.email?.split("@")[0] ?? "склад";
 
+/** Кто просит. Токен проверяем у Supabase, на слово клиенту не верим. */
+async function caller(request: Request) {
+  const header = request.headers.get("authorization") ?? "";
+  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  if (!token || !URL || !ANON) return null;
+  const db = createClient(URL, ANON, { auth: { persistSession: false } });
+  const { data } = await db.auth.getUser(token);
+  return data.user?.id ?? null;
+}
+
 export async function POST(request: Request) {
-  if (!URL || !SERVICE || !TOKEN) return Response.json({ ok: false, reason: "not configured" });
+  if (!URL || !ANON || !SERVICE || !TOKEN) {
+    return Response.json({ ok: false, reason: "not configured" });
+  }
 
   const { attackId, event } = (await request.json()) as { attackId?: string; event?: Event };
   if (!attackId || (event !== "sent" && event !== "resolved")) {
     return new Response("bad request", { status: 400 });
   }
+
+  // id боя публичен: по нему открывается повтор, ссылками на повторы
+  // обмениваются. Значит одного id мало — проверяем, что просит участник.
+  const uid = await caller(request);
+  if (!uid) return new Response("unauthorized", { status: 401 });
 
   const db = createClient(URL, SERVICE, { auth: { persistSession: false } });
   const { data: attack } = await db
@@ -38,10 +56,19 @@ export async function POST(request: Request) {
     .maybeSingle();
   if (!attack) return new Response("no such battle", { status: 404 });
 
+  // Извещает всегда тот, у кого событие и произошло: о вылете — нападавший,
+  // об исходе — защитник, который бой и отыграл. Иначе одна сторона могла бы
+  // дёргать ручку сколько угодно раз и заваливать вторую сообщениями.
+  const author = event === "sent" ? attack.attacker_id : attack.defender_id;
+  if (uid !== author) return new Response("not your side of this battle", { status: 403 });
+  // и только пока бой в подходящем состоянии: отгремевший не «вылетает» заново
+  const expected = event === "sent" ? "pending" : "resolved";
+  if (attack.status !== expected) return Response.json({ ok: true, sent: false });
+
   // Пишем всегда второй стороне: о новом налёте — защитнику, об исходе —
-  // нападавшему. Так извещение не зависит от того, кто дёрнул ручку.
+  // нападавшему.
   const toId = event === "sent" ? attack.defender_id : attack.attacker_id;
-  const fromId = event === "sent" ? attack.attacker_id : attack.defender_id;
+  const fromId = author;
 
   const { data: people } = await db
     .from("profiles")

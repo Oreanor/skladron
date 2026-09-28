@@ -13,45 +13,12 @@ import {
   idx,
   isBuilding,
 } from "./base";
-import { mulberry32, type SpawnTicket } from "./attack";
+import { mulberry32, type Payload, type SpawnTicket } from "./attack";
+import { DRONE, FIRE, FX, GUN, HANDS, MISSILE, PAYLOAD, SPRAY, SUPPRESS, WAVE } from "./tuning";
 import { gunKind } from "./base";
 
 export { GRID, G_BASE, G_FIRE, G_GROUND, G_SCORCH, idx, isBuilding };
 export { G_BURNT } from "./base";
-
-export const GUN_RANGE = 6; // радиус поражения пушки первого уровня, в клетках
-/** Прибавка к дальности и скорости ракеты за каждый уровень пушек. */
-export const GUN_PER_LEVEL = 0.25;
-/** Прибавка к скорости дрона за каждый уровень. */
-export const DRONE_PER_LEVEL = 0.25;
-/** Прибавка к меткости очереди за уровень пулемёта. */
-export const MG_PER_LEVEL = 0.25;
-/** Прибавка к ширине струи за уровень брандспойта. */
-export const WATER_PER_LEVEL = 0.25;
-export const GUN_COOLDOWN = 3; // с
-export const FIRE_SPREAD = 5; // с — горящая клетка поджигает соседей
-export const DRONE_SPEED = 4.2; // клеток/с
-export const MISSILE_SPEED = 17;
-export const MISSILE_LIFE = 4;
-export const GUN_HIT_CHANCE = 0.15; // шанс случайно врезаться в пушку
-
-// прицел игрока
-export const MG_INTERVAL = 0.09; // с между выстрелами
-export const MG_RADIUS = 1.8; // клеток — зона захвата дрона прицелом
-// Курсор прямо на дроне — стреляем, даже если под ним склад. Радиус захвата
-// тут уже, чем у самой очереди: случайный дрон в стороне тушение не срывает.
-export const MG_LOCK = 1;
-export const MG_SPREAD = 1.2; // клеток — разброс пуль
-export const MG_HIT = 0.35; // шанс попадания одним выстрелом; одного попадания достаточно
-// Струя накрывает пятно, а не одну клетку под курсором: вести мышь точно по
-// бегущему огню невозможно, а промахов у воды нет — она просто лила мимо.
-// Радиус совпадает с кругом водяного прицела, который игрок и так видит.
-export const WATER_RADIUS = 1.5; // клеток
-export const MAX_HOLES = 2500;
-export const HIT_GLIDE = 3; // клеток планирования подбитого дрона
-export const FALL_SPEED = 3.4;
-export const SMOKE_LIFE = 1.2;
-export const SHOT_LIFE = 0.12;
 
 export type Phase = "playing" | "won" | "lost";
 
@@ -70,25 +37,13 @@ export interface Gun {
   wet: number;
   /** Сколько секунд воды осталось в баке. */
   tank: number;
+  /**
+   * Сколько ещё секунд установка заглушена. Пока больше нуля — не стреляет и
+   * не льёт. Ставится каждый кадр, пока рядом висит подавитель, и сама
+   * стекает, когда его сбили: глушилка отпускает не мгновенно.
+   */
+  jammed: number;
 }
-
-/** Скорость доворота башни, рад/с. */
-export const TURRET_TURN = 4;
-
-/** Огнетушитель: радиус струи, число струй, скорость вращения и выбег. */
-export const SPRAY_RANGE = 4;
-export const SPRAY_PER_LEVEL = 0.25;
-export const SPRAY_JETS = 8;
-export const SPRAY_SPIN = 3.2; // рад/с
-export const SPRAY_HOLD = 1.5; // с крутится вхолостую после того, как рядом потушено
-/**
- * Бак: столько секунд установка может лить за бой. Не пополняется — потому
- * плотный ковёр из огнетушителей и не спасает от долгого налёта: воды у него
- * ровно столько же, сколько у редкого, просто разлита она гуще.
- */
-export const SPRAY_TANK = 14;
-/** Сколько секунд воды нужно клетке, чтобы погаснуть. Струя не гасит с ходу. */
-export const SPRAY_SOAK = 0.8;
 
 export interface Drone {
   id: number;
@@ -103,6 +58,22 @@ export interface Drone {
   hy: number;
   fuse: number;
   smokeT: number;
+  /**
+   * Идёт строем: сжимается к складу по радиусу, держа своё место в круге, и
+   * только поравнявшись с целью расходится на неё. Пока строй цел, дрон не
+   * качается — иначе кольцо размазывается и перестаёт читаться кольцом.
+   */
+  form: boolean;
+  /** Доля скорости, уходящая в закрутку вокруг склада; знак — сторона. */
+  swirl: number;
+  /** Что несёт. От этого зависят и скорость, и то, чем кончится полёт. */
+  payload: Payload;
+  /**
+   * Подавитель наматывает круги над своей жертвой: id пушки, вокруг которой
+   * он ходит, и сколько секунд топлива осталось. У остальных ноль.
+   */
+  over: number;
+  fuel: number;
 }
 
 export interface Missile {
@@ -197,11 +168,11 @@ export interface GameState {
 /** Готовит бой: карта склада как есть, пушки как есть, дроны по расписанию. */
 /** Дальность пушек с учётом уровня — её же рисует зона покрытия. */
 export const gunRange = (s: { gunLevel: number }) =>
-  GUN_RANGE * levelBonus(s.gunLevel, GUN_PER_LEVEL);
+  GUN.range * levelBonus(s.gunLevel, GUN.perLevel);
 
 /** Дальность струи с учётом уровня — по ней же рисуется красный круг. */
 export const sprayRange = (s: { sprayLevel: number }) =>
-  SPRAY_RANGE * levelBonus(s.sprayLevel, SPRAY_PER_LEVEL);
+  SPRAY.range * levelBonus(s.sprayLevel, SPRAY.perLevel);
 
 /** Уровни, с которыми идёт бой. Чего нет — то первого уровня. */
 export interface BattleLevels {
@@ -248,7 +219,8 @@ export function createBattle(
       aim: Math.atan2(g.cy + 0.5 - GRID / 2, g.cx + 0.5 - GRID / 2),
       spray: gunKind(g) === "spray",
       wet: 0,
-      tank: SPRAY_TANK,
+      tank: SPRAY.tank,
+      jammed: 0,
     })),
     depots: depots.map((d) => ({ ...d })),
     drones: [],
@@ -320,7 +292,7 @@ function ignite(s: GameState, i: number) {
   if (s.cells[i] !== G_BASE) return;
   s.cells[i] = G_FIRE;
   s.targetsStale = true;
-  s.fire.set(i, FIRE_SPREAD);
+  s.fire.set(i, FIRE.spread);
   s.baseOk--;
   s.result.burned++;
   s.dirty = true;
@@ -347,7 +319,7 @@ function ignite(s: GameState, i: number) {
 /** Ближайший дрон к точке прицела и близко ли он настолько, что это захват. */
 function lockOn(s: GameState, x: number, y: number) {
   let best: Drone | null = null;
-  let bestD = MG_RADIUS * MG_RADIUS;
+  let bestD = HANDS.mg.radius * HANDS.mg.radius;
   for (const d of s.drones) {
     if (d.hit) continue;
     const dx = d.x - x;
@@ -358,7 +330,7 @@ function lockOn(s: GameState, x: number, y: number) {
       best = d;
     }
   }
-  return { best, locked: best !== null && bestD <= MG_LOCK * MG_LOCK };
+  return { best, locked: best !== null && bestD <= HANDS.mg.lock * HANDS.mg.lock };
 }
 
 /**
@@ -385,8 +357,8 @@ function aimTick(s: GameState) {
 
   if (water) {
     s.shots.push({ x: a.x, y: a.y, t: 0, water: true, seed: s.rnd() });
-    if (s.shots.length > 60) s.shots.shift();
-    const reach = WATER_RADIUS * levelBonus(s.waterLevel, WATER_PER_LEVEL);
+    if (s.shots.length > FX.maxShots) s.shots.shift();
+    const reach = HANDS.water.radius * levelBonus(s.waterLevel, HANDS.water.perLevel);
     const r = Math.ceil(reach);
     for (let y = cy - r; y <= cy + r; y++) {
       for (let x = cx - r; x <= cx + r; x++) {
@@ -398,27 +370,28 @@ function aimTick(s: GameState) {
     return;
   }
 
-  const px = a.x + (s.rnd() - 0.5) * MG_SPREAD * 2;
-  const py = a.y + (s.rnd() - 0.5) * MG_SPREAD * 2;
+  const px = a.x + (s.rnd() - 0.5) * HANDS.mg.spread * 2;
+  const py = a.y + (s.rnd() - 0.5) * HANDS.mg.spread * 2;
   s.shots.push({ x: px, y: py, t: 0, water: false, seed: s.rnd() });
-  if (s.shots.length > 60) s.shots.shift();
+  if (s.shots.length > FX.maxShots) s.shots.shift();
 
   const hx = Math.floor(px);
   const hy = Math.floor(py);
   if (hx >= 0 && hy >= 0 && hx < GRID && hy < GRID && !isBuilding(s.cells[idx(hx, hy)])) {
     s.holes.push({ x: px, y: py, seed: s.rnd() });
-    if (s.holes.length > MAX_HOLES) s.holes.shift();
+    if (s.holes.length > FX.maxHoles) s.holes.shift();
   }
 
   if (!best) return;
   // Меткость очереди растёт с уровнем пулемёта, но не до безусловной.
-  if (s.rnd() > Math.min(0.95, MG_HIT * levelBonus(s.mgLevel, MG_PER_LEVEL))) return;
+  if (s.rnd() > Math.min(HANDS.mg.maxHit, HANDS.mg.hit * levelBonus(s.mgLevel, HANDS.mg.perLevel)))
+    return;
 
   const len = Math.hypot(best.tx - best.x, best.ty - best.y) || 1;
   best.hit = true;
   best.hx = (best.tx - best.x) / len;
   best.hy = (best.ty - best.y) / len;
-  best.fuse = HIT_GLIDE;
+  best.fuse = DRONE.glide;
   best.smokeT = 0;
   s.result.killedByMg++;
 }
@@ -450,6 +423,17 @@ function targets(s: GameState): number[] {
   return s.targets;
 }
 
+/**
+ * Что накрывает подавитель. Ровно столько же, сколько достаёт зенитка того
+ * же уровня: при равных уровнях глушилка и пушка стоят друг друга, при
+ * перевесе в уровнях кто-то один оказывается сильнее.
+ */
+export const suppressRange = (s: { droneLevel: number }) =>
+  GUN.range * levelBonus(s.droneLevel, GUN.perLevel);
+
+/** Середина поля: вокруг неё строится всякий строй. */
+export const MID = GRID / 2;
+
 function randomTarget(s: GameState): number {
   const alive = targets(s);
   if (!alive.length) return -1;
@@ -461,25 +445,70 @@ function randomTarget(s: GameState): number {
   return fresh.length ? fresh[(s.rnd() * fresh.length) | 0] : -1;
 }
 
+/**
+ * Цель по своему лучу: строй расходится, и каждый берёт клетку, что ближе
+ * к его направлению от середины. Со случайной целью кольцо на последних
+ * метрах скрещивается само с собой и перестаёт быть кольцом.
+ */
+function rayTarget(s: GameState, ang: number): number {
+  const alive = targets(s);
+  if (!alive.length) return -1;
+  let best = -1;
+  let bestD = Infinity;
+  for (let k = 0; k < WAVE.raySamples; k++) {
+    const i = alive[(s.rnd() * alive.length) | 0];
+    if (s.cells[i] !== G_BASE) continue;
+    const a = Math.atan2(((i / GRID) | 0) + 0.5 - MID, (i % GRID) + 0.5 - MID);
+    let da = Math.abs(a - ang) % (Math.PI * 2);
+    if (da > Math.PI) da = Math.PI * 2 - da;
+    if (da < bestD) {
+      bestD = da;
+      best = i;
+    }
+  }
+  // все пробы угодили в клетки, которые успели сгореть, — берём что есть
+  return best >= 0 ? best : randomTarget(s);
+}
+
 function spawnDrone(s: GameState, t: SpawnTicket) {
-  const ti = randomTarget(s);
-  if (ti < 0) return;
-  const along = Math.max(-5, Math.min(GRID + 5, t.ox));
+  const form = t.form === true;
+  const ang = t.ang ?? 0;
+  // Строевой дрон целится по своему лучу, остальные — куда попало.
+  const ti = form ? rayTarget(s, ang) : randomTarget(s);
+  if (ti < 0) {
+    // Целых клеток не осталось: складу уже нечем гореть. Дрон всё равно
+    // доходит — записываем его прорвавшимся, иначе сбитые и прорвавшиеся
+    // перестают сходиться с высланными, а на это опирается сервер.
+    s.result.leaked++;
+    return;
+  }
+
   let x: number;
   let y: number;
-  if (t.edge === 0) {
-    x = along;
-    y = -3 + t.oy;
-  } else if (t.edge === 1) {
-    x = along;
-    y = GRID + 3 + t.oy;
-  } else if (t.edge === 2) {
-    x = -3 + t.oy;
-    y = along;
+  if (form) {
+    // встаём на свою точку окружности: дальше дрон пойдёт строго по радиусу
+    const rad = t.rad ?? MID;
+    x = MID + Math.cos(ang) * rad;
+    y = MID + Math.sin(ang) * rad;
   } else {
-    x = GRID + 3 + t.oy;
-    y = along;
+    const along = Math.max(-5, Math.min(GRID + 5, t.ox ?? 0));
+    const off = t.oy ?? 0;
+    const edge = t.edge ?? 0;
+    if (edge === 0) {
+      x = along;
+      y = -3 + off;
+    } else if (edge === 1) {
+      x = along;
+      y = GRID + 3 + off;
+    } else if (edge === 2) {
+      x = -3 + off;
+      y = along;
+    } else {
+      x = GRID + 3 + off;
+      y = along;
+    }
   }
+
   s.drones.push({
     id: s.nextId++,
     x,
@@ -493,7 +522,95 @@ function spawnDrone(s: GameState, t: SpawnTicket) {
     hy: 0,
     fuse: 0,
     smokeT: 0,
+    form,
+    swirl: Math.max(-0.95, Math.min(0.95, t.swirl ?? 0)),
+    payload: t.payload ?? "plain",
+    over: 0,
+    fuel: SUPPRESS.loiter,
   });
+}
+
+/** Кого глушит эта начинка: зенитки или огнетушители. Иначе никого. */
+function prey(payload: Payload): boolean | null {
+  if (payload === "jammer") return false; // ложь — это зенитка, spray === false
+  if (payload === "foamer") return true;
+  return null;
+}
+
+/**
+ * Дрон дошёл до цели. Простой взрывается, тяжёлый поджигает ещё и кольцо
+ * вокруг, а подавитель не взрывается вовсе: он выбирает жертву и садится на
+ * круг над ней. Возвращает true, если дрон на этом кончился.
+ */
+function arrive(s: GameState, d: Drone): boolean {
+  const hunts = prey(d.payload);
+  if (hunts !== null) {
+    // Ищем ближайшую живую установку своего рода. Нет таких — глушить
+    // некого, и подавитель просто уходит: на складе ему делать нечего.
+    let best: Gun | null = null;
+    let bestD = Infinity;
+    for (const g of s.guns) {
+      if (!g.alive || g.spray !== hunts) continue;
+      const dx = g.cx + 0.5 - d.x;
+      const dy = g.cy + 0.5 - d.y;
+      const dd = dx * dx + dy * dy;
+      if (dd < bestD) {
+        bestD = dd;
+        best = g;
+      }
+    }
+    if (!best) return true;
+    d.over = best.id;
+    d.wob = Math.atan2(d.y - (best.cy + 0.5), d.x - (best.cx + 0.5));
+    return false;
+  }
+
+  ignite(s, d.ti);
+  s.booms.push({ x: d.tx, y: d.ty, t: 0, r: 2.5 });
+  // Двойная взрывчатка забирает не одну клетку, а кольцо вокруг неё.
+  const ring = PAYLOAD[d.payload].ring;
+  if (ring > 0) {
+    const cx = d.ti % GRID;
+    const cy = (d.ti / GRID) | 0;
+    for (let y = cy - ring; y <= cy + ring; y++) {
+      for (let x = cx - ring; x <= cx + ring; x++) {
+        if (x < 0 || y < 0 || x >= GRID || y >= GRID) continue;
+        ignite(s, idx(x, y));
+      }
+    }
+  }
+  return true;
+}
+
+/**
+ * Подавитель на круге. Наматывает витки над своей жертвой и каждый кадр
+ * глушит всё её рода в своём радиусе. Кончилось топливо или не стало жертвы —
+ * уходит с карты; засчитываем прорвавшимся, чтобы сбитые и прорвавшиеся
+ * сходились с высланными.
+ */
+function suppressTick(s: GameState, d: Drone, dt: number) {
+  const host = s.guns.find((g) => g.id === d.over);
+  d.fuel -= dt;
+  if (!host || !host.alive || d.fuel <= 0) {
+    const at = s.drones.indexOf(d);
+    if (at >= 0) s.drones.splice(at, 1);
+    s.result.leaked++;
+    return;
+  }
+
+  // круг над жертвой: радиус маленький, дрон висит прямо над установкой
+  d.wob += SUPPRESS.spin * dt;
+  d.x = host.cx + 0.5 + Math.cos(d.wob) * SUPPRESS.orbit;
+  d.y = host.cy + 0.5 + Math.sin(d.wob) * SUPPRESS.orbit;
+
+  const hunts = prey(d.payload);
+  const reach = suppressRange(s);
+  for (const g of s.guns) {
+    if (!g.alive || g.spray !== hunts) continue;
+    const dx = g.cx + 0.5 - d.x;
+    const dy = g.cy + 0.5 - d.y;
+    if (dx * dx + dy * dy <= reach * reach) g.jammed = SUPPRESS.release;
+  }
 }
 
 export function update(s: GameState, dt: number) {
@@ -511,7 +628,7 @@ export function update(s: GameState, dt: number) {
     s.mgCd -= dt;
     let guard = 0;
     while (s.mgCd <= 0 && guard++ < 8) {
-      s.mgCd += MG_INTERVAL;
+      s.mgCd += HANDS.mg.interval;
       aimTick(s);
     }
   }
@@ -521,13 +638,13 @@ export function update(s: GameState, dt: number) {
     const d = s.drones[i];
 
     if (d.hit) {
-      const step = FALL_SPEED * dt;
+      const step = DRONE.fallSpeed * dt;
       d.x += d.hx * step;
       d.y += d.hy * step;
       d.fuse -= step;
       d.smokeT -= dt;
       if (d.smokeT <= 0) {
-        d.smokeT = 0.05;
+        d.smokeT = DRONE.smokeEvery;
         s.puffs.push({ x: d.x, y: d.y, t: 0, r: 0.5 + s.rnd() * 0.5 });
       }
       if (d.x < -4 || d.y < -4 || d.x > GRID + 4 || d.y > GRID + 4) {
@@ -541,48 +658,98 @@ export function update(s: GameState, dt: number) {
       continue;
     }
 
+    // Подавитель не взрывается: дойдя до склада, он садится на круг над
+    // своей жертвой и висит там, пока есть топливо. Сбить его может только
+    // пулемёт — заглушённые пушки по нему уже не работают. Проверяем до
+    // всего прочего: на круге ему не нужны ни цель, ни строй, а сгоревшая
+    // цель не должна уносить его мимо статистики.
+    if (d.over) {
+      suppressTick(s, d, dt);
+      continue;
+    }
+
     if (s.cells[d.ti] !== G_BASE) {
       const ti = randomTarget(s);
       if (ti < 0) {
         s.drones.splice(i, 1);
+        s.result.leaked++;
         continue;
       }
       d.ti = ti;
       d.tx = (ti % GRID) + 0.5;
       d.ty = ((ti / GRID) | 0) + 0.5;
     }
-    const dx = d.tx - d.x;
-    const dy = d.ty - d.y;
-    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    const step = DRONE_SPEED * levelBonus(s.droneLevel, DRONE_PER_LEVEL) * dt;
-
-    if (dist <= step) {
-      ignite(s, d.ti);
-      s.booms.push({ x: d.tx, y: d.ty, t: 0, r: 2.5 });
-      s.drones.splice(i, 1);
-      s.result.leaked++;
-      continue;
-    }
-
-    d.wob += dt * 6;
-    const nx = -dy / dist;
-    const ny = dx / dist;
-    const wob = Math.sin(d.wob) * 2;
+    const step =
+      DRONE.speed * levelBonus(s.droneLevel, DRONE.perLevel) * PAYLOAD[d.payload].speed * dt;
     const px = d.x | 0;
     const py = d.y | 0;
-    d.x += (dx / dist) * step + nx * wob * dt;
-    d.y += (dy / dist) * step + ny * wob * dt;
+
+    if (d.form) {
+      // Строй: дрон держит своё место в круге и сжимает радиус. Скорость
+      // делим между «внутрь» и «по кругу», сумма остаётся прежней, — иначе
+      // закрученный заход выходил бы быстрее прямого и ломал бы баланс.
+      // Угловая скорость при этом растёт к середине сама: на коротком
+      // радиусе та же доля скорости даёт больший угол, и спираль к концу
+      // раскручивается воронкой.
+      const rx = d.x - MID;
+      const ry = d.y - MID;
+      const r = Math.hypot(rx, ry) || 0.001;
+      const tr = Math.hypot(d.tx - MID, d.ty - MID);
+      if (r > tr + WAVE.peel) {
+        const k = d.swirl;
+        const nr = r - step * Math.sqrt(1 - k * k);
+        const na = Math.atan2(ry, rx) + (step * k) / r;
+        d.x = MID + Math.cos(na) * nr;
+        d.y = MID + Math.sin(na) * nr;
+      } else {
+        // Поравнялись с целью — строй расходится. Цель берём заново по
+        // своему лучу: та, что досталась на вылете, могла уже сгореть.
+        d.form = false;
+        const ti = rayTarget(s, Math.atan2(ry, rx));
+        if (ti < 0) {
+          s.drones.splice(i, 1);
+          continue;
+        }
+        d.ti = ti;
+        d.tx = (ti % GRID) + 0.5;
+        d.ty = ((ti / GRID) | 0) + 0.5;
+      }
+    }
+
+    if (!d.form) {
+      const dx = d.tx - d.x;
+      const dy = d.ty - d.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+      if (dist <= step) {
+        if (arrive(s, d)) {
+          s.drones.splice(i, 1);
+          s.result.leaked++;
+        }
+        continue;
+      }
+
+      d.wob += dt * DRONE.wobbleRate;
+      const nx = -dy / dist;
+      const ny = dx / dist;
+      const wob = Math.sin(d.wob) * DRONE.wobbleAmp;
+      d.x += (dx / dist) * step + nx * wob * dt;
+      d.y += (dy / dist) * step + ny * wob * dt;
+    }
 
     const cx = d.x | 0;
     const cy = d.y | 0;
     if (cx !== px || cy !== py) {
       const g = gunAt(s, cx, cy);
-      if (g && s.rnd() < GUN_HIT_CHANCE) {
+      if (g && s.rnd() < DRONE.gunCollision) {
         g.alive = false;
         if (g.spray) s.result.spraysLost++;
         else s.result.gunsLost++;
         s.booms.push({ x: cx + 0.5, y: cy + 0.5, t: 0, r: 3 });
         s.drones.splice(i, 1);
+        // Его никто не сбивал — он дошёл и снёс установку собой. В счёт идёт
+        // прорвавшимся, иначе сбитые и прорвавшиеся не сходятся с высланными.
+        s.result.leaked++;
         s.dirty = true;
       }
     }
@@ -594,9 +761,12 @@ export function update(s: GameState, dt: number) {
   // первый же огонь на своём пути. Отсюда и потолок: восемь очагов разом, не
   // больше, — широкий фронт огня установку обходит.
   const reach = sprayRange(s);
-  const douse = dt / SPRAY_SOAK;
+  const douse = dt / SPRAY.soak;
   for (const g of s.guns) {
     if (!g.alive || !g.spray) continue;
+    // заглушённая пеной установка не льёт, но бак у неё не течёт
+    g.jammed = Math.max(0, g.jammed - dt);
+    if (g.jammed > 0) continue;
     const gx = g.cx + 0.5;
     const gy = g.cy + 0.5;
 
@@ -609,14 +779,14 @@ export function update(s: GameState, dt: number) {
         break;
       }
     }
-    if (fireNear && g.tank > 0) g.wet = SPRAY_HOLD;
+    if (fireNear && g.tank > 0) g.wet = SPRAY.hold;
     if (g.wet <= 0 || g.tank <= 0) continue;
 
     g.wet -= dt;
     g.tank -= dt;
-    g.angle += SPRAY_SPIN * dt;
-    for (let j = 0; j < SPRAY_JETS; j++) {
-      const a = g.angle + (j * Math.PI * 2) / SPRAY_JETS;
+    g.angle += SPRAY.spin * dt;
+    for (let j = 0; j < SPRAY.jets; j++) {
+      const a = g.angle + (j * Math.PI * 2) / SPRAY.jets;
       const dx = Math.cos(a);
       const dy = Math.sin(a);
       for (let r = 0.5; r <= reach; r += 0.5) {
@@ -635,22 +805,28 @@ export function update(s: GameState, dt: number) {
   for (const g of s.guns) {
     if (!g.alive || g.spray) continue;
 
+    // Заглушённая зенитка не стреляет. Башню всё равно доворачиваем — по
+    // шевелящемуся стволу видно, что пушка жива, просто её глушат.
+    g.jammed = Math.max(0, g.jammed - dt);
+
     // Башня доворачивает к последней цели — по ней видно, куда пушка смотрит.
     let da = g.aim - g.angle;
     while (da > Math.PI) da -= Math.PI * 2;
     while (da < -Math.PI) da += Math.PI * 2;
-    const turn = TURRET_TURN * dt;
+    const turn = GUN.turretTurn * dt;
     g.angle += Math.max(-turn, Math.min(turn, da));
 
     g.cd -= dt;
-    if (g.cd > 0) continue;
+    if (g.cd > 0 || g.jammed > 0) continue;
     const gx = g.cx + 0.5;
     const gy = g.cy + 0.5;
     let best: Drone | null = null;
     const reach = gunRange(s) + 0.5;
     let bestD = reach * reach;
     for (const d of s.drones) {
-      if (d.hit) continue;
+      // Подавитель зенитки не берут: он и висит там, где они его достать не
+      // могут. Снять его способен только пулемёт игрока.
+      if (d.hit || d.over) continue;
       const ddx = d.x - gx;
       const ddy = d.y - gy;
       const dd = ddx * ddx + ddy * ddy;
@@ -669,9 +845,9 @@ export function update(s: GameState, dt: number) {
         dx: Math.cos(a),
         dy: Math.sin(a),
         target: best.id,
-        life: MISSILE_LIFE,
+        life: MISSILE.life,
       });
-      g.cd = GUN_COOLDOWN;
+      g.cd = GUN.cooldown;
     }
   }
 
@@ -698,14 +874,15 @@ export function update(s: GameState, dt: number) {
       let da = a - ca;
       while (da > Math.PI) da -= Math.PI * 2;
       while (da < -Math.PI) da += Math.PI * 2;
-      const turn = Math.max(-8 * dt, Math.min(8 * dt, da));
+      const turn = Math.max(-MISSILE.turn * dt, Math.min(MISSILE.turn * dt, da));
       m.dx = Math.cos(ca + turn);
       m.dy = Math.sin(ca + turn);
     }
-    const missileSpeed = MISSILE_SPEED * levelBonus(s.gunLevel, GUN_PER_LEVEL);
+    const missileSpeed = MISSILE.speed * levelBonus(s.gunLevel, GUN.perLevel);
     m.x += m.dx * missileSpeed * dt;
     m.y += m.dy * missileSpeed * dt;
-    if (t && (t.x - m.x) * (t.x - m.x) + (t.y - m.y) * (t.y - m.y) < 0.64) {
+    const hit = MISSILE.hitRadius * MISSILE.hitRadius;
+    if (t && (t.x - m.x) * (t.x - m.x) + (t.y - m.y) * (t.y - m.y) < hit) {
       s.booms.push({ x: t.x, y: t.y, t: 0, r: 2 });
       const at = s.drones.indexOf(t);
       if (at >= 0) s.drones.splice(at, 1);
@@ -744,7 +921,7 @@ export function update(s: GameState, dt: number) {
         s.dirty = true;
         continue;
       }
-      s.fire.set(i, FIRE_SPREAD);
+      s.fire.set(i, FIRE.spread);
       toIgnite.push(...fuel);
     }
     for (const i of toIgnite) ignite(s, i);
@@ -753,15 +930,15 @@ export function update(s: GameState, dt: number) {
   // --- эффекты ---
   for (let i = s.booms.length - 1; i >= 0; i--) {
     s.booms[i].t += dt;
-    if (s.booms[i].t > 0.5) s.booms.splice(i, 1);
+    if (s.booms[i].t > FX.boomLife) s.booms.splice(i, 1);
   }
   for (let i = s.shots.length - 1; i >= 0; i--) {
     s.shots[i].t += dt;
-    if (s.shots[i].t > SHOT_LIFE) s.shots.splice(i, 1);
+    if (s.shots[i].t > FX.shotLife) s.shots.splice(i, 1);
   }
   for (let i = s.puffs.length - 1; i >= 0; i--) {
     s.puffs[i].t += dt;
-    if (s.puffs[i].t > SMOKE_LIFE) s.puffs.splice(i, 1);
+    if (s.puffs[i].t > FX.smokeLife) s.puffs.splice(i, 1);
   }
 
   // --- конец боя ---

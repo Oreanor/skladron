@@ -254,7 +254,7 @@ export default function Scout({
           cursor="default"
         >
           {done && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center overflow-y-auto bg-black/80 p-4 sm:p-6">
+            <div className="absolute inset-0 z-20 flex items-center justify-center overflow-y-auto bg-neutral-950/90 p-4 sm:p-6">
               <div className="w-full max-w-sm">
                 <div className="mb-1 text-2xl font-bold tracking-wide text-neutral-100">
                   {t("scout.reportTitle", { name })}
