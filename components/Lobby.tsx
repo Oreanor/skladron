@@ -135,7 +135,7 @@ import {
   Play,
   Trash2,
 } from "lucide-react";
-import { autoDefend, type UnattendedOutcome } from "@/lib/unattended";
+import { type UnattendedOutcome } from "@/lib/unattended";
 import {
   decodeRle,
   encodeRle,
