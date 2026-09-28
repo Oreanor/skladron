@@ -69,8 +69,8 @@ export interface Drone {
   /** Что несёт. От этого зависят и скорость, и то, чем кончится полёт. */
   payload: Payload;
   /**
-   * Подавитель наматывает круги над своей жертвой: id пушки, вокруг которой
-   * он ходит, и сколько секунд топлива осталось. У остальных ноль.
+   * Подавитель на круге: id пушки (>0), вокруг которой он ходит; −1 — свободный
+   * облёт склада без жертвы; 0 — не на круге. fuel — секунды топлива на круге.
    */
   over: number;
   fuel: number;
@@ -540,13 +540,14 @@ function prey(payload: Payload): boolean | null {
 /**
  * Дрон дошёл до цели. Простой взрывается, тяжёлый поджигает ещё и кольцо
  * вокруг, а подавитель не взрывается вовсе: он выбирает жертву и садится на
- * круг над ней. Возвращает true, если дрон на этом кончился.
+ * круг над ней. Нет жертвы — всё равно уходит на круг (over = −1) и кружит
+ * над складом, пока не кончится топливо. Возвращает true, если дрон кончился.
  */
 function arrive(s: GameState, d: Drone): boolean {
   const hunts = prey(d.payload);
   if (hunts !== null) {
     // Ищем ближайшую живую установку своего рода. Нет таких — глушить
-    // некого, и подавитель просто уходит: на складе ему делать нечего.
+    // некого, но подавитель не исчезает: уходит на свободный облёт склада.
     let best: Gun | null = null;
     let bestD = Infinity;
     for (const g of s.guns) {
@@ -559,8 +560,16 @@ function arrive(s: GameState, d: Drone): boolean {
         best = g;
       }
     }
-    if (!best) return true;
+    if (!best) {
+      d.over = -1;
+      return false;
+    }
     d.over = best.id;
+    // Сразу цель в кольце вокруг жертвы — иначе первый кадр тянет к центру пушки.
+    const ang = s.rnd() * Math.PI * 2;
+    const r = SUPPRESS.orbit + (s.rnd() * 2 - 1) * SUPPRESS.orbitJitter;
+    d.tx = best.cx + 0.5 + Math.cos(ang) * r;
+    d.ty = best.cy + 0.5 + Math.sin(ang) * r;
     d.wob = Math.atan2(d.y - (best.cy + 0.5), d.x - (best.cx + 0.5));
     return false;
   }
@@ -604,13 +613,66 @@ function suppressTick(s: GameState, d: Drone) {
 }
 
 /**
- * Подавитель на круге: наматывает витки над своей жертвой, пока есть
- * топливо. Кончилось или не стало жертвы — уходит с карты; засчитываем
- * прорвавшимся, чтобы сбитые и прорвавшиеся сходились с высланными.
+ * Подавитель без жертвы: топливо кончилось — падает как подбитый (hit →
+ * crash), чтобы поджечь клетку под собой, а не исчезнуть молча.
+ */
+function suppressFall(s: GameState, d: Drone) {
+  const ti = randomTarget(s);
+  if (ti >= 0) {
+    d.ti = ti;
+    d.tx = (ti % GRID) + 0.5;
+    d.ty = ((ti / GRID) | 0) + 0.5;
+  }
+  const len = Math.hypot(d.tx - d.x, d.ty - d.y) || 0.01;
+  d.hit = true;
+  d.hx = (d.tx - d.x) / len;
+  d.hy = (d.ty - d.y) / len;
+  d.fuse = Math.min(DRONE.glide, len);
+  d.smokeT = 0;
+  d.over = 0;
+  s.result.leaked++;
+}
+
+/**
+ * Подавитель на круге: над жертвой летает хаотично по широкой зоне вокруг
+ * установки, без жертвы — случайно над складом. Кончилось топливо на
+ * свободном облёте — падает и жжёт; над жертвой или жертва сгорела — уходит
+ * с карты (прорвавшийся).
  */
 function loiterTick(s: GameState, d: Drone, dt: number) {
-  const host = s.guns.find((g) => g.id === d.over);
   d.fuel -= dt;
+
+  // Свободный облёт: жертвы не было с посадки. Кружит над живыми клетками
+  // склада, пока есть топливо, потом падает.
+  if (d.over < 0) {
+    if (d.fuel <= 0) {
+      suppressFall(s, d);
+      return;
+    }
+    const step =
+      DRONE.speed * levelBonus(s.droneLevel, DRONE.perLevel) * PAYLOAD[d.payload].speed * dt;
+    const dx = d.tx - d.x;
+    const dy = d.ty - d.y;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    if (dist <= step * 2) {
+      const ti = randomTarget(s);
+      if (ti >= 0) {
+        d.ti = ti;
+        d.tx = (ti % GRID) + 0.5;
+        d.ty = ((ti / GRID) | 0) + 0.5;
+      }
+    } else {
+      d.wob += dt * DRONE.wobbleRate;
+      const nx = -dy / dist;
+      const ny = dx / dist;
+      const wob = Math.sin(d.wob) * DRONE.wobbleAmp;
+      d.x += (dx / dist) * step + nx * wob * dt;
+      d.y += (dy / dist) * step + ny * wob * dt;
+    }
+    return;
+  }
+
+  const host = s.guns.find((g) => g.id === d.over);
   if (!host || !host.alive || d.fuel <= 0) {
     const at = s.drones.indexOf(d);
     if (at >= 0) s.drones.splice(at, 1);
@@ -618,10 +680,35 @@ function loiterTick(s: GameState, d: Drone, dt: number) {
     return;
   }
 
-  // круг над жертвой: радиус маленький, дрон висит прямо над установкой
-  d.wob += SUPPRESS.spin * dt;
-  d.x = host.cx + 0.5 + Math.cos(d.wob) * SUPPRESS.orbit;
-  d.y = host.cy + 0.5 + Math.sin(d.wob) * SUPPRESS.orbit;
+  // Над жертвой — не тугой круг, а прыжки между случайными точками в кольце
+  // вокруг установки: шире и рванее, пулемёту проще брать на прицел.
+  const step =
+    DRONE.speed * levelBonus(s.droneLevel, DRONE.perLevel) * PAYLOAD[d.payload].speed * dt;
+  let dx = d.tx - d.x;
+  let dy = d.ty - d.y;
+  let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+  const hx = host.cx + 0.5;
+  const hy = host.cy + 0.5;
+  const fromHost = Math.hypot(d.tx - hx, d.ty - hy);
+  if (
+    dist <= step * 2 ||
+    fromHost < SUPPRESS.orbit - SUPPRESS.orbitJitter - 0.5 ||
+    fromHost > SUPPRESS.orbit + SUPPRESS.orbitJitter + 0.5
+  ) {
+    const ang = s.rnd() * Math.PI * 2;
+    const r = SUPPRESS.orbit + (s.rnd() * 2 - 1) * SUPPRESS.orbitJitter;
+    d.tx = hx + Math.cos(ang) * r;
+    d.ty = hy + Math.sin(ang) * r;
+    dx = d.tx - d.x;
+    dy = d.ty - d.y;
+    dist = Math.sqrt(dx * dx + dy * dy) || 1;
+  }
+  d.wob += dt * DRONE.wobbleRate;
+  const nx = -dy / dist;
+  const ny = dx / dist;
+  const wob = Math.sin(d.wob) * DRONE.wobbleAmp * 1.6;
+  d.x += (dx / dist) * step + nx * wob * dt;
+  d.y += (dy / dist) * step + ny * wob * dt;
 }
 
 export function update(s: GameState, dt: number) {
