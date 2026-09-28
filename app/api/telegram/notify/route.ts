@@ -9,7 +9,7 @@ const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://skladron.vercel.app";
 
-type Event = "sent" | "resolved";
+type Event = "sent" | "resolved" | "test";
 
 async function send(chatId: number, text: string) {
   if (!TOKEN) return;
@@ -38,17 +38,45 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, reason: "not configured" });
   }
 
-  const { attackId, event } = (await request.json()) as { attackId?: string; event?: Event };
-  if (!attackId || (event !== "sent" && event !== "resolved")) {
+  const body = (await request.json()) as {
+    attackId?: string;
+    event?: Event;
+    drones?: number;
+  };
+  const event = body.event;
+  if (event !== "sent" && event !== "resolved" && event !== "test") {
     return new Response("bad request", { status: 400 });
   }
 
-  // id боя публичен: по нему открывается повтор, ссылками на повторы
-  // обмениваются. Значит одного id мало — проверяем, что просит участник.
   const uid = await caller(request);
   if (!uid) return new Response("unauthorized", { status: 401 });
 
   const db = createClient(URL, SERVICE, { auth: { persistSession: false } });
+
+  // Пробный налёт не пишется в attacks: извещаем только самого игрока.
+  if (event === "test") {
+    const drones = Math.floor(Number(body.drones));
+    if (!Number.isFinite(drones) || drones < 1 || drones > 500) {
+      return new Response("bad request", { status: 400 });
+    }
+    const { data: me } = await db
+      .from("profiles")
+      .select("tg_chat_id")
+      .eq("id", uid)
+      .maybeSingle();
+    if (!me?.tg_chat_id) return Response.json({ ok: true, sent: false });
+    await send(
+      Number(me.tg_chat_id),
+      `Пробный налёт на твой склад — ${drones} дронов в очереди. Открой игру: ${SITE}`
+    );
+    return Response.json({ ok: true, sent: true });
+  }
+
+  // id боя публичен: по нему открывается повтор, ссылками на повторы
+  // обмениваются. Значит одного id мало — проверяем, что просит участник.
+  const attackId = body.attackId;
+  if (!attackId) return new Response("bad request", { status: 400 });
+
   const { data: attack } = await db
     .from("attacks")
     .select(

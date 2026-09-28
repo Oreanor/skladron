@@ -5,8 +5,8 @@ import type { Dict } from "../dict";
 const fr: Dict = {
   "scout.stale": "{patches} zones ont changé depuis ton vol : elles repassent sous le brouillard.",
   "tg.title": "Telegram",
-  "tg.explain": "Relie Telegram et le bot t’écrira quand un raid arrive et quand le tien a été repoussé.",
-  "tg.linked": "Telegram est relié : le bot écrira pour les raids sur ton entrepôt et pour l’issue des tiens.",
+  "tg.explain": "Relie Telegram — le bot écrit pour les raids ennemis, le sort des tiens et tes raids d’essai.",
+  "tg.linked": "Telegram relié : le bot écrit pour les raids, leurs issues et tes raids d’essai.",
   "tg.link": "Relier Telegram",
   "tg.unlink": "Délier",
   "tg.noBot": "Dans cette version le bot n’est pas configuré.",

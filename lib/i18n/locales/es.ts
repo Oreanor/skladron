@@ -5,8 +5,8 @@ import type { Dict } from "../dict";
 const es: Dict = {
   "scout.stale": "Han cambiado {patches} zonas desde tu vuelo: vuelven a estar bajo niebla.",
   "tg.title": "Telegram",
-  "tg.explain": "Vincula Telegram y el bot te escribirá cuando venga un ataque y cuando repelan el tuyo.",
-  "tg.linked": "Telegram vinculado: el bot escribirá sobre los ataques a tu almacén y el resultado de los tuyos.",
+  "tg.explain": "Vincula Telegram — el bot avisa de ataques ajenos, el resultado de los tuyos y tus incursiones de prueba.",
+  "tg.linked": "Telegram vinculado: el bot escribe de ataques, resultados e incursiones de prueba.",
   "tg.link": "Vincular Telegram",
   "tg.unlink": "Desvincular",
   "tg.noBot": "En esta versión el bot no está configurado.",

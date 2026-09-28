@@ -1,12 +1,14 @@
-// Извещения в телеграм. Клиент только говорит «случилось вот это по такому
-// бою» — кому и что писать, решает сервер: токена бота у клиента нет.
+// Извещения в телеграм. Клиент только говорит «случилось вот это» —
+// кому и что писать, решает сервер: токена бота у клиента нет.
 //
 // Вместе с просьбой шлём свой токен входа: id боя — величина публичная, по
 // нему открывается повтор, и без подписи ручкой мог бы дёргать кто угодно.
 
 import { supabase } from "./supabase";
 
-async function ask(attackId: string, event: "sent" | "resolved") {
+type BattleEvent = "sent" | "resolved";
+
+async function post(body: Record<string, unknown>) {
   const db = supabase();
   if (!db) return;
   const { data } = await db.auth.getSession();
@@ -18,14 +20,23 @@ async function ask(attackId: string, event: "sent" | "resolved") {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ attackId, event }),
+    body: JSON.stringify(body),
     keepalive: true,
   });
 }
 
-export function notifyBattle(attackId: string, event: "sent" | "resolved") {
+function quiet(run: () => Promise<void>) {
   if (typeof window === "undefined") return;
-  void ask(attackId, event).catch(() => {
+  void run().catch(() => {
     // извещение — приятная мелочь, из-за него игра ломаться не должна
   });
+}
+
+export function notifyBattle(attackId: string, event: BattleEvent) {
+  quiet(() => post({ attackId, event }));
+}
+
+/** Пробный налёт на себя: в таблице атак его нет, пишем прямо себе. */
+export function notifyTestRaid(drones: number) {
+  quiet(() => post({ event: "test", drones }));
 }

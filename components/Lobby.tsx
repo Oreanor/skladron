@@ -95,6 +95,7 @@ import TestRaidDialog from "./lobby/TestRaidDialog";
 import AttackReportDialog from "./lobby/AttackReportDialog";
 import BaseName from "./lobby/BaseName";
 import { TEST_RAID_MAX } from "./lobby/limits";
+import { useAttacks } from "./lobby/useAttacks";
 import {
   drawDraft,
   drawDropTarget,
@@ -122,7 +123,7 @@ import Scout, { type ScoutOutcome } from "./Scout";
 import ScoutMap from "./ScoutMap";
 import Replay, { type ReplayData } from "./Replay";
 import Rules from "./Rules";
-import { notifyBattle } from "@/lib/notify";
+import { notifyBattle, notifyTestRaid } from "@/lib/notify";
 
 /** Имя бота из настроек сборки: без него привязывать некуда. */
 const TG_BOT = process.env.NEXT_PUBLIC_TELEGRAM_BOT;
@@ -226,10 +227,7 @@ export default function Lobby({
   >(null);
   const [now, setNow] = useState(() => Date.now());
   /** Атаки, которые уже прошли автоматом: опрос не должен их воскрешать. */
-  const resolvedRef = useRef(new Set<string>());
-  const autoBusyRef = useRef(false);
   /** Когда последний раз сверяли имена чужих складов. */
-  const namesAt = useRef(0);
   const [reports, setReports] = useState<AttackReport[]>([]);
   const toggleSheet = (id: SheetId) => setSheet((cur) => (cur === id ? null : id));
 
@@ -326,6 +324,24 @@ export default function Lobby({
     }
   };
 
+  /**
+   * Опрос сервера и очередь налётов: обе заботы живут в своём хуке, а лобби
+   * только даёт ему, чем перерисоваться и куда сказать.
+   */
+  const attacks = useAttacks({
+    repo,
+    player: playerRef,
+    t: tRef,
+    refresh: () => forceRender((v) => v + 1),
+    refreshMap: () => setVersion((v) => v + 1),
+    say: setMessage,
+    setReports,
+    setAutoReport,
+    setNow,
+    reloadBase: resyncBase,
+    loadRaids,
+  });
+
   const saveNow = async () => {
     const cur = playerRef.current;
     if (!cur) return;
@@ -411,173 +427,6 @@ export default function Lobby({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repo]);
 
-  useEffect(() => {
-    if (repo.mode !== "cloud") return;
-    let alive = true;
-    const sync = async () => {
-      // В свёрнутой вкладке опрашивать некого: игрок всё равно не смотрит,
-      // а запросы идут. Вернётся — синхронизируемся сразу.
-      if (typeof document !== "undefined" && document.hidden) return;
-      try {
-        const state = await repo.syncAttacks();
-        const cur = playerRef.current;
-        if (!alive || !cur) return;
-        // Очередь сервера — только настоящие налёты. Боты с кнопки «+ налёт»
-        // живут на клиенте, и раньше их сносил первый же опрос: список
-        // подменялся серверным целиком. Теперь сливаем оба и сортируем по
-        // времени — очередь остаётся одна и в правильном порядке.
-        const bots = cur.incoming.filter((a) => !a.remote);
-        cur.incoming = [
-          ...state.incoming.filter((a) => !resolvedRef.current.has(a.id)),
-          ...bots,
-        ].sort((a, b) => a.createdAt - b.createdAt);
-        if (state.credits !== undefined) cur.credits = state.credits;
-        if (state.stats) cur.stats = { ...cur.stats, ...state.stats };
-        // Кто на нас напал, тот попадает в список: иначе ответить некому.
-        let met = false;
-        for (const a of cur.incoming) {
-          const mail = a.fromEmail;
-          if (!mail) continue;
-          if (cur.enemies.some((e) => e.email.toLowerCase() === mail.toLowerCase())) continue;
-          cur.enemies.push(blankEnemy(mail, a.from));
-          met = true;
-        }
-        if (met) void repo.saveEnemies(cur).catch(() => {});
-
-        setReports(state.reports);
-        forceRender((value) => value + 1);
-      } catch {
-        // Сеть может кратко пропасть — следующий опрос повторит попытку.
-      }
-
-      // Склад врага могли переименовать прямо сейчас — раз в пять минут
-      // сверяем имена, чтобы список не звал человека вчерашним именем.
-      if (Date.now() - namesAt.current < 5 * 60_000) return;
-      namesAt.current = Date.now();
-      try {
-        const cur = playerRef.current;
-        if (!cur?.enemies.length) return;
-        const names = await repo.baseNames(cur.enemies.map((e) => e.email));
-        let changed = false;
-        for (const e of cur.enemies) {
-          const fresh = names.get(e.email.toLowerCase());
-          if (fresh && fresh !== e.name) {
-            e.name = fresh;
-            changed = true;
-          }
-        }
-        if (changed && alive) forceRender((value) => value + 1);
-      } catch {
-        // имена — украшение списка, из-за них опрос ломаться не должен
-      }
-    };
-    const timer = window.setInterval(() => void sync(), 10_000);
-    const onVisible = () => {
-      if (!document.hidden) void sync();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      alive = false;
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [repo]);
-
-  /**
-   * Атаки отбиваются строго по очереди. У первой в списке идут часы: не успел
-   * за RAID.ttlMs — налёт проходит сам, без брандспойта и пулемёта, и очередь
-   * двигается дальше. Тикаем раз в секунду, но только когда есть что считать.
-   */
-  useEffect(() => {
-    const tick = async () => {
-      const cur = playerRef.current;
-      const head = cur?.incoming[0];
-      // время нужно не только очереди налётов: по нему же идёт срок займа
-      if (cur?.loan) setNow(Date.now());
-      if (!cur || !head) return;
-      if (!head.activatedAt) {
-        // сервер отметит своим временем при ближайшем опросе, а бот-атаки
-        // живут только на клиенте — часы им заводим здесь
-        head.activatedAt = Date.now();
-        forceRender((v) => v + 1);
-        return;
-      }
-      setNow(Date.now());
-      if (Date.now() < head.activatedAt + RAID.ttlMs) return;
-      if (autoBusyRef.current) return;
-
-      autoBusyRef.current = true;
-      try {
-        // Уровни передаём все: пушки и огнетушители работают сами, и сервер
-        // пересчитает бой ровно с ними же. Раньше сюда шли одни пушки, и
-        // показанный игроку исход расходился бы с посчитанным на сервере.
-        const o = autoDefend(cur.cells, cur.guns, cur.depots, head, {
-          guns: cur.levels.guns,
-          sprays: cur.levels.sprays,
-          traps: cur.levels.traps,
-          mg: cur.levels.mg,
-          water: cur.levels.water,
-        });
-        resolvedRef.current.add(head.id);
-        const goodsBefore = goodsValue(cur.depots);
-        cur.cells = o.cells;
-        cur.guns = o.guns;
-        cur.depots = o.depots;
-        cur.incoming = cur.incoming.filter((a) => a.id !== head.id);
-        cur.stats.battles++;
-        const killed = o.result.killedByGuns + o.result.killedByMg;
-        cur.stats.dronesKilled += killed;
-        cur.stats.cellsBurned += o.result.burned;
-        // страховка погорельцу: ремонт клеток и половина сгоревшего добра
-        cur.credits += insurance(
-          o.result.burned,
-          goodsBefore - goodsValue(o.depots),
-          o.result.gunsLost,
-          cur.levels.insurance,
-          o.result.spraysLost,
-          o.result.trapsLost
-        );
-        const foe = findFoe(cur, head);
-        if (foe) {
-          foe.burnedByThem += o.result.burned;
-          void repo.saveEnemies(cur).catch(() => {});
-        }
-        setAutoReport({ from: head.from, outcome: o });
-        setVersion((v) => v + 1);
-        forceRender((v) => v + 1);
-        try {
-          const patch = await repo.applyBattle(
-            cur,
-            o.result,
-            head.remote ? head.id : undefined,
-            "" // некому было ни тушить, ни стрелять: запись пустая
-          );
-          if (head.remote) notifyBattle(head.id, "resolved");
-          if (patch.credits !== undefined) cur.credits = patch.credits;
-          forceRender((v) => v + 1);
-        } catch (e) {
-          setMessage(tRef.current("auto.notSaved", { error: (e as Error).message }));
-          // Сервер не принял итог — значит налёт у него всё ещё в очереди.
-          // Снимаем отметку, иначе опрос будет вечно выкидывать его из
-          // списка, а очередь разбирается строго по одному: за ним встанут
-          // все следующие и не сдвинутся до перезагрузки страницы.
-          resolvedRef.current.delete(head.id);
-          // урон не записался — не тащим сгоревшую карту дальше, иначе
-          // отвергаться будет и ремонт, и всё остальное
-          await resyncBase();
-        }
-      } finally {
-        autoBusyRef.current = false;
-      }
-    };
-    const timer = window.setInterval(() => void tick(), 1000);
-    return () => window.clearInterval(timer);
-    // Таймер один на всю игру. Всё, что он зовёт, он берёт через ref или из
-    // playerRef, а resyncBase пересоздаётся каждым рендером — перезаводить
-    // из-за него секундный интервал незачем.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [repo]);
-
   /**
    * Пробные налёты по ссылке: ?raid=flower,sweep&n=220 кладёт в очередь по
    * налёту на каждый названный режим. Нужны, чтобы посмотреть новую раскладку
@@ -607,6 +456,7 @@ export default function Lobby({
     window.history.replaceState({}, "", window.location.pathname);
     touch();
     setMessage(t("raid.testQueued", { count: list.length, size }));
+    notifyTestRaid(size * list.length);
     // разовый запуск: как только игрок загрузился, налёты уже в очереди
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
@@ -708,7 +558,7 @@ export default function Lobby({
           // Сервер узнает об исходе только из applyBattle ниже, а опрос идёт
           // раз в десять секунд и собирает очередь заново. Без этой отметки
           // только что отбитый рой успевал вернуться в список.
-          resolvedRef.current.add(battle.id);
+          attacks.markResolved(battle.id);
           p.stats.battles++;
           const killed = o.result.killedByGuns + o.result.killedByMg;
           p.stats.dronesKilled += killed;
@@ -751,7 +601,7 @@ export default function Lobby({
             setMessage(t("battle.notSaved", { error: (e as Error).message }));
             // Тот же случай: у сервера бой остался неотбитым, и показать его
             // снова надо — иначе отбиваться будет нечем, а очередь встанет.
-            resolvedRef.current.delete(battle.id);
+            attacks.unmarkResolved(battle.id);
             await resyncBase();
           } finally {
             loadRaids();
@@ -1186,6 +1036,7 @@ export default function Lobby({
     p.incoming.push(order);
     setTestRaid(false);
     setMessage(t("raid.testQueued", { count: 1, size: n }));
+    notifyTestRaid(n);
     touch();
     return null;
   };
@@ -1602,7 +1453,7 @@ export default function Lobby({
     setConfirmRestart(false);
     try {
       playerRef.current = await repo.restart(p);
-      resolvedRef.current.clear();
+      attacks.forget();
       setReports([]);
       setMessage(t("restart.done"));
       setVersion((v) => v + 1);

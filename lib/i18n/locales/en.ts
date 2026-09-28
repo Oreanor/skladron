@@ -6,8 +6,8 @@
 const en = {
   "scout.stale": "{patches} patches have changed since your flight — they are back under fog.",
   "tg.title": "Telegram",
-  "tg.explain": "Link Telegram and the bot will write to you when a raid is heading your way and when your own raid has been fought off.",
-  "tg.linked": "Telegram is linked — the bot will write about raids on your warehouse and about the outcome of yours.",
+  "tg.explain": "Link Telegram and the bot will write about enemy raids, your raid outcomes, and your own test raids.",
+  "tg.linked": "Telegram is linked — the bot will write about raids, their outcomes, and your test raids.",
   "tg.link": "Link Telegram",
   "tg.unlink": "Unlink",
   "tg.noBot": "The bot is not set up in this build.",
