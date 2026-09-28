@@ -8,7 +8,7 @@ import {
   type Gun,
 } from "./base";
 import { aimMode, sprayRange, suppressRange, type GameState } from "./engine";
-import { FX, GUN, SPRAY } from "./tuning";
+import { FX, GUN, SPRAY, SUPPRESS } from "./tuning";
 
 export const COLORS = {
   groundA: "#3d6b3a",
@@ -37,11 +37,14 @@ export const COLORS = {
     jammer: "#a855f7", // фиолетовый — глушилка зениток
     foamer: "#22d3ee", // голубой — глушилка огнетушителей
   } as Record<string, string>,
-  /** Круг подавления у зависшей глушилки. */
-  jam: "rgba(168, 85, 247, 0.5)",
-  jamFill: "rgba(168, 85, 247, 0.1)",
-  foam: "rgba(34, 211, 238, 0.5)",
-  foamFill: "rgba(34, 211, 238, 0.1)",
+  /** Круг подавления. Заметный: по нему видно, какие установки молчат. */
+  jam: "rgba(168, 85, 247, 0.85)",
+  jamFill: "rgba(168, 85, 247, 0.17)",
+  foam: "rgba(34, 211, 238, 0.85)",
+  foamFill: "rgba(34, 211, 238, 0.17)",
+  /** Перечёркнутая установка: она жива, но заглушена. */
+  jammed: "rgba(168, 85, 247, 0.95)",
+  foamed: "rgba(34, 211, 238, 0.95)",
   missile: "#ffd166",
   water: "#79c7ff",
   flash: "#ffe9a8",
@@ -446,6 +449,41 @@ export function drawFrame(
   }
   ctx.stroke();
 
+  // Круг подавления. Рисуем у всех подавителей, а не только у севших на
+  // круг: глушат они с первой секунды полёта, и по кругу видно, до каких
+  // установок рой уже дотянулся. Обводка пульсирует — иначе на пёстрой
+  // карте кольцо теряется среди прочих кругов.
+  const jammers = s.drones.filter(
+    (d) => !d.hit && (d.payload === "jammer" || d.payload === "foamer")
+  );
+  if (jammers.length) {
+    const reach = suppressRange(s) * cell;
+    const pulse = 0.75 + 0.25 * Math.sin(now / 160);
+    for (const d of jammers) {
+      const foam = d.payload === "foamer";
+      const x = d.x * cell;
+      const y = d.y * cell;
+
+      ctx.beginPath();
+      ctx.arc(x, y, reach, 0, Math.PI * 2);
+      ctx.fillStyle = foam ? COLORS.foamFill : COLORS.jamFill;
+      ctx.fill();
+
+      // сплошной обод плюс бегущий пунктир поверх: круг читается и на
+      // выгоревшем чёрном, и на белом складе
+      ctx.strokeStyle = foam ? COLORS.foam : COLORS.jam;
+      ctx.lineWidth = Math.max(1.5, cell * 0.2 * pulse);
+      ctx.stroke();
+
+      ctx.save();
+      ctx.setLineDash([cell * 1.6, cell * 1.2]);
+      ctx.lineDashOffset = -(now / 24) % (cell * 2.8);
+      ctx.lineWidth = Math.max(1, cell * 0.3);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
   // дроны
   const r = cell * 0.85;
   ctx.lineWidth = Math.max(1, cell * 0.18);
@@ -474,24 +512,45 @@ export function drawFrame(
     ctx.beginPath();
     ctx.arc(px, py, r * 0.45, 0, Math.PI * 2);
     ctx.fill();
-  }
 
-  // Круг подавления у тех, кто уже встал над своей жертвой: по нему видно,
-  // какие установки сейчас молчат и куда вести прицел.
-  const jammers = s.drones.filter((d) => d.over && !d.hit);
-  if (jammers.length) {
-    const reach = suppressRange(s) * cell;
-    for (const d of jammers) {
-      const guns = d.payload === "foamer";
+    // Топливо подавителя — дугой вокруг боеголовки, как бак огнетушителя.
+    // Горит только на круге над жертвой; пока летит — полный запас (~30 с).
+    if (
+      !d.hit &&
+      (d.payload === "jammer" || d.payload === "foamer") &&
+      d.fuel > 0
+    ) {
+      const frac = Math.max(0, Math.min(1, d.fuel / SUPPRESS.loiter));
+      const foam = d.payload === "foamer";
+      const ring = r * 0.7;
       ctx.beginPath();
-      ctx.arc(d.x * cell, d.y * cell, reach, 0, Math.PI * 2);
-      ctx.fillStyle = guns ? COLORS.foamFill : COLORS.jamFill;
-      ctx.fill();
-      ctx.strokeStyle = guns ? COLORS.foam : COLORS.jam;
-      ctx.lineWidth = Math.max(1, cell * 0.12);
+      ctx.arc(px, py, ring, 0, Math.PI * 2);
+      ctx.strokeStyle = foam ? "rgba(34, 211, 238, 0.25)" : "rgba(168, 85, 247, 0.25)";
+      ctx.lineWidth = Math.max(1.5, cell * 0.16);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(px, py, ring, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * frac);
+      ctx.strokeStyle = foam ? COLORS.foam : COLORS.jam;
       ctx.stroke();
     }
-    ctx.lineWidth = Math.max(1, cell * 0.18);
+  }
+  ctx.lineWidth = Math.max(1, cell * 0.18);
+
+  // И сами заглушённые установки: живые, но молчат. Крестик поверх виден
+  // даже там, где круг перекрыт соседним.
+  for (const g of s.guns) {
+    if (!g.alive || g.jammed <= 0) continue;
+    const x = (g.cx + 0.5) * cell;
+    const y = (g.cy + 0.5) * cell;
+    const rr = cell * 0.55;
+    ctx.strokeStyle = g.spray ? COLORS.foamed : COLORS.jammed;
+    ctx.lineWidth = Math.max(1, cell * 0.16);
+    ctx.beginPath();
+    ctx.moveTo(x - rr, y - rr);
+    ctx.lineTo(x + rr, y + rr);
+    ctx.moveTo(x + rr, y - rr);
+    ctx.lineTo(x - rr, y + rr);
+    ctx.stroke();
   }
 
   // вспышки очередей и всплески воды
