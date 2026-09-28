@@ -818,17 +818,16 @@ function captureTraps(s: GameState) {
   }
 }
 
-export function update(s: GameState, dt: number) {
-  if (s.phase !== "playing") return;
-  s.time += dt;
-
-  // --- вылеты по расписанию ---
+/** Вылеты по расписанию. */
+function stepSpawns(s: GameState) {
   while (s.planAt < s.plan.length && s.plan[s.planAt].at <= s.time) {
     spawnDrone(s, s.plan[s.planAt]);
     s.planAt++;
   }
+}
 
-  // --- прицел игрока ---
+/** Руки игрока: очередь и струя по тому, куда наведён прицел. */
+function stepHands(s: GameState, dt: number) {
   if (s.firing && s.aim) {
     s.mgCd -= dt;
     let guard = 0;
@@ -837,13 +836,10 @@ export function update(s: GameState, dt: number) {
       aimTick(s);
     }
   }
+}
 
-  // --- дроны ---
-  // Карта установок по id — один раз на тик: захваченных и кружащих
-  // подавителей иначе каждый кадр гоняли бы через guns.find.
-  const gunsById = new Map<number, Gun>();
-  for (const g of s.guns) gunsById.set(g.id, g);
-
+/** Рой: строй, магниты, подавление, подлёт и прилёт. */
+function stepDrones(s: GameState, dt: number, gunsById: Map<number, Gun>) {
   for (let i = s.drones.length - 1; i >= 0; i--) {
     const d = s.drones[i];
 
@@ -996,8 +992,10 @@ export function update(s: GameState, dt: number) {
 
   // Свободные дроны в радиусе ловушки захватываются после движения.
   captureTraps(s);
+}
 
-  // --- огнетушители ---
+/** Огнетушители: льют сами, пока рядом горит и есть вода. */
+function stepSprays(s: GameState, dt: number) {
   // Загорелось в радиусе — установка раскручивается и льёт восемью струями
   // звездой. Струя не гасит с ходу: клетку надо пролить, а луч упирается в
   // первый же огонь на своём пути. Отсюда и потолок: восемь очагов разом, не
@@ -1042,8 +1040,10 @@ export function update(s: GameState, dt: number) {
       }
     }
   }
+}
 
-  // --- пушки ---
+/** Зенитки: доворачивают башню и пускают ракеты. */
+function stepGuns(s: GameState, dt: number) {
   for (const g of s.guns) {
     if (!g.alive || g.spray || g.trap) continue;
 
@@ -1093,8 +1093,10 @@ export function update(s: GameState, dt: number) {
       g.cd = GUN.cooldown;
     }
   }
+}
 
-  // --- ракеты ---
+/** Ракеты: догоняют цель, стареют, уходят за край. */
+function stepMissiles(s: GameState, dt: number) {
   // Цель ищем по индексу: раньше каждая ракета перебирала весь рой, и на
   // трёх сотнях дронов это выходило в десятки тысяч сравнений за кадр.
   const byId = s.missiles.length ? new Map<number, Drone>() : null;
@@ -1138,8 +1140,10 @@ export function update(s: GameState, dt: number) {
       s.missiles.splice(i, 1);
     }
   }
+}
 
-  // --- пожар ---
+/** Пожар: перекидывается на соседей, а без топлива догорает. */
+function stepFire(s: GameState, dt: number) {
   if (s.fire.size) {
     const toIgnite: number[] = [];
     for (const [i, t] of s.fire) {
@@ -1169,8 +1173,10 @@ export function update(s: GameState, dt: number) {
     }
     for (const i of toIgnite) ignite(s, i);
   }
+}
 
-  // --- эффекты ---
+/** Следы боя: взрывы, выстрелы, дым. На расчёт не влияют. */
+function stepEffects(s: GameState, dt: number) {
   for (let i = s.booms.length - 1; i >= 0; i--) {
     s.booms[i].t += dt;
     if (s.booms[i].t > FX.boomLife) s.booms.splice(i, 1);
@@ -1183,6 +1189,31 @@ export function update(s: GameState, dt: number) {
     s.puffs[i].t += dt;
     if (s.puffs[i].t > FX.smokeLife) s.puffs.splice(i, 1);
   }
+}
+
+/**
+ * Шаг боя. Фазы идут строго в этом порядке, и порядок значим: подавители
+ * глушат установки раньше, чем те стреляют, а пожар перекидывается уже
+ * после того, как рой отработал. Меняешь порядок — меняешь исход боя, и
+ * повтор у нападавшего разойдётся с тем, что видел защитник.
+ */
+export function update(s: GameState, dt: number) {
+  if (s.phase !== "playing") return;
+  s.time += dt;
+
+  // Карта установок по id — один раз на тик: захваченных и кружащих
+  // подавителей иначе каждая фаза гоняла бы через guns.find.
+  const gunsById = new Map<number, Gun>();
+  for (const g of s.guns) gunsById.set(g.id, g);
+
+  stepSpawns(s);
+  stepHands(s, dt);
+  stepDrones(s, dt, gunsById);
+  stepSprays(s, dt);
+  stepGuns(s, dt);
+  stepMissiles(s, dt);
+  stepFire(s, dt);
+  stepEffects(s, dt);
 
   // --- конец боя ---
   if (s.baseOk <= 0) {
