@@ -13,7 +13,7 @@ import {
   type BattleResult,
   type GameState,
 } from "@/lib/engine";
-import { drawFrame } from "@/lib/render";
+import { drawFrame, COLORS } from "@/lib/render";
 import { goodsValue, insurance, fmt } from "@/lib/economy";
 import MapCanvas, { type Pt } from "./MapCanvas";
 import { Button, Chip, ChipBar, IconButton, Panel, Row } from "./ui";
@@ -21,6 +21,7 @@ import { encodeTrace, type Frame } from "@/lib/replay";
 import { SIM } from "@/lib/tuning";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
+import { PAYLOADS, type Payload } from "@/lib/attack";
 
 export interface BattleOutcome {
   cells: Uint8Array;
@@ -255,6 +256,8 @@ export default function Battle({
               <li>{t("controls.fallingDrone")}</li>
               <li>{t("controls.zoomTouch")}</li>
             </ul>
+            <p className="mb-2 mt-3 font-semibold text-neutral-300">{t("panel.payloads")}</p>
+            <PayloadLegend t={t} />
           </div>
         )}
 
@@ -335,6 +338,10 @@ export default function Battle({
           </dl>
         </Panel>
 
+        <Panel title={t("panel.payloads")}>
+          <PayloadLegend t={t} />
+        </Panel>
+
         <Panel title={t("panel.controls")}>
           <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-neutral-400">
             <li>{t("controls.mgHold")}</li>
@@ -345,5 +352,29 @@ export default function Battle({
         </Panel>
       </aside>
     </div>
+  );
+}
+
+const PAYLOAD_KEYS: Record<Payload, Key> = {
+  plain: "payload.plain",
+  heavy: "payload.heavy",
+  jammer: "payload.jammer",
+  foamer: "payload.foamer",
+};
+
+function PayloadLegend({ t }: { t: (key: Key, vars?: Record<string, string | number>) => string }) {
+  return (
+    <ul className="space-y-1.5 text-xs text-neutral-300">
+      {PAYLOADS.map((kind) => (
+        <li key={kind} className="flex items-center gap-2">
+          <span
+            className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-black/40"
+            style={{ background: COLORS.payload[kind] }}
+            aria-hidden
+          />
+          <span>{t(PAYLOAD_KEYS[kind])}</span>
+        </li>
+      ))}
+    </ul>
   );
 }

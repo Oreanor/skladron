@@ -570,7 +570,11 @@ function arrive(s: GameState, d: Drone): boolean {
     const r = SUPPRESS.orbit + (s.rnd() * 2 - 1) * SUPPRESS.orbitJitter;
     d.tx = best.cx + 0.5 + Math.cos(ang) * r;
     d.ty = best.cy + 0.5 + Math.sin(ang) * r;
-    d.wob = Math.atan2(d.y - (best.cy + 0.5), d.x - (best.cx + 0.5));
+    // Нос уже смотрит куда летели: с этой ориентации и начнём доворачивать.
+    const len = Math.hypot(d.tx - d.x, d.ty - d.y) || 1;
+    d.hx = (d.tx - d.x) / len;
+    d.hy = (d.ty - d.y) / len;
+    d.wob = Math.atan2(d.hy, d.hx);
     return false;
   }
 
@@ -649,26 +653,18 @@ function loiterTick(s: GameState, d: Drone, dt: number) {
       suppressFall(s, d);
       return;
     }
-    const step =
-      DRONE.speed * levelBonus(s.droneLevel, DRONE.perLevel) * PAYLOAD[d.payload].speed * dt;
-    const dx = d.tx - d.x;
-    const dy = d.ty - d.y;
-    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    if (dist <= step * 2) {
+    const speed =
+      DRONE.speed * levelBonus(s.droneLevel, DRONE.perLevel) * PAYLOAD[d.payload].speed;
+    const dist = Math.hypot(d.tx - d.x, d.ty - d.y) || 1;
+    if (dist <= speed * dt * 2) {
       const ti = randomTarget(s);
       if (ti >= 0) {
         d.ti = ti;
         d.tx = (ti % GRID) + 0.5;
         d.ty = ((ti / GRID) | 0) + 0.5;
       }
-    } else {
-      d.wob += dt * DRONE.wobbleRate;
-      const nx = -dy / dist;
-      const ny = dx / dist;
-      const wob = Math.sin(d.wob) * DRONE.wobbleAmp;
-      d.x += (dx / dist) * step + nx * wob * dt;
-      d.y += (dy / dist) * step + ny * wob * dt;
     }
+    steerLoiter(d, speed, dt);
     return;
   }
 
@@ -680,18 +676,16 @@ function loiterTick(s: GameState, d: Drone, dt: number) {
     return;
   }
 
-  // Над жертвой — не тугой круг, а прыжки между случайными точками в кольце
-  // вокруг установки: шире и рванее, пулемёту проще брать на прицел.
-  const step =
-    DRONE.speed * levelBonus(s.droneLevel, DRONE.perLevel) * PAYLOAD[d.payload].speed * dt;
-  let dx = d.tx - d.x;
-  let dy = d.ty - d.y;
-  let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+  // Над жертвой — точки в широком кольце; курс к ним доворачивается носом,
+  // а не ломается углом при каждой смене цели.
+  const speed =
+    DRONE.speed * levelBonus(s.droneLevel, DRONE.perLevel) * PAYLOAD[d.payload].speed;
   const hx = host.cx + 0.5;
   const hy = host.cy + 0.5;
+  const dist = Math.hypot(d.tx - d.x, d.ty - d.y) || 1;
   const fromHost = Math.hypot(d.tx - hx, d.ty - hy);
   if (
-    dist <= step * 2 ||
+    dist <= speed * dt * 2 ||
     fromHost < SUPPRESS.orbit - SUPPRESS.orbitJitter - 0.5 ||
     fromHost > SUPPRESS.orbit + SUPPRESS.orbitJitter + 0.5
   ) {
@@ -699,16 +693,28 @@ function loiterTick(s: GameState, d: Drone, dt: number) {
     const r = SUPPRESS.orbit + (s.rnd() * 2 - 1) * SUPPRESS.orbitJitter;
     d.tx = hx + Math.cos(ang) * r;
     d.ty = hy + Math.sin(ang) * r;
-    dx = d.tx - d.x;
-    dy = d.ty - d.y;
-    dist = Math.sqrt(dx * dx + dy * dy) || 1;
   }
+  steerLoiter(d, speed, dt);
+}
+
+/** Доворот курса к точке: hx/hy — нос, скорость полная, рысканье мягкое. */
+function steerLoiter(d: Drone, speed: number, dt: number) {
+  const dx = d.tx - d.x;
+  const dy = d.ty - d.y;
+  const want = Math.atan2(dy, dx);
+  let heading = d.hx === 0 && d.hy === 0 ? want : Math.atan2(d.hy, d.hx);
+  let da = want - heading;
+  while (da > Math.PI) da -= Math.PI * 2;
+  while (da < -Math.PI) da += Math.PI * 2;
+  const max = SUPPRESS.turn * dt;
+  heading += Math.max(-max, Math.min(max, da));
+  d.hx = Math.cos(heading);
+  d.hy = Math.sin(heading);
+  const step = speed * dt;
   d.wob += dt * DRONE.wobbleRate;
-  const nx = -dy / dist;
-  const ny = dx / dist;
-  const wob = Math.sin(d.wob) * DRONE.wobbleAmp * 1.6;
-  d.x += (dx / dist) * step + nx * wob * dt;
-  d.y += (dy / dist) * step + ny * wob * dt;
+  const wob = Math.sin(d.wob) * DRONE.wobbleAmp * 0.7 * dt;
+  d.x += d.hx * step - d.hy * wob;
+  d.y += d.hy * step + d.hx * wob;
 }
 
 export function update(s: GameState, dt: number) {

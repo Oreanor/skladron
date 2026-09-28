@@ -44,7 +44,7 @@ const en: RuleSection[] = [
     title: "Raids",
     lines: [
       "Add a rival by e-mail — they have to be playing too.",
-      "Choose how many drones to send (up to {maxRaid}), the pattern and the side. The drones leave the warehouse at once.",
+      "Build the raid from waves: each has its own pattern, side and warheads (plain, double charge, gun or sprinkler jammer). Up to {maxRaid} drones. A bigger swarm makes the formation denser — the raid barely lasts longer. Drones leave the warehouse at once; warheads cost an extra credit surcharge.",
       "The defender fights the raid on their own screen. You get a report afterwards — and can watch the whole thing replayed.",
       "For every cell you burn down you get a {loot} cr bonus. The defender's insurance pays them {insureCell} cr per burnt cell — exactly the repair. The basic policy stops there; every level of it adds {insureShare}% cover for goods and guns lost in the fire, up to the full value.",
       "Nobody is paid for downed drones: money comes from goods, not from shooting.",
@@ -106,7 +106,7 @@ const ru: RuleSection[] = [
     title: "Налёты",
     lines: [
       "Добавь соперника по почте — он тоже должен играть.",
-      "Выбери, сколько дронов послать (до {maxRaid}), схему и сторону. Дроны уходят со склада сразу.",
+      "Собери налёт из волн: у каждой свой рисунок, сторона и начинка (простая, двойная, подавление пушек или огнетушителей). До {maxRaid} дронов. Чем больше рой, тем гуще строй — налёт почти не растягивается. Дроны уходят со склада сразу, за начинку доплачиваются кредиты.",
       "Налёт отбивает защитник у себя. Тебе приходит отчёт — и повтор боя, который можно посмотреть целиком.",
       "За каждую сожжённую клетку тебе идёт премия {loot} кр. Защитнику страховая платит {insureCell} кр за клетку — ровно на ремонт. Базовый полис на этом и кончается; каждый его уровень добавляет {insureShare}% покрытия сгоревшего товара и пушек, до полной стоимости.",
       "За сбитых дронов не платят никому: деньги приносит товар, а не стрельба.",
@@ -168,7 +168,7 @@ const es: RuleSection[] = [
     title: "Ataques",
     lines: [
       "Añade un rival por correo: también tiene que estar jugando.",
-      "Elige cuántos drones enviar (hasta {maxRaid}), el patrón y el lado. Los drones salen del almacén enseguida.",
+      "Arma el ataque en oleadas: cada una con su patrón, lado y carga (simple, doble, inhibidor de cañones o de extintores). Hasta {maxRaid} drones. Un enjambre mayor hace la formación más densa — el ataque casi no se alarga. Los drones salen del almacén enseguida; las cargas cuestan un recargo en créditos.",
       "El defensor combate el ataque en su pantalla. Tú recibes un informe y la repetición completa del combate.",
       "Por cada celda quemada recibes una prima de {loot} cr. Al defensor el seguro le paga {insureCell} cr por celda: justo la reparación. La póliza básica acaba ahí; cada nivel añade un {insureShare}% de cobertura de la mercancía y los cañones perdidos, hasta el valor total.",
       "Nadie cobra por drones derribados: el dinero lo trae la mercancía, no los disparos.",
@@ -230,7 +230,7 @@ const pt: RuleSection[] = [
     title: "Ataques",
     lines: [
       "Adiciona um rival por e-mail — ele também tem de estar a jogar.",
-      "Escolhe quantos drones enviar (até {maxRaid}), o padrão e o lado. Os drones saem do armazém logo.",
+      "Monta o ataque em vagas: cada uma com o seu padrão, lado e carga (simples, dupla, inibidor de canhões ou de extintores). Até {maxRaid} drones. Um enxame maior torna a formação mais densa — o ataque quase não se alonga. Os drones saem do armazém logo; as cargas custam um extra em créditos.",
       "O defensor trava o ataque no ecrã dele. Tu recebes um relatório — e a repetição completa do combate.",
       "Por cada célula queimada recebes um prémio de {loot} cr. Ao defensor o seguro paga {insureCell} cr por célula — exatamente a reparação. A apólice básica fica por aí; cada nível acrescenta {insureShare}% de cobertura da mercadoria e dos canhões perdidos, até ao valor total.",
       "Ninguém é pago por drones abatidos: o dinheiro vem da mercadoria, não dos tiros.",
@@ -292,7 +292,7 @@ const fr: RuleSection[] = [
     title: "Raids",
     lines: [
       "Ajoute un rival par e-mail — il doit jouer lui aussi.",
-      "Choisis combien de drones envoyer (jusqu’à {maxRaid}), le schéma et le côté. Les drones quittent l’entrepôt aussitôt.",
+      "Compose le raid en vagues : chacune a son schéma, son côté et sa charge (simple, double, brouilleur de canons ou d’extincteurs). Jusqu’à {maxRaid} drones. Un plus gros essaim densifie la formation — le raid s’allonge à peine. Les drones quittent l’entrepôt aussitôt ; les charges coûtent un surcoût en crédits.",
       "Le défenseur mène le combat chez lui. Tu reçois un rapport — et le replay complet de la bataille.",
       "Pour chaque case brûlée tu touches une prime de {loot} cr. Le défenseur reçoit de son assurance {insureCell} cr par case — juste la réparation. La police de base s’arrête là ; chaque niveau ajoute {insureShare} % de couverture de la marchandise et des canons perdus, jusqu’à la valeur entière.",
       "Personne n’est payé pour les drones abattus : l’argent vient de la marchandise, pas des tirs.",
@@ -354,7 +354,7 @@ const de: RuleSection[] = [
     title: "Angriffe",
     lines: [
       "Füge einen Gegner per E-Mail hinzu — er muss ebenfalls spielen.",
-      "Wähle, wie viele Drohnen du schickst (bis {maxRaid}), das Muster und die Seite. Die Drohnen verlassen das Lager sofort.",
+      "Baue den Angriff aus Wellen: jede mit eigenem Muster, Seite und Ladung (einfach, doppelt, Geschütz- oder Sprinklerstörer). Bis {maxRaid} Drohnen. Ein größerer Schwarm macht die Formation dichter — der Angriff dauert kaum länger. Die Drohnen verlassen das Lager sofort; Ladungen kosten einen Kreditaufschlag.",
       "Der Verteidiger schlägt den Angriff bei sich. Du bekommst einen Bericht — und die vollständige Wiederholung des Gefechts.",
       "Für jedes abgebrannte Feld bekommst du eine Prämie von {loot} Cr. Dem Verteidiger zahlt die Versicherung {insureCell} Cr je Feld — genau die Reparatur. Die Grundpolice endet dort; jede Stufe deckt zusätzlich {insureShare} % von verbrannter Ware und Geschützen, bis zum vollen Wert.",
       "Für abgeschossene Drohnen zahlt niemand: Geld bringt die Ware, nicht das Schießen.",
@@ -416,7 +416,7 @@ const it: RuleSection[] = [
     title: "Attacchi",
     lines: [
       "Aggiungi un rivale per e-mail: deve giocare anche lui.",
-      "Scegli quanti droni mandare (fino a {maxRaid}), lo schema e il lato. I droni lasciano subito il magazzino.",
+      "Componi l’attacco a ondate: ognuna con schema, lato e carica (semplice, doppia, disturbatore di cannoni o di estintori). Fino a {maxRaid} droni. Uno sciame più grande rende la formazione più fitta — l’attacco quasi non si allunga. I droni lasciano subito il magazzino; le cariche costano un sovrapprezzo in crediti.",
       "Il difensore affronta l’attacco da sé. A te arriva un rapporto — e la replica completa della battaglia.",
       "Per ogni cella bruciata ricevi un premio di {loot} cr. Al difensore l’assicurazione paga {insureCell} cr per cella: esattamente la riparazione. La polizza base finisce lì; ogni livello aggiunge il {insureShare}% di copertura di merce e cannoni perduti, fino al valore pieno.",
       "Nessuno viene pagato per i droni abbattuti: i soldi li porta la merce, non gli spari.",
