@@ -55,8 +55,15 @@ export interface Repo {
    * а не выдумкой клиента, поэтому имя всегда спрашиваем у сервера.
    */
   baseNames(emails: string[]): Promise<Map<string, string>>;
-  /** Карта противника для разведывательного вылета — с уровнем его пушек. */
-  enemyBase(email: string): Promise<{ cells: Uint8Array; guns: Gun[]; gunLevel: number }>;
+  /**
+   * Вылет разведки одной операцией: сервер одновременно списывает самолёты
+   * и отдаёт карту, чтобы карту нельзя было запросить бесплатно.
+   */
+  launchScout(
+    p: Player,
+    email: string,
+    n: number
+  ): Promise<{ cells: Uint8Array; guns: Gun[]; gunLevel: number }>;
   /**
    * Заносит нас в список соперника: знакомство должно быть взаимным, иначе
    * ему нечем ответить. Возвращает его настоящее имя склада.
@@ -73,8 +80,6 @@ export interface Repo {
   stalePatches(email: string, snapCells: string): Promise<number[]>;
   /** Апгрейд класса на уровень выше. Цену считает сервер. */
   upgrade(p: Player, kind: UpgradeKind): Promise<Partial<Player>>;
-  /** Вылет разведки: разведчиков снимает со склада сервер и отдаёт новый склад. */
-  spendScouts(p: Player, n: number): Promise<Depot[]>;
   /**
    * Перечитывает склад с сервера. Нужен, когда сервер отверг правку: значит
    * наша копия разъехалась с его, и правда — на сервере.
@@ -144,19 +149,19 @@ class LocalRepo implements Repo {
     return new Map<string, string>();
   }
 
-  async spendScouts(p: Player, n: number) {
+  async launchScout(p: Player, email: string, n: number) {
     takeDrones(p.depots, n, "scout");
     localSave(p);
-    return p.depots;
+    const enemy = p.enemies.find((item) => item.email.toLowerCase() === email.toLowerCase());
+    return {
+      cells: enemy ? decodeCells(enemy.cells) : new Uint8Array(CELLS),
+      guns: enemy?.guns ?? [],
+      gunLevel: 1,
+    };
   }
 
   async reloadBase() {
     // локальная копия и есть единственная
-  }
-
-  async enemyBase(_email: string) {
-    // локально настоящих противников нет — карту берём из сгенерированного бота
-    return { cells: new Uint8Array(CELLS), guns: [] as Gun[], gunLevel: 1 };
   }
 
   async addRival(_email: string) {
@@ -285,6 +290,7 @@ interface IncomingAttackRow {
   seed: number;
   waves: WavePlan[] | null;
   drone_level: number | null;
+  simulation_version: number | null;
   from_email: string | null;
 }
 
@@ -305,6 +311,7 @@ interface AttackReportRow {
   snap_levels: { guns?: number; sprays?: number; mg?: number; water?: number } | null;
   waves: WavePlan[] | null;
   trace: string | null;
+  simulation_version: number | null;
 }
 
 class CloudRepo implements Repo {
@@ -402,6 +409,7 @@ class CloudRepo implements Repo {
       waves: row.waves ?? undefined,
       // дроны летят на том уровне, до какого их довёл нападающий
       droneLevel: row.drone_level ?? 1,
+      simulationVersion: row.simulation_version ?? 1,
       fromEmail: row.from_email ?? undefined,
       remote: true,
     }));
@@ -424,6 +432,7 @@ class CloudRepo implements Repo {
               direction: row.direction,
               seed: row.seed,
               waves: row.waves ?? undefined,
+              simulationVersion: row.simulation_version ?? 1,
             },
             cells: row.snap_cells,
             guns: row.snap_guns ?? [],
@@ -475,11 +484,20 @@ class CloudRepo implements Repo {
     }
     return out;
   }
-  async enemyBase(email: string) {
-    const { data, error } = await this.db().rpc("enemy_base", { target_email: email });
+  async launchScout(p: Player, email: string, n: number) {
+    const { data, error } = await this.db().rpc("launch_scout", {
+      target_email: email,
+      n,
+    });
     if (error) throw error;
-    const row = (data as { cells: string; guns: Gun[]; gun_level: number }[] | null)?.[0];
+    const row = (data as {
+      cells: string;
+      guns: Gun[];
+      gun_level: number;
+      depots: Depot[];
+    }[] | null)?.[0];
     if (!row) throw new Error("no base");
+    p.depots = row.depots ?? p.depots;
     return { cells: decodeCells(row.cells), guns: row.guns ?? [], gunLevel: row.gun_level ?? 1 };
   }
 
@@ -527,14 +545,6 @@ class CloudRepo implements Repo {
     const row = (data as { credits: number; levels: Player["levels"] }[] | null)?.[0];
     return row ? { credits: row.credits, levels: row.levels } : {};
   }
-  async spendScouts(p: Player, n: number) {
-    const { data, error } = await this.db().rpc("spend_scouts", { n });
-    if (error) throw error;
-    const row = (data as { scouts: number; depots: Depot[] }[] | null)?.[0];
-    if (row?.depots) p.depots = row.depots;
-    return p.depots;
-  }
-
   async reloadBase(p: Player) {
     const db = this.db();
     const [{ data: base, error }, { data: prof, error: e2 }] = await Promise.all([
@@ -638,6 +648,7 @@ class CloudRepo implements Repo {
       direction: number;
       seed: number;
       drone_level: number | null;
+      simulation_version: number | null;
       waves: WavePlan[] | null;
       snap_cells: string;
       snap_guns: Gun[] | null;
@@ -658,6 +669,7 @@ class CloudRepo implements Repo {
         seed: row.seed,
         waves: row.waves ?? undefined,
         droneLevel: row.drone_level ?? 1,
+        simulationVersion: row.simulation_version ?? 1,
       },
       cells: row.snap_cells,
       guns: row.snap_guns ?? [],

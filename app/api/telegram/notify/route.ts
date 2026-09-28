@@ -51,7 +51,9 @@ export async function POST(request: Request) {
   const db = createClient(URL, SERVICE, { auth: { persistSession: false } });
   const { data: attack } = await db
     .from("attacks")
-    .select("id, attacker_id, defender_id, drones, status, result, loot")
+    .select(
+      "id, attacker_id, defender_id, drones, status, result, loot, sent_notified_at, resolved_notified_at"
+    )
     .eq("id", attackId)
     .maybeSingle();
   if (!attack) return new Response("no such battle", { status: 404 });
@@ -64,6 +66,23 @@ export async function POST(request: Request) {
   // и только пока бой в подходящем состоянии: отгремевший не «вылетает» заново
   const expected = event === "sent" ? "pending" : "resolved";
   if (attack.status !== expected) return Response.json({ ok: true, sent: false });
+
+  // Одно уведомление на событие: атомарно занимаем слот, повторный запрос
+  // уже ничего не шлёт.
+  const stamp = new Date().toISOString();
+  const notifiedCol = event === "sent" ? "sent_notified_at" : "resolved_notified_at";
+  if (attack[notifiedCol]) return Response.json({ ok: true, sent: false });
+
+  const { data: claimed, error: claimError } = await db
+    .from("attacks")
+    .update({ [notifiedCol]: stamp })
+    .eq("id", attackId)
+    .eq("status", expected)
+    .is(notifiedCol, null)
+    .select("id")
+    .maybeSingle();
+  if (claimError) return Response.json({ ok: false, reason: claimError.message });
+  if (!claimed) return Response.json({ ok: true, sent: false });
 
   // Пишем всегда второй стороне: о новом налёте — защитнику, об исходе —
   // нападавшему.

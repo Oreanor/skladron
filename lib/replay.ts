@@ -3,6 +3,9 @@
 // Недетерминированы только руки защитника — их и записываем: куда наведён
 // прицел и жмёт ли он гашетку, кадр за кадром.
 
+import { GRID } from "./base";
+import { SIM } from "./tuning";
+
 export interface Frame {
   /** Клетка под прицелом. -1, если прицел убран с карты. */
   x: number;
@@ -43,17 +46,43 @@ export function encodeTrace(frames: (Frame | null)[]): string {
   return out.join(",");
 }
 
-export function decodeTrace(src: string): (Frame | null)[] {
+export function decodeTrace(src: string, limit = SIM.maxFrames): (Frame | null)[] {
   const out: (Frame | null)[] = [];
   if (!src) return out;
   for (const chunk of src.split(",")) {
-    const [code, times] = chunk.split("*");
-    const n = times ? Number(times) : 1;
+    const parts = chunk.split("*");
+    if (parts.length > 2 || !parts[0]) throw new Error("bad trace chunk");
+    const [code, times] = parts;
+    // Только десятичные цифры: иначе Number("1e6") или "0x10" раздуют запись.
+    if (times !== undefined && !/^\d{1,6}$/.test(times)) {
+      throw new Error("bad trace repeat");
+    }
+    const n = times === undefined ? 1 : Number(times);
+    if (!Number.isSafeInteger(n) || n < 1 || out.length + n > limit) {
+      throw new Error("trace is too long");
+    }
     let frame: Frame | null = null;
     if (code !== IDLE) {
       const firing = code.endsWith("!");
-      const [x, y] = (firing ? code.slice(0, -1) : code).split(":");
-      frame = { x: Number(x), y: Number(y), firing };
+      const point = firing ? code.slice(0, -1) : code;
+      if (!/^-?\d+:-?\d+$/.test(point)) throw new Error("bad trace frame");
+      const [rawX, rawY] = point.split(":");
+      const x = Number(rawX);
+      const y = Number(rawY);
+      // Старые клиенты успевали записать координату на клетку за краем при
+      // уходе курсора. Оставляем этот узкий допуск ради старых повторов, но
+      // не принимаем произвольные или бесконечные координаты.
+      if (
+        !Number.isSafeInteger(x) ||
+        !Number.isSafeInteger(y) ||
+        x < -1 ||
+        y < -1 ||
+        x > GRID ||
+        y > GRID
+      ) {
+        throw new Error("trace coordinates are out of bounds");
+      }
+      frame = { x, y, firing };
     }
     for (let i = 0; i < n; i++) out.push(frame);
   }

@@ -6,9 +6,13 @@
 // личным решением, а нападающему за каждую сожжённую клетку капала премия,
 // взявшаяся из ниоткуда: два сговорившихся склада печатали кредиты. Теперь
 // с клиента не берётся ни карта, ни исход.
+//
+// Расчёт идёт по снимку из claim_attack: между чтением склада и записью
+// итога нельзя успеть купить или переставить имущество так, чтобы старый
+// результат наложился на новый склад.
 
 import { createClient } from "@supabase/supabase-js";
-import { decodePgBytea, type Depot, type Gun } from "@/lib/base";
+import { decodeCells, type Depot, type Gun } from "@/lib/base";
 import type { AttackOrder, Pattern, WavePlan } from "@/lib/attack";
 import { resolveBattle } from "@/lib/resolve";
 
@@ -31,12 +35,21 @@ interface AttackRow {
   attacker_id: string;
   defender_id: string;
   status: string;
+}
+
+interface ClaimRow {
+  token: string;
+  cells: string;
+  guns: Gun[];
+  depots: Depot[];
+  levels: Record<string, number> | null;
   drones: number;
   pattern: Pattern;
   direction: number;
   seed: number;
   waves: WavePlan[] | null;
   drone_level: number | null;
+  simulation_version: number | null;
 }
 
 export async function POST(request: Request) {
@@ -62,7 +75,7 @@ export async function POST(request: Request) {
 
   const { data: attack } = await db
     .from("attacks")
-    .select("id, attacker_id, defender_id, status, drones, pattern, direction, seed, waves, drone_level")
+    .select("id, attacker_id, defender_id, status")
     .eq("id", attackId)
     .maybeSingle<AttackRow>();
   if (!attack) return Response.json({ error: "no such battle" }, { status: 404 });
@@ -74,48 +87,59 @@ export async function POST(request: Request) {
     return Response.json({ error: "attack already resolved" }, { status: 409 });
   }
 
-  // Склад, пушки и ящики — серверные, какими они лежат прямо сейчас. Их же
-  // увидит нападающий в повторе: resolve_attack снимает слепок до боя.
-  const [{ data: base }, { data: profile }] = await Promise.all([
-    db
-      .from("bases")
-      .select("cells, guns, drone_cells")
-      .eq("user_id", uid)
-      .maybeSingle<{ cells: string; guns: Gun[]; drone_cells: Depot[] }>(),
-    db
-      .from("profiles")
-      .select("levels")
-      .eq("id", uid)
-      .maybeSingle<{ levels: Record<string, number> | null }>(),
-  ]);
-  if (!base) return Response.json({ error: "no base" }, { status: 404 });
+  // Claim атомарно снимает слепок и версию склада. Бой считаем только по ним.
+  const { data: claimed, error: claimError } = await db.rpc("claim_attack", {
+    attack_id: attackId,
+  });
+  if (claimError) {
+    const msg = claimError.message ?? "";
+    if (msg.includes("already resolving")) {
+      return Response.json({ error: "battle is already resolving" }, { status: 409 });
+    }
+    if (msg.includes("already resolved")) {
+      return Response.json({ error: "attack already resolved" }, { status: 409 });
+    }
+    return Response.json({ error: msg || "claim failed" }, { status: 400 });
+  }
 
-  const levels = profile?.levels ?? {};
+  const snap = (claimed as ClaimRow[] | null)?.[0];
+  if (!snap) return Response.json({ error: "claim failed" }, { status: 400 });
+
+  const levels = snap.levels ?? {};
   const order: AttackOrder = {
     id: attack.id,
     from: "",
     createdAt: 0,
-    drones: attack.drones,
-    pattern: attack.pattern,
-    direction: attack.direction,
-    seed: attack.seed,
-    waves: attack.waves ?? undefined,
-    droneLevel: attack.drone_level ?? 1,
+    drones: snap.drones,
+    pattern: snap.pattern,
+    direction: snap.direction,
+    seed: snap.seed,
+    waves: snap.waves ?? undefined,
+    droneLevel: snap.drone_level ?? 1,
+    simulationVersion: snap.simulation_version ?? 1,
   };
 
-  const verdict = resolveBattle({
-    cells: decodePgBytea(base.cells),
-    guns: base.guns ?? [],
-    depots: base.drone_cells ?? [],
-    order,
-    levels: {
-      guns: levels.guns ?? 1,
-      sprays: levels.sprays ?? 1,
-      mg: levels.mg ?? 1,
-      water: levels.water ?? 1,
-    },
-    trace,
-  });
+  let verdict;
+  try {
+    verdict = resolveBattle({
+      cells: decodeCells(snap.cells),
+      guns: snap.guns ?? [],
+      depots: snap.depots ?? [],
+      order,
+      levels: {
+        guns: levels.guns ?? 1,
+        sprays: levels.sprays ?? 1,
+        mg: levels.mg ?? 1,
+        water: levels.water ?? 1,
+      },
+      trace,
+    });
+  } catch (err) {
+    return Response.json(
+      { error: err instanceof Error ? err.message : "battle failed" },
+      { status: 400 }
+    );
+  }
 
   const { data, error } = await db.rpc("resolve_attack", {
     attack_id: attackId,
@@ -124,6 +148,7 @@ export async function POST(request: Request) {
     new_depots: verdict.depots,
     result: verdict.result,
     battle_trace: trace,
+    claim_token: snap.token,
   });
   if (error) return Response.json({ error: error.message }, { status: 400 });
 

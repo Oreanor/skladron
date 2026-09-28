@@ -1251,12 +1251,9 @@ export default function Lobby({
     if (scouts < planes) return t("scout.needPlanes");
     try {
       await flushPersist();
-      const base =
-        repo.mode === "cloud"
-          ? await repo.enemyBase(enemy.email)
-          : { cells: decodeCells(enemy.cells), guns: enemy.guns, gunLevel: 1 };
-      // разведчиков снимает со склада сервер: взлетели — значит потрачены
-      await repo.spendScouts(p, planes);
+      // Карта и списание самолётов приходят одной серверной операцией:
+      // запросить настоящий склад бесплатно в обход вылета нельзя.
+      const base = await repo.launchScout(p, enemy.email, planes);
       const outdated = enemy.scout
         ? await repo.stalePatches(enemy.email, enemy.scout.cells).catch(() => [])
         : [];

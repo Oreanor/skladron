@@ -3,7 +3,7 @@
 import { GRID } from "./base";
 import { levelBonus } from "./economy";
 import type { BattleResult } from "./engine";
-import { DRONE, GUN, PAYLOAD, RAID, WAVE } from "./tuning";
+import { DRONE, GUN, PAYLOAD, RAID, SIMULATION_VERSION, WAVE } from "./tuning";
 
 /**
  * Что дрон несёт. Простой долетает и взрывается; тяжёлый берёт двойную
@@ -124,6 +124,8 @@ export interface AttackOrder {
   seed: number;
   /** Уровень дронов нападающего на момент вылета. */
   droneLevel?: number;
+  /** Версия правил симуляции: старые повторы нельзя молча считать новыми. */
+  simulationVersion?: number;
   /** Почта нападавшего: по ней он попадает в список соперников. */
   fromEmail?: string;
   remote?: boolean; // настоящий налёт из серверной очереди, а не локальный бот
@@ -161,7 +163,7 @@ export interface AttackReport {
     cells: string;
     guns: { cx: number; cy: number }[];
     depots: { cx: number; cy: number; n: number; kind?: string }[];
-    levels: { guns?: number; mg?: number; water?: number };
+    levels: { guns?: number; sprays?: number; mg?: number; water?: number };
     trace: string;
   };
 }
@@ -312,6 +314,10 @@ function launchTogether(tickets: SpawnTicket[], start: number, droneLevel: numbe
  * порция дронов, которая стартует после общей паузы.
  */
 export function buildPlan(order: AttackOrder): SpawnTicket[] {
+  const version = order.simulationVersion ?? SIMULATION_VERSION;
+  if (version !== SIMULATION_VERSION) {
+    throw new Error(`unsupported simulation version: ${version}`);
+  }
   const rnd = mulberry32(order.seed);
   const plan: SpawnTicket[] = [];
   // тип пишем явно: WAVE.start литеральный из-за as const

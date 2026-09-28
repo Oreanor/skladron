@@ -97,7 +97,7 @@ export const nameFromEmail = (email: string) => email.split("@")[0] || email;
 
 /**
  * Соперник без выдуманного склада. Настоящую карту живого игрока отдаёт
- * сервер (enemyBase), и генерировать ему фиктивную — это проход по десяти
+ * сервер (launchScout), и генерировать ему фиктивную — это проход по десяти
  * тысячам клеток ради поля, которое потом никто не прочтёт.
  */
 export function blankEnemy(email: string, name = nameFromEmail(email)): Enemy {
