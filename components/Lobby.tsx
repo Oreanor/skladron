@@ -101,6 +101,7 @@ import {
   drawFreeCells,
   drawHoverCell,
   drawHoverLabel,
+  drawPicked,
   drawPriceTags,
   dropAllowed,
   onMap,
@@ -1427,6 +1428,22 @@ export default function Lobby({
    * показываем; тащим готовую — показываем круги её рода. В остальное время
    * ничьи: втроём они закрывают склад так, что на нём ничего не разобрать.
    */
+  /**
+   * Где на складе уже стоит то, что сейчас выбрано. Подсвечиваем только
+   * предметы: у площади, ремонта и сноса подсвечивать нечего — они работают
+   * по клеткам, а не по объектам.
+   */
+  const pickedSpots = (): { cx: number; cy: number }[] => {
+    if (tool === "gun" || tool === "spray" || tool === "trap") {
+      return p.guns.filter((g) => gunKind(g) === tool);
+    }
+    if (tool === "drones" || tool === "scouts") {
+      const want = tool === "scouts" ? "scout" : "basic";
+      return p.depots.filter((d) => depotKind(d) === want);
+    }
+    return [];
+  };
+
   const coverageFor = (): CoverageKind[] => {
     if (tool === "gun" || tool === "spray" || tool === "trap") return [tool];
     const from = dragGunRef.current;
@@ -1514,6 +1531,10 @@ export default function Lobby({
         ok = v === G_BASE && !p.depots.some((q) => q.cx === hx && q.cy === hy);
       drawHoverCell(ctx, cell, hx, hy, ok);
     }
+
+    // Выбранную категорию обводим: иначе среди пёстрой карты не найти, есть
+    // ли у тебя разведка и где она стоит.
+    drawPicked(ctx, cell, pickedSpots(), frameNow);
 
     priceTags.current = drawPriceTags(ctx, cell, priceTags.current, frameNow);
 

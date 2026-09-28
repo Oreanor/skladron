@@ -141,6 +141,44 @@ export function drawDraft(
   }
 }
 
+/**
+ * Обводит клетки, где уже стоит то, что сейчас выбрано: зенитки при выбранной
+ * зенитке, контейнеры разведки при выбранной разведке и так далее.
+ *
+ * Без этого выбрать разведку и найти на складе её контейнеры было нечем —
+ * среди пёстрой карты они ничем не выделялись. Обводка в два прохода:
+ * тёмная подложка и поверх зелёное, иначе на белом складе зелёное по белому
+ * теряется ровно так же. Медленно дышит — неподвижную рамку глаз на пёстром
+ * фоне пропускает.
+ */
+export function drawPicked(
+  ctx: CanvasRenderingContext2D,
+  cell: number,
+  spots: { cx: number; cy: number }[],
+  now: number
+) {
+  if (!spots.length) return;
+  const pulse = 0.72 + 0.28 * Math.sin(now / 260);
+  const inset = cell * 0.12;
+  const side = cell - inset * 2;
+
+  ctx.save();
+  ctx.lineJoin = "round";
+  for (const pass of [
+    { color: "rgba(0, 0, 0, 0.6)", width: cell * 0.46 },
+    { color: `rgba(52, 211, 153, ${pulse.toFixed(3)})`, width: cell * 0.24 },
+  ]) {
+    ctx.strokeStyle = pass.color;
+    ctx.lineWidth = pass.width;
+    ctx.beginPath();
+    for (const s of spots) {
+      ctx.rect(s.cx * cell + inset, s.cy * cell + inset, side, side);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 /** Клетка под курсором: синяя — инструмент тут сработает, красная — нет. */
 export function drawHoverCell(
   ctx: CanvasRenderingContext2D,
