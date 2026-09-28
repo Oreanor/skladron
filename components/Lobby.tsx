@@ -17,7 +17,6 @@ import {
   type GunKind,
   isWhole,
   scrapRect,
-  freeCells,
   idx,
   isBuilding,
   burntCellsIn,
@@ -54,7 +53,6 @@ import {
   SCOUT_UNIT_COST,
   maxLevel,
   UPGRADE_KINDS,
-  UPGRADE_STEP,
   upgradeCost,
   type UpgradeKind,
   fmt,
@@ -91,9 +89,34 @@ import type { Account } from "./AuthGate";
 import Enemies from "./Enemies";
 import { drawCoverage, drawDepots, type View } from "@/lib/render";
 import { gunRange, sprayRange, trapRange } from "@/lib/engine";
-import { RAID, SPRAY, TRAP } from "@/lib/tuning";
+import { RAID } from "@/lib/tuning";
 import Battle, { type BattleOutcome } from "./Battle";
-import RaidPlanner, { newWave } from "./RaidPlanner";
+import TestRaidDialog from "./lobby/TestRaidDialog";
+import AttackReportDialog from "./lobby/AttackReportDialog";
+import BaseName from "./lobby/BaseName";
+import { TEST_RAID_MAX } from "./lobby/limits";
+import {
+  drawDraft,
+  drawDropTarget,
+  drawFreeCells,
+  drawHoverCell,
+  drawHoverLabel,
+  drawPriceTags,
+  dropAllowed,
+  onMap,
+} from "./lobby/overlay";
+import {
+  BOT_COUNT,
+  DEFAULT_PANELS,
+  PANELS_KEY,
+  TOOLS,
+  findFoe,
+  readPanels,
+  type ModalId,
+  type SheetId,
+  type Tool,
+  type ToolId,
+} from "./lobby/tools";
 import Scout, { type ScoutOutcome } from "./Scout";
 import ScoutMap from "./ScoutMap";
 import Replay, { type ReplayData } from "./Replay";
@@ -107,18 +130,8 @@ import AccountMenu, { SettingsList } from "./AccountMenu";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 import {
-  Banknote,
   Play,
   Trash2,
-  ChevronsUp,
-  LayoutGrid,
-  Plane,
-  Hammer,
-  CircleDotDashed,
-  Magnet,
-  Rocket,
-  ShieldCheck,
-  Wrench,
 } from "lucide-react";
 import { autoDefend, type UnattendedOutcome } from "@/lib/unattended";
 import {
@@ -144,178 +157,7 @@ import {
   Sheet,
   StatRow,
   ToolButton,
-  IconDrone,
 } from "./ui";
-
-type Tool = "area" | "repair" | "scrap" | "gun" | "spray" | "trap" | "drones" | "scouts";
-/** Кнопка «Апгрейд» карты не касается: она только открывает модалку. */
-type ToolId = Tool | "upgrade" | "insurance" | "loan";
-/** Панели, которые на телефоне открываются шторкой снизу. */
-type SheetId = "attacks" | "enemies" | "menu";
-/** Панели инструментов: они всплывают модалкой и вёрстку не разрывают. */
-type ModalId = "upgrade" | "insurance" | "loan" | "telegram";
-
-const ICON = "h-5 w-5";
-
-/** Подпись и цена берутся из словаря, глиф — из lucide. */
-const TOOLS: {
-  id: ToolId;
-  label: Key;
-  hint: Key;
-  vars: Record<string, number>;
-  icon: ReactNode;
-  /** Цена этого инструмента — не фиксированная, а «от» или «за десяток». */
-  priceKey?: Key;
-  /** Какой класс он показывает уровнем. */
-  levelKind?: UpgradeKind;
-  /** Что считать в уголке кнопки: этого добра столько-то на складе. */
-  countKind?: "intact" | "burnt" | "guns" | "sprays" | "traps" | "drones" | "scouts" | "loan";
-}[] = [
-  {
-    id: "area",
-    label: "tool.area",
-    hint: "tool.areaHint",
-    vars: { cost: CELL_COST },
-    icon: <LayoutGrid className={ICON} />,
-    countKind: "intact",
-  },
-  {
-    id: "repair",
-    label: "tool.repair",
-    hint: "tool.repairHint",
-    vars: { cost: REPAIR_COST },
-    icon: <Wrench className={ICON} />,
-    countKind: "burnt",
-  },
-  {
-    id: "scrap",
-    label: "tool.scrap",
-    hint: "tool.scrapHint",
-    vars: { cost: SCRAP_REWARD },
-    priceKey: "tool.priceScrap",
-    icon: <Hammer className={ICON} />,
-    countKind: "burnt",
-  },
-  {
-    id: "gun",
-    label: "tool.gun",
-    hint: "tool.gunHint",
-    vars: { cost: GUN_COST },
-    icon: <Rocket className={ICON} />,
-    levelKind: "guns",
-    countKind: "guns",
-  },
-  {
-    id: "scouts",
-    label: "tool.scouts",
-    hint: "tool.scoutsHint",
-    vars: { perCell: DRONES_PER_CELL },
-    priceKey: "tool.priceBox",
-    icon: <Plane className={ICON} />,
-    levelKind: "scouts",
-    countKind: "scouts",
-  },
-  {
-    id: "drones",
-    label: "tool.drones",
-    hint: "tool.dronesHint",
-    vars: { perCell: DRONES_PER_CELL },
-    priceKey: "tool.priceBox",
-    icon: <IconDrone />,
-    levelKind: "drones",
-    countKind: "drones",
-  },
-  {
-    id: "spray",
-    label: "tool.spray",
-    hint: "tool.sprayHint",
-    vars: { cost: SPRAY_COST, range: SPRAY.range },
-    icon: <CircleDotDashed className={ICON} />,
-    levelKind: "sprays",
-    countKind: "sprays",
-  },
-  {
-    id: "trap",
-    label: "tool.trap",
-    hint: "tool.trapHint",
-    vars: { cost: TRAP_COST, range: TRAP.range, cap: TRAP.capacity },
-    icon: <Magnet className={ICON} />,
-    levelKind: "traps",
-    countKind: "traps",
-  },
-  {
-    id: "insurance",
-    label: "tool.insurance",
-    hint: "tool.insuranceHint",
-    vars: { cost: INSURANCE_CELL },
-    priceKey: "tool.priceCell",
-    icon: <ShieldCheck className={ICON} />,
-    levelKind: "insurance",
-  },
-  {
-    id: "loan",
-    label: "tool.loan",
-    hint: "tool.loanHint",
-    vars: { cost: LOAN_MIN, rate: LOAN_RATE },
-    priceKey: "tool.priceFrom",
-    icon: <Banknote className={ICON} />,
-    countKind: "loan",
-  },
-  {
-    id: "upgrade",
-    label: "tool.upgrade",
-    hint: "tool.upgradeHint",
-    vars: { cost: UPGRADE_STEP },
-    priceKey: "tool.priceFrom",
-    icon: <ChevronsUp className={ICON} />,
-  },
-];
-
-/** Имена ботов для отладочной кнопки «+ налёт»: настоящие атаки приходят с именем склада. */
-const BOT_COUNT = 4;
-/** Потолок пробного налёта по ссылке: посмотреть режим, а не похоронить склад. */
-const TEST_RAID_MAX = 250;
-
-/** Панели правой колонки в порядке по умолчанию. */
-const DEFAULT_PANELS = ["replays", "enemies", "stats"];
-const PANELS_KEY = "wb.panels.v1";
-
-/**
- * Соперник, приславший этот налёт. Ищем по почте, а не по имени склада:
- * имена не уникальны и меняются переименованием, а почта — то же самое,
- * по чему соперника и заводят. У ботов почты нет, для них имя и остаётся
- * единственной приметой.
- */
-function findFoe(p: Player, order: AttackOrder) {
-  const mail = order.fromEmail?.toLowerCase();
-  if (mail) return p.enemies.find((e) => e.email.toLowerCase() === mail);
-  return p.enemies.find((e) => e.name === order.from);
-}
-
-function readPanels(): {
-  order: string[];
-  hidden: Record<string, boolean>;
-  tool?: Tool;
-} {
-  if (typeof window === "undefined") return { order: DEFAULT_PANELS, hidden: {} };
-  try {
-    const raw = window.localStorage.getItem(PANELS_KEY);
-    if (!raw) return { order: DEFAULT_PANELS, hidden: {} };
-    const saved = JSON.parse(raw) as {
-      order?: string[];
-      hidden?: Record<string, boolean>;
-      tool?: Tool;
-    };
-    // новые панели дописываем в конец, исчезнувшие выкидываем
-    const order = [
-      ...(saved.order ?? []).filter((id) => DEFAULT_PANELS.includes(id)),
-      ...DEFAULT_PANELS.filter((id) => !(saved.order ?? []).includes(id)),
-    ];
-    return { order, hidden: saved.hidden ?? {}, tool: saved.tool };
-  } catch {
-    return { order: DEFAULT_PANELS, hidden: {} };
-  }
-}
 
 export default function Lobby({
   account,
@@ -1368,9 +1210,6 @@ export default function Lobby({
 
   const cellOf = (pt: Pt) => ({ x: Math.floor(pt.x), y: Math.floor(pt.y) });
 
-  /** Сколько живёт всплывающая цена, мс. */
-  const TAG_MS = 1000;
-
   /** «−100 кр» над клеткой: видно, за что ушли деньги, и куда вернулись. */
   const showPrice = (x: number, y: number, amount: number) => {
     priceTags.current.push({
@@ -1594,196 +1433,88 @@ export default function Lobby({
       sprayRange({ sprayLevel: p.levels.sprays }),
       trapRange({ trapLevel: p.levels.traps })
     );
-    const dragged = dragDepotRef.current;
+
+    const draggedDepot = dragDepotRef.current;
     drawDepots(
       ctx,
-      dragged
-        ? p.depots.filter((item) => item.cx !== dragged.cx || item.cy !== dragged.cy)
+      draggedDepot
+        ? p.depots.filter((item) => item.cx !== draggedDepot.cx || item.cy !== draggedDepot.cy)
         : p.depots,
       cell
     );
 
     const d = draftRef.current ? normRect(draftRef.current) : null;
-    if (d && d.w > 0 && d.h > 0 && (tool === "repair" || tool === "scrap")) {
-      // закрашиваем именно те клетки, за которые спишутся деньги
-      ctx.fillStyle =
-        tool === "scrap"
-          ? scrapWhole
-            ? "rgba(214, 168, 92, 0.55)"
-            : "rgba(229, 56, 59, 0.55)"
-          : draftAfford
-          ? "rgba(140, 215, 255, 0.55)"
-          : "rgba(229, 56, 59, 0.5)";
-      for (let y = d.y; y < d.y + d.h; y++) {
-        for (let x = d.x; x < d.x + d.w; x++) {
-          if (x < 0 || y < 0 || x >= GRID || y >= GRID) continue;
-          if (p.cells[idx(x, y)] === G_BURNT) ctx.fillRect(x * cell, y * cell, cell, cell);
-        }
-      }
-    }
-    if (d && d.w > 0 && d.h > 0) {
-      const bad = !draftConnects || !draftAfford;
-      ctx.fillStyle = bad ? "rgba(229, 56, 59, 0.28)" : "rgba(229, 90, 43, 0.3)";
-      ctx.fillRect(d.x * cell, d.y * cell, d.w * cell, d.h * cell);
-      ctx.strokeStyle = bad ? "#ff6b6b" : "#ff9f5a";
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(d.x * cell, d.y * cell, d.w * cell, d.h * cell);
-      ctx.fillStyle = "#ff9f5a";
-      const hs = cell * 1.6;
-      for (const [hx, hy] of [
-        [d.x, d.y],
-        [d.x + d.w, d.y],
-        [d.x, d.y + d.h],
-        [d.x + d.w, d.y + d.h],
-      ]) {
-        ctx.fillRect(hx * cell - hs / 2, hy * cell - hs / 2, hs, hs);
-      }
+    if (d) {
+      drawDraft(ctx, cell, d, {
+        cells: p.cells,
+        burntOnly: tool === "repair" || tool === "scrap" ? tool : undefined,
+        scrapWhole,
+        afford: draftAfford,
+        connects: draftConnects,
+      });
     }
 
-    // пушки переставляются так же, как контейнеры: тянем и роняем
-    if (tool === "gun" || tool === "spray" || tool === "trap" || dragGunRef.current) {
-      ctx.fillStyle = "rgba(140, 215, 255, 0.16)";
-      for (const i of freeCells(p.cells, p.guns, p.depots)) {
-        ctx.fillRect((i % GRID) * cell, ((i / GRID) | 0) * cell, cell, cell);
-      }
-      const from = dragGunRef.current;
-      const hg = hoverRef.current;
-      if (from && hg) {
-        const cx = Math.floor(hg.x);
-        const cy = Math.floor(hg.y);
-        const sameCell = cx === from.cx && cy === from.cy;
-        const targetOk =
-          sameCell ||
-          (cx >= 0 &&
-            cy >= 0 &&
-            cx < GRID &&
-            cy < GRID &&
-            p.cells[idx(cx, cy)] === G_BASE &&
-            !p.guns.some((g) => (g.cx !== from.cx || g.cy !== from.cy) && g.cx === cx && g.cy === cy) &&
-            !p.depots.some((d) => d.cx === cx && d.cy === cy));
-        ctx.strokeStyle = targetOk ? "#8ecae6" : "#ff6b6b";
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(cx * cell, cy * cell, cell, cell);
-      }
+    const hover = hoverRef.current;
+    const hx = hover ? Math.floor(hover.x) : -1;
+    const hy = hover ? Math.floor(hover.y) : -1;
+
+    // Установки и контейнеры переставляются одинаково: тянем и роняем. Видно
+    // и куда можно, и куда нельзя.
+    const placing =
+      tool === "gun" || tool === "spray" || tool === "trap" || dragGunRef.current;
+    const stacking = tool === "drones" || tool === "scouts" || draggedDepot;
+    if (placing || stacking) {
+      drawFreeCells(
+        ctx,
+        cell,
+        p.cells,
+        p.guns,
+        p.depots,
+        placing ? "rgba(140, 215, 255, 0.16)" : "rgba(214, 168, 92, 0.18)"
+      );
     }
 
-    // раскладка: подсвечиваем свободные клетки и тащим контейнер за курсором
-    if (tool === "drones" || tool === "scouts" || dragDepotRef.current) {
-      ctx.fillStyle = "rgba(214, 168, 92, 0.18)";
-      for (const i of freeCells(p.cells, p.guns, p.depots)) {
-        ctx.fillRect((i % GRID) * cell, ((i / GRID) | 0) * cell, cell, cell);
-      }
-      const from = dragDepotRef.current;
-      const h2 = hoverRef.current;
-      if (from && h2) {
-        const cx = Math.floor(h2.x);
-        const cy = Math.floor(h2.y);
-        const targetOk =
-          cx >= 0 &&
-          cy >= 0 &&
-          cx < GRID &&
-          cy < GRID &&
-          p.cells[idx(cx, cy)] === G_BASE &&
-          !p.guns.some((g) => g.cx === cx && g.cy === cy) &&
-          !p.depots.some(
-            (item) =>
-              (item.cx !== from.cx || item.cy !== from.cy) && item.cx === cx && item.cy === cy
-          );
-        const source = p.depots.find((item) => item.cx === from.cx && item.cy === from.cy);
-        if (source) drawDepots(ctx, [{ ...source, cx, cy }], cell, !targetOk);
-        ctx.strokeStyle = targetOk ? "#f5c56f" : "#ff6b6b";
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(
-          cx * cell,
-          cy * cell,
-          cell,
-          cell
+    const dragged = dragGunRef.current ?? draggedDepot;
+    if (dragged && hover) {
+      const ok = dropAllowed(p.cells, p.guns, p.depots, hx, hy, dragged);
+      // контейнер тащим вместе с его содержимым: видно, что именно несёшь
+      if (draggedDepot) {
+        const source = p.depots.find(
+          (item) => item.cx === draggedDepot.cx && item.cy === draggedDepot.cy
         );
+        if (source) drawDepots(ctx, [{ ...source, cx: hx, cy: hy }], cell, !ok);
       }
+      drawDropTarget(ctx, cell, hx, hy, ok, dragGunRef.current ? "#8ecae6" : "#f5c56f");
     }
 
-    const h = hoverRef.current;
-    if (h && !d) {
-      const cx = Math.floor(h.x);
-      const cy = Math.floor(h.y);
-      if (cx >= 0 && cy >= 0 && cx < GRID && cy < GRID) {
-        const v = p.cells[idx(cx, cy)];
-        let ok = false;
-        if (tool === "area") ok = !isBuilding(v) && (!hasBuilding || touchesBuilding(p.cells, cx, cy));
-        else if (tool === "repair") ok = v === G_BURNT;
-        else if (tool === "gun" || tool === "spray" || tool === "trap")
-          ok = v === G_BASE && !p.depots.some((q) => q.cx === cx && q.cy === cy);
-        if (tool !== "drones" && tool !== "scouts") {
-          ctx.fillStyle = ok ? "rgba(140, 215, 255, 0.6)" : "rgba(229, 56, 59, 0.55)";
-          ctx.fillRect(cx * cell, cy * cell, cell, cell);
-        }
-      }
+    // Клетка под курсором — сработает тут инструмент или нет. При раскладке
+    // контейнеров не рисуем: там уже подсвечены все свободные клетки.
+    if (hover && !d && onMap(hx, hy) && tool !== "drones" && tool !== "scouts") {
+      const v = p.cells[idx(hx, hy)];
+      let ok = false;
+      if (tool === "area") ok = !isBuilding(v) && (!hasBuilding || touchesBuilding(p.cells, hx, hy));
+      else if (tool === "repair") ok = v === G_BURNT;
+      else if (tool === "gun" || tool === "spray" || tool === "trap")
+        ok = v === G_BASE && !p.depots.some((q) => q.cx === hx && q.cy === hy);
+      drawHoverCell(ctx, cell, hx, hy, ok);
     }
 
-    // ценники: всплывают над клеткой, поднимаются и гаснут
-    if (priceTags.current.length) {
-      priceTags.current = priceTags.current.filter((tag) => frameNow - tag.at < TAG_MS);
-      ctx.save();
-      ctx.font = `600 ${cell * 1.7}px ui-monospace, SFMono-Regular, monospace`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "bottom";
-      ctx.lineWidth = cell * 0.22;
-      ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
-      for (const tag of priceTags.current) {
-        const k = (frameNow - tag.at) / TAG_MS;
-        const px = (tag.x + 0.5) * cell;
-        const py = (tag.y - k * 1.6) * cell;
-        ctx.globalAlpha = 1 - k * k;
-        ctx.strokeText(tag.text, px, py);
-        ctx.fillStyle = tag.gain ? "#7ee787" : "#ffb454";
-        ctx.fillText(tag.text, px, py);
-      }
-      ctx.restore();
-    }
+    priceTags.current = drawPriceTags(ctx, cell, priceTags.current, frameNow);
 
-    // подпись только у установок/контейнеров — землю и пустые клетки не подписываем
-    if (h) {
-      const cx = Math.floor(h.x);
-      const cy = Math.floor(h.y);
-      if (cx >= 0 && cy >= 0 && cx < GRID && cy < GRID) {
-        const gun = p.guns.find((g) => g.cx === cx && g.cy === cy);
-        const depot = p.depots.find((item) => item.cx === cx && item.cy === cy);
-        let label: string | null = null;
-        if (gun) {
-          const kind = gunKind(gun);
-          label = t(
-            kind === "spray" ? "tool.spray" : kind === "trap" ? "tool.trap" : "tool.gun"
-          );
-        } else if (depot) {
-          label = t(depotKind(depot) === "scout" ? "map.hover.scouts" : "map.hover.drones", {
-            n: depot.n,
-          });
-        }
-        if (label) {
-          const zoom = view?.zoom || 1;
-          // На 0.5× 1/zoom=2 раздувает чип; потолок держит экранный размер в рамках.
-          const inv = Math.min(1 / zoom, 1.35);
-          const px = (cx + 0.5) * cell;
-          const py = cy * cell - cell * 0.35;
-          ctx.save();
-          ctx.translate(px, py);
-          ctx.scale(inv, inv);
-          ctx.font = "600 12px ui-sans-serif, system-ui, sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          const tw = ctx.measureText(label).width;
-          const padX = 6;
-          const padY = 3;
-          const th = 12;
-          const boxH = th + padY * 2;
-          const boxY = -boxH;
-          ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
-          ctx.fillRect(-tw / 2 - padX, boxY, tw + padX * 2, boxH);
-          ctx.fillStyle = "#f5f5f5";
-          ctx.fillText(label, 0, boxY + boxH / 2);
-          ctx.restore();
-        }
+    // Подпись только у установок и контейнеров: землю подписывать нечем.
+    if (hover && onMap(hx, hy)) {
+      const gun = p.guns.find((g) => g.cx === hx && g.cy === hy);
+      const depot = p.depots.find((item) => item.cx === hx && item.cy === hy);
+      let label: string | null = null;
+      if (gun) {
+        const kind = gunKind(gun);
+        label = t(kind === "spray" ? "tool.spray" : kind === "trap" ? "tool.trap" : "tool.gun");
+      } else if (depot) {
+        label = t(depotKind(depot) === "scout" ? "map.hover.scouts" : "map.hover.drones", {
+          n: depot.n,
+        });
       }
+      if (label) drawHoverLabel(ctx, cell, hx, hy, label, view?.zoom ?? 1);
     }
   };
 
@@ -2792,168 +2523,3 @@ export default function Lobby({
  * складом и кошельком он не ограничен: это песочница, чтобы посмотреть, как
  * выглядит волна на своей карте.
  */
-function TestRaidDialog({
-  initial,
-  level,
-  onCancel,
-  onSend,
-}: {
-  /** Сколько дронов предложить с ходу: рой под нынешнюю оборону. */
-  initial: number;
-  /** Свой уровень дронов — от него и пляшем. */
-  level: number;
-  onCancel: () => void;
-  onSend: (waves: WavePlan[], droneLevel: number) => string | null;
-}) {
-  const t = useT();
-  const [waves, setWaves] = useState<WavePlan[]>(() => [newWave(initial)]);
-  const [droneLevel, setDroneLevel] = useState(level);
-  const [error, setError] = useState<string | null>(null);
-  const total = raidTotal(waves);
-
-  return (
-    <Modal
-      title={t("raid.testTitle")}
-      subtitle={t("raid.testSubtitle")}
-      onClose={onCancel}
-      footer={
-        <div className="flex gap-2">
-          <Button
-            variant="danger"
-            className="flex-1"
-            disabled={total < 1}
-            onClick={() => setError(onSend(waves, droneLevel))}
-          >
-            {t("raid.testSend")}
-          </Button>
-          <Button onClick={onCancel}>{t("common.cancel")}</Button>
-        </div>
-      }
-    >
-      <RaidPlanner
-        waves={waves}
-        onChange={setWaves}
-        stock={TEST_RAID_MAX}
-        max={TEST_RAID_MAX}
-        unitCost={0}
-        free
-        droneLevel={droneLevel}
-        onDroneLevel={setDroneLevel}
-      />
-      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
-    </Modal>
-  );
-}
-
-function AttackReportDialog({
-  report,
-  onWatch,
-  onClose,
-}: {
-  report: AttackReport;
-  /** Есть запись боя — можно посмотреть, как всё было. */
-  onWatch?: () => void;
-  onClose: () => void;
-}) {
-  const t = useT();
-  const result = report.result;
-  return (
-    <Modal
-      title={
-        report.destroyed
-          ? t("report.destroyed", { target: report.target })
-          : t("report.title", { target: report.target })
-      }
-      subtitle={t("report.subtitle")}
-      onClose={onClose}
-      footer={
-        <div className="flex gap-2">
-          {onWatch && (
-            <Button variant="build" className="flex-1" onClick={onWatch}>
-              {t("replay.watch")}
-            </Button>
-          )}
-          <Button variant="neutral" className={onWatch ? "" : "flex-1"} onClick={onClose}>
-            {t("common.ok")}
-          </Button>
-        </div>
-      }
-    >
-      <dl className="mb-4 space-y-1 font-mono text-sm">
-        <Row label={t("battle.sent")} value={String(result.dronesSent)} />
-        <Row label={t("battle.killedByGuns")} value={String(result.killedByGuns)} />
-        <Row label={t("battle.killedByMg")} value={String(result.killedByMg)} />
-        <Row label={t("battle.leaked")} value={String(result.leaked)} />
-        <Row label={t("battle.burned")} value={String(result.burned)} />
-        <Row label={t("battle.dronesLost")} value={String(result.dronesLost)} />
-        <Row label={t("battle.gunsLost")} value={String(result.gunsLost)} />
-        <Row
-          label={t("report.leakReward")}
-          value={`+${fmt(report.loot)} ${t("battle.creditsSuffix")}`}
-        />
-      </dl>
-    </Modal>
-  );
-}
-
-/**
- * Имя склада прямо в шапке. Кнопки «переименовать» нет: щёлкнул по имени —
- * поле стало инпутом, Enter сохраняет, Escape отменяет.
- */
-function BaseName({
-  value,
-  placeholder,
-  title,
-  className = "",
-  onCommit,
-}: {
-  value: string;
-  placeholder: string;
-  title: string;
-  className?: string;
-  onCommit: (name: string) => void | Promise<void>;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-
-  const start = () => {
-    setDraft(value);
-    setEditing(true);
-  };
-
-  const commit = () => {
-    setEditing(false);
-    const name = draft.trim();
-    if (name && name !== value) void onCommit(name);
-  };
-
-  if (editing) {
-    return (
-      <input
-        autoFocus
-        value={draft}
-        maxLength={MAX_BASE_NAME}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commit();
-          else if (e.key === "Escape") setEditing(false);
-        }}
-        className={`min-w-0 truncate rounded border border-amber-500 bg-neutral-950 px-2 py-0.5 text-neutral-100 outline-none ${className}`}
-      />
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      title={title}
-      onClick={start}
-      className={`min-w-0 truncate rounded border border-transparent px-2 py-0.5 text-left transition hover:border-neutral-700 hover:bg-neutral-800/60 ${
-        value ? "text-neutral-100" : "text-neutral-500"
-      } ${className}`}
-    >
-      {value || placeholder}
-    </button>
-  );
-}

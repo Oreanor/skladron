@@ -7,6 +7,10 @@ import {
   type ReactNode,
 } from "react";
 import { fmt } from "@/lib/economy";
+
+// Иконки живут отдельными .svg в components/icons — правятся редактором,
+// а не руками в JSX. Реэкспортируем, чтобы места вызова не менялись.
+export { IconDrone, IconMenu, IconTarget, IconUsers } from "./icons";
 import { useT } from "@/lib/i18n";
 
 /*
@@ -336,36 +340,6 @@ export function ChipBar({
   );
 }
 
-const svg = "h-5 w-5 stroke-current";
-
-export function IconTarget() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.7} className={svg}>
-      <circle cx="12" cy="12" r="8" />
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 1v3M12 20v3M1 12h3M20 12h3" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-export function IconUsers() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.7} className={svg}>
-      <circle cx="9" cy="8" r="3.2" />
-      <path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" strokeLinecap="round" />
-      <path d="M16 6.2a3 3 0 0 1 0 5.6M17 14.4c2 .7 3.5 2.4 3.5 4.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-export function IconMenu() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.8} className={svg}>
-      <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 /** Модальное окно поверх всего: диалог налёта и его сводка. */
 export function Modal({
   title,
@@ -603,19 +577,3 @@ export function ToolButton({
  */
 export const MESSAGE_MS = 12_000;
 
-/**
- * Квадрокоптер: четыре луча с винтами и корпус. В lucide такого нет, а
- * коробка на кнопке дронов сбивала с толку — коробка это контейнер, не дрон.
- */
-export function IconDrone() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.6} className="h-5 w-5 stroke-current">
-      <path d="M8.5 8.5 6 6M15.5 8.5 18 6M8.5 15.5 6 18M15.5 15.5 18 18" strokeLinecap="round" />
-      <circle cx="5" cy="5" r="2.4" />
-      <circle cx="19" cy="5" r="2.4" />
-      <circle cx="5" cy="19" r="2.4" />
-      <circle cx="19" cy="19" r="2.4" />
-      <rect x="9" y="9" width="6" height="6" rx="1.6" />
-    </svg>
-  );
-}
