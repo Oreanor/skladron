@@ -523,7 +523,7 @@ function spawnDrone(s: GameState, t: SpawnTicket) {
     fuse: 0,
     smokeT: 0,
     form,
-    swirl: Math.max(-0.95, Math.min(0.95, t.swirl ?? 0)),
+    swirl: Math.max(-0.985, Math.min(0.985, t.swirl ?? 0)),
     payload: t.payload ?? "plain",
     over: 0,
     fuel: SUPPRESS.loiter,

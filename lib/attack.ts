@@ -26,6 +26,11 @@ export interface WavePlan {
   /** Сторона: 0 верх, 1 низ, 2 слева, 3 справа. Важна только рою и шеренгам. */
   direction: number;
   groups: DroneGroup[];
+  /**
+   * Задержка от начала боя, секунды. Две волны с нулём стартуют вместе;
+   * разные значения — подряд или с паузой. Без поля — как раньше по очереди.
+   */
+  delay?: number;
 }
 
 export const waveSize = (w: WavePlan) =>
@@ -226,16 +231,23 @@ export function mulberry32(a: number) {
 /**
  * Волны заказа. Старые налёты писались одной формой на весь рой — читаем их
  * как одну волну простых дронов, иначе повторы тех боёв перестали бы играться.
+ * Старые волны без delay шли строго по очереди с паузой betweenWaves — так же
+ * и восстанавливаем, чтобы повторы не слиплись в один старт.
  */
 export function orderWaves(order: AttackOrder): WavePlan[] {
-  if (order.waves?.length) return order.waves;
-  return [
-    {
-      pattern: order.pattern,
-      direction: order.direction,
-      groups: [{ payload: "plain", n: order.drones }],
-    },
-  ];
+  if (!order.waves?.length) {
+    return [
+      {
+        pattern: order.pattern,
+        direction: order.direction,
+        groups: [{ payload: "plain", n: order.drones }],
+        delay: 0,
+      },
+    ];
+  }
+  const anyDelay = order.waves.some((w) => w.delay != null);
+  if (anyDelay) return order.waves;
+  return order.waves.map((w, i) => ({ ...w, delay: i * WAVE.betweenWaves }));
 }
 
 /**
@@ -327,8 +339,9 @@ const scaleCount = (
 
 /**
  * Расписание вылетов: детерминировано по seed, чтобы бой был воспроизводим.
- * Все дроны одной волны стартуют в один момент. Следующая волна — отдельная
- * порция дронов, которая стартует после общей паузы.
+ * Каждая волна стартует в WAVE.start + свой delay: одинаковый delay — вместе,
+ * разный — подряд или с паузой. Внутри волны паттерн всё равно поднимается
+ * разом (launchTogether).
  */
 export function buildPlan(order: AttackOrder): SpawnTicket[] {
   const version = order.simulationVersion ?? SIMULATION_VERSION;
@@ -337,19 +350,15 @@ export function buildPlan(order: AttackOrder): SpawnTicket[] {
   }
   const rnd = mulberry32(order.seed);
   const plan: SpawnTicket[] = [];
-  // тип пишем явно: WAVE.start литеральный из-за as const
-  let at: number = WAVE.start;
   for (const wave of orderWaves(order)) {
     const size = waveSize(wave);
     if (size <= 0) continue;
+    const at = WAVE.start + Math.max(0, wave.delay ?? 0);
     const tickets = waveTickets(wave.pattern, wave.direction, size, rnd, at);
     if (!tickets.length) continue;
     assignPayloads(tickets, wave.groups);
-    // Паттерн задаёт строй и траектории, но не дробит одну волну на скрытые
-    // подволнушки. Даже у колец, спирали и «капели» вся порция уже в воздухе.
-    const last = launchTogether(tickets, at, order.droneLevel ?? 1);
+    launchTogether(tickets, at, order.droneLevel ?? 1);
     plan.push(...tickets);
-    at = last + WAVE.betweenWaves;
   }
   return plan.sort((a, b) => a.at - b.at);
 }
@@ -420,46 +429,24 @@ function waveTickets(
       t += gap;
     }
   } else if (pattern === "rings") {
-    // Число колец растёт с роем: крупные налёты давят несколькими слоями
-    // сразу, а не одним толстым кольцом на десять минут.
-    const rings = scaleCount(
-      n,
-      WAVE.rings.min,
-      WAVE.rings.perDrone,
-      WAVE.rings.cap,
-      WAVE.rings.spread,
-      rnd
-    );
-    const per = Math.ceil(n / rings);
-    const duration = raidDuration(n);
-    let t = start;
-    let left = n;
-    for (let i = 0; i < rings && left > 0; i++) {
-      const size = Math.min(left, per);
-      const phase = (i % 2) * 0.5;
-      const spin = i % 2 ? 1 : -1;
-      for (let j = 0; j < size; j++) {
-        const slot = j % WAVE.ringSlots;
-        const row = (j / WAVE.ringSlots) | 0;
-        plan.push({
-          at: t,
-          form: true,
-          ang: ((slot + phase) / WAVE.ringSlots) * TAU,
-          rad: WAVE.formRadius + row * WAVE.ringRow,
-          swirl: spin * WAVE.rings.swirl,
-        });
-      }
-      left -= size;
-      if (rings > 1) {
-        const k = i / (rings - 1);
-        const span = Math.min(duration, WAVE.rings.gapFirst);
-        t += span - k * (span - Math.min(WAVE.rings.gapLast, span));
-      }
+    // Всегда одно кольцо: дроны равномерно по полному кругу. Раньше лишние
+    // шли вторым рядом в соседние слоты — получалась шеренга с одной стороны;
+    // а несколько концентрических слоёв дробили маленький рой на сектора.
+    const phase = rnd() < 0.5 ? 0.5 / Math.max(1, n) : 0;
+    const spin = rnd() < 0.5 ? 1 : -1;
+    for (let j = 0; j < n; j++) {
+      plan.push({
+        at: start,
+        form: true,
+        ang: ((j + phase) / n) * TAU,
+        rad: WAVE.formRadius,
+        swirl: spin * WAVE.rings.swirl,
+      });
     }
   } else if (pattern === "spiral") {
-    // Рукава растут с роем: иначе двести дронов всё равно ввинчиваются
-    // двумя тонкими нитями. Закрутка полёта против знака сдвига точки
-    // вылета — иначе ветвь выгибается в одну сторону, а рой крутится в другую.
+    // Рукава растут с роем и каждый наматывает turns оборотов — как у
+    // галактики. Сдвиг точки вылета равномерно раскладывает эти обороты по
+    // слоям; закрутка полёта против знака сдвига, чтобы рой шёл по изгибу ветви.
     const arms = scaleCount(
       n,
       WAVE.spiral.armsMin,
@@ -474,6 +461,7 @@ function waveTickets(
       WAVE.spiral.gapMax,
       Math.max(WAVE.spiral.gapMin, duration / Math.max(1, layers - 1))
     );
+    const emit = layers > 1 ? (WAVE.spiral.turns * TAU) / (layers - 1) : 0;
     const spin = rnd() < 0.5 ? 1 : -1;
     const from = rnd() * TAU;
     for (let i = 0; i < n; i++) {
@@ -482,7 +470,7 @@ function waveTickets(
       plan.push({
         at: start + wave * gap,
         form: true,
-        ang: from + spin * wave * WAVE.spiral.emit + (arm / arms) * TAU,
+        ang: from + spin * wave * emit + (arm / arms) * TAU,
         rad: WAVE.formRadius,
         swirl: -spin * WAVE.spiral.swirl,
       });

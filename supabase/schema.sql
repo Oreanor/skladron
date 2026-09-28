@@ -568,6 +568,10 @@ begin
        or coalesce((wave->>'direction')::int, 0) > 3 then
       raise exception 'bad wave direction';
     end if;
+    if coalesce((wave->>'delay')::numeric, 0) < 0
+       or coalesce((wave->>'delay')::numeric, 0) > 300 then
+      raise exception 'bad wave delay';
+    end if;
     if jsonb_typeof(coalesce(wave->'groups', 'null'::jsonb)) <> 'array'
        or jsonb_array_length(wave->'groups') = 0
        or jsonb_array_length(wave->'groups') > 8 then

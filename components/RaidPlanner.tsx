@@ -18,7 +18,7 @@ import {
   type Payload,
   type WavePlan,
 } from "@/lib/attack";
-import { DRONE, PAYLOAD } from "@/lib/tuning";
+import { DRONE, PAYLOAD, WAVE } from "@/lib/tuning";
 import { MAX_LEVEL, fmt, levelBonus } from "@/lib/economy";
 import { Plus, X } from "lucide-react";
 import { Button, SectionTitle } from "./ui";
@@ -26,9 +26,10 @@ import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 
 /** Волна по умолчанию: одна группа простых дронов. */
-export const newWave = (n: number): WavePlan => ({
+export const newWave = (n: number, delay = 0): WavePlan => ({
   pattern: "rings",
   direction: 0,
+  delay,
   groups: [{ payload: "plain", n }],
 });
 
@@ -140,6 +141,25 @@ export default function RaidPlanner({
             </div>
 
             <div className="mb-3 flex flex-wrap gap-2">
+              <label className="flex items-center gap-2 text-xs text-neutral-400">
+                <span className="shrink-0">{t("raid.waveDelay")}</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={300}
+                  step={1}
+                  value={wave.delay ?? 0}
+                  aria-label={t("raid.waveDelay")}
+                  title={t("raid.waveDelayHint")}
+                  onChange={(e) =>
+                    patch(wi, {
+                      delay: Math.max(0, Math.min(300, Number(e.target.value) || 0)),
+                    })
+                  }
+                  className={numberClass}
+                />
+                <span className="shrink-0 text-neutral-500">{t("battle.seconds")}</span>
+              </label>
               <select
                 value={wave.pattern}
                 aria-label={t("raid.pattern")}
@@ -252,7 +272,13 @@ export default function RaidPlanner({
         size="sm"
         block
         className="mt-3"
-        onClick={() => onChange([...waves, newWave(Math.max(1, Math.min(20, max - total)))])}
+        onClick={() => {
+          const lastDelay = waves.reduce((m, w) => Math.max(m, w.delay ?? 0), 0);
+          onChange([
+            ...waves,
+            newWave(Math.max(1, Math.min(20, max - total)), lastDelay + WAVE.betweenWaves),
+          ]);
+        }}
       >
         <Plus className="h-4 w-4" />
         {t("raid.addWave")}
