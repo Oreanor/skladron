@@ -146,10 +146,9 @@ export function drawDraft(
  * зенитке, контейнеры разведки при выбранной разведке и так далее.
  *
  * Без этого выбрать разведку и найти на складе её контейнеры было нечем —
- * среди пёстрой карты они ничем не выделялись. Обводка в два прохода:
- * тёмная подложка и поверх зелёное, иначе на белом складе зелёное по белому
- * теряется ровно так же. Медленно дышит — неподвижную рамку глаз на пёстром
- * фоне пропускает.
+ * среди пёстрой карты они ничем не выделялись. Обводка снаружи клетки — в два
+ * прохода: тёмная подложка и поверх зелёное, иначе на белом складе зелёное
+ * теряется. Медленно дышит — неподвижную рамку глаз на пёстром фоне пропускает.
  */
 export function drawPicked(
   ctx: CanvasRenderingContext2D,
@@ -159,20 +158,21 @@ export function drawPicked(
 ) {
   if (!spots.length) return;
   const pulse = 0.72 + 0.28 * Math.sin(now / 260);
-  const inset = cell * 0.12;
-  const side = cell - inset * 2;
+  // Снаружи клетки: путь чуть больше самой клетки, линия тонкая.
+  const outset = cell * 0.1;
+  const side = cell + outset * 2;
 
   ctx.save();
   ctx.lineJoin = "round";
   for (const pass of [
-    { color: "rgba(0, 0, 0, 0.6)", width: cell * 0.46 },
-    { color: `rgba(52, 211, 153, ${pulse.toFixed(3)})`, width: cell * 0.24 },
+    { color: "rgba(0, 0, 0, 0.55)", width: Math.max(1, cell * 0.16) },
+    { color: `rgba(52, 211, 153, ${pulse.toFixed(3)})`, width: Math.max(0.8, cell * 0.09) },
   ]) {
     ctx.strokeStyle = pass.color;
     ctx.lineWidth = pass.width;
     ctx.beginPath();
     for (const s of spots) {
-      ctx.rect(s.cx * cell + inset, s.cy * cell + inset, side, side);
+      ctx.rect(s.cx * cell - outset, s.cy * cell - outset, side, side);
     }
     ctx.stroke();
   }
