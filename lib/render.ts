@@ -262,7 +262,10 @@ export function drawScoutPlane(ctx: CanvasRenderingContext2D, cell: number) {
   ctx.fill();
 }
 
-/** Огнетушитель: круглая тумба, а когда работает — звезда струй. */
+/**
+ * Огнетушитель сверху: бак с горловиной и форсунками по кругу.
+ * Когда льёт — звезда струй; остаток воды — дугой по ободу.
+ */
 export function drawSpray(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -277,6 +280,11 @@ export function drawSpray(
 ) {
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
+  const r = cell * 0.44;
+  const body = alive ? (tank > 0 ? COLORS.spray : "#2a2f33") : "#3f3f3f";
+  const accent = alive ? COLORS.sprayTop : "#555";
+  const shade = alive ? "#3a1412" : "#2a2a2a";
+  const metal = alive ? "#c45a52" : "#666";
 
   if (alive && wet > 0) {
     ctx.strokeStyle = "rgba(121, 199, 255, 0.75)";
@@ -284,33 +292,79 @@ export function drawSpray(
     ctx.beginPath();
     for (let j = 0; j < SPRAY.jets; j++) {
       const a = angle + (j * Math.PI * 2) / SPRAY.jets;
-      ctx.moveTo(x + Math.cos(a) * cell * 0.5, y + Math.sin(a) * cell * 0.5);
+      ctx.moveTo(x + Math.cos(a) * cell * 0.55, y + Math.sin(a) * cell * 0.55);
       ctx.lineTo(x + Math.cos(a) * cell * range, y + Math.sin(a) * cell * range);
     }
     ctx.stroke();
   }
 
+  // Площадка-основание.
   ctx.beginPath();
-  ctx.arc(x, y, cell * 0.42, 0, Math.PI * 2);
-  ctx.fillStyle = alive ? (tank > 0 ? COLORS.spray : "#2a2f33") : "#3f3f3f";
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = shade;
   ctx.fill();
-  ctx.strokeStyle = alive ? COLORS.sprayTop : "#555";
-  ctx.lineWidth = Math.max(0.6, cell * 0.14);
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = Math.max(0.55, cell * 0.1);
   ctx.stroke();
 
-  // Остаток воды — дугой по ободу: пустой бак виден сразу. Обод остаётся
-  // тёмно-красным, чтобы огнетушитель не выглядел голубой установкой.
+  // Цилиндр бака.
+  ctx.beginPath();
+  ctx.arc(x, y, r * 0.72, 0, Math.PI * 2);
+  ctx.fillStyle = body;
+  ctx.fill();
+  ctx.strokeStyle = metal;
+  ctx.lineWidth = Math.max(0.5, cell * 0.08);
+  ctx.stroke();
+
+  // Кольцевой шов на баке.
+  if (alive) {
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.5, 0, Math.PI * 2);
+    ctx.strokeStyle = shade;
+    ctx.lineWidth = Math.max(0.5, cell * 0.06);
+    ctx.stroke();
+  }
+
+  // Форсунки по кругу — восемь точек, как струй.
+  if (alive) {
+    for (let j = 0; j < SPRAY.jets; j++) {
+      const a = angle + (j * Math.PI * 2) / SPRAY.jets;
+      const nx = x + Math.cos(a) * r * 0.82;
+      const ny = y + Math.sin(a) * r * 0.82;
+      ctx.beginPath();
+      ctx.arc(nx, ny, Math.max(0.7, cell * 0.09), 0, Math.PI * 2);
+      ctx.fillStyle = wet > 0 ? COLORS.water : metal;
+      ctx.fill();
+    }
+  }
+
+  // Горловина и рукоять сверху.
+  ctx.beginPath();
+  ctx.arc(x, y, cell * 0.16, 0, Math.PI * 2);
+  ctx.fillStyle = accent;
+  ctx.fill();
+  if (alive) {
+    ctx.fillStyle = metal;
+    ctx.fillRect(x - cell * 0.05, y - cell * 0.28, cell * 0.1, cell * 0.18);
+    ctx.fillStyle = "#e8f0ff";
+    ctx.beginPath();
+    ctx.arc(x, y, cell * 0.06, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Остаток воды — дугой по ободу: пустой бак виден сразу.
   if (alive && tank > 0) {
     ctx.beginPath();
-    ctx.arc(x, y, cell * 0.42, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * tank);
-    ctx.strokeStyle = COLORS.sprayTop;
+    ctx.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * tank);
+    ctx.strokeStyle = "rgba(121, 199, 255, 0.85)";
+    ctx.lineWidth = Math.max(0.7, cell * 0.12);
     ctx.stroke();
   }
 }
 
 /**
- * Ловушка: квадратная тумба с «полюсами» магнита. При удержании — кольца,
- * которые сжимаются к центру (фаза от now + индекс).
+ * Ловушка: восьмиугольная платформа с подковообразным магнитом.
+ * При удержании — кольца, которые сжимаются к центру.
  */
 export function drawTrap(
   ctx: CanvasRenderingContext2D,
@@ -324,38 +378,84 @@ export function drawTrap(
 ) {
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
-  const half = cell * 0.38;
+  const half = cell * 0.42;
+  const body = alive ? COLORS.trap : "#3f3f3f";
+  const accent = alive ? COLORS.trapTop : "#555";
+  const shade = alive ? "#3a2c14" : "#2a2a2a";
+  const poleN = alive ? "#d8e8ff" : "#777";
+  const poleS = alive ? "#e07050" : "#666";
 
   if (alive && held > 0) {
     const maxR = range * cell;
     const rings = 4;
     for (let i = 0; i < rings; i++) {
       const phase = ((now * 0.0018 + i / rings) % 1 + 1) % 1;
-      const r = maxR * (1 - phase);
+      const rr = maxR * (1 - phase);
       const a = 0.55 * (1 - phase);
       ctx.beginPath();
-      ctx.arc(x, y, Math.max(cell * 0.2, r), 0, Math.PI * 2);
+      ctx.arc(x, y, Math.max(cell * 0.2, rr), 0, Math.PI * 2);
       ctx.strokeStyle = `rgba(224, 184, 74, ${a})`;
       ctx.lineWidth = Math.max(1, cell * 0.12);
       ctx.stroke();
     }
   }
 
-  ctx.fillStyle = alive ? COLORS.trap : "#3f3f3f";
-  ctx.fillRect(x - half, y - half, half * 2, half * 2);
-  ctx.strokeStyle = alive ? COLORS.trapTop : "#555";
-  ctx.lineWidth = Math.max(0.6, cell * 0.12);
-  ctx.strokeRect(x - half, y - half, half * 2, half * 2);
-
-  // Два полюса — узнаваемый «магнит» даже в мелком масштабе.
-  if (alive) {
-    const pr = cell * 0.12;
-    ctx.fillStyle = COLORS.trapTop;
-    ctx.beginPath();
-    ctx.arc(x - cell * 0.16, y, pr, 0, Math.PI * 2);
-    ctx.arc(x + cell * 0.16, y, pr, 0, Math.PI * 2);
-    ctx.fill();
+  // Восьмиугольная площадка.
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const a = (i * Math.PI) / 4 + Math.PI / 8;
+    const px = x + Math.cos(a) * half;
+    const py = y + Math.sin(a) * half;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
   }
+  ctx.closePath();
+  ctx.fillStyle = body;
+  ctx.fill();
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = Math.max(0.6, cell * 0.1);
+  ctx.stroke();
+
+  // Внутренняя плита.
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const a = (i * Math.PI) / 4 + Math.PI / 8;
+    const px = x + Math.cos(a) * half * 0.62;
+    const py = y + Math.sin(a) * half * 0.62;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fillStyle = shade;
+  ctx.fill();
+
+  if (!alive) return;
+
+  // Подкова магнита: два полюса и дуга между ними.
+  const pr = cell * 0.13;
+  const ox = cell * 0.2;
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = Math.max(1.2, cell * 0.16);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.arc(x, y, cell * 0.22, Math.PI * 0.15, Math.PI * 0.85);
+  ctx.stroke();
+  ctx.lineCap = "butt";
+
+  ctx.fillStyle = poleN;
+  ctx.beginPath();
+  ctx.arc(x - ox, y + cell * 0.06, pr, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = poleS;
+  ctx.beginPath();
+  ctx.arc(x + ox, y + cell * 0.06, pr, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Центральный сердечник.
+  ctx.beginPath();
+  ctx.arc(x, y - cell * 0.06, cell * 0.1, 0, Math.PI * 2);
+  ctx.fillStyle = accent;
+  ctx.fill();
 }
 
 /**

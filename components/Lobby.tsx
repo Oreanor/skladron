@@ -1196,7 +1196,7 @@ export default function Lobby({
     }
     const at = p.guns.findIndex((g) => g.cx === from.cx && g.cy === from.cy);
     if (at < 0) return;
-    p.guns = p.guns.map((g, i) => (i === at ? { cx: x, cy: y } : g));
+    p.guns = p.guns.map((g, i) => (i === at ? { ...g, cx: x, cy: y } : g));
     touch();
   };
 
