@@ -46,6 +46,7 @@ import {
   insuranceShare,
   GUN_COST,
   SPRAY_COST,
+  TRAP_COST,
   MIN_BASE_CELLS,
   REPAIR_COST,
   SCOUT_UNIT_COST,
@@ -87,8 +88,8 @@ import {
 import type { Account } from "./AuthGate";
 import Enemies from "./Enemies";
 import { drawCoverage, drawDepots } from "@/lib/render";
-import { gunRange, sprayRange } from "@/lib/engine";
-import { RAID, SPRAY } from "@/lib/tuning";
+import { gunRange, sprayRange, trapRange } from "@/lib/engine";
+import { RAID, SPRAY, TRAP } from "@/lib/tuning";
 import Battle, { type BattleOutcome } from "./Battle";
 import RaidPlanner, { newWave } from "./RaidPlanner";
 import Scout, { type ScoutOutcome } from "./Scout";
@@ -112,6 +113,7 @@ import {
   Plane,
   Hammer,
   CircleDotDashed,
+  Magnet,
   Rocket,
   ShieldCheck,
   Wrench,
@@ -143,7 +145,7 @@ import {
   IconDrone,
 } from "./ui";
 
-type Tool = "area" | "repair" | "scrap" | "gun" | "spray" | "drones" | "scouts";
+type Tool = "area" | "repair" | "scrap" | "gun" | "spray" | "trap" | "drones" | "scouts";
 /** Кнопка «Апгрейд» карты не касается: она только открывает модалку. */
 type ToolId = Tool | "upgrade" | "insurance" | "loan";
 /** Панели, которые на телефоне открываются шторкой снизу. */
@@ -165,7 +167,7 @@ const TOOLS: {
   /** Какой класс он показывает уровнем. */
   levelKind?: UpgradeKind;
   /** Что считать в уголке кнопки: этого добра столько-то на складе. */
-  countKind?: "intact" | "burnt" | "guns" | "sprays" | "drones" | "scouts" | "loan";
+  countKind?: "intact" | "burnt" | "guns" | "sprays" | "traps" | "drones" | "scouts" | "loan";
 }[] = [
   {
     id: "area",
@@ -229,6 +231,15 @@ const TOOLS: {
     icon: <CircleDotDashed className={ICON} />,
     levelKind: "sprays",
     countKind: "sprays",
+  },
+  {
+    id: "trap",
+    label: "tool.trap",
+    hint: "tool.trapHint",
+    vars: { cost: TRAP_COST, range: TRAP.range, cap: TRAP.capacity },
+    icon: <Magnet className={ICON} />,
+    levelKind: "traps",
+    countKind: "traps",
   },
   {
     id: "insurance",
@@ -658,6 +669,7 @@ export default function Lobby({
         const o = autoDefend(cur.cells, cur.guns, cur.depots, head, {
           guns: cur.levels.guns,
           sprays: cur.levels.sprays,
+          traps: cur.levels.traps,
           mg: cur.levels.mg,
           water: cur.levels.water,
         });
@@ -677,7 +689,8 @@ export default function Lobby({
           goodsBefore - goodsValue(o.depots),
           o.result.gunsLost,
           cur.levels.insurance,
-          o.result.spraysLost
+          o.result.spraysLost,
+          o.result.trapsLost
         );
         const foe = findFoe(cur, head);
         if (foe) {
@@ -791,22 +804,27 @@ export default function Lobby({
   const toolPrice = (item: (typeof TOOLS)[number]) => {
     if (item.id === "gun") return priceAt(GUN_COST, p.levels.guns);
     if (item.id === "spray") return priceAt(SPRAY_COST, p.levels.sprays);
+    if (item.id === "trap") return priceAt(TRAP_COST, p.levels.traps);
     if (item.id === "drones") return priceAt(DRONE_UNIT_COST, p.levels.drones) * DRONES_PER_CELL;
     if (item.id === "scouts") return priceAt(SCOUT_UNIT_COST, p.levels.scouts) * DRONES_PER_CELL;
     return item.vars.cost;
   };
 
   /** Числа для подсказки: что прокачано, то показываем по уровню. */
-  const toolVars = (item: (typeof TOOLS)[number]) =>
-    item.id === "spray"
-      ? { ...item.vars, range: Math.round(sprayRange({ sprayLevel: p.levels.sprays })) }
-      : item.vars;
+  const toolVars = (item: (typeof TOOLS)[number]) => {
+    if (item.id === "spray")
+      return { ...item.vars, range: Math.round(sprayRange({ sprayLevel: p.levels.sprays })) };
+    if (item.id === "trap")
+      return { ...item.vars, range: Math.round(trapRange({ trapLevel: p.levels.traps })) };
+    return item.vars;
+  };
 
   const counters = {
     intact,
     burnt,
     guns: countKind(p.guns, "gun"),
     sprays: countKind(p.guns, "spray"),
+    traps: countKind(p.guns, "trap"),
     drones,
     scouts,
     // у кредита в углу висит долг, а если долгов нет — ничего
@@ -826,6 +844,7 @@ export default function Lobby({
         levels={{
           guns: p.levels.guns,
           sprays: p.levels.sprays,
+          traps: p.levels.traps,
           mg: p.levels.mg,
           water: p.levels.water,
         }}
@@ -849,7 +868,8 @@ export default function Lobby({
             goodsBefore - goodsValue(o.depots),
             o.result.gunsLost,
             p.levels.insurance,
-            o.result.spraysLost
+            o.result.spraysLost,
+            o.result.trapsLost
           );
           // Счёт вражды: записываем, сколько он у нас сжёг. Ищем по почте —
           // имя склада не уникально и меняется переименованием.
@@ -1069,12 +1089,14 @@ export default function Lobby({
     const cost =
       kind === "spray"
         ? priceAt(SPRAY_COST, p.levels.sprays)
-        : priceAt(GUN_COST, p.levels.guns);
+        : kind === "trap"
+          ? priceAt(TRAP_COST, p.levels.traps)
+          : priceAt(GUN_COST, p.levels.guns);
     if (p.credits < cost) {
       setMessage(t("gun.noCredits"));
       return;
     }
-    p.guns.push(kind === "spray" ? { cx: x, cy: y, kind } : { cx: x, cy: y });
+    p.guns.push(kind === "gun" ? { cx: x, cy: y } : { cx: x, cy: y, kind });
     p.credits -= cost;
     showPrice(x, y, -cost);
     touch();
@@ -1323,7 +1345,9 @@ export default function Lobby({
     Math.min(
       TEST_RAID_MAX,
       raidSize(
-        countKind(p.guns, "gun") + countKind(p.guns, "spray") / 2,
+        countKind(p.guns, "gun") +
+          countKind(p.guns, "spray") / 2 +
+          countKind(p.guns, "trap"),
         intact,
         raidDifficulty(),
         p.levels
@@ -1411,8 +1435,8 @@ export default function Lobby({
       void buyDepotAt(c.x, c.y, tool === "scouts" ? "scout" : "basic");
       return;
     }
-    if (tool === "gun" || tool === "spray") {
-      gunAt(c.x, c.y, tool === "spray" ? "spray" : "gun");
+    if (tool === "gun" || tool === "spray" || tool === "trap") {
+      gunAt(c.x, c.y, tool);
       return;
     }
     if (!drafting) return;
@@ -1557,7 +1581,8 @@ export default function Lobby({
       p.guns,
       cell,
       gunRange({ gunLevel: p.levels.guns }),
-      sprayRange({ sprayLevel: p.levels.sprays })
+      sprayRange({ sprayLevel: p.levels.sprays }),
+      trapRange({ trapLevel: p.levels.traps })
     );
     const dragged = dragDepotRef.current;
     drawDepots(
@@ -1606,7 +1631,7 @@ export default function Lobby({
     }
 
     // пушки переставляются так же, как контейнеры: тянем и роняем
-    if (tool === "gun" || tool === "spray" || dragGunRef.current) {
+    if (tool === "gun" || tool === "spray" || tool === "trap" || dragGunRef.current) {
       ctx.fillStyle = "rgba(140, 215, 255, 0.16)";
       for (const i of freeCells(p.cells, p.guns, p.depots)) {
         ctx.fillRect((i % GRID) * cell, ((i / GRID) | 0) * cell, cell, cell);
@@ -1676,7 +1701,7 @@ export default function Lobby({
         let ok = false;
         if (tool === "area") ok = !isBuilding(v) && (!hasBuilding || touchesBuilding(p.cells, cx, cy));
         else if (tool === "repair") ok = v === G_BURNT;
-        else if (tool === "gun" || tool === "spray")
+        else if (tool === "gun" || tool === "spray" || tool === "trap")
           ok = v === G_BASE && !p.depots.some((q) => q.cx === cx && q.cy === cy);
         if (tool !== "drones" && tool !== "scouts") {
           ctx.fillStyle = ok ? "rgba(140, 215, 255, 0.6)" : "rgba(229, 56, 59, 0.55)";

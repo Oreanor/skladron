@@ -14,7 +14,7 @@ import {
   isBuilding,
 } from "./base";
 import { mulberry32, type Payload, type SpawnTicket } from "./attack";
-import { DRONE, FIRE, FX, GUN, HANDS, MISSILE, PAYLOAD, SPRAY, SUPPRESS, WAVE } from "./tuning";
+import { DRONE, FIRE, FX, GUN, HANDS, MISSILE, PAYLOAD, SPRAY, SUPPRESS, TRAP, WAVE } from "./tuning";
 import { gunKind } from "./base";
 
 export { GRID, G_BASE, G_FIRE, G_GROUND, G_SCORCH, idx, isBuilding };
@@ -33,6 +33,8 @@ export interface Gun {
   aim: number;
   /** Огнетушитель вместо зенитки: он не стреляет, а поливает. */
   spray: boolean;
+  /** Ловушка: держит дронов магнитом, не стреляет и не тушит. */
+  trap: boolean;
   /** Сколько ещё секунд крутиться и лить. */
   wet: number;
   /** Сколько секунд воды осталось в баке. */
@@ -74,6 +76,11 @@ export interface Drone {
    */
   over: number;
   fuel: number;
+  /**
+   * Id ловушки, которая держит дрона (>0), или 0 — свободен. Пока держит,
+   * дрон не летит на цель и не взрывается, но его всё ещё можно сбить.
+   */
+  heldBy: number;
 }
 
 export interface Missile {
@@ -124,6 +131,8 @@ export interface BattleResult {
   gunsLost: number;
   /** Сколько огнетушителей сгорело: страховка платит за них по своей цене. */
   spraysLost: number;
+  /** Сколько ловушек сгорело: страховка платит по цене ловушки. */
+  trapsLost: number;
   dronesLost: number; // сгорело в контейнерах на складе
   depotsLost: number; // сколько контейнеров сгорело вместе с клетками
 }
@@ -160,6 +169,7 @@ export interface GameState {
   droneLevel: number;
   gunLevel: number;
   sprayLevel: number;
+  trapLevel: number;
   mgLevel: number;
   waterLevel: number;
   dirty: boolean;
@@ -174,11 +184,16 @@ export const gunRange = (s: { gunLevel: number }) =>
 export const sprayRange = (s: { sprayLevel: number }) =>
   SPRAY.range * levelBonus(s.sprayLevel, SPRAY.perLevel);
 
+/** Радиус захвата ловушки с учётом уровня. */
+export const trapRange = (s: { trapLevel: number }) =>
+  TRAP.range * levelBonus(s.trapLevel, TRAP.perLevel);
+
 /** Уровни, с которыми идёт бой. Чего нет — то первого уровня. */
 export interface BattleLevels {
   drones?: number;
   guns?: number;
   sprays?: number;
+  traps?: number;
   mg?: number;
   water?: number;
   /**
@@ -218,6 +233,7 @@ export function createBattle(
       angle: Math.atan2(g.cy + 0.5 - GRID / 2, g.cx + 0.5 - GRID / 2),
       aim: Math.atan2(g.cy + 0.5 - GRID / 2, g.cx + 0.5 - GRID / 2),
       spray: gunKind(g) === "spray",
+      trap: gunKind(g) === "trap",
       wet: 0,
       tank: SPRAY.tank,
       jammed: 0,
@@ -236,6 +252,7 @@ export function createBattle(
     droneLevel: levels.drones ?? 1,
     gunLevel: levels.guns ?? 1,
     sprayLevel: levels.sprays ?? 1,
+    trapLevel: levels.traps ?? 1,
     mgLevel: levels.mg ?? 1,
     waterLevel: levels.water ?? 1,
     planAt: 0,
@@ -254,6 +271,7 @@ export function createBattle(
       extinguished: 0,
       gunsLost: 0,
       spraysLost: 0,
+      trapsLost: 0,
       dronesLost: 0,
       depotsLost: 0,
     },
@@ -309,11 +327,25 @@ function ignite(s: GameState, i: number) {
 
   // и пушка тоже: ставить их на склад — это риск, а не бесплатное решение
   const g = gunAt(s, x, y);
-  if (g) {
-    g.alive = false;
-    if (g.spray) s.result.spraysLost++;
-    else s.result.gunsLost++;
+  if (g) killGun(s, g);
+}
+
+/** Сбрасывает захват у всех дронов, которых держала эта ловушка. */
+function releaseHeld(s: GameState, trapId: number) {
+  for (const d of s.drones) {
+    if (d.heldBy === trapId) d.heldBy = 0;
   }
+}
+
+/** Убивает установку и учитывает потери по виду. */
+function killGun(s: GameState, g: Gun) {
+  if (!g.alive) return;
+  g.alive = false;
+  if (g.trap) {
+    s.result.trapsLost++;
+    releaseHeld(s, g.id);
+  } else if (g.spray) s.result.spraysLost++;
+  else s.result.gunsLost++;
 }
 
 /** Ближайший дрон к точке прицела и близко ли он настолько, что это захват. */
@@ -527,6 +559,7 @@ function spawnDrone(s: GameState, t: SpawnTicket) {
     payload: t.payload ?? "plain",
     over: 0,
     fuel: SUPPRESS.loiter,
+    heldBy: 0,
   });
 }
 
@@ -551,7 +584,7 @@ function arrive(s: GameState, d: Drone): boolean {
     let best: Gun | null = null;
     let bestD = Infinity;
     for (const g of s.guns) {
-      if (!g.alive || g.spray !== hunts) continue;
+      if (!g.alive || g.trap || g.spray !== hunts) continue;
       const dx = g.cx + 0.5 - d.x;
       const dy = g.cy + 0.5 - d.y;
       const dd = dx * dx + dy * dy;
@@ -609,7 +642,7 @@ function suppressTick(s: GameState, d: Drone) {
   if (hunts === null) return;
   const reach = suppressRange(s);
   for (const g of s.guns) {
-    if (!g.alive || g.spray !== hunts) continue;
+    if (!g.alive || g.trap || g.spray !== hunts) continue;
     const dx = g.cx + 0.5 - d.x;
     const dy = g.cy + 0.5 - d.y;
     if (dx * dx + dy * dy <= reach * reach) g.jammed = SUPPRESS.release;
@@ -717,6 +750,52 @@ function steerLoiter(d: Drone, speed: number, dt: number) {
   d.y += d.hy * step + d.hx * wob;
 }
 
+/**
+ * Тянет захваченного дрона к точке на малой орбите вокруг ловушки.
+ * Угол стабилен по id, чтобы дроны не стакались в центр клетки.
+ */
+function pullHeld(s: GameState, d: Drone, host: Gun, dt: number) {
+  const hx = host.cx + 0.5;
+  const hy = host.cy + 0.5;
+  const ang = d.id * 2.399963229728653; // ≈ золотой угол
+  const ox = hx + Math.cos(ang) * TRAP.orbit;
+  const oy = hy + Math.sin(ang) * TRAP.orbit;
+  const k = 1 - Math.exp(-TRAP.pull * 10 * dt);
+  d.x += (ox - d.x) * k;
+  d.y += (oy - d.y) * k;
+  d.wob += dt * 2.2;
+}
+
+/** Свободные дроны в радиусе живой ловушки с местом — захватываются. */
+function captureTraps(s: GameState) {
+  const reach = trapRange(s);
+  const r2 = reach * reach;
+  const held = new Map<number, number>();
+  for (const d of s.drones) {
+    if (d.heldBy > 0) held.set(d.heldBy, (held.get(d.heldBy) ?? 0) + 1);
+  }
+  for (const d of s.drones) {
+    if (d.heldBy > 0 || d.hit || d.over) continue;
+    let best: Gun | null = null;
+    let bestD = r2;
+    for (const g of s.guns) {
+      if (!g.alive || !g.trap) continue;
+      if ((held.get(g.id) ?? 0) >= TRAP.capacity) continue;
+      const dx = g.cx + 0.5 - d.x;
+      const dy = g.cy + 0.5 - d.y;
+      const dd = dx * dx + dy * dy;
+      if (dd <= bestD) {
+        bestD = dd;
+        best = g;
+      }
+    }
+    if (!best) continue;
+    d.heldBy = best.id;
+    d.form = false;
+    held.set(best.id, (held.get(best.id) ?? 0) + 1);
+  }
+}
+
 export function update(s: GameState, dt: number) {
   if (s.phase !== "playing") return;
   s.time += dt;
@@ -765,6 +844,25 @@ export function update(s: GameState, dt: number) {
     // Глушит он с первой секунды полёта, а не только на круге: пушки
     // стреляют ниже по этому же кадру и заглушёнными его уже не достанут.
     suppressTick(s, d);
+
+    // Ловушка держит дрона на орбите: не летит на цель и не взрывается,
+    // но его всё ещё можно сбить пулемётом или зениткой.
+    if (d.heldBy > 0) {
+      const host = s.guns.find((g) => g.id === d.heldBy);
+      const reach = trapRange(s);
+      if (
+        !host ||
+        !host.alive ||
+        !host.trap ||
+        (host.cx + 0.5 - d.x) ** 2 + (host.cy + 0.5 - d.y) ** 2 >
+          reach * reach
+      ) {
+        d.heldBy = 0;
+      } else {
+        pullHeld(s, d, host, dt);
+        continue;
+      }
+    }
 
     // Дойдя до склада, подавитель садится на круг над своей жертвой и висит,
     // пока есть топливо. Проверяем до всего прочего: на круге ему не нужны
@@ -852,9 +950,7 @@ export function update(s: GameState, dt: number) {
       // собой ему нечем. Раньше он сбивал пушки случайными касаниями и сам
       // при этом пропадал — выглядело как необъяснимые потери.
       if (g && prey(d.payload) === null && s.rnd() < DRONE.gunCollision) {
-        g.alive = false;
-        if (g.spray) s.result.spraysLost++;
-        else s.result.gunsLost++;
+        killGun(s, g);
         s.booms.push({ x: cx + 0.5, y: cy + 0.5, t: 0, r: 3 });
         s.drones.splice(i, 1);
         // Его никто не сбивал — он дошёл и снёс установку собой. В счёт идёт
@@ -864,6 +960,9 @@ export function update(s: GameState, dt: number) {
       }
     }
   }
+
+  // Свободные дроны в радиусе ловушки захватываются после движения.
+  captureTraps(s);
 
   // --- огнетушители ---
   // Загорелось в радиусе — установка раскручивается и льёт восемью струями
@@ -913,7 +1012,7 @@ export function update(s: GameState, dt: number) {
 
   // --- пушки ---
   for (const g of s.guns) {
-    if (!g.alive || g.spray) continue;
+    if (!g.alive || g.spray || g.trap) continue;
 
     // Заглушённая зенитка не стреляет. Башню всё равно доворачиваем — по
     // шевелящемуся стволу видно, что пушка жива, просто её глушат.
@@ -1072,7 +1171,13 @@ export function settle(s: GameState) {
     cells,
     guns: s.guns
       .filter((g) => g.alive)
-      .map((g) => (g.spray ? { cx: g.cx, cy: g.cy, kind: "spray" as const } : { cx: g.cx, cy: g.cy })),
+      .map((g) =>
+        g.trap
+          ? { cx: g.cx, cy: g.cy, kind: "trap" as const }
+          : g.spray
+            ? { cx: g.cx, cy: g.cy, kind: "spray" as const }
+            : { cx: g.cx, cy: g.cy }
+      ),
     depots: s.depots.map((d) => ({ ...d })),
     result: s.result,
   };

@@ -53,6 +53,8 @@ export interface Levels {
   guns: number;
   /** Огнетушители: радиус тушения. */
   sprays: number;
+  /** Ловушки: радиус захвата. */
+  traps: number;
   scouts: number;
   /** Пулемёт игрока: меткость очереди. */
   mg: number;
@@ -66,6 +68,7 @@ export const startLevels = (): Levels => ({
   drones: 1,
   guns: 1,
   sprays: 1,
+  traps: 1,
   scouts: 1,
   mg: 1,
   water: 1,

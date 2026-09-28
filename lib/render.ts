@@ -1,4 +1,3 @@
-import { gunRange } from "./engine";
 import {
   GRID,
   G_BASE,
@@ -7,8 +6,15 @@ import {
   G_SCORCH,
   type Gun,
 } from "./base";
-import { aimMode, sprayRange, suppressRange, type GameState } from "./engine";
-import { FX, GUN, SPRAY, SUPPRESS } from "./tuning";
+import {
+  aimMode,
+  gunRange,
+  sprayRange,
+  suppressRange,
+  trapRange,
+  type GameState,
+} from "./engine";
+import { FX, GUN, SPRAY, SUPPRESS, TRAP } from "./tuning";
 
 export const COLORS = {
   groundA: "#3d6b3a",
@@ -22,6 +28,11 @@ export const COLORS = {
   // зона тушения, и на карте сразу видно, чей это круг.
   spray: "#6e2320",
   sprayTop: "#8f2c28",
+  // Ловушка — бронза/янтарь: не путать с голубой зениткой и красным огнетушителем.
+  trap: "#5a4320",
+  trapTop: "#e0b84a",
+  trapRange: "rgba(224, 184, 74, 0.14)",
+  trapRangeLine: "rgba(232, 196, 90, 0.5)",
   range: "rgba(120, 200, 255, 0.16)",
   rangeLine: "rgba(140, 215, 255, 0.55)",
   drone: "#2b2b2b",
@@ -199,6 +210,7 @@ export function drawStatic(
     // Ствол смотрит наружу от середины склада, пока не начался бой: в бою
     // поверх этого слоя рисуется живая башня со своим углом.
     if (g.kind === "spray") drawSpray(ctx, g.cx, g.cy, cell, angle, 0, g.alive !== false);
+    else if (g.kind === "trap") drawTrap(ctx, g.cx, g.cy, cell, g.alive !== false);
     else drawTurret(ctx, g.cx, g.cy, cell, angle, g.alive !== false);
   }
 }
@@ -297,8 +309,58 @@ export function drawSpray(
 }
 
 /**
- * Турель: круглое основание, ободок и короткий поворотный ствол. Ствол
- * показывает, куда пушка целится, — она это знает всегда.
+ * Ловушка: квадратная тумба с «полюсами» магнита. При удержании — кольца,
+ * которые сжимаются к центру (фаза от now + индекс).
+ */
+export function drawTrap(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  cell: number,
+  alive = true,
+  held = 0,
+  now = 0,
+  range: number = TRAP.range
+) {
+  const x = (cx + 0.5) * cell;
+  const y = (cy + 0.5) * cell;
+  const half = cell * 0.38;
+
+  if (alive && held > 0) {
+    const maxR = range * cell;
+    const rings = 4;
+    for (let i = 0; i < rings; i++) {
+      const phase = ((now * 0.0018 + i / rings) % 1 + 1) % 1;
+      const r = maxR * (1 - phase);
+      const a = 0.55 * (1 - phase);
+      ctx.beginPath();
+      ctx.arc(x, y, Math.max(cell * 0.2, r), 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(224, 184, 74, ${a})`;
+      ctx.lineWidth = Math.max(1, cell * 0.12);
+      ctx.stroke();
+    }
+  }
+
+  ctx.fillStyle = alive ? COLORS.trap : "#3f3f3f";
+  ctx.fillRect(x - half, y - half, half * 2, half * 2);
+  ctx.strokeStyle = alive ? COLORS.trapTop : "#555";
+  ctx.lineWidth = Math.max(0.6, cell * 0.12);
+  ctx.strokeRect(x - half, y - half, half * 2, half * 2);
+
+  // Два полюса — узнаваемый «магнит» даже в мелком масштабе.
+  if (alive) {
+    const pr = cell * 0.12;
+    ctx.fillStyle = COLORS.trapTop;
+    ctx.beginPath();
+    ctx.arc(x - cell * 0.16, y, pr, 0, Math.PI * 2);
+    ctx.arc(x + cell * 0.16, y, pr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/**
+ * Зенитка сверху: площадка, башня со щитком, ствол с дульным кольцом.
+ * На мелкой клетке силуэт всё ещё читается как «пушка смотрит сюда».
  */
 export function drawTurret(
   ctx: CanvasRenderingContext2D,
@@ -310,27 +372,91 @@ export function drawTurret(
 ) {
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
-  const r = cell * 0.42;
+  const r = cell * 0.46;
+  const body = alive ? COLORS.gun : "#3f3f3f";
+  const accent = alive ? COLORS.gunTop : "#555";
+  const shade = alive ? "#121c2c" : "#2a2a2a";
+  const plate = alive ? "#243652" : "#363636";
 
+  // Площадка и обод — база, на которой крутится башня.
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fillStyle = alive ? COLORS.gun : "#3f3f3f";
+  ctx.fillStyle = body;
   ctx.fill();
-  ctx.strokeStyle = alive ? COLORS.gunTop : "#555";
-  ctx.lineWidth = Math.max(0.6, cell * 0.12);
+  ctx.beginPath();
+  ctx.arc(x, y, r * 0.78, 0, Math.PI * 2);
+  ctx.fillStyle = plate;
+  ctx.fill();
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = Math.max(0.55, cell * 0.1);
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.stroke();
+
+  // Четыре «болта» по краю площадки — чуть живее, чем голый круг.
+  if (alive && cell >= 5) {
+    ctx.fillStyle = accent;
+    for (let i = 0; i < 4; i++) {
+      const a = (i * Math.PI) / 2 + Math.PI / 4;
+      ctx.beginPath();
+      ctx.arc(
+        x + Math.cos(a) * r * 0.72,
+        y + Math.sin(a) * r * 0.72,
+        Math.max(0.6, cell * 0.07),
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    }
+  }
 
   if (!alive) return;
 
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(angle);
-  ctx.fillStyle = COLORS.gunTop;
-  // ствол торчит наружу, казённик прикрывает центр
-  ctx.fillRect(r * 0.2, -cell * 0.14, cell * 0.72, cell * 0.28);
+
+  // Боковые уши-противовесы: башня шире ствола.
+  ctx.fillStyle = shade;
+  ctx.beginPath();
+  ctx.moveTo(-cell * 0.08, -cell * 0.34);
+  ctx.lineTo(cell * 0.22, -cell * 0.28);
+  ctx.lineTo(cell * 0.22, cell * 0.28);
+  ctx.lineTo(-cell * 0.08, cell * 0.34);
+  ctx.closePath();
+  ctx.fill();
+
+  // Щиток перед башней.
+  ctx.fillStyle = accent;
+  ctx.fillRect(cell * 0.08, -cell * 0.26, cell * 0.22, cell * 0.52);
+  ctx.fillStyle = shade;
+  ctx.fillRect(cell * 0.14, -cell * 0.16, cell * 0.1, cell * 0.32);
+
+  // Ствол: тёмная труба + светлая казённая часть.
+  ctx.fillStyle = accent;
+  ctx.fillRect(cell * 0.18, -cell * 0.11, cell * 0.28, cell * 0.22);
+  ctx.fillStyle = shade;
+  ctx.fillRect(cell * 0.42, -cell * 0.09, cell * 0.58, cell * 0.18);
+  // Тонкая щель по оси ствола — читается как канал.
+  ctx.fillStyle = alive ? "#6aa8c4" : "#666";
+  ctx.fillRect(cell * 0.48, -cell * 0.025, cell * 0.48, cell * 0.05);
+
+  // Дульное кольцо.
+  ctx.fillStyle = accent;
+  ctx.fillRect(cell * 0.92, -cell * 0.14, cell * 0.14, cell * 0.28);
+  ctx.fillStyle = shade;
+  ctx.fillRect(cell * 1.0, -cell * 0.08, cell * 0.08, cell * 0.16);
+
+  // Купол башни и «прицел».
   ctx.beginPath();
   ctx.arc(0, 0, cell * 0.2, 0, Math.PI * 2);
+  ctx.fillStyle = accent;
   ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cell * 0.02, -cell * 0.05, cell * 0.07, 0, Math.PI * 2);
+  ctx.fillStyle = "#e8f6ff";
+  ctx.fill();
+
   ctx.restore();
 }
 
@@ -340,20 +466,47 @@ export function drawTurret(
  */
 export function drawCoverage(
   ctx: CanvasRenderingContext2D,
-  guns: Gun[] | { cx: number; cy: number; alive?: boolean; kind?: string; spray?: boolean }[],
+  guns:
+    | Gun[]
+    | {
+        cx: number;
+        cy: number;
+        alive?: boolean;
+        kind?: string;
+        spray?: boolean;
+        trap?: boolean;
+      }[],
   cell: number,
   range: number = GUN.range,
-  spraysRange: number = SPRAY.range
+  spraysRange: number = SPRAY.range,
+  trapsRange: number = TRAP.range
 ) {
   const live = guns.filter((g) => (g as { alive?: boolean }).alive !== false);
   if (!live.length) return;
-  // Круги двух видов: зенитки достают дальше, огнетушители льют ближе, и
-  // сразу видно, какой угол склада без воды.
-  const isSpray = (g: { kind?: string; spray?: boolean }) => g.kind === "spray" || g.spray === true;
-  for (const spray of [false, true]) {
-    const part = live.filter((g) => isSpray(g) === spray);
+  const kindOf = (g: { kind?: string; spray?: boolean; trap?: boolean }) =>
+    g.kind === "trap" || g.trap === true
+      ? "trap"
+      : g.kind === "spray" || g.spray === true
+        ? "spray"
+        : "gun";
+  const styles = {
+    gun: { r: range, fill: COLORS.range, stroke: COLORS.rangeLine },
+    spray: {
+      r: spraysRange,
+      fill: "rgba(214, 64, 56, 0.12)",
+      stroke: "rgba(255, 128, 121, 0.4)",
+    },
+    trap: {
+      r: trapsRange,
+      fill: COLORS.trapRange,
+      stroke: COLORS.trapRangeLine,
+    },
+  } as const;
+  for (const kind of ["gun", "spray", "trap"] as const) {
+    const part = live.filter((g) => kindOf(g) === kind);
     if (!part.length) continue;
-    const r = ((spray ? spraysRange : range) + 0.5) * cell;
+    const st = styles[kind];
+    const r = (st.r + 0.5) * cell;
     ctx.beginPath();
     for (const g of part) {
       const cx = (g.cx + 0.5) * cell;
@@ -361,9 +514,9 @@ export function drawCoverage(
       ctx.moveTo(cx + r, cy);
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
     }
-    ctx.fillStyle = spray ? "rgba(214, 64, 56, 0.12)" : COLORS.range;
+    ctx.fillStyle = st.fill;
     ctx.fill();
-    ctx.strokeStyle = spray ? "rgba(255, 128, 121, 0.4)" : COLORS.rangeLine;
+    ctx.strokeStyle = st.stroke;
     ctx.lineWidth = 1;
     ctx.stroke();
   }
@@ -389,11 +542,18 @@ export function drawFrame(
   }
 
   const reach = sprayRange(s);
-  drawCoverage(ctx, s.guns, cell, gunRange(s), reach);
+  const trapsReach = trapRange(s);
+  drawCoverage(ctx, s.guns, cell, gunRange(s), reach, trapsReach);
   for (const g of s.guns) {
     if (g.spray)
       drawSpray(ctx, g.cx, g.cy, cell, g.angle, g.wet, g.alive, reach, g.tank / SPRAY.tank);
-    else drawTurret(ctx, g.cx, g.cy, cell, g.angle, g.alive);
+    else if (g.trap) {
+      let held = 0;
+      if (g.alive) {
+        for (const d of s.drones) if (d.heldBy === g.id) held++;
+      }
+      drawTrap(ctx, g.cx, g.cy, cell, g.alive, held, now, trapsReach);
+    } else drawTurret(ctx, g.cx, g.cy, cell, g.angle, g.alive);
   }
 
   // прицел красим тем же правилом, по которому игра и стреляет: захваченный

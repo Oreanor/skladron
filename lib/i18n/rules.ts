@@ -27,6 +27,7 @@ const en: RuleSection[] = [
       "«Demolish» — sell the remains of burnt cells for {scrap} cr each. Bare ground is left behind, and the warehouse must stay in one piece.",
       "«Gun» — {gun} cr on a free intact cell. Guns are not sold back, but they can be dragged anywhere on the warehouse.",
       "«Sprinkler» — {spray} cr, placed and dragged just like a gun. It does not shoot: when a cell within {sprayRange} catches fire, the sprinkler spins up and sweeps eight jets around itself. A jet stops at the first blaze it meets and needs a moment to douse it, and the tank holds only {sprayTank} s of water per raid — a dense ring of them still loses to a big enough fire.",
+      "«Trap» — {trap} cr, placed and dragged like a gun. It magnetically holds up to {trapCap} drones within {trapRange} cells; extras fly past. Guns can still shoot held drones; if the trap burns, the hold drops.",
       "«Drones» and «Recon» — a container of {perCell} pieces: {droneBox} cr for drones, {scoutBox} for recon planes. Every level makes them {priceStep}% dearer to buy.",
       "Guns and containers can be dragged around the warehouse in any mode, and that costs nothing.",
     ],
@@ -63,8 +64,8 @@ const en: RuleSection[] = [
   {
     title: "Upgrades",
     lines: [
-      "Six classes, {upgrade} cr per level. Ten levels each, except the insurance policy: it tops out at five, where cover is already full.",
-      "Drones fly faster, guns reach further and shoot quicker, recon planes see more and fly faster, the machine gun aims better, the hose covers more, sprinklers douse a wider circle.",
+      "Classes cost {upgrade} cr per level. Ten levels each, except the insurance policy: it tops out at five, where cover is already full.",
+      "Drones fly faster, guns reach further and shoot quicker, recon planes see more and fly faster, the machine gun aims better, the hose covers more, sprinklers douse a wider circle, traps grab farther.",
       "A level applies to everything at once — to what is already in stock and to everything bought later.",
     ],
   },
@@ -89,6 +90,7 @@ const ru: RuleSection[] = [
       "«Снос» — сдать остатки сгоревших клеток во вторсырьё, {scrap} кр за клетку. Остаётся голая земля, и склад не должен развалиться надвое.",
       "«Пушка» — {gun} кр на свободную целую клетку. Обратно пушка не продаётся, но её можно перетащить куда угодно по складу.",
       "«Огнетушитель» — {spray} кр, ставится и таскается так же, как пушка. Он не стреляет: как только в радиусе {sprayRange} клеток занимается огонь, установка раскручивается и бьёт восемью струями вокруг себя. Струя упирается в первый же очаг и гасит его не сразу, а бака хватает на {sprayTank} с полива за налёт — так что и плотный ковёр установок большому пожару проигрывает.",
+      "«Ловушка» — {trap} кр, ставится и таскается как пушка. Магнитом удерживает до {trapCap} дронов в радиусе {trapRange} клеток; лишние пролетают. Зенитки всё ещё могут сбивать захваченных; если ловушка сгорает — захват сбрасывается.",
       "«Дроны» и «Разведка» — контейнер на {perCell} штук: {droneBox} кр за дронов, {scoutBox} за разведчиков. С каждым уровнем закупка дорожает на {priceStep}%.",
       "Пушки и контейнеры таскаются по складу в любом режиме, и это бесплатно.",
     ],
@@ -125,8 +127,8 @@ const ru: RuleSection[] = [
   {
     title: "Прокачка",
     lines: [
-      "Шесть классов, {upgrade} кр за уровень. У каждого по десять уровней, кроме полиса: у него пять, дальше покрывать нечего.",
-      "Дроны летят быстрее, пушки бьют дальше и резвее, разведчики видят дальше и летят быстрее, пулемёт точнее, струя шире, огнетушители заливают круг побольше.",
+      "Классы стоят {upgrade} кр за уровень. У каждого по десять уровней, кроме полиса: у него пять, дальше покрывать нечего.",
+      "Дроны летят быстрее, пушки бьют дальше и резвее, разведчики видят дальше и летят быстрее, пулемёт точнее, струя шире, огнетушители заливают круг побольше, ловушки хватают дальше.",
       "Уровень достаётся всему классу разом — и тому, что уже на складе, и тому, что купишь потом.",
     ],
   },
@@ -151,6 +153,7 @@ const es: RuleSection[] = [
       "«Demoler»: vende los restos de las celdas quemadas a {scrap} cr cada una. Queda tierra desnuda y el almacén debe seguir de una pieza.",
       "«Cañón»: {gun} cr en una celda intacta libre. Los cañones no se revenden, pero se arrastran a cualquier punto del almacén.",
       "«Extintor»: {spray} cr, se coloca y se arrastra igual que un cañón. No dispara: en cuanto arde una celda a menos de {sprayRange}, la instalación gira y lanza ocho chorros a su alrededor. Cada chorro se detiene en el primer foco y tarda en apagarlo, y el depósito da para {sprayTank} s de riego por ataque: ni un anillo denso aguanta un incendio grande.",
+      "«Trampa»: {trap} cr, se coloca y se arrastra como un cañón. Retiene magnéticamente hasta {trapCap} drones a {trapRange} celdas; el resto pasa. Los cañones aún pueden derribar a los atrapados; si la trampa arde, la sujeción se pierde.",
       "«Drones» y «Exploración»: un contenedor de {perCell} unidades: {droneBox} cr los drones, {scoutBox} los exploradores. Cada nivel encarece la compra un {priceStep}%.",
       "Cañones y contenedores se arrastran por el almacén en cualquier modo, y eso no cuesta nada.",
     ],
@@ -187,8 +190,8 @@ const es: RuleSection[] = [
   {
     title: "Mejoras",
     lines: [
-      "Seis clases, {upgrade} cr por nivel. Diez niveles cada una, salvo la póliza: la suya acaba en el quinto, cuando la cobertura ya es total.",
-      "Los drones vuelan más rápido, los cañones llegan más lejos y disparan antes, los exploradores ven más y vuelan más, la ametralladora apunta mejor, la manguera cubre más, los extintores riegan un círculo mayor.",
+      "Las clases cuestan {upgrade} cr por nivel. Diez niveles cada una, salvo la póliza: la suya acaba en el quinto, cuando la cobertura ya es total.",
+      "Los drones vuelan más rápido, los cañones llegan más lejos y disparan antes, los exploradores ven más y vuelan más, la ametralladora apunta mejor, la manguera cubre más, los extintores riegan un círculo mayor, las trampas atrapan más lejos.",
       "El nivel vale para toda la clase a la vez: lo que ya tienes y lo que compres después.",
     ],
   },
@@ -213,6 +216,7 @@ const pt: RuleSection[] = [
       "«Demolir» — vende os restos das células queimadas a {scrap} cr cada. Fica terra nua, e o armazém tem de continuar inteiro.",
       "«Canhão» — {gun} cr numa célula intacta livre. Os canhões não se revendem, mas arrastam-se para onde quiseres no armazém.",
       "«Extintor» — {spray} cr, coloca-se e arrasta-se tal como um canhão. Não dispara: assim que uma célula a menos de {sprayRange} pega fogo, a instalação gira e lança oito jactos à sua volta. Cada jacto pára no primeiro foco e demora a apagá-lo, e o depósito dá para {sprayTank} s de rega por ataque: nem um anel denso trava um incêndio grande.",
+      "«Armadilha» — {trap} cr, coloca-se e arrasta-se como um canhão. Retém magneticamente até {trapCap} drones a {trapRange} células; os demais passam. Os canhões ainda podem abater os capturados; se a armadilha arder, a retenção cai.",
       "«Drones» e «Reconhecimento» — um contentor de {perCell} unidades: {droneBox} cr os drones, {scoutBox} os reconhecedores. Cada nível encarece a compra em {priceStep}%.",
       "Canhões e contentores arrastam-se pelo armazém em qualquer modo, e isso não custa nada.",
     ],
@@ -249,8 +253,8 @@ const pt: RuleSection[] = [
   {
     title: "Melhorias",
     lines: [
-      "Seis classes, {upgrade} cr por nível. Dez níveis cada, exceto a apólice: a dela acaba no quinto, quando a cobertura já é total.",
-      "Os drones voam mais depressa, os canhões alcançam mais longe e disparam mais rápido, os reconhecedores veem mais e voam mais, a metralhadora acerta melhor, a mangueira cobre mais, os extintores regam um círculo maior.",
+      "As classes custam {upgrade} cr por nível. Dez níveis cada, exceto a apólice: a dela acaba no quinto, quando a cobertura já é total.",
+      "Os drones voam mais depressa, os canhões alcançam mais longe e disparam mais rápido, os reconhecedores veem mais e voam mais, a metralhadora acerta melhor, a mangueira cobre mais, os extintores regam um círculo maior, as armadilhas apanham mais longe.",
       "O nível vale para toda a classe de uma vez: o que já tens e o que comprares depois.",
     ],
   },
@@ -275,6 +279,7 @@ const fr: RuleSection[] = [
       "« Démolir » — revends les restes des cases brûlées à {scrap} cr pièce. Il reste de la terre nue, et l’entrepôt doit rester d’un seul tenant.",
       "« Canon » — {gun} cr sur une case intacte libre. Un canon ne se revend pas, mais se déplace où tu veux dans l’entrepôt.",
       "« Extincteur » — {spray} cr, il se pose et se déplace comme un canon. Il ne tire pas : dès qu’une case s’enflamme à moins de {sprayRange}, l’installation se met à tourner et projette huit jets autour d’elle. Un jet bute sur le premier foyer et met un temps à l’éteindre, et le réservoir ne tient que {sprayTank} s par raid : même un anneau serré cède devant un grand incendie.",
+      "« Piège » — {trap} cr, posé et déplacé comme un canon. Il retient magnétiquement jusqu’à {trapCap} drones dans un rayon de {trapRange} cases ; les autres passent. Les canons peuvent encore abattre les capturés ; si le piège brûle, la prise tombe.",
       "« Drones » et « Reconnaissance » — un conteneur de {perCell} pièces : {droneBox} cr les drones, {scoutBox} les éclaireurs. Chaque niveau renchérit l’achat de {priceStep} %.",
       "Canons et conteneurs se déplacent dans l’entrepôt dans n’importe quel mode, et cela ne coûte rien.",
     ],
@@ -311,8 +316,8 @@ const fr: RuleSection[] = [
   {
     title: "Améliorations",
     lines: [
-      "Six classes, {upgrade} cr le niveau. Dix niveaux chacune, sauf la police d’assurance : elle s’arrête au cinquième, la couverture y est déjà totale.",
-      "Les drones volent plus vite, les canons portent plus loin et tirent plus vite, les éclaireurs voient plus et volent plus vite, la mitrailleuse vise mieux, la lance couvre plus, les extincteurs arrosent un cercle plus large.",
+      "Les classes coûtent {upgrade} cr le niveau. Dix niveaux chacune, sauf la police d’assurance : elle s’arrête au cinquième, la couverture y est déjà totale.",
+      "Les drones volent plus vite, les canons portent plus loin et tirent plus vite, les éclaireurs voient plus et volent plus vite, la mitrailleuse vise mieux, la lance couvre plus, les extincteurs arrosent un cercle plus large, les pièges attrapent plus loin.",
       "Le niveau vaut pour toute la classe d’un coup : ce que tu as déjà et ce que tu achèteras ensuite.",
     ],
   },
@@ -337,6 +342,7 @@ const de: RuleSection[] = [
       "«Abriss» — die Reste abgebrannter Felder für je {scrap} Cr verwerten. Zurück bleibt nackter Boden, und das Lager muss ein Stück bleiben.",
       "«Geschütz» — {gun} Cr auf ein freies heiles Feld. Zurückverkaufen lässt sich ein Geschütz nicht, ziehen dagegen überallhin im Lager.",
       "«Löschanlage» — {spray} Cr, wird wie ein Geschütz gesetzt und gezogen. Sie schießt nicht: brennt ein Feld im Umkreis von {sprayRange}, dreht sie auf und schleudert acht Strahlen um sich. Ein Strahl bleibt am ersten Brandherd hängen und braucht Zeit, ihn zu löschen, und der Tank reicht für {sprayTank} s je Angriff — auch ein dichter Ring verliert gegen ein großes Feuer.",
+      "«Falle» — {trap} Cr, wird wie ein Geschütz gesetzt und gezogen. Sie hält magnetisch bis zu {trapCap} Drohnen im Umkreis von {trapRange} Feldern; Überschuss fliegt weiter. Geschütze können gefangene Drohnen weiter abschießen; brennt die Falle, endet der Halt.",
       "«Drohnen» und «Aufklärung» — ein Container mit {perCell} Stück: {droneBox} Cr für Drohnen, {scoutBox} für Aufklärer. Jede Stufe verteuert den Einkauf um {priceStep} %.",
       "Geschütze und Container lassen sich in jedem Modus über das Lager ziehen, und das kostet nichts.",
     ],
@@ -373,8 +379,8 @@ const de: RuleSection[] = [
   {
     title: "Ausbau",
     lines: [
-      "Sechs Klassen, {upgrade} Cr pro Stufe. Je zehn Stufen, außer der Police: sie endet bei fünf, dort ist die Deckung schon voll.",
-      "Drohnen fliegen schneller, Geschütze reichen weiter und schießen zügiger, Aufklärer sehen mehr und fliegen schneller, das MG trifft besser, der Schlauch deckt mehr ab, Löschanlagen begießen einen größeren Kreis.",
+      "Klassen kosten {upgrade} Cr pro Stufe. Je zehn Stufen, außer der Police: sie endet bei fünf, dort ist die Deckung schon voll.",
+      "Drohnen fliegen schneller, Geschütze reichen weiter und schießen zügiger, Aufklärer sehen mehr und fliegen schneller, das MG trifft besser, der Schlauch deckt mehr ab, Löschanlagen begießen einen größeren Kreis, Fallen greifen weiter.",
       "Eine Stufe gilt für die ganze Klasse auf einmal — für Vorhandenes und für später Gekauftes.",
     ],
   },
@@ -399,6 +405,7 @@ const it: RuleSection[] = [
       "«Demolisci» — vendi i resti delle celle bruciate a {scrap} cr l’una. Resta terra nuda, e il magazzino deve restare tutto d’un pezzo.",
       "«Cannone» — {gun} cr su una cella intatta libera. Il cannone non si rivende, ma si trascina ovunque nel magazzino.",
       "«Estintore» — {spray} cr, si posa e si trascina come un cannone. Non spara: appena una cella entro {sprayRange} prende fuoco, l’impianto gira e lancia otto getti attorno a sé. Un getto si ferma sul primo focolaio e ci mette un po’ a spegnerlo, e il serbatoio basta per {sprayTank} s a incursione: anche un anello fitto cede a un incendio grosso.",
+      "«Trappola» — {trap} cr, si posa e si trascina come un cannone. Tiene magneticamente fino a {trapCap} droni entro {trapRange} celle; gli altri passano. I cannoni possono ancora abbattere i catturati; se la trappola brucia, la presa cade.",
       "«Droni» e «Ricognizione» — un container da {perCell} pezzi: {droneBox} cr i droni, {scoutBox} i ricognitori. Ogni livello rincara l’acquisto del {priceStep}%.",
       "Cannoni e container si trascinano per il magazzino in qualsiasi modalità, e non costa nulla.",
     ],
@@ -435,8 +442,8 @@ const it: RuleSection[] = [
   {
     title: "Potenziamenti",
     lines: [
-      "Sei classi, {upgrade} cr per livello. Dieci livelli ciascuna, tranne la polizza: la sua finisce al quinto, dove la copertura è già piena.",
-      "I droni volano più veloci, i cannoni arrivano più lontano e sparano prima, i ricognitori vedono di più e volano più veloci, la mitragliatrice mira meglio, la manichetta copre di più, gli estintori bagnano un cerchio più ampio.",
+      "Le classi costano {upgrade} cr per livello. Dieci livelli ciascuna, tranne la polizza: la sua finisce al quinto, dove la copertura è già piena.",
+      "I droni volano più veloci, i cannoni arrivano più lontano e sparano prima, i ricognitori vedono di più e volano più veloci, la mitragliatrice mira meglio, la manichetta copre di più, gli estintori bagnano un cerchio più ampio, le trappole afferrano più lontano.",
       "Il livello vale per tutta la classe in una volta: per ciò che hai già e per ciò che comprerai poi.",
     ],
   },

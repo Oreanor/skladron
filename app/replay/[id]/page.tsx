@@ -21,7 +21,7 @@ interface Row {
   snap_cells: string;
   snap_guns: { cx: number; cy: number }[] | null;
   snap_depots: { cx: number; cy: number; n: number; kind?: string }[] | null;
-  snap_levels: { guns?: number; mg?: number; water?: number } | null;
+  snap_levels: { guns?: number; sprays?: number; traps?: number; mg?: number; water?: number } | null;
   trace: string | null;
   resolved_at: string;
 }

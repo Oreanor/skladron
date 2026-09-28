@@ -129,6 +129,7 @@ export async function POST(request: Request) {
       levels: {
         guns: levels.guns ?? 1,
         sprays: levels.sprays ?? 1,
+        traps: levels.traps ?? 1,
         mg: levels.mg ?? 1,
         water: levels.water ?? 1,
       },

@@ -32,7 +32,7 @@ import { AUTO, SIM } from "./tuning";
 export interface Verdict {
   /** Склад после боя, уже в том виде, в каком ложится в базу. */
   cells: string;
-  guns: { cx: number; cy: number; kind?: "spray" }[];
+  guns: { cx: number; cy: number; kind?: "spray" | "trap" }[];
   depots: Depot[];
   result: BattleResult;
   /** Сколько целых клеток осталось: по ним считается, снесён ли склад. */

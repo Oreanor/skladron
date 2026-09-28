@@ -14,6 +14,7 @@ language sql immutable as $$
     when 'scrap'  then 5   -- за сданные во вторсырьё остатки сгоревшей клетки
     when 'gun'    then 100
     when 'spray'  then 150  -- огнетушитель дороже зенитки: бережёт и площадь, и товар
+    when 'trap'   then 200  -- ловушка дороже огнетушителя: держит рой в радиусе
     when 'refund' then 50
     when 'drones' then 1000
     when 'scout'  then 10    -- разведчик проще: ни боеголовки, ни брони
@@ -208,7 +209,7 @@ begin
        where key not in ('cx', 'cy', 'kind')
     ) then return false; end if;
     if e->>'cx' is null or e->>'cy' is null then return false; end if;
-    if coalesce(e->>'kind', 'gun') not in ('gun', 'spray') then return false; end if;
+    if coalesce(e->>'kind', 'gun') not in ('gun', 'spray', 'trap') then return false; end if;
     begin
       cx := (e->>'cx')::int;
       cy := (e->>'cy')::int;
@@ -375,12 +376,12 @@ alter table profiles add column if not exists base_name text;
 alter table profiles add column if not exists scouts int not null default 0;
 -- уровни классов: с ними растут скорость дронов, дальнобойность пушек и обзор разведки
 alter table profiles add column if not exists levels jsonb not null
-  default '{"drones":1,"guns":1,"sprays":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb;
+  default '{"drones":1,"guns":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb;
 alter table profiles alter column levels set default
-  '{"drones":1,"guns":1,"sprays":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb;
--- пулемёт, брандспойт, полис и огнетушители добавились позже: у заведённых профилей их нет
+  '{"drones":1,"guns":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb;
+-- пулемёт, брандспойт, полис, огнетушители и ловушки добавились позже: у заведённых профилей их нет
 update profiles set levels =
-  '{"drones":1,"guns":1,"sprays":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb || levels;
+  '{"drones":1,"guns":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb || levels;
 -- кольца и спираль появились позже: у заведённой таблицы ограничение старое,
 -- а create table if not exists его не трогает
 alter table attacks drop constraint if exists attacks_pattern_check;
@@ -989,6 +990,7 @@ declare
   paid int;
   guns_added int;
   sprays_added int;
+  traps_added int;
   guns_removed int;
   cost int;
 begin
@@ -1049,12 +1051,13 @@ begin
 
   guns_added := greatest(0, gun_count(new_guns, 'gun') - gun_count(cur_guns, 'gun'));
   sprays_added := greatest(0, gun_count(new_guns, 'spray') - gun_count(cur_guns, 'spray'));
+  traps_added := greatest(0, gun_count(new_guns, 'trap') - gun_count(cur_guns, 'trap'));
   -- Возврат только за реально снятые установки известных видов, а не за
   -- разницу длин массива: иначе неизвестный kind давал бы бесплатный refund.
   guns_removed := greatest(
     0,
-    gun_count(cur_guns, 'gun') + gun_count(cur_guns, 'spray')
-      - gun_count(new_guns, 'gun') - gun_count(new_guns, 'spray')
+    gun_count(cur_guns, 'gun') + gun_count(cur_guns, 'spray') + gun_count(cur_guns, 'trap')
+      - gun_count(new_guns, 'gun') - gun_count(new_guns, 'spray') - gun_count(new_guns, 'trap')
   );
 
   -- первые price('free') клеток склада бесплатны, считаем от того, что уже стоит
@@ -1065,6 +1068,7 @@ begin
         + repaired * price('repair')
         + guns_added * price_at(price('gun'), coalesce((prof.levels->>'guns')::int, 1))
         + sprays_added * price_at(price('spray'), coalesce((prof.levels->>'sprays')::int, 1))
+        + traps_added * price_at(price('trap'), coalesce((prof.levels->>'traps')::int, 1))
         - guns_removed * price('refund')
         - scrapped * price('scrap');
 
@@ -1107,7 +1111,7 @@ declare
   cost int;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
-  if kind not in ('drones', 'guns', 'sprays', 'scouts', 'mg', 'water', 'insurance') then
+  if kind not in ('drones', 'guns', 'sprays', 'traps', 'scouts', 'mg', 'water', 'insurance') then
     raise exception 'bad upgrade kind';
   end if;
 
@@ -1287,7 +1291,9 @@ begin
               + greatest(0, gun_count(cur_guns, 'gun') - gun_count(new_guns, 'gun'))
                 * price('gun')
               + greatest(0, gun_count(cur_guns, 'spray') - gun_count(new_guns, 'spray'))
-                * price('spray')) * cover) / 100;
+                * price('spray')
+              + greatest(0, gun_count(cur_guns, 'trap') - gun_count(new_guns, 'trap'))
+                * price('trap')) * cover) / 100;
 
   -- За сбитых не платят: деньги приносит товар, а не стрельба. Зато
   -- погорельцу выплачивается страховка.
@@ -1874,7 +1880,7 @@ begin
          loan_due = null,
          founded = true,
          last_income_at = now(),
-         levels = '{"drones":1,"guns":1,"sprays":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb,
+         levels = '{"drones":1,"guns":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb,
          stats = '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,
                    "wipes":0,"raids":0,"looted":0}'::jsonb
    where id = uid;

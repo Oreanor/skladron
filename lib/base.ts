@@ -13,8 +13,8 @@ export const idx = (x: number, y: number) => y * GRID + x;
 export const isBuilding = (v: number) =>
   v === G_BASE || v === G_FIRE || v === G_BURNT;
 
-/** Что стоит на клетке склада: зенитка или огнетушитель. */
-export type GunKind = "gun" | "spray";
+/** Что стоит на клетке склада: зенитка, огнетушитель или ловушка. */
+export type GunKind = "gun" | "spray" | "trap";
 
 export interface Gun {
   cx: number;

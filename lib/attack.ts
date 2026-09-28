@@ -168,7 +168,7 @@ export interface AttackReport {
     cells: string;
     guns: { cx: number; cy: number }[];
     depots: { cx: number; cy: number; n: number; kind?: string }[];
-    levels: { guns?: number; sprays?: number; mg?: number; water?: number };
+    levels: { guns?: number; sprays?: number; traps?: number; mg?: number; water?: number };
     trace: string;
   };
 }
