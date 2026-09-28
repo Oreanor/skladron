@@ -132,8 +132,8 @@ export interface View {
   panY: number;
 }
 
-export const MIN_ZOOM = 1;
-export const MAX_ZOOM = 4;
+export const MIN_ZOOM = 0.5;
+export const MAX_ZOOM = 8;
 
 export function applyView(ctx: CanvasRenderingContext2D, dpr: number, v: View) {
   const k = dpr * v.zoom;
