@@ -285,6 +285,21 @@ export function decodeCells(text: string): Uint8Array {
   return out;
 }
 
+/**
+ * Postgres отдаёт bytea в hex-виде «\x00ff…». Клиент и серверные ручки
+ * читают склад одинаково, поэтому декодер живёт здесь, а не в репозитории.
+ */
+export function decodePgBytea(text: string): Uint8Array {
+  const out = new Uint8Array(CELLS);
+  if (!text) return out;
+  if (!text.startsWith("\\x")) return regrowGround(decodeCells(text));
+  const hex = text.slice(2);
+  for (let i = 0; i < CELLS && i * 2 + 1 < hex.length; i++) {
+    out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return regrowGround(out);
+}
+
 /** Сколько сгоревших клеток попало в рамку — по ним и считается ремонт. */
 export function burntCellsIn(cells: Uint8Array, r: Rect) {
   let n = 0;

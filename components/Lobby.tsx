@@ -653,7 +653,15 @@ export default function Lobby({
 
       autoBusyRef.current = true;
       try {
-        const o = autoDefend(cur.cells, cur.guns, cur.depots, head, cur.levels.guns);
+        // Уровни передаём все: пушки и огнетушители работают сами, и сервер
+        // пересчитает бой ровно с ними же. Раньше сюда шли одни пушки, и
+        // показанный игроку исход расходился бы с посчитанным на сервере.
+        const o = autoDefend(cur.cells, cur.guns, cur.depots, head, {
+          guns: cur.levels.guns,
+          sprays: cur.levels.sprays,
+          mg: cur.levels.mg,
+          water: cur.levels.water,
+        });
         resolvedRef.current.add(head.id);
         const goodsBefore = goodsValue(cur.depots);
         cur.cells = o.cells;
@@ -1296,11 +1304,14 @@ export default function Lobby({
    * никуда не пишется. Заказ кладём прямо в свою очередь — сервер о нём не
    * знает, как и о ботах с кнопки «+ налёт».
    */
-  const testRaid = (waves: WavePlan[]): string | null => {
+  const testRaid = (waves: WavePlan[], droneLevel: number): string | null => {
     const n = raidTotal(waves);
     if (n < 1) return t("raid.empty");
     const order = makeOrder(t("raid.testTitle"), n, waves[0].pattern, waves[0].direction);
     order.waves = waves;
+    // Уровень дронов задаётся явно: от него зависит и скорость роя, и радиус
+    // подавления, а без него пробный налёт всегда шёл первым уровнем.
+    order.droneLevel = droneLevel;
     p.incoming.push(order);
     setTestRaid(false);
     setMessage(t("raid.testQueued", { count: 1, size: n }));
@@ -1308,24 +1319,20 @@ export default function Lobby({
     return null;
   };
 
-  const summonAttack = () => {
-    const pattern = PATTERNS[(Math.random() * PATTERNS.length) | 0];
-    // рой подбираем под оборону: сколько пушек и сколько склада прикрывать
-    const size = raidSize(
-      countKind(p.guns, "gun") + countKind(p.guns, "spray") / 2,
-      intact,
-      raidDifficulty(),
-      p.levels
+  /**
+   * С чего открывать планировщик пробного налёта: рой под нынешнюю оборону,
+   * столько же, сколько прислал бы настоящий соперник.
+   */
+  const suggestedRaid = () =>
+    Math.min(
+      TEST_RAID_MAX,
+      raidSize(
+        countKind(p.guns, "gun") + countKind(p.guns, "spray") / 2,
+        intact,
+        raidDifficulty(),
+        p.levels
+      )
     );
-    const order = makeOrder(
-      t(`bot.${(Math.random() * BOT_COUNT) | 0}` as Key),
-      size,
-      pattern,
-      (Math.random() * 4) | 0
-    );
-    p.incoming.push(order);
-    touch();
-  };
 
   // ---------- ввод по карте ----------
 
@@ -2054,10 +2061,7 @@ export default function Lobby({
               className="shrink-0"
               disabled={!first || intact === 0}
               title={first ? undefined : t("attacks.defendFirst")}
-              onClick={() => {
-                setSheet(null);
-                setBattle(a);
-              }}
+              onClick={() => void defend(a)}
             >
               {t("attacks.defend")}
             </Button>
@@ -2067,15 +2071,21 @@ export default function Lobby({
     </>
   );
 
+  /**
+   * Пойти отбиваться. Сперва досохраняем склад: итог настоящего боя считает
+   * сервер по своей копии, и если она отстала от нашей, он посчитает не тот
+   * бой, который увидит игрок, — а верным окажется его счёт, не наш.
+   */
+  const defend = async (order: AttackOrder) => {
+    setSheet(null);
+    await flushPersist();
+    setBattle(order);
+  };
+
   const summonButton = (
-    <div className="flex gap-2">
-      <Button size="sm" onClick={summonAttack}>
-        {t("attacks.summon")}
-      </Button>
-      <Button size="sm" onClick={() => setTestRaid(true)}>
-        {t("raid.test")}
-      </Button>
-    </div>
+    <Button size="sm" onClick={() => setTestRaid(true)}>
+      {t("attacks.summon")}
+    </Button>
   );
 
   const enemiesBody = (
@@ -2297,7 +2307,9 @@ export default function Lobby({
           variant="danger"
           size="sm"
           className="ml-auto"
-          onClick={() => (window.innerWidth < 1024 ? setSheet("attacks") : setBattle(p.incoming[0]))}
+          onClick={() =>
+            window.innerWidth < 1024 ? setSheet("attacks") : void defend(p.incoming[0])
+          }
           disabled={intact === 0}
         >
           {p.incoming.length > 1
@@ -2502,7 +2514,12 @@ export default function Lobby({
       )}
 
       {testRaidOpen && (
-        <TestRaidDialog onCancel={() => setTestRaid(false)} onSend={testRaid} />
+        <TestRaidDialog
+          initial={suggestedRaid()}
+          level={p.levels.drones}
+          onCancel={() => setTestRaid(false)}
+          onSend={testRaid}
+        />
       )}
 
       {watching && (
@@ -2700,14 +2717,21 @@ export default function Lobby({
  * выглядит волна на своей карте.
  */
 function TestRaidDialog({
+  initial,
+  level,
   onCancel,
   onSend,
 }: {
+  /** Сколько дронов предложить с ходу: рой под нынешнюю оборону. */
+  initial: number;
+  /** Свой уровень дронов — от него и пляшем. */
+  level: number;
   onCancel: () => void;
-  onSend: (waves: WavePlan[]) => string | null;
+  onSend: (waves: WavePlan[], droneLevel: number) => string | null;
 }) {
   const t = useT();
-  const [waves, setWaves] = useState<WavePlan[]>(() => [newWave(60)]);
+  const [waves, setWaves] = useState<WavePlan[]>(() => [newWave(initial)]);
+  const [droneLevel, setDroneLevel] = useState(level);
   const [error, setError] = useState<string | null>(null);
   const total = raidTotal(waves);
 
@@ -2722,7 +2746,7 @@ function TestRaidDialog({
             variant="danger"
             className="flex-1"
             disabled={total < 1}
-            onClick={() => setError(onSend(waves))}
+            onClick={() => setError(onSend(waves, droneLevel))}
           >
             {t("raid.testSend")}
           </Button>
@@ -2737,6 +2761,8 @@ function TestRaidDialog({
         max={TEST_RAID_MAX}
         unitCost={0}
         free
+        droneLevel={droneLevel}
+        onDroneLevel={setDroneLevel}
       />
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
     </Modal>

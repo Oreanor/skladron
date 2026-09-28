@@ -1,7 +1,15 @@
 // Хранилище состояния игрока. Одна и та же игра работает поверх localStorage
 // и поверх Supabase — Lobby знает только этот интерфейс.
 
-import { type DroneKind, CELLS, type Depot, decodeCells, encodeRle, regrowGround, type Gun } from "./base";
+import {
+  type DroneKind,
+  type Depot,
+  type Gun,
+  CELLS,
+  decodeCells,
+  decodePgBytea,
+  encodeRle,
+} from "./base";
 
 import { LOAN_HOURS, MAX_LEVEL, loanDebt, upgradeCost } from "./economy";
 import type { AttackOrder, AttackReport, Pattern, RaidLog, WavePlan } from "./attack";
@@ -299,18 +307,6 @@ interface AttackReportRow {
   trace: string | null;
 }
 
-/** Postgres отдаёт bytea в hex-виде «\x00ff…». */
-function fromPgBytea(text: string): Uint8Array {
-  const out = new Uint8Array(CELLS);
-  if (!text) return out;
-  if (!text.startsWith("\\x")) return regrowGround(decodeCells(text));
-  const hex = text.slice(2);
-  for (let i = 0; i < CELLS && i * 2 + 1 < hex.length; i++) {
-    out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  }
-  return regrowGround(out);
-}
-
 class CloudRepo implements Repo {
   mode = "cloud" as const;
 
@@ -349,7 +345,7 @@ class CloudRepo implements Repo {
       levels: { ...fresh.levels, ...(row.levels ?? {}) },
       loan: row.loan ?? 0,
       loanDue: row.loan_due ? Date.parse(row.loan_due) : null,
-      cells: fromPgBytea(b.cells),
+      cells: decodePgBytea(b.cells),
       guns: b.guns ?? [],
       depots: b.drone_cells ?? [],
       incoming: attacks.incoming,
@@ -548,7 +544,7 @@ class CloudRepo implements Repo {
     if (error) throw error;
     if (e2) throw e2;
     const b = base as BaseRow;
-    p.cells = fromPgBytea(b.cells);
+    p.cells = decodePgBytea(b.cells);
     p.guns = b.guns ?? [];
     p.depots = b.drone_cells ?? [];
     const row = prof as { credits: number; levels: Partial<Player["levels"]> | null } | null;
@@ -677,18 +673,46 @@ class CloudRepo implements Repo {
   }
 
   async applyBattle(p: Player, result: BattleResult, attackId?: string, trace?: string) {
-    const rpc = attackId ? "complete_attack" : "apply_battle";
-    const args = {
+    // Настоящий налёт закрывает сервер: ему уходит только запись рук, а склад
+    // и исход он считает сам по своей копии. Клиенту тут верить нельзя — на
+    // исходе висит премия нападающему, и присланный «сгорело дотла» был бы
+    // кредитами из ниоткуда.
+    if (attackId) return this.resolveAttack(p, attackId, trace ?? "");
+
+    // Бой с ботом — дело одного игрока: премии никому, а страховка за
+    // сожжённое ровно покрывает ремонт, так что жечь себя незачем.
+    const { data, error } = await this.db().rpc("apply_battle", {
       new_cells: encodeRle(p.cells),
       new_guns: p.guns,
       new_depots: p.depots,
       result,
-      ...(attackId ? { attack_id: attackId, battle_trace: trace ?? "" } : {}),
-    };
-    const { data, error } = await this.db().rpc(rpc, args);
+    });
     if (error) throw error;
     const row = (data as { credits: number }[] | null)?.[0];
     return row ? { credits: row.credits } : {};
+  }
+
+  /** Отдаёт запись боя серверу и забирает посчитанный им исход. */
+  private async resolveAttack(p: Player, attackId: string, trace: string) {
+    const db = this.db();
+    const { data: session } = await db.auth.getSession();
+    const token = session.session?.access_token;
+    if (!token) throw new Error("Бой засчитывается только после входа");
+
+    const res = await fetch("/api/battle/resolve", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ attackId, trace }),
+    });
+    const body = (await res.json()) as { error?: string; credits?: number };
+    if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+
+    // Склад после боя считал сервер — перечитываем его, а не оставляем свой.
+    await this.reloadBase(p);
+    return body.credits !== undefined ? { credits: body.credits } : {};
   }
 
   async rename(_p: Player, name: string) {

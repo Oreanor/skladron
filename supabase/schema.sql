@@ -1051,11 +1051,17 @@ $$;
 -- Здесь карта может только ухудшаться, а пушки только убывать: бой ничего
 -- не чинит и не строит.
 
-create or replace function apply_battle(new_cells text, new_guns jsonb, new_depots jsonb, result jsonb)
+-- Тело боя за указанного игрока. Отдельно от apply_battle, потому что итог
+-- боя с настоящим налётом теперь считает сервер, и он приходит не от имени
+-- защитника. Функция принимает игрока параметром, поэтому ниже с неё снято
+-- право исполнения: звать её может только сервер под служебным ключом.
+create or replace function apply_battle_for(
+  player uuid, new_cells text, new_guns jsonb, new_depots jsonb, result jsonb
+)
 returns table (credits int, intact int)
 language plpgsql security definer set search_path = public as $$
 declare
-  uid uuid := auth.uid();
+  uid uuid := player;
   bin bytea := rle_decode(new_cells);
   cur bytea;
   cur_guns jsonb;
@@ -1149,6 +1155,19 @@ begin
 end;
 $$;
 
+-- Свой бой без настоящего налёта — с ботом или пробный. Тут верить клиенту
+-- можно: премии нападающему нет, а страховка за сожжённое ровно покрывает
+-- ремонт, так что жечь себя незачем.
+create or replace function apply_battle(new_cells text, new_guns jsonb, new_depots jsonb, result jsonb)
+returns table (credits int, intact int)
+language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  return query select * from apply_battle_for(uid, new_cells, new_guns, new_depots, result);
+end;
+$$;
+
 -- Защитник завершает конкретный входящий налёт. В одной транзакции сохраняем
 -- его склад, закрываем очередь и начисляем добычу отправителю.
 create or replace function complete_attack(
@@ -1215,6 +1234,76 @@ begin
 
   update attacks
      set status = 'resolved', result = complete_attack.result, loot = earned,
+         destroyed = defender_intact = 0, resolved_at = now(),
+         snap_cells = snap_map, snap_guns = snap_g,
+         snap_depots = snap_d, snap_levels = snap_lv,
+         trace = battle_trace
+   where id = attack_id;
+
+  return query select defender_credits, defender_intact;
+end;
+$$;
+
+-- ---------- итог настоящего налёта, посчитанный сервером ----------
+-- Бой детерминирован, а недетерминированы только руки защитника. Поэтому
+-- клиент присылает лишь запись своих рук, сервер прогоняет бой сам и зовёт
+-- эту функцию со своим же результатом. Защитник тут не участвует — его id
+-- берётся из строки налёта, — и потому исполнение с неё снято: звать может
+-- только сервер под служебным ключом.
+
+create or replace function resolve_attack(
+  attack_id uuid,
+  new_cells text,
+  new_guns jsonb,
+  new_depots jsonb,
+  result jsonb,
+  battle_trace text default ''
+) returns table (credits int, intact int)
+language plpgsql security definer set search_path = public as $$
+declare
+  order_row attacks;
+  defender_credits int;
+  defender_intact int;
+  earned int;
+  snap_map text;
+  snap_g jsonb;
+  snap_d jsonb;
+  snap_lv jsonb;
+begin
+  select a.* into order_row from attacks a where a.id = attack_id for update;
+  if not found then raise exception 'attack not found'; end if;
+  if order_row.status <> 'pending' then raise exception 'attack already resolved'; end if;
+
+  -- Сверки с присланным числом дронов больше нет и быть не может: исход
+  -- считал сервер по тому же расписанию, что и рой. Оставляем только защиту
+  -- от откровенной чуши на случай, если сюда однажды придёт не наш счёт.
+  if coalesce((result->>'dronesSent')::int, -1) <> order_row.drones then
+    raise exception 'attack drone count mismatch';
+  end if;
+
+  -- Слепок склада до боя: по нему нападавший и посмотрит повтор.
+  select encode(b.cells, 'base64'), b.guns, b.drone_cells
+    into snap_map, snap_g, snap_d
+    from bases b where b.user_id = order_row.defender_id;
+  select p.levels into snap_lv from profiles p where p.id = order_row.defender_id;
+
+  select applied.credits, applied.intact
+    into defender_credits, defender_intact
+    from apply_battle_for(order_row.defender_id, new_cells, new_guns, new_depots, result) applied;
+
+  earned := coalesce((result->>'burned')::int, 0) * price('loot');
+
+  update profiles
+     set credits = profiles.credits + earned,
+         stats = jsonb_set(
+           profiles.stats,
+           '{looted}',
+           to_jsonb((profiles.stats->>'looted')::int + earned)
+         )
+   where id = order_row.attacker_id;
+
+  update attacks
+     set status = 'resolved', result = resolve_attack.result, loot = earned,
          destroyed = defender_intact = 0, resolved_at = now(),
          snap_cells = snap_map, snap_guns = snap_g,
          snap_depots = snap_d, snap_levels = snap_lv,
@@ -1567,8 +1656,16 @@ begin
 end;
 $$;
 
+-- Postgres по умолчанию отдаёт EXECUTE всем (PUBLIC), поэтому одних grant
+-- мало: с функций, которые принимают игрока параметром, право надо снимать
+-- явно. Иначе любой вошедший мог бы завершить чужой бой за кого угодно.
+revoke all on function apply_battle_for(uuid, text, jsonb, jsonb, jsonb) from public;
+revoke all on function resolve_attack(uuid, text, jsonb, jsonb, jsonb, text) from public;
+-- Итог настоящего налёта клиент больше не присылает: его считает сервер.
+revoke all on function complete_attack(uuid, text, jsonb, jsonb, jsonb, text) from public;
+
 grant execute on function ensure_player, collect_income, save_base,
-  buy_drones, apply_battle, complete_attack, wipe_base, rename_base, save_enemies,
+  buy_drones, apply_battle, wipe_base, rename_base, save_enemies,
   base_names, enemy_base, stale_patches, spend_scouts, upgrade, add_rival,
   take_loan, repay_loan, raid_log, hide_raid,
   send_attack, pending_attacks, attack_reports, ack_attack_report, restart_game to authenticated;

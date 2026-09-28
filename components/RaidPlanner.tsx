@@ -18,8 +18,8 @@ import {
   type Payload,
   type WavePlan,
 } from "@/lib/attack";
-import { PAYLOAD } from "@/lib/tuning";
-import { fmt } from "@/lib/economy";
+import { DRONE, PAYLOAD } from "@/lib/tuning";
+import { MAX_LEVEL, fmt, levelBonus } from "@/lib/economy";
 import { Plus, X } from "lucide-react";
 import { Button, SectionTitle } from "./ui";
 import { useT } from "@/lib/i18n";
@@ -52,6 +52,14 @@ export interface PlannerProps {
   unitCost: number;
   /** Пробный налёт на себя ничего не стоит, и надбавку показывать незачем. */
   free?: boolean;
+  /**
+   * Уровень дронов. У настоящего налёта он свой и не обсуждается, а у
+   * пробного его задают руками: от него зависит и скорость роя, и радиус
+   * подавления, так что без этого поля пробный бой не проверить на чужих
+   * уровнях. Передан onDroneLevel — поле показывается.
+   */
+  droneLevel?: number;
+  onDroneLevel?: (level: number) => void;
 }
 
 export default function RaidPlanner({
@@ -61,6 +69,8 @@ export default function RaidPlanner({
   max,
   unitCost,
   free = false,
+  droneLevel = 1,
+  onDroneLevel,
 }: PlannerProps) {
   const t = useT();
   const total = raidTotal(waves);
@@ -78,6 +88,30 @@ export default function RaidPlanner({
 
   return (
     <>
+      {onDroneLevel && (
+        <div className="mb-3 flex items-center justify-between gap-3 rounded-md border border-neutral-700 bg-neutral-950/50 px-3 py-2">
+          <div className="min-w-0">
+            <SectionTitle>{t("raid.droneLevel")}</SectionTitle>
+            <p className="mt-0.5 text-[11px] leading-snug text-neutral-500">
+              {t("raid.droneLevelHint", {
+                speed: (DRONE.speed * levelBonus(droneLevel, DRONE.perLevel)).toFixed(1),
+              })}
+            </p>
+          </div>
+          <input
+            type="number"
+            min={1}
+            max={MAX_LEVEL}
+            value={droneLevel}
+            aria-label={t("raid.droneLevel")}
+            onChange={(e) =>
+              onDroneLevel(Math.max(1, Math.min(MAX_LEVEL, Number(e.target.value) || 1)))
+            }
+            className={numberClass}
+          />
+        </div>
+      )}
+
       <div className="space-y-3">
         {waves.map((wave, wi) => (
           <div key={wi} className="rounded-md border border-neutral-700 bg-neutral-950/50 p-3">

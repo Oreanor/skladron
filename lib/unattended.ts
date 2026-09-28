@@ -1,11 +1,16 @@
 // Налёт, который никто не встретил. Если игрок не пришёл отбиваться за
-// отведённые полчаса, атака всё равно проводится: пушки ПВО стреляют сами,
-// а брандспойта и пулемётной очереди нет — некому.
+// отведённые полчаса, атака всё равно проводится: пушки и огнетушители
+// работают сами, а брандспойта и пулемётной очереди нет — некому.
+//
+// Своей симуляции тут нет намеренно. Бой без рук — это тот же бой с пустой
+// записью, и считает его тот же resolveBattle, которым сервер закрывает
+// настоящие налёты. Будь их две, они рано или поздно разошлись бы, и клиент
+// показывал бы игроку не тот исход, что потом придёт с сервера.
 
-import { type Depot, type Gun } from "./base";
-import { type AttackOrder, buildPlan } from "./attack";
-import { type BattleResult, createBattle, settle, update } from "./engine";
-import { SIM } from "./tuning";
+import { decodeRle, type Depot, type Gun } from "./base";
+import { type AttackOrder } from "./attack";
+import { type BattleLevels, type BattleResult } from "./engine";
+import { resolveBattle } from "./resolve";
 
 export interface UnattendedOutcome {
   cells: Uint8Array;
@@ -20,23 +25,14 @@ export function autoDefend(
   guns: Gun[],
   depots: Depot[],
   order: AttackOrder,
-  gunLevel = 1
+  levels: BattleLevels = {}
 ): UnattendedOutcome {
-  // Пулемёта и брандспойта тут нет — некому: считаем только пушки.
-  const s = createBattle(cells, guns, depots, buildPlan(order), {
-    drones: order.droneLevel ?? 1,
-    guns: gunLevel,
-    seed: order.seed,
-  });
-
-  let t = 0;
-  while (t < SIM.unattendedSeconds && s.phase === "playing") {
-    // никакого setAim и setFiring: склад отбивается одними пушками
-    update(s, SIM.step);
-    t += SIM.step;
-  }
-
-  // settle сам дотушивает: что горело к концу боя, становится пепелищем
-  const out = settle(s);
-  return { ...out, won: s.phase !== "lost" };
+  const verdict = resolveBattle({ cells, guns, depots, order, levels, trace: "" });
+  return {
+    cells: decodeRle(verdict.cells),
+    guns: verdict.guns,
+    depots: verdict.depots,
+    result: verdict.result,
+    won: verdict.won,
+  };
 }
