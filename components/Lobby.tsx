@@ -539,6 +539,8 @@ export default function Lobby({
       return { ...item.vars, range: Math.round(sprayRange({ sprayLevel: p.levels.sprays })) };
     if (item.id === "trap")
       return { ...item.vars, range: Math.round(trapRange({ trapLevel: p.levels.traps })) };
+    if (item.id === "drones" || item.id === "scouts")
+      return { ...item.vars, cost: toolPrice(item) };
     return item.vars;
   };
 
