@@ -126,6 +126,9 @@ export function drawStatic(
   }
 }
 
+/** Чьи круги покрытия показывать: зениток, огнетушителей, ловушек. */
+export type CoverageKind = "gun" | "spray" | "trap";
+
 export function drawCoverage(
   ctx: CanvasRenderingContext2D,
   guns:
@@ -141,8 +144,15 @@ export function drawCoverage(
   cell: number,
   range: number = GUN.range,
   spraysRange: number = SPRAY.range,
-  trapsRange: number = TRAP.range
+  trapsRange: number = TRAP.range,
+  /**
+   * Чьи круги рисовать. Пусто — ничьи: три набора кругов разом закрывают
+   * склад так, что на нём уже ничего не разглядеть, поэтому в лобби видны
+   * только круги того, что сейчас ставят.
+   */
+  show: readonly CoverageKind[] = ["gun", "spray", "trap"]
 ) {
+  if (!show.length) return;
   const live = guns.filter((g) => (g as { alive?: boolean }).alive !== false);
   if (!live.length) return;
   const kindOf = (g: { kind?: string; spray?: boolean; trap?: boolean }) =>
@@ -164,7 +174,7 @@ export function drawCoverage(
       stroke: COLORS.trapRangeLine,
     },
   } as const;
-  for (const kind of ["gun", "spray", "trap"] as const) {
+  for (const kind of show) {
     const part = live.filter((g) => kindOf(g) === kind);
     if (!part.length) continue;
     const st = styles[kind];

@@ -87,7 +87,7 @@ import {
 } from "@/lib/enemy";
 import type { Account } from "./AuthGate";
 import Enemies from "./Enemies";
-import { drawCoverage, drawDepots, type View } from "@/lib/render";
+import { drawCoverage, drawDepots, type CoverageKind, type View } from "@/lib/render";
 import { gunRange, sprayRange, trapRange } from "@/lib/engine";
 import { RAID } from "@/lib/tuning";
 import Battle, { type BattleOutcome } from "./Battle";
@@ -1422,16 +1422,32 @@ export default function Lobby({
 
   // ---------- отрисовка поверх карты ----------
 
+  /**
+   * Чьи круги покрытия сейчас уместны. Выбран инструмент установки — её и
+   * показываем; тащим готовую — показываем круги её рода. В остальное время
+   * ничьи: втроём они закрывают склад так, что на нём ничего не разобрать.
+   */
+  const coverageFor = (): CoverageKind[] => {
+    if (tool === "gun" || tool === "spray" || tool === "trap") return [tool];
+    const from = dragGunRef.current;
+    if (!from) return [];
+    const g = p.guns.find((item) => item.cx === from.cx && item.cy === from.cy);
+    return g ? [gunKind(g)] : [];
+  };
+
   const overlay = (ctx: CanvasRenderingContext2D, frameNow: number, view?: View) => {
     const cell = 7;
-    // круги рисуем по прокачанной дальности, иначе апгрейд не виден
+    // Круги показываем только у того, что сейчас ставят: втроём они
+    // закрывают склад так, что на нём уже ничего не разобрать. Дальность
+    // берём прокачанную, иначе не видно, что дал апгрейд.
     drawCoverage(
       ctx,
       p.guns,
       cell,
       gunRange({ gunLevel: p.levels.guns }),
       sprayRange({ sprayLevel: p.levels.sprays }),
-      trapRange({ trapLevel: p.levels.traps })
+      trapRange({ trapLevel: p.levels.traps }),
+      coverageFor()
     );
 
     const draggedDepot = dragDepotRef.current;
