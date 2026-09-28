@@ -5,13 +5,17 @@ import {
   GRID,
   G_BASE,
   G_BURNT,
+  G_FIRE,
   G_GROUND,
+  G_SCORCH,
   DRONES_PER_CELL,
   type Rect,
   applyRect,
+  depotKind,
   droneCount,
   countFreeCells,
   countKind,
+  gunKind,
   type GunKind,
   isWhole,
   scrapRect,
@@ -87,7 +91,7 @@ import {
 } from "@/lib/enemy";
 import type { Account } from "./AuthGate";
 import Enemies from "./Enemies";
-import { drawCoverage, drawDepots } from "@/lib/render";
+import { drawCoverage, drawDepots, type View } from "@/lib/render";
 import { gunRange, sprayRange, trapRange } from "@/lib/engine";
 import { RAID, SPRAY, TRAP } from "@/lib/tuning";
 import Battle, { type BattleOutcome } from "./Battle";
@@ -1573,7 +1577,7 @@ export default function Lobby({
 
   // ---------- отрисовка поверх карты ----------
 
-  const overlay = (ctx: CanvasRenderingContext2D, frameNow: number) => {
+  const overlay = (ctx: CanvasRenderingContext2D, frameNow: number, view?: View) => {
     const cell = 7;
     // круги рисуем по прокачанной дальности, иначе апгрейд не виден
     drawCoverage(
@@ -1729,6 +1733,57 @@ export default function Lobby({
         ctx.fillText(tag.text, px, py);
       }
       ctx.restore();
+    }
+
+    // подпись клетки под курсором — при любом инструменте
+    if (h) {
+      const cx = Math.floor(h.x);
+      const cy = Math.floor(h.y);
+      if (cx >= 0 && cy >= 0 && cx < GRID && cy < GRID) {
+        const gun = p.guns.find((g) => g.cx === cx && g.cy === cy);
+        const depot = p.depots.find((item) => item.cx === cx && item.cy === cy);
+        let label: string;
+        if (gun) {
+          const kind = gunKind(gun);
+          label = t(
+            kind === "spray" ? "tool.spray" : kind === "trap" ? "tool.trap" : "tool.gun"
+          );
+        } else if (depot) {
+          label = t(depotKind(depot) === "scout" ? "map.hover.scouts" : "map.hover.drones", {
+            n: depot.n,
+          });
+        } else {
+          const v = p.cells[idx(cx, cy)];
+          label =
+            v === G_BASE
+              ? t("map.hover.warehouse")
+              : v === G_BURNT
+              ? t("map.hover.burnt")
+              : v === G_FIRE
+              ? t("map.hover.fire")
+              : v === G_SCORCH
+              ? t("map.hover.scorch")
+              : t("map.hover.ground");
+        }
+        const zoom = view?.zoom || 1;
+        const px = (cx + 0.5) * cell;
+        const py = cy * cell - cell * 0.35;
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.scale(1 / zoom, 1 / zoom);
+        ctx.font = "600 12px ui-monospace, SFMono-Regular, monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        const tw = ctx.measureText(label).width;
+        const padX = 6;
+        const padY = 3;
+        const th = 12;
+        ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+        ctx.fillRect(-tw / 2 - padX, -th - padY, tw + padX * 2, th + padY * 2);
+        ctx.fillStyle = "#f5f5f5";
+        ctx.fillText(label, 0, -padY);
+        ctx.restore();
+      }
     }
   };
 

@@ -45,8 +45,6 @@ export interface MapCanvasProps {
   children?: ReactNode;
 }
 
-/** Масштаб, при котором вся карта влезает в окно (по короткой стороне). */
-const fitScale = (w: number, h: number) => Math.min(w, h) / SIZE;
 /** Масштаб, при котором окно заполнено картой без пустых полей. */
 const coverScale = (w: number, h: number) => Math.max(w, h) / SIZE;
 
@@ -69,7 +67,7 @@ export default function MapCanvas({
   const boxRef = useRef<HTMLDivElement>(null);
   // zoom здесь — экранных пикселей на игровой пиксель. На квадратном окне 700×700
   // это ровно 1, на вытянутом телефоне — больше, поэтому все пределы считаются
-  // от fit/cover, а не от единицы.
+  // от cover (стартовый «вся карта»), а не от единицы.
   const viewRef = useRef<View>({ zoom: 1, panX: 0, panY: 0 });
   const viewDirty = useRef(true);
   const sceneRef = useRef(scene);
@@ -121,8 +119,11 @@ export default function MapCanvas({
       if (!w || !h) return;
       const wx = v.panX + sx / v.zoom;
       const wy = v.panY + sy / v.zoom;
-      const fit = fitScale(w, h);
-      const next = Math.max(fit * MIN_ZOOM, Math.min(fit * MAX_ZOOM, v.zoom * factor));
+      // Пределы от cover — того же базового масштаба, от которого UI
+      // считает «1×» / «вся карта». Раньше clamp шёл от fit, и на
+      // неквадратном окне максимум получался ~4×(min/max) ≈ 3.1×.
+      const base = coverScale(w, h);
+      const next = Math.max(base * MIN_ZOOM, Math.min(base * MAX_ZOOM, v.zoom * factor));
       if (next === v.zoom) return;
       v.zoom = next;
       v.panX = wx - sx / v.zoom;
@@ -157,7 +158,7 @@ export default function MapCanvas({
         // поворот или ресайз окна: держим ту же кратность приближения
         const rel = v.zoom / baseZoom.current;
         baseZoom.current = base;
-        v.zoom = base * rel;
+        v.zoom = Math.max(base * MIN_ZOOM, Math.min(base * MAX_ZOOM, base * rel));
       }
       // сменилась только высота (выехала панель) — вид не трогаем,
       // иначе карта прыгала бы от каждой всплывающей полосы

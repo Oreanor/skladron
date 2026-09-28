@@ -373,6 +373,13 @@ const en = {
   "save.rejected": "The server rejected the change: {error}",
 
   "map.wholeMap": "Whole map",
+  "map.hover.ground": "Ground",
+  "map.hover.warehouse": "Warehouse",
+  "map.hover.burnt": "Burnt",
+  "map.hover.fire": "Fire",
+  "map.hover.scorch": "Scorch",
+  "map.hover.drones": "Drones · {n}",
+  "map.hover.scouts": "Recon · {n}",
 
   "menu.language": "Language",
   "menu.theme": "Theme",
@@ -746,6 +753,13 @@ const ru: Dict = {
   "save.rejected": "Сервер отклонил правку: {error}",
 
   "map.wholeMap": "Вся карта",
+  "map.hover.ground": "Земля",
+  "map.hover.warehouse": "Склад",
+  "map.hover.burnt": "Сгорело",
+  "map.hover.fire": "Огонь",
+  "map.hover.scorch": "Гарь",
+  "map.hover.drones": "Дроны · {n}",
+  "map.hover.scouts": "Разведка · {n}",
 
   "menu.language": "Язык",
   "menu.theme": "Тема",
@@ -1116,6 +1130,13 @@ const es: Dict = {
   "save.rejected": "El servidor rechazó el cambio: {error}",
 
   "map.wholeMap": "Todo el mapa",
+  "map.hover.ground": "Tierra",
+  "map.hover.warehouse": "Almacén",
+  "map.hover.burnt": "Quemada",
+  "map.hover.fire": "Fuego",
+  "map.hover.scorch": "Chamuscado",
+  "map.hover.drones": "Drones · {n}",
+  "map.hover.scouts": "Exploración · {n}",
 
   "menu.language": "Idioma",
   "menu.theme": "Tema",
@@ -1486,6 +1507,13 @@ const pt: Dict = {
   "save.rejected": "O servidor recusou a alteração: {error}",
 
   "map.wholeMap": "Mapa inteiro",
+  "map.hover.ground": "Solo",
+  "map.hover.warehouse": "Armazém",
+  "map.hover.burnt": "Queimada",
+  "map.hover.fire": "Fogo",
+  "map.hover.scorch": "Chamuscado",
+  "map.hover.drones": "Drones · {n}",
+  "map.hover.scouts": "Reconhecimento · {n}",
 
   "menu.language": "Idioma",
   "menu.theme": "Tema",
@@ -1856,6 +1884,13 @@ const fr: Dict = {
   "save.rejected": "Le serveur a refusé la modification : {error}",
 
   "map.wholeMap": "Toute la carte",
+  "map.hover.ground": "Sol",
+  "map.hover.warehouse": "Entrepôt",
+  "map.hover.burnt": "Brûlée",
+  "map.hover.fire": "Feu",
+  "map.hover.scorch": "Trace",
+  "map.hover.drones": "Drones · {n}",
+  "map.hover.scouts": "Reconnaissance · {n}",
 
   "menu.language": "Langue",
   "menu.theme": "Thème",
@@ -2226,6 +2261,13 @@ const de: Dict = {
   "save.rejected": "Der Server hat die Änderung abgelehnt: {error}",
 
   "map.wholeMap": "Ganze Karte",
+  "map.hover.ground": "Boden",
+  "map.hover.warehouse": "Lager",
+  "map.hover.burnt": "Verbrannt",
+  "map.hover.fire": "Feuer",
+  "map.hover.scorch": "Brandspur",
+  "map.hover.drones": "Drohnen · {n}",
+  "map.hover.scouts": "Aufklärung · {n}",
 
   "menu.language": "Sprache",
   "menu.theme": "Design",
@@ -2596,6 +2638,13 @@ const it: Dict = {
   "save.rejected": "Il server ha rifiutato la modifica: {error}",
 
   "map.wholeMap": "Tutta la mappa",
+  "map.hover.ground": "Terreno",
+  "map.hover.warehouse": "Magazzino",
+  "map.hover.burnt": "Bruciata",
+  "map.hover.fire": "Fuoco",
+  "map.hover.scorch": "Bruciatura",
+  "map.hover.drones": "Droni · {n}",
+  "map.hover.scouts": "Ricognizione · {n}",
 
   "menu.language": "Lingua",
   "menu.theme": "Tema",
