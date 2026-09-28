@@ -13,8 +13,9 @@
  * склада печатали кредиты. Теперь ни карта, ни исход с клиента не берутся.
  */
 
-import { decodeCells, encodeRle, type Depot, type Gun } from "./base";
+import { GRID, decodeCells, encodeRle, type Depot, type Gun } from "./base";
 import { buildPlan, type AttackOrder } from "./attack";
+import { levelBonus } from "./economy";
 import {
   createBattle,
   setAim,
@@ -23,9 +24,10 @@ import {
   update,
   type BattleLevels,
   type BattleResult,
+  type GameState,
 } from "./engine";
-import { decodeTrace } from "./replay";
-import { SIM } from "./tuning";
+import { decodeTrace, type Frame } from "./replay";
+import { AUTO, SIM } from "./tuning";
 
 export interface Verdict {
   /** Склад после боя, уже в том виде, в каком ложится в базу. */
@@ -36,6 +38,73 @@ export interface Verdict {
   /** Сколько целых клеток осталось: по ним считается, снесён ли склад. */
   intact: number;
   won: boolean;
+}
+
+/** Что дежурная смена помнит между кадрами. */
+interface Crew {
+  /** До какой секунды держать нынешнюю цель. */
+  until: number;
+  /** До какой секунды длится перевод прицела: в это время не стреляют. */
+  swingUntil: number;
+  at: Frame | null;
+}
+
+const newCrew = (): Crew => ({ until: -1, swingUntil: 0, at: null });
+
+/**
+ * Дежурная смена у пулемёта и брандспойта.
+ *
+ * Бьёт по ближайшему к складу дрону, а если дронов рядом нет — тушит
+ * ближайший очаг. Живого игрока не заменяет и не должна: цель перебирает
+ * раз в reaction, и пока переводит прицел — не стреляет. Прокачка пулемёта
+ * и брандспойта смену ускоряет, но упирается в пол: как бы высоко ни
+ * забрался уровень, автомат остаётся заметно медлительнее рук, иначе играть
+ * самому будет незачем. Какой из двух уровней в ходу, зависит от того, по
+ * дрону работают или по огню.
+ */
+function autoHands(s: GameState, crew: Crew, at: number): Frame | null {
+  const held = () =>
+    crew.at && (at >= crew.swingUntil ? crew.at : { ...crew.at, firing: false });
+  if (at < crew.until) return held();
+
+  const mid = GRID / 2;
+  let best: { x: number; y: number } | null = null;
+  let bestD = AUTO.reach * AUTO.reach;
+  for (const d of s.drones) {
+    if (d.hit) continue;
+    const dx = d.x - mid;
+    const dy = d.y - mid;
+    const dd = dx * dx + dy * dy;
+    if (dd < bestD) {
+      bestD = dd;
+      best = { x: Math.floor(d.x), y: Math.floor(d.y) };
+    }
+  }
+
+  const onDrone = best !== null;
+  if (!best) {
+    // Дронов поблизости нет — переключаемся на пожар.
+    let fireD = Infinity;
+    for (const i of s.fire.keys()) {
+      const x = i % GRID;
+      const y = (i / GRID) | 0;
+      const dd = (x + 0.5 - mid) ** 2 + (y + 0.5 - mid) ** 2;
+      if (dd < fireD) {
+        fireD = dd;
+        best = { x, y };
+      }
+    }
+  }
+
+  // Чем по чему работаем, тем и ускоряемся: дроны — пулемёт, огонь — струя.
+  const level = onDrone ? s.mgLevel : s.waterLevel;
+  const faster = levelBonus(level, AUTO.perLevel);
+  crew.until = at + Math.max(AUTO.reactionMin, AUTO.reaction / faster);
+
+  const moved = !crew.at || !best || crew.at.x !== best.x || crew.at.y !== best.y;
+  crew.at = best ? { x: best.x, y: best.y, firing: true } : null;
+  if (moved) crew.swingUntil = at + Math.max(AUTO.swingMin, AUTO.swing / faster);
+  return held();
 }
 
 export interface BattleInput {
@@ -72,9 +141,15 @@ export function resolveBattle(input: BattleInput): Verdict {
   });
 
   const frames = decodeTrace(input.trace);
+  // Пустая запись — значит защитник не пришёл вовсе, и за пулемёт с
+  // брандспойтом встаёт дежурная смена. Пустой кадр посреди записи — совсем
+  // другое дело: игрок был, просто убрал прицел с карты, и подменять его
+  // автоматикой нельзя.
+  const crew = frames.length === 0 ? newCrew() : null;
+
   const cap = Math.ceil(SIM.unattendedSeconds / SIM.step);
   for (let step = 0; step < cap && s.phase === "playing"; step++) {
-    const f = frames[step] ?? null;
+    const f = crew ? autoHands(s, crew, step * SIM.step) : frames[step] ?? null;
     // Прицел записан клеткой, а бой считает долями: целимся в середину,
     // ровно как это делает сам бой.
     setAim(s, f ? { x: f.x + 0.5, y: f.y + 0.5 } : null);

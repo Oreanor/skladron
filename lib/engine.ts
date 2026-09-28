@@ -583,12 +583,32 @@ function arrive(s: GameState, d: Drone): boolean {
 }
 
 /**
- * Подавитель на круге. Наматывает витки над своей жертвой и каждый кадр
- * глушит всё её рода в своём радиусе. Кончилось топливо или не стало жертвы —
- * уходит с карты; засчитываем прорвавшимся, чтобы сбитые и прорвавшиеся
- * сходились с высланными.
+ * Глушит всё своего рода в своём радиусе. Работает с первой секунды полёта,
+ * а не только когда дрон уже сел на круг, — в этом вся суть уровней: радиус
+ * подавления считается формулой дальности зенитки, поэтому при равных
+ * уровнях подавитель затыкает ровно те пушки, которые могли бы его достать,
+ * при высшем уровне накрывает их раньше, чем они дотянутся, а при низшем
+ * его расстреливают на подлёте. Отдельного «его нельзя сбить» в коде нет:
+ * защищает его радиус, и только он.
  */
-function suppressTick(s: GameState, d: Drone, dt: number) {
+function suppressTick(s: GameState, d: Drone) {
+  const hunts = prey(d.payload);
+  if (hunts === null) return;
+  const reach = suppressRange(s);
+  for (const g of s.guns) {
+    if (!g.alive || g.spray !== hunts) continue;
+    const dx = g.cx + 0.5 - d.x;
+    const dy = g.cy + 0.5 - d.y;
+    if (dx * dx + dy * dy <= reach * reach) g.jammed = SUPPRESS.release;
+  }
+}
+
+/**
+ * Подавитель на круге: наматывает витки над своей жертвой, пока есть
+ * топливо. Кончилось или не стало жертвы — уходит с карты; засчитываем
+ * прорвавшимся, чтобы сбитые и прорвавшиеся сходились с высланными.
+ */
+function loiterTick(s: GameState, d: Drone, dt: number) {
   const host = s.guns.find((g) => g.id === d.over);
   d.fuel -= dt;
   if (!host || !host.alive || d.fuel <= 0) {
@@ -602,15 +622,6 @@ function suppressTick(s: GameState, d: Drone, dt: number) {
   d.wob += SUPPRESS.spin * dt;
   d.x = host.cx + 0.5 + Math.cos(d.wob) * SUPPRESS.orbit;
   d.y = host.cy + 0.5 + Math.sin(d.wob) * SUPPRESS.orbit;
-
-  const hunts = prey(d.payload);
-  const reach = suppressRange(s);
-  for (const g of s.guns) {
-    if (!g.alive || g.spray !== hunts) continue;
-    const dx = g.cx + 0.5 - d.x;
-    const dy = g.cy + 0.5 - d.y;
-    if (dx * dx + dy * dy <= reach * reach) g.jammed = SUPPRESS.release;
-  }
 }
 
 export function update(s: GameState, dt: number) {
@@ -658,13 +669,16 @@ export function update(s: GameState, dt: number) {
       continue;
     }
 
-    // Подавитель не взрывается: дойдя до склада, он садится на круг над
-    // своей жертвой и висит там, пока есть топливо. Сбить его может только
-    // пулемёт — заглушённые пушки по нему уже не работают. Проверяем до
-    // всего прочего: на круге ему не нужны ни цель, ни строй, а сгоревшая
-    // цель не должна уносить его мимо статистики.
+    // Глушит он с первой секунды полёта, а не только на круге: пушки
+    // стреляют ниже по этому же кадру и заглушёнными его уже не достанут.
+    suppressTick(s, d);
+
+    // Дойдя до склада, подавитель садится на круг над своей жертвой и висит,
+    // пока есть топливо. Проверяем до всего прочего: на круге ему не нужны
+    // ни цель, ни строй, а сгоревшая цель не должна унести его мимо
+    // статистики.
     if (d.over) {
-      suppressTick(s, d, dt);
+      loiterTick(s, d, dt);
       continue;
     }
 
@@ -741,7 +755,10 @@ export function update(s: GameState, dt: number) {
     const cy = d.y | 0;
     if (cx !== px || cy !== py) {
       const g = gunAt(s, cx, cy);
-      if (g && s.rnd() < DRONE.gunCollision) {
+      // Подавитель не таранит: у него нет боеголовки, и уносить установку
+      // собой ему нечем. Раньше он сбивал пушки случайными касаниями и сам
+      // при этом пропадал — выглядело как необъяснимые потери.
+      if (g && prey(d.payload) === null && s.rnd() < DRONE.gunCollision) {
         g.alive = false;
         if (g.spray) s.result.spraysLost++;
         else s.result.gunsLost++;
@@ -824,9 +841,10 @@ export function update(s: GameState, dt: number) {
     const reach = gunRange(s) + 0.5;
     let bestD = reach * reach;
     for (const d of s.drones) {
-      // Подавитель зенитки не берут: он и висит там, где они его достать не
-      // могут. Снять его способен только пулемёт игрока.
-      if (d.hit || d.over) continue;
+      // Подавителя зенитка берёт на общих основаниях. Не даёт ей выстрелить
+      // не запрет, а его собственный радиус: заглушённая пушка до проверки
+      // цели уже не доходит.
+      if (d.hit) continue;
       const ddx = d.x - gx;
       const ddy = d.y - gy;
       const dd = ddx * ddx + ddy * ddy;

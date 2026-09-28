@@ -3,7 +3,7 @@
 import { GRID } from "./base";
 import { levelBonus } from "./economy";
 import type { BattleResult } from "./engine";
-import { GUN, PAYLOAD, RAID, WAVE } from "./tuning";
+import { DRONE, GUN, PAYLOAD, RAID, WAVE } from "./tuning";
 
 /**
  * Что дрон несёт. Простой долетает и взрывается; тяжёлый берёт двойную
@@ -272,8 +272,44 @@ function assignPayloads(tickets: SpawnTicket[], groups: DroneGroup[]) {
 }
 
 /**
+ * Поднимает всю волну в воздух одновременно, не стирая её рисунок.
+ *
+ * Раньше кольца, ряды и точки спирали появлялись с задержкой. Теперь эта
+ * задержка превращается в стартовую глубину: более поздняя часть рисунка
+ * сразу находится дальше по той же траектории. Поэтому timestamp у всей
+ * порции один, но шеренги, кольца и «капель» не схлопываются в одну точку.
+ * Возвращает прежнее время последнего вылета — по нему по-прежнему отделяем
+ * следующую волну, чтобы две самостоятельные порции не слипались.
+ */
+function launchTogether(tickets: SpawnTicket[], start: number, droneLevel: number) {
+  let last = start;
+  for (const ticket of tickets) {
+    last = Math.max(last, ticket.at);
+    const delay = Math.max(0, ticket.at - start);
+    if (delay > 0) {
+      const payload = ticket.payload ?? "plain";
+      const depth =
+        delay *
+        DRONE.speed *
+        levelBonus(droneLevel, DRONE.perLevel) *
+        PAYLOAD[payload].speed;
+      if (ticket.form) {
+        ticket.rad = (ticket.rad ?? WAVE.formRadius) + depth;
+      } else {
+        const edge = ticket.edge ?? 0;
+        const outward = edge === 0 || edge === 2 ? -1 : 1;
+        ticket.oy = (ticket.oy ?? 0) + outward * depth;
+      }
+    }
+    ticket.at = start;
+  }
+  return last;
+}
+
+/**
  * Расписание вылетов: детерминировано по seed, чтобы бой был воспроизводим.
- * Волны идут одна за другой — следующая заходит, когда предыдущая отстрелялась.
+ * Все дроны одной волны стартуют в один момент. Следующая волна — отдельная
+ * порция дронов, которая стартует после общей паузы.
  */
 export function buildPlan(order: AttackOrder): SpawnTicket[] {
   const rnd = mulberry32(order.seed);
@@ -286,8 +322,11 @@ export function buildPlan(order: AttackOrder): SpawnTicket[] {
     const tickets = waveTickets(wave.pattern, wave.direction, size, rnd, at);
     if (!tickets.length) continue;
     assignPayloads(tickets, wave.groups);
+    // Паттерн задаёт строй и траектории, но не дробит одну волну на скрытые
+    // подволнушки. Даже у колец, спирали и «капели» вся порция уже в воздухе.
+    const last = launchTogether(tickets, at, order.droneLevel ?? 1);
     plan.push(...tickets);
-    at = tickets.reduce((last, t) => Math.max(last, t.at), at) + WAVE.betweenWaves;
+    at = last + WAVE.betweenWaves;
   }
   return plan.sort((a, b) => a.at - b.at);
 }
