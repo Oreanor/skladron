@@ -5,6 +5,11 @@
 -- склада, сервер сам вычисляет разницу с сохранённой и списывает по прайсу.
 
 -- ---------- прайс ----------
+-- Версия боевого движка. Должна совпадать с SIMULATION_VERSION в
+-- lib/tuning.ts: по ней отсекаются бои, посчитанные прежней геометрией волн.
+create or replace function sim_version() returns int
+language sql immutable as $$ select 3 $$;
+
 -- держим в одном месте, чтобы клиент и сервер не разъезжались
 create or replace function price(kind text) returns int
 language sql immutable as $$
@@ -401,7 +406,22 @@ alter table attacks add column if not exists trace text;
 -- Версия движка и краткоживущий claim не дают двум серверным расчётам
 -- одновременно закрывать один бой и не позволяют старому движку молча
 -- проигрывать новый повтор.
-alter table attacks add column if not exists simulation_version int not null default 3;
+--
+-- Колонку заводим пустой, а не сразу с умолчанием: иначе все бои, что уже
+-- лежат в базе, разом объявили бы себя нынешней версией, и старый повтор
+-- проигрывался бы новой геометрией волн — молча и неверно. Пустые — это
+-- ровно те, что писались до версий.
+alter table attacks add column if not exists simulation_version int;
+
+-- Бои прежних версий отыграть нечем: волны у них строились иначе, и запись
+-- рук к новой геометрии не подходит. Пока игра не вышла, такие просто
+-- вычищаем — и старые, и те, что останутся от следующего поднятия версии.
+-- Прогон схемы после смены sim_version() сам подметает за собой.
+delete from attacks
+ where simulation_version is null or simulation_version <> sim_version();
+
+alter table attacks alter column simulation_version set default sim_version();
+alter table attacks alter column simulation_version set not null;
 alter table attacks add column if not exists resolving_token uuid;
 alter table attacks add column if not exists resolving_at timestamptz;
 alter table attacks add column if not exists snap_base_updated_at timestamptz;
@@ -466,8 +486,11 @@ drop function if exists send_attack(text, int, text, int, int, jsonb, int);
 drop function if exists pending_attacks();
 -- дронов теперь списывает сервер: клиент больше не присылает свой склад
 drop function if exists spend_scouts(int, jsonb);
--- complete_attack принимает ещё и запись боя
+-- Итог настоящего налёта считает сервер (resolve_attack), клиент его больше
+-- не присылает. Обе прежние подписи сносим: дублирующая ветка, которую никто
+-- не зовёт, рано или поздно разъедется с рабочей.
 drop function if exists complete_attack(uuid, text, jsonb, jsonb, jsonb);
+drop function if exists complete_attack(uuid, text, jsonb, jsonb, jsonb, text);
 -- attack_reports отдаёт ещё и повтор боя
 drop function if exists attack_reports();
 -- collect_income отдаёт ещё и что было продано с отгрузкой
@@ -1263,7 +1286,7 @@ begin
           + coalesce((result->>'killedByMg')::int, 0);
   -- Здесь про размер роя ничего не известно: бой мог быть и с ботом, и с
   -- атакой, отправленной при прежнем потолке. Точную сверку с числом
-  -- высланных дронов делает complete_attack; тут — только защита от чуши.
+  -- высланных дронов делает resolve_attack; тут — только защита от чуши.
   if killed < 0 or killed > 100000 then
     raise exception 'bad killed drone count';
   end if;
@@ -1326,82 +1349,6 @@ begin
 end;
 $$;
 
--- Защитник завершает конкретный входящий налёт. В одной транзакции сохраняем
--- его склад, закрываем очередь и начисляем добычу отправителю.
-create or replace function complete_attack(
-  attack_id uuid,
-  new_cells text,
-  new_guns jsonb,
-  new_depots jsonb,
-  result jsonb,
-  battle_trace text default ''
-) returns table (credits int, intact int)
-language plpgsql security definer set search_path = public as $$
-declare
-  uid uuid := auth.uid();
-  order_row attacks;
-  defender_credits int;
-  defender_intact int;
-  earned int;
-  snap_map text;
-  snap_g jsonb;
-  snap_d jsonb;
-  snap_lv jsonb;
-begin
-  if uid is null then raise exception 'not authenticated'; end if;
-  select a.* into order_row from attacks a where a.id = attack_id for update;
-  if not found or order_row.defender_id <> uid then raise exception 'attack not found'; end if;
-  if order_row.status <> 'pending' then raise exception 'attack already resolved'; end if;
-  if coalesce((result->>'dronesSent')::int, -1) <> order_row.drones then
-    raise exception 'attack drone count mismatch';
-  end if;
-  if coalesce((result->>'leaked')::int, -1) < 0
-     or coalesce((result->>'leaked')::int, -1) > order_row.drones then
-    raise exception 'bad leaked drone count';
-  end if;
-  if coalesce((result->>'killedByGuns')::int, 0)
-       + coalesce((result->>'killedByMg')::int, 0)
-       + coalesce((result->>'leaked')::int, 0) > order_row.drones then
-    raise exception 'attack result exceeds sent drones';
-  end if;
-
-  -- Слепок склада до боя: по нему нападавший и посмотрит повтор. Снимаем
-  -- до apply_battle — дальше карта уже будет обгорелой.
-  select encode(b.cells, 'base64'), b.guns, b.drone_cells
-    into snap_map, snap_g, snap_d
-    from bases b where b.user_id = uid;
-  select p.levels into snap_lv from profiles p where p.id = uid;
-
-  select applied.credits, applied.intact
-    into defender_credits, defender_intact
-    from apply_battle(new_cells, new_guns, new_depots, result) applied;
-
-  -- Премия нападающему за нанесённый ущерб: по цене за каждую сожжённую
-  -- клетку. У защитника с этого ничего не списывается — его убыток и так
-  -- в пепелище, а страховку ему платит apply_battle.
-  earned := coalesce((result->>'burned')::int, 0) * price('loot');
-
-  update profiles
-     set credits = profiles.credits + earned,
-         stats = jsonb_set(
-           profiles.stats,
-           '{looted}',
-           to_jsonb((profiles.stats->>'looted')::int + earned)
-         )
-   where id = order_row.attacker_id;
-
-  update attacks
-     set status = 'resolved', result = complete_attack.result, loot = earned,
-         destroyed = defender_intact = 0, resolved_at = now(),
-         snap_cells = snap_map, snap_guns = snap_g,
-         snap_depots = snap_d, snap_levels = snap_lv,
-         trace = battle_trace
-   where id = attack_id;
-
-  return query select defender_credits, defender_intact;
-end;
-$$;
-
 -- ---------- итог настоящего налёта, посчитанный сервером ----------
 -- Бой детерминирован, а недетерминированы только руки защитника. Поэтому
 -- клиент присылает лишь запись своих рук, сервер прогоняет бой сам и зовёт
@@ -1412,6 +1359,21 @@ $$;
 -- Короткий claim: блокируем налёт, снимаем слепок склада и версии, отдаём
 -- серверу всё нужное для расчёта. Пока claim жив (две минуты), склад
 -- защитника не принимают к сохранению — иначе расчёт уедет от слепка.
+-- Снять заявку, не закрывая бой. Нужна, когда расчёт сорвался: без неё
+-- сорвавшийся бой две минуты отвечал «уже считается», и защитник не мог
+-- ни повторить, ни сдвинуть очередь — а очередь у него одна.
+create or replace function release_attack(attack_id uuid, claim_token uuid)
+returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  update attacks
+     set resolving_token = null, resolving_at = null
+   where id = attack_id
+     and status = 'pending'
+     and resolving_token = claim_token;
+end;
+$$;
+
 create or replace function claim_attack(attack_id uuid)
 returns table (
   token uuid,
@@ -1893,11 +1855,33 @@ $$;
 -- Postgres по умолчанию отдаёт EXECUTE всем (PUBLIC), поэтому одних grant
 -- мало: с функций, которые принимают игрока параметром, право надо снимать
 -- явно. Иначе любой вошедший мог бы завершить чужой бой за кого угодно.
-revoke all on function apply_battle_for(uuid, text, jsonb, jsonb, jsonb) from public;
-revoke all on function resolve_attack(uuid, text, jsonb, jsonb, jsonb, text, uuid) from public;
-revoke all on function claim_attack(uuid) from public;
--- Итог настоящего налёта клиент больше не присылает: его считает сервер.
-revoke all on function complete_attack(uuid, text, jsonb, jsonb, jsonb, text) from public;
+-- Служебные функции: их зовёт только сервер под service_role.
+--
+-- Одного «revoke from public» мало, и это важно. Postgres отдаёт EXECUTE
+-- роли PUBLIC при создании функции, но Supabase вдобавок раздаёт его
+-- напрямую ролям anon, authenticated и service_role — своими default
+-- privileges на схему public. Снимешь только с PUBLIC — у authenticated
+-- останется его собственное право, и любой вошедший сможет позвать
+-- apply_battle_for с чужим id и снести чужой склад. Поэтому снимаем со
+-- всех поимённо и тут же возвращаем ровно service_role.
+do $perm$
+declare fn text;
+begin
+  foreach fn in array array[
+    'apply_battle_for(uuid, text, jsonb, jsonb, jsonb)',
+    'resolve_attack(uuid, text, jsonb, jsonb, jsonb, text, uuid)',
+    'claim_attack(uuid)',
+    'release_attack(uuid, uuid)',
+    -- Просрочку по займу закрывает сервер изнутри collect_income и repay_loan.
+    -- Снаружи её звать некому: функция принимает чужой id, а id соперника
+    -- виден обеим сторонам боя.
+    'settle_loan(uuid)'
+  ] loop
+    execute format('revoke all on function %s from public, anon, authenticated', fn);
+    execute format('grant execute on function %s to service_role', fn);
+  end loop;
+end
+$perm$;
 
 grant execute on function ensure_player, collect_income, save_base,
   buy_drones, apply_battle, wipe_base, rename_base, save_enemies,

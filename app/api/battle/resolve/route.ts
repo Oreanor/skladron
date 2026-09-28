@@ -119,6 +119,16 @@ export async function POST(request: Request) {
     simulationVersion: snap.simulation_version ?? 1,
   };
 
+  /**
+   * Заявку снимаем на любом отказе. Иначе сорвавшийся расчёт две минуты
+   * держал бы бой занятым: повторить нельзя, а очередь у защитника одна —
+   * за ней встают все следующие налёты.
+   */
+  const giveUp = async (message: string, status: number) => {
+    await db.rpc("release_attack", { attack_id: attackId, claim_token: snap.token });
+    return Response.json({ error: message }, { status });
+  };
+
   let verdict;
   try {
     verdict = resolveBattle({
@@ -136,10 +146,7 @@ export async function POST(request: Request) {
       trace,
     });
   } catch (err) {
-    return Response.json(
-      { error: err instanceof Error ? err.message : "battle failed" },
-      { status: 400 }
-    );
+    return giveUp(err instanceof Error ? err.message : "battle failed", 400);
   }
 
   const { data, error } = await db.rpc("resolve_attack", {
@@ -151,7 +158,10 @@ export async function POST(request: Request) {
     battle_trace: trace,
     claim_token: snap.token,
   });
-  if (error) return Response.json({ error: error.message }, { status: 400 });
+  // Сюда попадаем и когда склад успел измениться между заявкой и записью:
+  // resolve_attack сверяет снимок и отказывается. Заявку снимаем, чтобы
+  // защитник мог отбиться заново, а не ждал две минуты.
+  if (error) return giveUp(error.message, 400);
 
   const row = (data as { credits: number; intact: number }[] | null)?.[0];
   return Response.json({

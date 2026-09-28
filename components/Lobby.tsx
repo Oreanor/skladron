@@ -714,6 +714,11 @@ export default function Lobby({
           forceRender((v) => v + 1);
         } catch (e) {
           setMessage(tRef.current("auto.notSaved", { error: (e as Error).message }));
+          // Сервер не принял итог — значит налёт у него всё ещё в очереди.
+          // Снимаем отметку, иначе опрос будет вечно выкидывать его из
+          // списка, а очередь разбирается строго по одному: за ним встанут
+          // все следующие и не сдвинутся до перезагрузки страницы.
+          resolvedRef.current.delete(head.id);
           // урон не записался — не тащим сгоревшую карту дальше, иначе
           // отвергаться будет и ремонт, и всё остальное
           await resyncBase();
@@ -901,6 +906,9 @@ export default function Lobby({
             forceRender((v) => v + 1);
           } catch (e) {
             setMessage(t("battle.notSaved", { error: (e as Error).message }));
+            // Тот же случай: у сервера бой остался неотбитым, и показать его
+            // снова надо — иначе отбиваться будет нечем, а очередь встанет.
+            resolvedRef.current.delete(battle.id);
             await resyncBase();
           } finally {
             loadRaids();

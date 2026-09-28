@@ -81,6 +81,10 @@ export interface Drone {
    * дрон не летит на цель и не взрывается, но его всё ещё можно сбить.
    */
   heldBy: number;
+  /** Секунда боя, на которой дрон вырвется из магнита. */
+  heldUntil: number;
+  /** И секунда, раньше которой его не схватят снова. */
+  grabAt: number;
 }
 
 export interface Missile {
@@ -331,9 +335,12 @@ function ignite(s: GameState, i: number) {
 }
 
 /** Сбрасывает захват у всех дронов, которых держала эта ловушка. */
+/** Магнит погиб — всех, кого он держал, отпускаем с той же передышкой. */
 function releaseHeld(s: GameState, trapId: number) {
   for (const d of s.drones) {
-    if (d.heldBy === trapId) d.heldBy = 0;
+    if (d.heldBy !== trapId) continue;
+    d.heldBy = 0;
+    d.grabAt = s.time + TRAP.regrab;
   }
 }
 
@@ -561,6 +568,8 @@ function spawnDrone(s: GameState, t: SpawnTicket) {
     over: 0,
     fuel: SUPPRESS.loiter,
     heldBy: 0,
+    heldUntil: 0,
+    grabAt: 0,
   });
 }
 
@@ -782,7 +791,7 @@ function captureTraps(s: GameState) {
     if (d.heldBy > 0) held.set(d.heldBy, (held.get(d.heldBy) ?? 0) + 1);
   }
   for (const d of s.drones) {
-    if (d.heldBy > 0 || d.hit || d.over) continue;
+    if (d.heldBy > 0 || d.hit || d.over || s.time < d.grabAt) continue;
     let best: Gun | null = null;
     let bestD = r2;
     for (const g of s.guns) {
@@ -798,6 +807,7 @@ function captureTraps(s: GameState) {
     }
     if (!best) continue;
     d.heldBy = best.id;
+    d.heldUntil = s.time + TRAP.hold;
     d.form = false;
     held.set(best.id, (held.get(best.id) ?? 0) + 1);
   }
@@ -858,7 +868,12 @@ export function update(s: GameState, dt: number) {
     if (d.heldBy > 0) {
       const host = gunsById.get(d.heldBy);
       const reach = trapRange(s);
+      // Вырваться можно двумя путями: выйдет срок или не станет магнита.
+      // Срок обязателен — на орбите радиуса TRAP.orbit дрон из круга
+      // ловушки не выходит никогда, и без срока он висел бы там до конца
+      // боя, а бой не кончался бы вовсе.
       if (
+        s.time >= d.heldUntil ||
         !host ||
         !host.alive ||
         !host.trap ||
@@ -866,6 +881,7 @@ export function update(s: GameState, dt: number) {
           reach * reach
       ) {
         d.heldBy = 0;
+        d.grabAt = s.time + TRAP.regrab;
       } else {
         pullHeld(s, d, host, dt);
         continue;
