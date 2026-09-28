@@ -421,6 +421,7 @@ function aimTick(s: GameState) {
 
   const len = Math.hypot(best.tx - best.x, best.ty - best.y) || 1;
   best.hit = true;
+  best.heldBy = 0;
   best.hx = (best.tx - best.x) / len;
   best.hy = (best.ty - best.y) / len;
   best.fuse = DRONE.glide;
@@ -662,6 +663,7 @@ function suppressFall(s: GameState, d: Drone) {
   }
   const len = Math.hypot(d.tx - d.x, d.ty - d.y) || 0.01;
   d.hit = true;
+  d.heldBy = 0;
   d.hx = (d.tx - d.x) / len;
   d.hy = (d.ty - d.y) / len;
   d.fuse = Math.min(DRONE.glide, len);
@@ -676,7 +678,12 @@ function suppressFall(s: GameState, d: Drone) {
  * свободном облёте — падает и жжёт; над жертвой или жертва сгорела — уходит
  * с карты (прорвавшийся).
  */
-function loiterTick(s: GameState, d: Drone, dt: number) {
+function loiterTick(
+  s: GameState,
+  d: Drone,
+  dt: number,
+  gunsById: Map<number, Gun>
+) {
   d.fuel -= dt;
 
   // Свободный облёт: жертвы не было с посадки. Кружит над живыми клетками
@@ -701,7 +708,7 @@ function loiterTick(s: GameState, d: Drone, dt: number) {
     return;
   }
 
-  const host = s.guns.find((g) => g.id === d.over);
+  const host = gunsById.get(d.over);
   if (!host || !host.alive || d.fuel <= 0) {
     const at = s.drones.indexOf(d);
     if (at >= 0) s.drones.splice(at, 1);
@@ -817,6 +824,11 @@ export function update(s: GameState, dt: number) {
   }
 
   // --- дроны ---
+  // Карта установок по id — один раз на тик: захваченных и кружащих
+  // подавителей иначе каждый кадр гоняли бы через guns.find.
+  const gunsById = new Map<number, Gun>();
+  for (const g of s.guns) gunsById.set(g.id, g);
+
   for (let i = s.drones.length - 1; i >= 0; i--) {
     const d = s.drones[i];
 
@@ -841,14 +853,10 @@ export function update(s: GameState, dt: number) {
       continue;
     }
 
-    // Глушит он с первой секунды полёта, а не только на круге: пушки
-    // стреляют ниже по этому же кадру и заглушёнными его уже не достанут.
-    suppressTick(s, d);
-
-    // Ловушка держит дрона на орбите: не летит на цель и не взрывается,
-    // но его всё ещё можно сбить пулемётом или зениткой.
+    // Ловушка держит дрона на орбите: не летит, не взрывается и не глушит —
+    // полезная нагрузка заморожена, пока магнит держит.
     if (d.heldBy > 0) {
-      const host = s.guns.find((g) => g.id === d.heldBy);
+      const host = gunsById.get(d.heldBy);
       const reach = trapRange(s);
       if (
         !host ||
@@ -864,12 +872,16 @@ export function update(s: GameState, dt: number) {
       }
     }
 
+    // Глушит он с первой секунды полёта, а не только на круге: пушки
+    // стреляют ниже по этому же кадру и заглушёнными его уже не достанут.
+    suppressTick(s, d);
+
     // Дойдя до склада, подавитель садится на круг над своей жертвой и висит,
     // пока есть топливо. Проверяем до всего прочего: на круге ему не нужны
     // ни цель, ни строй, а сгоревшая цель не должна унести его мимо
     // статистики.
     if (d.over) {
-      loiterTick(s, d, dt);
+      loiterTick(s, d, dt, gunsById);
       continue;
     }
 

@@ -401,7 +401,7 @@ alter table attacks add column if not exists trace text;
 -- Версия движка и краткоживущий claim не дают двум серверным расчётам
 -- одновременно закрывать один бой и не позволяют старому движку молча
 -- проигрывать новый повтор.
-alter table attacks add column if not exists simulation_version int not null default 2;
+alter table attacks add column if not exists simulation_version int not null default 3;
 alter table attacks add column if not exists resolving_token uuid;
 alter table attacks add column if not exists resolving_at timestamptz;
 alter table attacks add column if not exists snap_base_updated_at timestamptz;
@@ -671,7 +671,7 @@ begin
           head->>'pattern', coalesce((head->>'direction')::int, 0),
           attack_seed, attack_waves,
           (select coalesce((p.levels->>'drones')::int, 1) from profiles p where p.id = uid),
-          2)
+          3)
   returning attacks.id into order_id;
   id := order_id;
   depots := next_depots;

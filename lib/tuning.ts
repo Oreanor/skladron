@@ -10,7 +10,7 @@
  */
 
 /** Шаг симуляции и потолки прогона. */
-export const SIMULATION_VERSION = 2;
+export const SIMULATION_VERSION = 3;
 
 export const SIM = {
   /** И бой, и его повтор идут строго этими шагами — иначе повтор разойдётся. */

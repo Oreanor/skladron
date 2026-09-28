@@ -1753,11 +1753,13 @@ export default function Lobby({
         }
         if (label) {
           const zoom = view?.zoom || 1;
+          // На 0.5× 1/zoom=2 раздувает чип; потолок держит экранный размер в рамках.
+          const inv = Math.min(1 / zoom, 1.35);
           const px = (cx + 0.5) * cell;
           const py = cy * cell - cell * 0.35;
           ctx.save();
           ctx.translate(px, py);
-          ctx.scale(1 / zoom, 1 / zoom);
+          ctx.scale(inv, inv);
           ctx.font = "600 12px ui-sans-serif, system-ui, sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";

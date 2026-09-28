@@ -305,6 +305,8 @@ export default function Battle({
                 <Row label={t("battle.extinguished")} value={String(done.result.extinguished)} />
                 <Row label={t("battle.dronesLost")} value={String(done.result.dronesLost)} />
                 <Row label={t("battle.gunsLost")} value={String(done.result.gunsLost)} />
+                <Row label={t("battle.spraysLost")} value={String(done.result.spraysLost)} />
+                <Row label={t("battle.trapsLost")} value={String(done.result.trapsLost)} />
               </dl>
               <Button variant="neutral" block onClick={() => onFinish(done)}>
                 {t("battle.back")}

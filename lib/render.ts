@@ -196,11 +196,13 @@ export function drawStatic(
     ctx.strokeStyle = "rgba(0, 0, 0, 0.12)";
     ctx.lineWidth = 0.5 / zoom;
     ctx.beginPath();
-    for (let i = 0; i <= GRID; i++) {
-      ctx.moveTo(i * cell, 0);
-      ctx.lineTo(i * cell, GRID * cell);
-      ctx.moveTo(0, i * cell);
-      ctx.lineTo(GRID * cell, i * cell);
+    for (let i = x0; i <= x1; i++) {
+      ctx.moveTo(i * cell, y0 * cell);
+      ctx.lineTo(i * cell, y1 * cell);
+    }
+    for (let i = y0; i <= y1; i++) {
+      ctx.moveTo(x0 * cell, i * cell);
+      ctx.lineTo(x1 * cell, i * cell);
     }
     ctx.stroke();
   }
@@ -714,7 +716,7 @@ export function drawFrame(
   // установок рой уже дотянулся. Обводка пульсирует — иначе на пёстрой
   // карте кольцо теряется среди прочих кругов.
   const jammers = s.drones.filter(
-    (d) => !d.hit && (d.payload === "jammer" || d.payload === "foamer")
+    (d) => !d.hit && !d.heldBy && (d.payload === "jammer" || d.payload === "foamer")
   );
   if (jammers.length) {
     const reach = suppressRange(s) * cell;

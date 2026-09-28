@@ -69,8 +69,11 @@ export function createScout(
   gunLevel = 1
 ): ScoutState {
   const k = levelBonus(level, SCOUT.perLevel);
-  // огнетушители по самолётам не стреляют — в разведке их просто нет
-  guns = guns.filter((g) => gunKind(g) !== "spray");
+  // огнетушители и ловушки по самолётам не стреляют — в разведке их просто нет
+  guns = guns.filter((g) => {
+    const kind = gunKind(g);
+    return kind !== "spray" && kind !== "trap";
+  });
   return {
     cells,
     guns,
