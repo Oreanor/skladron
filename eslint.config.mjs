@@ -20,6 +20,12 @@ const config = [
       ],
     },
   },
+  {
+    // Проверочный прогон — обычный node-скрипт, а не часть сборки: он и
+    // должен подключать собранные модули через require.
+    files: ["scripts/**/*.cjs"],
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
 ];
 
 export default config;
