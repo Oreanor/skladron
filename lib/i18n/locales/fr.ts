@@ -10,6 +10,7 @@ const fr: Dict = {
   "tg.link": "Relier Telegram",
   "tg.unlink": "Délier",
   "tg.noBot": "Dans cette version le bot n’est pas configuré.",
+  "tg.afterStart": "Après Start dans Telegram, reviens ici — le statut se met à jour en quelques secondes. Une seule liaison suffit.",
   "talk.empty": "Personne n’a encore commenté ce combat.",
   "talk.placeholder": "Dis quelque chose sur ce combat",
   "talk.send": "Envoyer",

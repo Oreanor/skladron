@@ -467,6 +467,37 @@ export default function Lobby({
     return () => window.clearTimeout(timer);
   }, [message]);
 
+  // Пока открыто окно телеграма — периодически и по возврату во вкладку
+  // спрашиваем статус: Start в боте бывает в другом окне, без опроса кнопка
+  // так и останется «Привязать».
+  useEffect(() => {
+    if (modal !== "telegram") return;
+    let alive = true;
+    const pull = () => {
+      void repo
+        .telegram()
+        .then((row) => {
+          if (alive) setTelegram(row);
+        })
+        .catch(() => {
+          if (alive) setTelegram(null);
+        });
+    };
+    pull();
+    const tick = window.setInterval(pull, 2500);
+    const onShow = () => {
+      if (!document.hidden) pull();
+    };
+    document.addEventListener("visibilitychange", onShow);
+    window.addEventListener("focus", onShow);
+    return () => {
+      alive = false;
+      window.clearInterval(tick);
+      document.removeEventListener("visibilitychange", onShow);
+      window.removeEventListener("focus", onShow);
+    };
+  }, [modal, repo]);
+
   const p = playerRef.current;
   /**
    * Всё, что требует прохода по десяти тысячам клеток. Пересчитываем только
@@ -2021,6 +2052,7 @@ export default function Lobby({
       email={account?.email ?? null}
       onTelegram={() => {
         setModal("telegram");
+        setTelegram(null);
         void repo.telegram().then(setTelegram).catch(() => setTelegram(null));
       }}
       onRules={() => setShowRules(true)}
@@ -2312,6 +2344,9 @@ export default function Lobby({
           <p className="text-sm text-neutral-300">
             {telegram?.linked ? t("tg.linked") : t("tg.explain")}
           </p>
+          {!telegram?.linked && TG_BOT && (
+            <p className="mt-2 text-xs text-neutral-500">{t("tg.afterStart")}</p>
+          )}
           {!TG_BOT && <p className="mt-2 text-xs text-neutral-500">{t("tg.noBot")}</p>}
         </Modal>
       )}

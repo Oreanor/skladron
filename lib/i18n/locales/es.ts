@@ -10,6 +10,7 @@ const es: Dict = {
   "tg.link": "Vincular Telegram",
   "tg.unlink": "Desvincular",
   "tg.noBot": "En esta versión el bot no está configurado.",
+  "tg.afterStart": "Tras Start en Telegram, vuelve aquí: el estado se actualiza en unos segundos. Solo hace falta vincular una vez.",
   "talk.empty": "Nadie ha comentado este combate todavía.",
   "talk.placeholder": "Di algo sobre este combate",
   "talk.send": "Enviar",

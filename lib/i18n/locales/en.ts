@@ -11,6 +11,7 @@ const en = {
   "tg.link": "Link Telegram",
   "tg.unlink": "Unlink",
   "tg.noBot": "The bot is not set up in this build.",
+  "tg.afterStart": "After Start in Telegram, come back here — the status updates in a couple of seconds. You only need to link once.",
   "talk.empty": "No comments on this battle yet.",
   "talk.placeholder": "Say something about this battle",
   "talk.send": "Send",
