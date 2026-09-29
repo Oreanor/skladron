@@ -47,7 +47,8 @@ const en: RuleSection[] = [
     title: "Raids",
     lines: [
       "Add a rival by e-mail — they have to be playing too.",
-      "Build the raid from waves: each has its own pattern, side and warheads (plain, double charge, gun or sprinkler jammer). Up to {maxRaid} drones. A bigger swarm makes the formation denser — the raid barely lasts longer. Drones leave the warehouse at once; warheads cost an extra credit surcharge.",
+      "Build the raid from waves: each has its own pattern, side and warheads (plain, double charge, gun, sprinkler or trap jammer, stealth). Up to {maxRaid} drones. A bigger swarm makes the formation denser — the raid barely lasts longer. Drones leave the warehouse at once; warheads cost an extra credit surcharge.",
+      "The trap jammer works the same way, but its circle is half a trap's — it has to come in close, under the guns. While the circle covers a trap, the trap holds nobody and lets the caught go.",
       "A stealth warhead blows up like a plain one, but guns and launchers do not see it at all — neither will aim, and no missile will lock on. Only your own hands and the traps are left against it.",
       "The defender fights the raid on their own screen. You get a report afterwards — and can watch the whole thing replayed.",
       "For every cell you burn down you get a {loot} cr bonus. The defender gets a defence bounty: {defendClean} cr per drone when nothing burns, or {defendDirty} cr per drone minus {defendBurn} cr per burnt cell. Insurance pays them {insureCell} cr per burnt cell — exactly the repair. The basic policy stops there; every level of it adds {insureShare}% cover for goods and guns lost in the fire, up to the full value.",
@@ -115,7 +116,8 @@ const ru: RuleSection[] = [
     title: "Налёты",
     lines: [
       "Добавь соперника по почте — он тоже должен играть.",
-      "Собери налёт из волн: у каждой свой рисунок, сторона и начинка (простая, двойная, подавление пушек или огнетушителей). До {maxRaid} дронов. Чем больше рой, тем гуще строй — налёт почти не растягивается. Дроны уходят со склада сразу, за начинку доплачиваются кредиты.",
+      "Собери налёт из волн: у каждой свой рисунок, сторона и начинка (простая, двойная, подавление пушек, огнетушителей или ловушек, невидимка). До {maxRaid} дронов. Чем больше рой, тем гуще строй — налёт почти не растягивается. Дроны уходят со склада сразу, за начинку доплачиваются кредиты.",
+      "Подавление ловушек работает так же, но круг у него вдвое меньше, чем у самой ловушки: приходится подходить вплотную, под пушки. Пока круг накрывает магнит, тот никого не держит и отпускает захваченных.",
       "Начинка «невидимка» взрывается как обычная, но пушки и ракетницы её не видят вовсе: ни целятся, ни наводят ракету. Против неё остаются только руки игрока и ловушки.",
       "Налёт отбивает защитник у себя. Тебе приходит отчёт — и повтор боя, который можно посмотреть целиком.",
       "За каждую сожжённую клетку тебе идёт премия {loot} кр. Защитнику — премия за отбой: {defendClean} кр за дрона при чистом отбое, иначе {defendDirty} кр за дрона минус {defendBurn} кр за сгоревшую клетку. Страховая платит {insureCell} кр за клетку — ровно на ремонт. Базовый полис на этом и кончается; каждый его уровень добавляет {insureShare}% покрытия сгоревшего товара и пушек, до полной стоимости.",
@@ -183,7 +185,8 @@ const es: RuleSection[] = [
     title: "Ataques",
     lines: [
       "Añade un rival por correo: también tiene que estar jugando.",
-      "Arma el ataque en oleadas: cada una con su patrón, lado y carga (simple, doble, inhibidor de cañones o de extintores). Hasta {maxRaid} drones. Un enjambre mayor hace la formación más densa — el ataque casi no se alarga. Los drones salen del almacén enseguida; las cargas cuestan un recargo en créditos.",
+      "Arma el ataque en oleadas: cada una con su patrón, lado y carga (simple, doble, inhibidor de cañones, de extintores o de trampas, invisible). Hasta {maxRaid} drones. Un enjambre mayor hace la formación más densa — el ataque casi no se alarga. Los drones salen del almacén enseguida; las cargas cuestan un recargo en créditos.",
+      "El inhibidor de trampas funciona igual, pero su círculo es la mitad del de la trampa: tiene que acercarse mucho, bajo los cañones. Mientras el círculo cubre el imán, este no retiene a nadie y suelta a los capturados.",
       "La carga invisible estalla como la simple, pero los cañones y las lanzaderas no la ven en absoluto: ni apuntan ni guían el misil. Contra ella solo quedan tus manos y las trampas.",
       "El defensor combate el ataque en su pantalla. Tú recibes un informe y la repetición completa del combate.",
       "Por cada celda quemada recibes una prima de {loot} cr. Al defensor, una prima de defensa: {defendClean} cr por dron si no arde nada, o {defendDirty} cr por dron menos {defendBurn} cr por celda quemada. El seguro le paga {insureCell} cr por celda: justo la reparación. La póliza básica acaba ahí; cada nivel añade un {insureShare}% de cobertura de la mercancía y los cañones perdidos, hasta el valor total.",
@@ -251,7 +254,8 @@ const pt: RuleSection[] = [
     title: "Ataques",
     lines: [
       "Adiciona um rival por e-mail — ele também tem de estar a jogar.",
-      "Monta o ataque em vagas: cada uma com o seu padrão, lado e carga (simples, dupla, inibidor de canhões ou de extintores). Até {maxRaid} drones. Um enxame maior torna a formação mais densa — o ataque quase não se alonga. Os drones saem do armazém logo; as cargas custam um extra em créditos.",
+      "Monta o ataque em vagas: cada uma com o seu padrão, lado e carga (simples, dupla, inibidor de canhões, de extintores ou de armadilhas, invisível). Até {maxRaid} drones. Um enxame maior torna a formação mais densa — o ataque quase não se alonga. Os drones saem do armazém logo; as cargas custam um extra em créditos.",
+      "O inibidor de armadilhas funciona igual, mas o seu círculo é metade do da armadilha: tem de chegar perto, debaixo dos canhões. Enquanto o círculo cobre o íman, este não segura ninguém e larga os capturados.",
       "A carga invisível explode como a simples, mas canhões e lançadores não a veem de todo: não apontam nem guiam o míssil. Contra ela restam só as tuas mãos e as armadilhas.",
       "O defensor trava o ataque no ecrã dele. Tu recebes um relatório — e a repetição completa do combate.",
       "Por cada célula queimada recebes um prémio de {loot} cr. Ao defensor, um prémio de defesa: {defendClean} cr por drone se nada arder, ou {defendDirty} cr por drone menos {defendBurn} cr por célula queimada. O seguro paga {insureCell} cr por célula — exatamente a reparação. A apólice básica fica por aí; cada nível acrescenta {insureShare}% de cobertura da mercadoria e dos canhões perdidos, até ao valor total.",
@@ -319,7 +323,8 @@ const fr: RuleSection[] = [
     title: "Raids",
     lines: [
       "Ajoute un rival par e-mail — il doit jouer lui aussi.",
-      "Compose le raid en vagues : chacune a son schéma, son côté et sa charge (simple, double, brouilleur de canons ou d’extincteurs). Jusqu’à {maxRaid} drones. Un plus gros essaim densifie la formation — le raid s’allonge à peine. Les drones quittent l’entrepôt aussitôt ; les charges coûtent un surcoût en crédits.",
+      "Compose le raid en vagues : chacune a son schéma, son côté et sa charge (simple, double, brouilleur de canons, d’extincteurs ou de pièges, furtive). Jusqu’à {maxRaid} drones. Un plus gros essaim densifie la formation — le raid s’allonge à peine. Les drones quittent l’entrepôt aussitôt ; les charges coûtent un surcoût en crédits.",
+      "Le brouilleur de pièges fonctionne pareil, mais son cercle vaut la moitié de celui du piège : il doit venir tout près, sous les canons. Tant que le cercle couvre l’aimant, celui-ci ne retient personne et lâche ses prises.",
       "La charge furtive explose comme une charge simple, mais canons et lance-roquettes ne la voient pas du tout : ni visée, ni guidage. Contre elle il ne reste que tes mains et les pièges.",
       "Le défenseur mène le combat chez lui. Tu reçois un rapport — et le replay complet de la bataille.",
       "Pour chaque case brûlée tu touches une prime de {loot} cr. Le défenseur reçoit une prime de défense : {defendClean} cr par drone si rien ne brûle, ou {defendDirty} cr par drone moins {defendBurn} cr par case brûlée. L’assurance lui verse {insureCell} cr par case — juste la réparation. La police de base s’arrête là ; chaque niveau ajoute {insureShare} % de couverture de la marchandise et des canons perdus, jusqu’à la valeur entière.",
@@ -387,7 +392,8 @@ const de: RuleSection[] = [
     title: "Angriffe",
     lines: [
       "Füge einen Gegner per E-Mail hinzu — er muss ebenfalls spielen.",
-      "Baue den Angriff aus Wellen: jede mit eigenem Muster, Seite und Ladung (einfach, doppelt, Geschütz- oder Sprinklerstörer). Bis {maxRaid} Drohnen. Ein größerer Schwarm macht die Formation dichter — der Angriff dauert kaum länger. Die Drohnen verlassen das Lager sofort; Ladungen kosten einen Kreditaufschlag.",
+      "Baue den Angriff aus Wellen: jede mit eigenem Muster, Seite und Ladung (einfach, doppelt, Geschütz-, Sprinkler- oder Fallenstörer, Tarnkappe). Bis {maxRaid} Drohnen. Ein größerer Schwarm macht die Formation dichter — der Angriff dauert kaum länger. Die Drohnen verlassen das Lager sofort; Ladungen kosten einen Kreditaufschlag.",
+      "Der Fallenstörer arbeitet genauso, doch sein Kreis ist halb so groß wie der der Falle: er muss dicht heran, unter die Geschütze. Solange der Kreis den Magneten deckt, hält dieser niemanden und lässt die Gefangenen los.",
       "Der Tarnkappen-Sprengkopf explodiert wie ein einfacher, doch Geschütze und Werfer sehen ihn gar nicht: kein Zielen, kein Lenken. Gegen ihn bleiben nur deine Hände und die Fallen.",
       "Der Verteidiger schlägt den Angriff bei sich. Du bekommst einen Bericht — und die vollständige Wiederholung des Gefechts.",
       "Für jedes abgebrannte Feld bekommst du eine Prämie von {loot} Cr. Der Verteidiger bekommt eine Abwehrprämie: {defendClean} Cr je Drohne bei sauberer Abwehr, sonst {defendDirty} Cr je Drohne minus {defendBurn} Cr je abgebranntem Feld. Die Versicherung zahlt {insureCell} Cr je Feld — genau die Reparatur. Die Grundpolice endet dort; jede Stufe deckt zusätzlich {insureShare} % von verbrannter Ware und Geschützen, bis zum vollen Wert.",
@@ -455,7 +461,8 @@ const it: RuleSection[] = [
     title: "Attacchi",
     lines: [
       "Aggiungi un rivale per e-mail: deve giocare anche lui.",
-      "Componi l’attacco a ondate: ognuna con schema, lato e carica (semplice, doppia, disturbatore di cannoni o di estintori). Fino a {maxRaid} droni. Uno sciame più grande rende la formazione più fitta — l’attacco quasi non si allunga. I droni lasciano subito il magazzino; le cariche costano un sovrapprezzo in crediti.",
+      "Componi l’attacco a ondate: ognuna con schema, lato e carica (semplice, doppia, disturbatore di cannoni, di estintori o di trappole, invisibile). Fino a {maxRaid} droni. Uno sciame più grande rende la formazione più fitta — l’attacco quasi non si allunga. I droni lasciano subito il magazzino; le cariche costano un sovrapprezzo in crediti.",
+      "Il disturbatore di trappole funziona allo stesso modo, ma il suo cerchio è metà di quello della trappola: deve avvicinarsi molto, sotto i cannoni. Finché il cerchio copre il magnete, questo non trattiene nessuno e libera i catturati.",
       "La carica invisibile esplode come quella semplice, ma cannoni e lanciarazzi non la vedono affatto: niente mira, niente guida. Contro di lei restano solo le tue mani e le trappole.",
       "Il difensore affronta l’attacco da sé. A te arriva un rapporto — e la replica completa della battaglia.",
       "Per ogni cella bruciata ricevi un premio di {loot} cr. Al difensore, un premio di difesa: {defendClean} cr per drone se non brucia nulla, oppure {defendDirty} cr per drone meno {defendBurn} cr per cella bruciata. L’assicurazione paga {insureCell} cr per cella: esattamente la riparazione. La polizza base finisce lì; ogni livello aggiunge il {insureShare}% di copertura di merce e cannoni perduti, fino al valore pieno.",

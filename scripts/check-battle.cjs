@@ -261,12 +261,18 @@ console.log("\n— начинке не по кому работать: целе�
   // смесь на голом складе: обычные жгут, глушилкам работать не по кому
   probe("смесь начинок на голом складе", [],
     [wave("spiral", [g("plain", 20), g("heavy", 10), g("jammer", 10), g("foamer", 10)])], {});
+  // размагничиванию нечего размагничивать: ловушек на складе нет
+  probe("размагничивание без ловушек", spread(30, 9),
+    [wave("swarm", [g("demag", 30)])], { guns: 2 });
+  // ловушки есть, но глушить их нечем — рой идёт смесью
+  probe("размагничивание среди магнитов", spread(30, 9, "trap"),
+    [wave("rings", [g("plain", 30), g("demag", 15)])], { traps: 2 });
   // установки есть, но их снесут в бою — жертва пропадает из-под глушилки
   probe("жертву сносят прямо из-под глушилки", spread(30, 12),
     [wave("swarm", [g("plain", 40), g("jammer", 20)])], { guns: 1 });
 }
 
-console.log("\n— ракетницы и невидимка —");
+console.log("\n— ракетницы, невидимка и размагничивание —");
 {
   const ord = (waves, extra) => order(waves, { seed: 7171, ...extra });
   const run = (guns, waves, levels, extra) =>
@@ -333,6 +339,39 @@ console.log("\n— ракетницы и невидимка —");
       doubled ? `сдвоенных замеров ${doubled}` : `пусков ${launched}, разом до ${peak}`);
     check("след не разрастается", puffs < 4000,
       `клубов разом до ${puffs} при ${peak} ракетах`);
+  }
+
+  // Размагничивание: пока круг накрывает магнит, тот никого не держит.
+  {
+    const traps = spread(30, 9, "trap");
+    const hold = (waves) => {
+      const s = E.createBattle(base(), traps, [],
+        A.buildPlan(ord(waves)), { seed: 7171, traps: 2 });
+      const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);
+      let peak = 0;
+      for (let step = 0; step < cap && s.phase === "playing"; step++) {
+        E.update(s, T.SIM.step);
+        let n = 0;
+        for (const d of s.drones) if (d.heldBy > 0) n++;
+        if (n > peak) peak = n;
+      }
+      return peak;
+    };
+    const withDemag = hold([wave("swarm", [g("plain", 40), g("demag", 10)])]);
+    const without = hold([wave("swarm", [g("plain", 50)])]);
+    check("размагничивание срывает захват", withDemag < without,
+      `без него держало до ${without}, с ним до ${withDemag}`);
+  }
+
+  // Круг у размагничивания вдвое короче ловушечного — на том и держится
+  // весь размен: подойти надо вплотную, под пушки.
+  {
+    const trapReach = E.trapRange({ trapLevel: 1 });
+    const demagReach = E.suppressRange({ droneLevel: 1 }, "demag");
+    const jamReach = E.suppressRange({ droneLevel: 1 }, "jammer");
+    check("радиус размагничивания — половина ловушечного",
+      Math.abs(demagReach - trapReach / 2) < 1e-9 && demagReach < jamReach,
+      `ловушка ${trapReach}, размагничивание ${demagReach}, глушилка ${jamReach}`);
   }
 }
 

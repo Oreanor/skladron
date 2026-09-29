@@ -373,6 +373,7 @@ const PAYLOAD_KEYS: Record<Payload, Key> = {
   heavy: "payload.heavy",
   jammer: "payload.jammer",
   foamer: "payload.foamer",
+  demag: "payload.demag",
   stealth: "payload.stealth",
 };
 

@@ -358,6 +358,8 @@ const it: Dict = {
   "payload.jammerHint": "non esplode: zittisce i cannoni nel raggio già in volo. Con cannone — ~30 s di orbita caotica; senza — ~30 s sopra il magazzino e cade incendiano una cella. Solo la mitragliatrice lo abbatte.",
   "payload.foamer": "Disturbatore di estintori",
   "payload.foamerHint": "lo stesso per gli estintori: raggio in volo, ~30 s sopra uno — o sopra il magazzino e caduta con fuoco se non ne restano",
+  "payload.demag": "Soppressione trappole",
+  "payload.demagHint": "lo stesso per le trappole: le smagnetizza già in volo — finché il cerchio copre una trappola, questa non trattiene nessuno e libera i catturati. ~30 s sopra una trappola; se non ce ne sono, altrettanto sopra il magazzino, poi cade e incendia una cella.",
   "payload.stealth": "Invisibile",
   "payload.stealthHint": "esplode come quella semplice, ma cannoni e lanciarazzi non la vedono affatto: niente mira, niente guida. Restano le tue mani e le trappole.",
   "raid.pattern": "Schema delle ondate",

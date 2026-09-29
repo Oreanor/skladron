@@ -358,6 +358,8 @@ const fr: Dict = {
   "payload.jammerHint": "n’explose pas : fait taire les canons dans son rayon dès le vol. Avec un canon — ~30 s d’orbite chaotique ; sans — ~30 s au-dessus de l’entrepôt puis chute et incendie. Seule la mitrailleuse l’abat.",
   "payload.foamer": "Brouilleur d’extincteurs",
   "payload.foamerHint": "pareil pour les extincteurs : rayon en vol, ~30 s au-dessus d’un — ou au-dessus de l’entrepôt puis chute incendiaire s’il n’en reste pas",
+  "payload.demag": "Brouillage des pièges",
+  "payload.demagHint": "la même chose pour les pièges : il les démagnétise déjà en vol — tant que le cercle couvre un piège, celui-ci ne retient personne et lâche ses prises. ~30 s au-dessus d’un piège ; s’il n’y en a pas, autant au-dessus de l’entrepôt, puis il tombe et embrase une case.",
   "payload.stealth": "Furtif",
   "payload.stealthHint": "explose comme un simple, mais canons et lance-roquettes ne le voient pas du tout : ni visée, ni guidage. Il ne reste que tes mains et les pièges.",
   "raid.pattern": "Motif des vagues",

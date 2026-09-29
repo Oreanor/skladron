@@ -374,25 +374,25 @@ export function drawFrame(
   // круг: глушат они с первой секунды полёта, и по кругу видно, до каких
   // установок рой уже дотянулся. Обводка пульсирует — иначе на пёстрой
   // карте кольцо теряется среди прочих кругов.
-  const jammers = s.drones.filter(
-    (d) => !d.hit && !d.heldBy && (d.payload === "jammer" || d.payload === "foamer")
-  );
+  const jammers = s.drones.filter((d) => !d.hit && !d.heldBy && COLORS.suppress[d.payload]);
   if (jammers.length) {
-    const reach = suppressRange(s) * cell;
     const pulse = 0.75 + 0.25 * Math.sin(now / 160);
     for (const d of jammers) {
-      const foam = d.payload === "foamer";
+      const look = COLORS.suppress[d.payload];
+      // Радиус у размагничивания свой, вдвое короче: круг рисуем по дрону,
+      // а не один на всех.
+      const reach = suppressRange(s, d.payload) * cell;
       const x = d.x * cell;
       const y = d.y * cell;
 
       ctx.beginPath();
       ctx.arc(x, y, reach, 0, Math.PI * 2);
-      ctx.fillStyle = foam ? COLORS.foamFill : COLORS.jamFill;
+      ctx.fillStyle = look.fill;
       ctx.fill();
 
       // сплошной обод плюс бегущий пунктир поверх: круг читается и на
       // выгоревшем чёрном, и на белом складе
-      ctx.strokeStyle = foam ? COLORS.foam : COLORS.jam;
+      ctx.strokeStyle = look.line;
       ctx.lineWidth = Math.max(1.5, cell * 0.2 * pulse);
       ctx.stroke();
 
@@ -436,22 +436,18 @@ export function drawFrame(
 
     // Топливо подавителя — дугой вокруг боеголовки, как бак огнетушителя.
     // Горит только на круге над жертвой; пока летит — полный запас (~30 с).
-    if (
-      !d.hit &&
-      (d.payload === "jammer" || d.payload === "foamer") &&
-      d.fuel > 0
-    ) {
+    const look = d.hit ? undefined : COLORS.suppress[d.payload];
+    if (look && d.fuel > 0) {
       const frac = Math.max(0, Math.min(1, d.fuel / SUPPRESS.loiter));
-      const foam = d.payload === "foamer";
       const ring = r * 0.7;
       ctx.beginPath();
       ctx.arc(px, py, ring, 0, Math.PI * 2);
-      ctx.strokeStyle = foam ? "rgba(34, 211, 238, 0.25)" : "rgba(168, 85, 247, 0.25)";
+      ctx.strokeStyle = look.faint;
       ctx.lineWidth = Math.max(1.5, cell * 0.16);
       ctx.stroke();
       ctx.beginPath();
       ctx.arc(px, py, ring, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * frac);
-      ctx.strokeStyle = foam ? COLORS.foam : COLORS.jam;
+      ctx.strokeStyle = look.line;
       ctx.stroke();
     }
   }
@@ -464,7 +460,13 @@ export function drawFrame(
     const x = (g.cx + 0.5) * cell;
     const y = (g.cy + 0.5) * cell;
     const rr = cell * 0.55;
-    ctx.strokeStyle = g.spray ? COLORS.foamed : COLORS.jammed;
+    // Крестик красим по тому, кто эту установку и глушит.
+    ctx.strokeStyle = (g.trap
+      ? COLORS.suppress.demag
+      : g.spray
+        ? COLORS.suppress.foamer
+        : COLORS.suppress.jammer
+    ).crossed;
     ctx.lineWidth = Math.max(1, cell * 0.16);
     ctx.beginPath();
     ctx.moveTo(x - rr, y - rr);

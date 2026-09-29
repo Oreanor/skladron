@@ -358,6 +358,8 @@ const en = {
   "payload.jammerHint": "does not blow up: jams guns in its radius while flying. With a gun — ~30s chaotic orbit around it; with none — ~30s over the warehouse, then falls and burns a cell. Only the machine gun can bring it down.",
   "payload.foamer": "Sprinkler jammer",
   "payload.foamerHint": "the same for sprinklers: radius in flight, then ~30s over one — or over the warehouse and a crash-burn if none are left",
+  "payload.demag": "Trap jammer",
+  "payload.demagHint": "the same for traps: it demagnetises them in flight — while the circle covers a trap it holds nobody and lets the caught go. ~30 s over one trap; no traps — the same over the warehouse, then it falls and sets a cell alight.",
   "payload.stealth": "Stealth",
   "payload.stealthHint": "blows up like a plain one, but guns and launchers cannot see it at all — no aiming, no missile lock. Only your own hands and the traps are left.",
   "raid.pattern": "Wave pattern",

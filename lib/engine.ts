@@ -523,12 +523,30 @@ function targets(s: GameState): number[] {
 }
 
 /**
- * Что накрывает подавитель. Ровно столько же, сколько достаёт зенитка того
- * же уровня: при равных уровнях глушилка и пушка стоят друг друга, при
- * перевесе в уровнях кто-то один оказывается сильнее.
+ * Что накрывает подавитель. Глушилкам пушек и огнетушителей — ровно
+ * столько же, сколько достаёт зенитка того же уровня: при равных уровнях
+ * глушилка и пушка стоят друг друга, при перевесе кто-то один оказывается
+ * сильнее. Размагничиванию — половина радиуса ловушки того же уровня:
+ * ловушка не стреляет, и глушить её с безопасной дистанции было бы
+ * даром, так что этому подавителю надо подойти ближе.
  */
-export const suppressRange = (s: { droneLevel: number }) =>
-  GUN.range * levelBonus(s.droneLevel, GUN.perLevel);
+export const suppressRange = (s: { droneLevel: number }, payload: Payload = "jammer") =>
+  payload === "demag"
+    ? TRAP.range * levelBonus(s.droneLevel, TRAP.perLevel) * SUPPRESS.demagShare
+    : GUN.range * levelBonus(s.droneLevel, GUN.perLevel);
+
+/**
+ * Круг, по которому подавитель ходит над жертвой. Держим его внутри
+ * собственного радиуса: вылетев за него, дрон перестал бы глушить то, ради
+ * чего прилетел, — а заметно это только по тому, что установка вдруг ожила.
+ */
+function loiterRing(s: GameState, payload: Payload) {
+  const reach = suppressRange(s, payload);
+  return {
+    orbit: Math.min(SUPPRESS.orbit, reach * SUPPRESS.orbitShare),
+    jitter: Math.min(SUPPRESS.orbitJitter, reach * SUPPRESS.orbitJitterShare),
+  };
+}
 
 /** Середина поля: вокруг неё строится всякий строй. */
 export const MID = GRID / 2;
@@ -637,11 +655,24 @@ function spawnDrone(s: GameState, t: SpawnTicket) {
   });
 }
 
-/** Кого глушит эта начинка: зенитки или огнетушители. Иначе никого. */
-function prey(payload: Payload): boolean | null {
-  if (payload === "jammer") return false; // ложь — это зенитка, spray === false
-  if (payload === "foamer") return true;
-  return null;
+/**
+ * Род установки. Ракетница числится по зенитному ведомству: глушилка
+ * пушек накрывает и её — обе стреляют по одной и той же радарной картинке.
+ */
+type GunClass = "gun" | "spray" | "trap";
+const gunClass = (g: Gun): GunClass => (g.trap ? "trap" : g.spray ? "spray" : "gun");
+
+/**
+ * Кого глушит эта начинка. Раньше здесь был булев ответ «зенитки или
+ * огнетушители»; с третьим подавителем ветка кончилась, и ответом стал род.
+ */
+const HUNTS: Partial<Record<Payload, GunClass>> = {
+  jammer: "gun",
+  foamer: "spray",
+  demag: "trap",
+};
+function prey(payload: Payload): GunClass | null {
+  return HUNTS[payload] ?? null;
 }
 
 /**
@@ -658,7 +689,7 @@ function arrive(s: GameState, d: Drone): boolean {
     let best: Gun | null = null;
     let bestD = Infinity;
     for (const g of s.guns) {
-      if (!g.alive || g.trap || g.spray !== hunts) continue;
+      if (!g.alive || gunClass(g) !== hunts) continue;
       const dx = g.cx + 0.5 - d.x;
       const dy = g.cy + 0.5 - d.y;
       const dd = dx * dx + dy * dy;
@@ -714,9 +745,9 @@ function arrive(s: GameState, d: Drone): boolean {
 function suppressTick(s: GameState, d: Drone) {
   const hunts = prey(d.payload);
   if (hunts === null) return;
-  const reach = suppressRange(s);
+  const reach = suppressRange(s, d.payload);
   for (const g of s.guns) {
-    if (!g.alive || g.trap || g.spray !== hunts) continue;
+    if (!g.alive || gunClass(g) !== hunts) continue;
     const dx = g.cx + 0.5 - d.x;
     const dy = g.cy + 0.5 - d.y;
     if (dx * dx + dy * dy <= reach * reach) g.jammed = SUPPRESS.release;
@@ -795,15 +826,16 @@ function loiterTick(
     DRONE.speed * levelBonus(s.droneLevel, DRONE.perLevel) * PAYLOAD[d.payload].speed;
   const hx = host.cx + 0.5;
   const hy = host.cy + 0.5;
+  const { orbit, jitter } = loiterRing(s, d.payload);
   const dist = Math.hypot(d.tx - d.x, d.ty - d.y) || 1;
   const fromHost = Math.hypot(d.tx - hx, d.ty - hy);
   if (
     dist <= speed * dt * 2 ||
-    fromHost < SUPPRESS.orbit - SUPPRESS.orbitJitter - 0.5 ||
-    fromHost > SUPPRESS.orbit + SUPPRESS.orbitJitter + 0.5
+    fromHost < orbit - jitter - 0.5 ||
+    fromHost > orbit + jitter + 0.5
   ) {
     const ang = s.rnd() * Math.PI * 2;
-    const r = SUPPRESS.orbit + (s.rnd() * 2 - 1) * SUPPRESS.orbitJitter;
+    const r = orbit + (s.rnd() * 2 - 1) * jitter;
     d.tx = hx + Math.cos(ang) * r;
     d.ty = hy + Math.sin(ang) * r;
   }
@@ -852,7 +884,12 @@ function pullHeld(s: GameState, d: Drone, host: Gun, dt: number) {
 }
 
 /** Свободные дроны в радиусе живой ловушки с местом — захватываются. */
-function captureTraps(s: GameState) {
+function captureTraps(s: GameState, dt: number) {
+  // Глушение стекает и у магнитов — так же, как у стреляющих установок:
+  // подавителя сбили, и через SUPPRESS.release ловушка снова держит.
+  for (const g of s.guns) {
+    if (g.trap && g.jammed > 0) g.jammed = Math.max(0, g.jammed - dt);
+  }
   const reach = trapRange(s);
   const r2 = reach * reach;
   const held = new Map<number, number>();
@@ -864,7 +901,9 @@ function captureTraps(s: GameState) {
     let best: Gun | null = null;
     let bestD = r2;
     for (const g of s.guns) {
-      if (!g.alive || !g.trap) continue;
+      // Размагниченная ловушка не хватает: её собственный радиус на это
+      // время как будто исчез.
+      if (!g.alive || !g.trap || g.jammed > 0) continue;
       if ((held.get(g.id) ?? 0) >= TRAP.capacity) continue;
       const dx = g.cx + 0.5 - d.x;
       const dy = g.cy + 0.5 - d.y;
@@ -942,6 +981,7 @@ function stepDrones(s: GameState, dt: number, gunsById: Map<number, Gun>) {
         !host ||
         !host.alive ||
         !host.trap ||
+        host.jammed > 0 ||
         (host.cx + 0.5 - d.x) ** 2 + (host.cy + 0.5 - d.y) ** 2 >
           reach * reach
       ) {
@@ -1055,7 +1095,7 @@ function stepDrones(s: GameState, dt: number, gunsById: Map<number, Gun>) {
   }
 
   // Свободные дроны в радиусе ловушки захватываются после движения.
-  captureTraps(s);
+  captureTraps(s, dt);
 }
 
 /** Огнетушители: льют сами, пока рядом горит и есть вода. */

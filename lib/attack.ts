@@ -12,8 +12,15 @@ import { DRONE, GUN, PAYLOAD, RAID, SIMULATION_VERSION, WAVE } from "./tuning";
  * не взрываются вовсе — кружат над обороной и глушат её, пока не кончится
  * топливо. Цифры у всех в PAYLOAD.
  */
-export type Payload = "plain" | "heavy" | "jammer" | "foamer" | "stealth";
-export const PAYLOADS: Payload[] = ["plain", "heavy", "jammer", "foamer", "stealth"];
+export type Payload = "plain" | "heavy" | "jammer" | "foamer" | "demag" | "stealth";
+export const PAYLOADS: Payload[] = [
+  "plain",
+  "heavy",
+  "jammer",
+  "foamer",
+  "demag",
+  "stealth",
+];
 
 /** Группа внутри волны: сколько дронов и с какой начинкой. */
 export interface DroneGroup {

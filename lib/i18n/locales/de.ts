@@ -358,6 +358,8 @@ const de: Dict = {
   "payload.jammerHint": "explodiert nicht: legt Geschütze schon im Flug lahm. Mit Geschütz — ~30 s chaotische Bahn darum; ohne — ~30 s über dem Lager, dann Absturz und Brand. Nur das MG holt ihn runter.",
   "payload.foamer": "Sprinklerstörer",
   "payload.foamerHint": "dasselbe für Sprinkler: Radius im Flug, ~30 s über einem — oder über dem Lager und Absturzbrand, wenn keine mehr da sind",
+  "payload.demag": "Fallen-Störsender",
+  "payload.demagHint": "dasselbe für Fallen: er entmagnetisiert sie schon im Flug — solange der Kreis eine Falle deckt, hält sie niemanden und lässt die Gefangenen los. ~30 s über einer Falle; gibt es keine, ebenso lange über dem Lager, dann stürzt er ab und setzt ein Feld in Brand.",
   "payload.stealth": "Tarnkappe",
   "payload.stealthHint": "explodiert wie die einfache, doch Kanonen und Werfer sehen sie gar nicht: kein Zielen, kein Lenken. Bleiben deine Hände und die Fallen.",
   "raid.pattern": "Wellenmuster",

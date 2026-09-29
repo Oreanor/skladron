@@ -358,6 +358,8 @@ const es: Dict = {
   "payload.jammerHint": "no estalla: silencia cañones en su radio ya en vuelo. Con cañón — ~30 s en órbita caótica; sin él — ~30 s sobre el almacén y cae quemando una celda. Solo la ametralladora lo derriba.",
   "payload.foamer": "Inhibidor de extintores",
   "payload.foamerHint": "igual con extintores: radio en vuelo, ~30 s sobre uno — o sobre el almacén y caída con fuego si no quedan",
+  "payload.demag": "Supresión de trampas",
+  "payload.demagHint": "lo mismo para las trampas: las desmagnetiza ya en vuelo — mientras el círculo cubre una trampa, esta no retiene a nadie y suelta a los capturados. ~30 s sobre una trampa; si no hay, lo mismo sobre el almacén y luego cae e incendia una celda.",
   "payload.stealth": "Invisible",
   "payload.stealthHint": "estalla como el simple, pero los cañones y las lanzaderas no lo ven: ni apuntan ni guían el misil. Solo quedan tus manos y las trampas.",
   "raid.pattern": "Patrón de oleadas",

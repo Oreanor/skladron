@@ -50,6 +50,7 @@ language sql immutable as $$
     when 'pay_heavy'  then 50
     when 'pay_jammer' then 40
     when 'pay_foamer' then 30
+    when 'pay_demag'  then 35
     when 'pay_stealth' then 60  -- невидимка снимает всю автоматику склада, оттого и дороже всех
   end;
 $$;
@@ -663,7 +664,7 @@ begin
     end if;
     for g in select * from jsonb_array_elements(wave->'groups') loop
       if coalesce(g->>'payload', '') not in
-         ('plain', 'heavy', 'jammer', 'foamer', 'stealth') then
+         ('plain', 'heavy', 'jammer', 'foamer', 'demag', 'stealth') then
         raise exception 'bad drone payload';
       end if;
       if coalesce((g->>'n')::int, -1) < 0 then raise exception 'bad group size'; end if;

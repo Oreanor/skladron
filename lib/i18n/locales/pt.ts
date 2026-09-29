@@ -358,6 +358,8 @@ const pt: Dict = {
   "payload.jammerHint": "não explode: cala canhões no seu raio já em voo. Com canhão — ~30 s em órbita caótica; sem ele — ~30 s sobre o armazém e cai a incendiar uma célula. Só a metralhadora o abate.",
   "payload.foamer": "Inibidor de extintores",
   "payload.foamerHint": "o mesmo para extintores: raio em voo, ~30 s sobre um — ou sobre o armazém e queda com fogo se não restam",
+  "payload.demag": "Supressão de armadilhas",
+  "payload.demagHint": "o mesmo para as armadilhas: desmagnetiza-as já em voo — enquanto o círculo cobre uma armadilha, ela não segura ninguém e larga os capturados. ~30 s sobre uma armadilha; se não houver, o mesmo sobre o armazém e depois cai e incendeia uma célula.",
   "payload.stealth": "Invisível",
   "payload.stealthHint": "explode como o simples, mas canhões e lançadores não o veem: não apontam nem guiam o míssil. Restam as tuas mãos e as armadilhas.",
   "raid.pattern": "Padrão das vagas",
