@@ -10,10 +10,14 @@ import Image from "next/image";
 import { avatarUrl, type Avatar as AvatarValue } from "@/lib/avatar";
 import { initials } from "./AccountMenu";
 
-/** Во что раскрывается size: списки и шапка — одно, окно боя — вдвое. */
+/**
+ * Во что раскрывается size. В списках лицо небольшое: боковая колонка узкая,
+ * и лицо в сотню пикселей выдавливало из строки и имя, и почту. В окне
+ * перед боем — вдвое крупнее: там оно единственное, что видно о сопернике.
+ */
 const SIZES = {
-  sm: { px: 100, cls: "h-[100px] w-[100px] text-2xl" },
-  lg: { px: 200, cls: "h-[200px] w-[200px] text-5xl" },
+  sm: { px: 48, cls: "h-12 w-12 text-sm" },
+  lg: { px: 96, cls: "h-24 w-24 text-2xl" },
   /** Кружок в шапке: там места ровно под кнопку. */
   chip: { px: 40, cls: "h-10 w-10 text-xs" },
 } as const;
@@ -36,15 +40,15 @@ export default function Avatar({
 }) {
   const url = avatarUrl(avatar);
   const { px, cls } = SIZES[size];
+  // inline-flex обязателен: у строчного span ни размеры, ни обрезка по
+  // скруглению не работают, и картинка вылезала квадратом.
   const shell =
-    `shrink-0 overflow-hidden rounded-full border border-neutral-700 ` +
-    `bg-neutral-900/60 ${cls} ${className}`;
+    `inline-flex shrink-0 items-center justify-center overflow-hidden ` +
+    `rounded-full border border-neutral-700 bg-neutral-900/60 ${cls} ${className}`;
 
   if (!url) {
     return (
-      <span
-        className={`${shell} flex items-center justify-center font-bold uppercase tracking-wide text-neutral-200`}
-      >
+      <span className={`${shell} font-bold uppercase tracking-wide text-neutral-200`}>
         {initials(name, email)}
       </span>
     );

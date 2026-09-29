@@ -104,7 +104,7 @@ export default function AvatarPicker({
       }
     >
       <div className="mb-4 flex items-center gap-4">
-        <AvatarView avatar={avatar} name={name} email={email} size="sm" />
+        <AvatarView avatar={avatar} name={name} email={email} size="lg" />
         <p className="text-sm text-neutral-400">{t("avatar.current")}</p>
       </div>
 
@@ -118,7 +118,7 @@ export default function AvatarPicker({
               void onPick(id);
               onClose();
             }}
-            className={`overflow-hidden rounded-md border-2 transition ${
+            className={`overflow-hidden rounded-full border-2 transition ${
               avatar === id
                 ? "border-emerald-500"
                 : "border-transparent hover:border-neutral-600"
