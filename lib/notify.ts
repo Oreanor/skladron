@@ -43,6 +43,15 @@ export function notifyComment(attackId: string, commentId?: string) {
   );
 }
 
+/**
+ * Нового соперника завели — ему уйдёт телеграм. Адрес отдаём серверу, а он
+ * сверяет, что добавление и правда было: по одной просьбе клиента звенеть
+ * в чужом чате нельзя.
+ */
+export function notifyRivalAdded(email: string) {
+  quiet(() => post({ event: "rival", email }));
+}
+
 /** Пробный налёт на себя: в таблице атак его нет, пишем прямо себе. */
 export function notifyTestRaid(drones: number) {
   quiet(() => post({ event: "test", drones }));

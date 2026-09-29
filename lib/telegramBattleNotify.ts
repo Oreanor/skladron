@@ -214,3 +214,44 @@ export async function notifyRaidComment(
   );
   return { sent: true };
 }
+
+/** Текст тому, кого добавили: с этого мига по нему можно летать. */
+export function rivalAddedMessage(fromName: string): string {
+  return (
+    `Склад «${fromName}» добавил тебя во враги — теперь он видит твой адрес ` +
+    `и может слать налёты. Он же появился и в твоём списке: ответить есть чем. ${SITE}`
+  );
+}
+
+/**
+ * Извещение о новом знакомстве. Шлём один раз на пару: знакомство и
+ * заводится один раз, а звенеть в телеграме на каждую повторную попытку
+ * добавить — верный способ отучить людей от бота.
+ *
+ * Метку ставим до отправки и только если она встала: два запроса подряд
+ * иначе оба увидели бы «ещё не слали» и написали бы дважды. Без
+ * tg_chat_id метку не занимаем — привяжет бота, и тогда дойдёт.
+ */
+export async function notifyRivalAdded(
+  db: SupabaseClient,
+  fromId: string,
+  toId: string
+): Promise<{ sent: boolean; error?: string }> {
+  const { data: people, error } = await db
+    .from("profiles")
+    .select("id, base_name, display_name, email, tg_chat_id")
+    .in("id", [fromId, toId]);
+  if (error) return { sent: false, error: error.message };
+  const from = people?.find((p) => p.id === fromId) as ProfileRow | undefined;
+  const to = people?.find((p) => p.id === toId) as ProfileRow | undefined;
+  if (!from || !to?.tg_chat_id) return { sent: false };
+
+  const { error: claimError, count } = await db
+    .from("rival_notices")
+    .upsert({ from_id: fromId, to_id: toId }, { onConflict: "from_id,to_id", ignoreDuplicates: true, count: "exact" });
+  if (claimError) return { sent: false, error: claimError.message };
+  if (!count) return { sent: false }; // уже писали про эту пару
+
+  await send(Number(to.tg_chat_id), rivalAddedMessage(nameOf(from)));
+  return { sent: true };
+}

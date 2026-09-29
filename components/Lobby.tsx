@@ -134,7 +134,12 @@ import ScoutMap from "./ScoutMap";
 import Replay, { type ReplayData } from "./Replay";
 import Rules from "./Rules";
 import { postRaidComment } from "@/lib/comments";
-import { notifyBattle, notifyComment, notifyTestRaid } from "@/lib/notify";
+import {
+  notifyBattle,
+  notifyComment,
+  notifyRivalAdded,
+  notifyTestRaid,
+} from "@/lib/notify";
 import { PostRaidCommentModal, RaidOpenerModal } from "./lobby/RaidCommentModals";
 
 /** Имя бота из настроек сборки: без него привязывать некуда. */
@@ -867,6 +872,9 @@ export default function Lobby({
     let name: string | undefined;
     try {
       name = (await repo.addRival(email)) ?? undefined;
+      // Знакомство взаимное, и вторая сторона о нём пока не знает: пусть
+      // узнает от бота, а не по первому прилетевшему рою.
+      notifyRivalAdded(email);
     } catch (e) {
       return t("enemies.notSaved", { error: (e as Error).message });
     }

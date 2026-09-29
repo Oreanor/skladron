@@ -1772,6 +1772,17 @@ begin
 end;
 $$;
 
+-- Кому уже написали «тебя добавили во враги». Ключ из пары: знакомство
+-- заводится один раз, и повторные попытки не должны звенеть в телеграме
+-- ещё раз. Клиент сюда не ходит — пишет только сервер извещений.
+create table if not exists rival_notices (
+  from_id uuid not null references profiles(id) on delete cascade,
+  to_id uuid not null references profiles(id) on delete cascade,
+  sent_at timestamptz not null default now(),
+  primary key (from_id, to_id)
+);
+alter table rival_notices enable row level security;
+
 -- ---------- знакомство в обе стороны ----------
 -- Добавил соперника — он добавляет тебя. Иначе получалось одностороннее
 -- знакомство: он видит налёты от «Порт-Складъ», а ответить не может, потому

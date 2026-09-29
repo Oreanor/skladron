@@ -2,7 +2,12 @@
 // именно писать, решает сервер: у клиента нет ни токена бота, ни чужих чатов.
 
 import { createClient } from "@supabase/supabase-js";
-import { notifyRaidComment, notifyResolvedRaid, notifySentRaid } from "@/lib/telegramBattleNotify";
+import {
+  notifyRaidComment,
+  notifyResolvedRaid,
+  notifyRivalAdded,
+  notifySentRaid,
+} from "@/lib/telegramBattleNotify";
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -10,7 +15,7 @@ const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://skladron.vercel.app";
 
-type Event = "sent" | "resolved" | "test" | "comment";
+type Event = "sent" | "resolved" | "test" | "comment" | "rival";
 
 async function send(chatId: number, text: string) {
   if (!TOKEN) return;
@@ -41,9 +46,11 @@ export async function POST(request: Request) {
     event?: Event;
     drones?: number;
     commentId?: string;
+    email?: string;
   };
   const event = body.event;
-  if (event !== "sent" && event !== "resolved" && event !== "test" && event !== "comment") {
+  const known: Event[] = ["sent", "resolved", "test", "comment", "rival"];
+  if (!event || !known.includes(event)) {
     return new Response("bad request", { status: 400 });
   }
 
@@ -69,6 +76,38 @@ export async function POST(request: Request) {
       `Пробный налёт на твой склад — ${drones} дронов в очереди. Открой игру: ${SITE}`
     );
     return Response.json({ ok: true, sent: true });
+  }
+
+  // Знакомство: пишем тому, кого добавили. На слово не верим — сверяемся
+  // с его же списком врагов. Знакомство взаимное, и add_rival кладёт туда
+  // карточку просящего; нет карточки — значит и добавления не было, а
+  // ручку дёргают мимо игры.
+  if (event === "rival") {
+    const email = (body.email ?? "").trim().toLowerCase();
+    if (!email) return new Response("bad request", { status: 400 });
+
+    const { data: me } = await db
+      .from("profiles")
+      .select("id, email")
+      .eq("id", uid)
+      .maybeSingle();
+    const { data: target } = await db
+      .from("profiles")
+      .select("id, enemies")
+      .ilike("email", email)
+      .maybeSingle();
+    if (!me?.email || !target) return Response.json({ ok: true, sent: false });
+    if (target.id === uid) return new Response("bad request", { status: 400 });
+
+    const mine = me.email.toLowerCase();
+    const listed = (target.enemies as { email?: string }[] | null)?.some(
+      (e) => (e.email ?? "").toLowerCase() === mine
+    );
+    if (!listed) return new Response("no such rival", { status: 403 });
+
+    const { sent, error: notifyError } = await notifyRivalAdded(db, uid, target.id);
+    if (notifyError) return Response.json({ ok: false, reason: notifyError });
+    return Response.json({ ok: true, sent });
   }
 
   // id боя публичен: по нему открывается повтор, ссылками на повторы
