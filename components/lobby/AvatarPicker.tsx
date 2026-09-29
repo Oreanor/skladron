@@ -1,22 +1,25 @@
 "use client";
 
 /*
- * Выбор лица: одно большое, стрелки по бокам, листается по кругу.
+ * Выбор аватара: большой кружок сверху — то, что выберешь, — а под ним
+ * лента мелких со стрелками. Тычешь в мелкое, оно поднимается в большой.
  *
- * Сеткой из шестнадцати мелких лиц было не разобрать, кого выбираешь, — а
- * выбираешь ты то, каким тебя увидят остальные. Поэтому показываем по
- * одному и крупно; перебрать шестнадцать штук стрелками недолго.
+ * Загруженная своя картинка встаёт в ту же ленту первой и сразу
+ * поднимается в большой кружок: своё лицо ищут не листанием. Ужимается она
+ * здесь же, до отправки, — снимок с телефона весит мегабайты, а нужен
+ * квадрат в три сотни пикселей.
  *
- * Загруженная своя картинка встаёт в ту же карусель первой: пролистал
- * мимо — вернулся, не потерял. Ужимается она здесь же, до отправки: снимок
- * с телефона весит мегабайты, а нужен квадрат в три сотни пикселей.
+ * Выбор применяется по «ОК», а не по каждому тычку: листать и примерять
+ * можно, ничего при этом не меняя.
  */
 
 import { useRef, useState } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   PRESETS,
   UPLOAD_MAX_BYTES,
+  avatarUrl,
   shrinkAvatar,
   type Avatar as AvatarValue,
 } from "@/lib/avatar";
@@ -26,6 +29,8 @@ import { Button, Modal } from "../ui";
 import { useT } from "@/lib/i18n";
 
 const PRESET_LIST = Array.from({ length: PRESETS }, (_, i) => String(i + 1));
+/** Сторона мелкого лица в ленте, px. */
+const THUMB = 56;
 
 export default function AvatarPicker({
   avatar,
@@ -42,6 +47,7 @@ export default function AvatarPicker({
 }) {
   const t = useT();
   const fileRef = useRef<HTMLInputElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,13 +55,14 @@ export default function AvatarPicker({
   const [faces, setFaces] = useState<string[]>(() =>
     avatar && avatar.startsWith("http") ? [avatar, ...PRESET_LIST] : PRESET_LIST
   );
-  const [at, setAt] = useState(() => {
-    const i = avatar ? faces.indexOf(avatar) : -1;
-    return i < 0 ? 0 : i;
-  });
+  const [picked, setPicked] = useState<AvatarValue>(avatar);
 
-  const step = (by: number) => setAt((i) => (i + by + faces.length) % faces.length);
-  const shown = faces[at] ?? null;
+  /** Лента шире окна: стрелки прокручивают её почти на экран. */
+  const slide = (by: number) =>
+    stripRef.current?.scrollBy({
+      left: by * Math.max(THUMB * 3, stripRef.current.clientWidth * 0.8),
+      behavior: "smooth",
+    });
 
   const upload = async (file: File) => {
     setBusy(true);
@@ -78,9 +85,9 @@ export default function AvatarPicker({
       // Адрес постоянный, а картинка меняется — без метки браузер покажет старую.
       const { data: pub } = db.storage.from("avatars").getPublicUrl(path);
       const url = `${pub.publicUrl}?v=${Date.now()}`;
-      // В карусель первой и сразу показываем: своё лицо ищут не листанием.
       setFaces([url, ...PRESET_LIST]);
-      setAt(0);
+      setPicked(url);
+      stripRef.current?.scrollTo({ left: 0, behavior: "smooth" });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -89,7 +96,7 @@ export default function AvatarPicker({
   };
 
   const arrow =
-    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border " +
+    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border " +
     "border-neutral-700 text-neutral-300 transition hover:bg-neutral-800 " +
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400";
 
@@ -105,7 +112,7 @@ export default function AvatarPicker({
             className="flex-1"
             disabled={busy}
             onClick={() => {
-              void onPick(shown);
+              void onPick(picked);
               onClose();
             }}
           >
@@ -126,33 +133,61 @@ export default function AvatarPicker({
         </div>
       }
     >
-      <div className="flex items-center justify-center gap-4 py-2">
+      <div className="mb-4 flex justify-center">
+        <AvatarView avatar={picked} name={name} email={email} size="xl" />
+      </div>
+
+      <div className="flex items-center gap-2">
         <button
           type="button"
           aria-label={t("avatar.prev")}
           title={t("avatar.prev")}
-          onClick={() => step(-1)}
+          onClick={() => slide(-1)}
           className={arrow}
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
 
-        <AvatarView avatar={shown} name={name} email={email} size="xl" />
+        <div
+          ref={stripRef}
+          className="flex min-w-0 flex-1 gap-2 overflow-x-auto overscroll-contain scroll-smooth py-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {faces.map((face) => (
+            <button
+              key={face}
+              type="button"
+              aria-label={t("avatar.title")}
+              aria-pressed={picked === face}
+              onClick={() => setPicked(face)}
+              style={{ width: THUMB, height: THUMB }}
+              className={`shrink-0 overflow-hidden rounded-full border-2 transition ${
+                picked === face
+                  ? "border-emerald-500"
+                  : "border-transparent hover:border-neutral-600"
+              }`}
+            >
+              <Image
+                src={avatarUrl(face) ?? ""}
+                alt=""
+                width={THUMB * 2}
+                height={THUMB * 2}
+                className="h-full w-full object-cover"
+                unoptimized={face.startsWith("http")}
+              />
+            </button>
+          ))}
+        </div>
 
         <button
           type="button"
           aria-label={t("avatar.next")}
           title={t("avatar.next")}
-          onClick={() => step(1)}
+          onClick={() => slide(1)}
           className={arrow}
         >
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
-
-      <p className="text-center font-mono text-xs text-neutral-500">
-        {at + 1}/{faces.length}
-      </p>
 
       <input
         ref={fileRef}
