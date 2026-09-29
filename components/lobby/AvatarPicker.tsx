@@ -13,7 +13,7 @@
  * можно, ничего при этом не меняя.
  */
 
-import { useRef, useState } from "react";
+import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
@@ -36,6 +36,8 @@ import { useT } from "@/lib/i18n";
 const PRESET_LIST = Array.from({ length: PRESETS }, (_, i) => String(i + 1));
 /** Сторона мелкого лица в ленте, px. */
 const THUMB = 56;
+/** Пока сдвиг меньше — считаем клик по лицу, не перетаскивание ленты. */
+const DRAG_THRESHOLD_PX = 6;
 
 /** В ленте — одна своя картинка максимум, без накопления старых URL. */
 function stripFaces(avatar: AvatarValue): string[] {
@@ -61,8 +63,16 @@ export default function AvatarPicker({
   const t = useT();
   const fileRef = useRef<HTMLInputElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
+  /** Жест мыши/тача: откуда взяли, какой scrollLeft, ушло ли за порог. */
+  const dragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startScroll: number;
+    moved: boolean;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
 
   const [faces, setFaces] = useState<string[]>(() => stripFaces(avatar));
   const [picked, setPicked] = useState<AvatarValue>(() => normalizeAvatarForStorage(avatar));
@@ -74,6 +84,17 @@ export default function AvatarPicker({
       left: by * Math.max(THUMB * 3, stripRef.current.clientWidth * 0.8),
       behavior: "smooth",
     });
+
+  const endStripDrag = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    if (stripRef.current?.hasPointerCapture(e.pointerId)) {
+      stripRef.current.releasePointerCapture(e.pointerId);
+    }
+    setDragging(false);
+    // moved оставляем до следующего pointerdown — чтобы клик по лицу не сработал.
+    dragRef.current = drag.moved ? { ...drag, pointerId: -1 } : null;
+  };
 
   const upload = async (file: File) => {
     setBusy(true);
@@ -199,7 +220,34 @@ export default function AvatarPicker({
 
         <div
           ref={stripRef}
-          className="flex min-w-0 flex-1 gap-2 overflow-x-auto overscroll-contain scroll-smooth py-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          onPointerDown={(e) => {
+            // Только основная кнопка; стрелки и overflow-scroll остаются как были.
+            if (e.button !== 0 || !stripRef.current) return;
+            dragRef.current = {
+              pointerId: e.pointerId,
+              startX: e.clientX,
+              startScroll: stripRef.current.scrollLeft,
+              moved: false,
+            };
+          }}
+          onPointerMove={(e) => {
+            const drag = dragRef.current;
+            const strip = stripRef.current;
+            if (!drag || !strip || drag.pointerId !== e.pointerId) return;
+            const dx = e.clientX - drag.startX;
+            if (!drag.moved) {
+              if (Math.abs(dx) < DRAG_THRESHOLD_PX) return;
+              drag.moved = true;
+              setDragging(true);
+              strip.setPointerCapture(e.pointerId);
+            }
+            strip.scrollLeft = drag.startScroll - dx;
+          }}
+          onPointerUp={endStripDrag}
+          onPointerCancel={endStripDrag}
+          className={`flex min-w-0 flex-1 gap-2 overflow-x-auto overscroll-contain py-1 touch-pan-y [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+            dragging ? "cursor-grabbing select-none" : "cursor-grab"
+          }`}
         >
           {faces.map((face) => (
             <button
@@ -207,7 +255,10 @@ export default function AvatarPicker({
               type="button"
               aria-label={t("avatar.title")}
               aria-pressed={picked === face}
-              onClick={() => setPicked(face)}
+              onClick={() => {
+                if (dragRef.current?.moved) return;
+                setPicked(face);
+              }}
               style={{ width: THUMB, height: THUMB }}
               className={`shrink-0 overflow-hidden rounded-full border-2 transition ${
                 picked === face
@@ -220,7 +271,8 @@ export default function AvatarPicker({
                 alt=""
                 width={THUMB * 2}
                 height={THUMB * 2}
-                className="h-full w-full object-cover"
+                draggable={false}
+                className="pointer-events-none h-full w-full object-cover"
                 unoptimized={face.startsWith("http")}
               />
             </button>

@@ -464,7 +464,7 @@ alter table attacks add column if not exists resolved_notified_at timestamptz;
 -- Колонка пустая у старых строк — их читают как одну волну простых дронов.
 alter table attacks add column if not exists waves jsonb;
 
--- Лицо игрока. Пусто — рисуем инициалы; «1»…«16» — готовое из public/avatars;
+-- Лицо игрока. Пусто — рисуем инициалы; «1»…«80» — готовое из public/avatars;
 -- строка с http — своя картинка, лежащая в хранилище. Разбирает её клиент,
 -- серверу достаточно отдать её тем, кто игрока видит.
 alter table profiles add column if not exists avatar text;
@@ -1865,7 +1865,7 @@ declare uid uuid := auth.uid();
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   if value is not null
-     and value !~ '^([1-9]|1[0-6])$'
+     and value !~ '^([1-9]|[1-7][0-9]|80)$'
      and value not like 'https://%/storage/v1/object/public/avatars/%' then
     raise exception 'bad avatar';
   end if;
