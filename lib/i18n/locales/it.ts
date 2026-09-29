@@ -403,6 +403,7 @@ const it: Dict = {
 
   "map.wholeMap": "Tutta la mappa",
   "map.hover.drones": "Droni · {n}",
+  "map.hover.balloons": "Palloni · {n}",
 
   "menu.language": "Lingua",
   "menu.theme": "Tema",

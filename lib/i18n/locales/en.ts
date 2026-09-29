@@ -403,6 +403,7 @@ const en = {
 
   "map.wholeMap": "Whole map",
   "map.hover.drones": "Drones · {n}",
+  "map.hover.balloons": "Balloons · {n}",
 
   "menu.language": "Language",
   "menu.theme": "Theme",

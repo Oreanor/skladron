@@ -403,6 +403,7 @@ const ru: Dict = {
 
   "map.wholeMap": "Вся карта",
   "map.hover.drones": "Дроны · {n}",
+  "map.hover.balloons": "Шары · {n}",
 
   "menu.language": "Язык",
   "menu.theme": "Тема",

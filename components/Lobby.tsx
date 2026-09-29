@@ -1519,9 +1519,12 @@ export default function Lobby({
             break;
         }
       } else if (depot) {
-        label = t("map.hover.drones", {
-          n: depot.n,
-        });
+        // Подпись по виду контейнера: на ящике с шарами «Дроны» — ровно та
+        // ошибка, которую подпись и должна была снимать.
+        label = t(
+          depotKind(depot) === "balloon" ? "map.hover.balloons" : "map.hover.drones",
+          { n: depot.n }
+        );
       }
       if (label) drawHoverLabel(ctx, cell, hx, hy, label, view?.zoom ?? 1);
     }
