@@ -365,6 +365,8 @@ const fr: Dict = {
   "payload.demagHint": "la même chose pour les pièges : il les démagnétise déjà en vol — tant que le cercle couvre un piège, celui-ci ne retient personne et lâche ses prises. ~30 s au-dessus d’un piège ; s’il n’y en a pas, autant au-dessus de l’entrepôt, puis il tombe et embrase une case.",
   "payload.stealth": "Furtif",
   "payload.stealthHint": "explose comme un simple, mais canons et lance-roquettes ne le voient pas du tout : ni visée, ni guidage. Il ne reste que tes mains et les pièges.",
+  "payload.blower": "Souffleur de ballons",
+  "payload.blowerHint": "explose comme une charge simple, mais écarte les ballons de barrage en vol : le ballon pris dans sa zone dérive de plusieurs cases loin du drone. Il ne les crève pas, il dégage le passage, et l’essaim laisse un couloir derrière lui.",
   "raid.pattern": "Motif des vagues",
   "raid.from": "D’où",
   "raid.send": "Envoyer {n} drones",

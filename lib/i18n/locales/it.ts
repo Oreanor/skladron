@@ -365,6 +365,8 @@ const it: Dict = {
   "payload.demagHint": "lo stesso per le trappole: le smagnetizza già in volo — finché il cerchio copre una trappola, questa non trattiene nessuno e libera i catturati. ~30 s sopra una trappola; se non ce ne sono, altrettanto sopra il magazzino, poi cade e incendia una cella.",
   "payload.stealth": "Invisibile",
   "payload.stealthHint": "esplode come quella semplice, ma cannoni e lanciarazzi non la vedono affatto: niente mira, niente guida. Restano le tue mani e le trappole.",
+  "payload.blower": "Soffiatore di palloni",
+  "payload.blowerHint": "esplode come quella semplice, ma in volo scosta i palloni di sbarramento: il pallone che entra nella sua zona si allontana di qualche cella dal drone. Non li fa scoppiare, libera solo la strada, e lo sciame si lascia dietro un corridoio.",
   "raid.pattern": "Schema delle ondate",
   "raid.from": "Da dove",
   "raid.send": "Manda {n} droni",

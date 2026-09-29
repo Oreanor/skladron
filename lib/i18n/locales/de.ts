@@ -365,6 +365,8 @@ const de: Dict = {
   "payload.demagHint": "dasselbe für Fallen: er entmagnetisiert sie schon im Flug — solange der Kreis eine Falle deckt, hält sie niemanden und lässt die Gefangenen los. ~30 s über einer Falle; gibt es keine, ebenso lange über dem Lager, dann stürzt er ab und setzt ein Feld in Brand.",
   "payload.stealth": "Tarnkappe",
   "payload.stealthHint": "explodiert wie die einfache, doch Kanonen und Werfer sehen sie gar nicht: kein Zielen, kein Lenken. Bleiben deine Hände und die Fallen.",
+  "payload.blower": "Ballonbläser",
+  "payload.blowerHint": "explodiert wie die einfache, schiebt aber im Flug Sperrballons beiseite: ein Ballon in seiner Zone treibt mehrere Felder von der Drohne weg. Er zerplatzt ihn nicht, er räumt nur den Weg, und der Schwarm lässt einen Korridor zurück.",
   "raid.pattern": "Wellenmuster",
   "raid.from": "Von wo",
   "raid.send": "{n} Drohnen schicken",

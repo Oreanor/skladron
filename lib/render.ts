@@ -16,7 +16,7 @@ import {
   trapRange,
   type GameState,
 } from "./engine";
-import { FX, GUN, ROCKET, SPRAY, SUPPRESS, TRAP } from "./tuning";
+import { BLOW, FX, GUN, ROCKET, SPRAY, SUPPRESS, TRAP } from "./tuning";
 import { COLORS } from "./render/colors";
 import {
   drawBalloons,
@@ -407,6 +407,27 @@ export function drawFrame(
       ctx.stroke();
       ctx.restore();
     }
+  }
+
+  // Зона обдува. Рисуем бледно и только ободом: она большая, их бывает
+  // много, и заливать ею пол-экрана незачем — важно, где у неё край.
+  const fans = s.drones.filter((d) => !d.hit && d.payload === "blower");
+  if (fans.length) {
+    const reach = BLOW.range * cell;
+    ctx.beginPath();
+    for (const d of fans) {
+      ctx.moveTo(d.x * cell + reach, d.y * cell);
+      ctx.arc(d.x * cell, d.y * cell, reach, 0, Math.PI * 2);
+    }
+    ctx.fillStyle = COLORS.blowFill;
+    ctx.fill();
+    ctx.save();
+    ctx.setLineDash([cell * 0.9, cell * 1.4]);
+    ctx.lineDashOffset = -(now / 40) % (cell * 2.3);
+    ctx.strokeStyle = COLORS.blow;
+    ctx.lineWidth = Math.max(1, cell * 0.16);
+    ctx.stroke();
+    ctx.restore();
   }
 
   // дроны

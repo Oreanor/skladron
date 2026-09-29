@@ -365,6 +365,8 @@ const en = {
   "payload.demagHint": "the same for traps: it demagnetises them in flight — while the circle covers a trap it holds nobody and lets the caught go. ~30 s over one trap; no traps — the same over the warehouse, then it falls and sets a cell alight.",
   "payload.stealth": "Stealth",
   "payload.stealthHint": "blows up like a plain one, but guns and launchers cannot see it at all — no aiming, no missile lock. Only your own hands and the traps are left.",
+  "payload.blower": "Balloon blower",
+  "payload.blowerHint": "blows up like a plain one, but shoves barrage balloons aside in flight: a balloon caught in its zone drifts several cells away from the drone. It does not pop them — it just clears the way, and the swarm leaves a corridor behind it.",
   "raid.pattern": "Wave pattern",
   "raid.from": "From where",
   "raid.send": "Send {n} drones",

@@ -16,6 +16,7 @@ import {
 import { mulberry32, type Payload, type SpawnTicket } from "./attack";
 import {
   BALLOON,
+  BLOW,
   DRONE,
   FIRE,
   FX,
@@ -1500,6 +1501,32 @@ function stepBalloons(s: GameState, dt: number) {
       b.ang += Math.PI;
       b.want = b.ang;
       b.next = BALLOON.rethink;
+    }
+  }
+
+  // Обдув. Считаем до столкновений: сдутый шар должен успеть уйти с
+  // дороги, иначе дрон с вентилятором подрывался бы на нём сам.
+  const fans = s.drones.filter(
+    (d) => !d.hit && !d.heldBy && d.payload === "blower"
+  );
+  if (fans.length) {
+    const far = BLOW.range * BLOW.range;
+    for (const b of s.balloons) {
+      for (const d of fans) {
+        const dx = b.x - d.x;
+        const dy = b.y - d.y;
+        const dd = dx * dx + dy * dy;
+        if (dd > far) continue;
+        const len = Math.sqrt(dd);
+        // Совсем в упор направления нет — толкаем по курсу дрона.
+        const ux = len > 0.001 ? dx / len : d.hx || 1;
+        const uy = len > 0.001 ? dy / len : d.hy;
+        const k = BLOW.edge + (1 - BLOW.edge) * (1 - len / BLOW.range);
+        b.x += ux * BLOW.speed * k * dt;
+        b.y += uy * BLOW.speed * k * dt;
+      }
+      b.x = Math.max(0, Math.min(GRID, b.x));
+      b.y = Math.max(0, Math.min(GRID, b.y));
     }
   }
 

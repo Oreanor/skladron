@@ -463,6 +463,52 @@ console.log("\n— шары заграждения —");
       `в чистом небе ${clear}, под шарами ${walled}`);
   }
 
+  // Обдув: шары не лопаются, а расходятся, и рой проходит.
+  {
+    const traps = [];
+    const o = ((GRID - 30) / 2) | 0;
+    const balloons = [];
+    for (let k = 0; k < 8; k++) {
+      balloons.push({
+        cx: o + 1 + (k % 6) * 2, cy: o + 1 + ((k / 6) | 0) * 2, n: 10, kind: "balloon",
+      });
+    }
+    const through = (payload) => {
+      const waves = [wave("swarm", [g(payload, 60)])];
+      const s = E.createBattle(base(), traps, balloons,
+        A.buildPlan(ord(waves)), { seed: 505 });
+      const born = s.balloons.length;
+      const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);
+      let steps = 0;
+      while (steps < cap && s.phase === "playing") { E.update(s, T.SIM.step); steps++; }
+      E.settle(s);
+      return { hit: s.result.killedByBalloons, left: s.balloons.length, born };
+    };
+    const plain = through("plain");
+    const blower = through("blower");
+    check("обдув проводит рой сквозь заграждение", blower.hit < plain.hit,
+      `простые потеряли ${plain.hit}, с обдувом ${blower.hit} из 60`);
+    check("обдув не лопает шары, а раздвигает",
+      blower.left > plain.left && blower.left <= blower.born,
+      `простые оставили ${plain.left} шаров, обдув ${blower.left} из ${blower.born}`);
+  }
+
+  // Без шаров обдув — просто дорогая обычная начинка: ведёт себя как plain.
+  {
+    const waves = [wave("rings", [g("blower", 30)])];
+    const s = E.createBattle(base(), spread(30, 9), [],
+      A.buildPlan(ord(waves)), { seed: 505, guns: 2 });
+    const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);
+    let steps = 0;
+    while (steps < cap && s.phase === "playing") { E.update(s, T.SIM.step); steps++; }
+    E.settle(s);
+    const acc =
+      s.result.killedByGuns + s.result.killedByMg + s.result.killedByBalloons + s.result.leaked;
+    check("обдув без шаров никуда не девается", acc === 30, `учтено ${acc}/30`);
+    check("обдув без шаров доходит и жжёт", s.result.burned > 0,
+      `сожжено ${s.result.burned}`);
+  }
+
   // Бой не должен подвиснуть из-за того, что шары висят вечно.
   {
     const s = E.createBattle(base(), spread(30, 7), packs(6),

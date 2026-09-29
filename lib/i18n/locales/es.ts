@@ -365,6 +365,8 @@ const es: Dict = {
   "payload.demagHint": "lo mismo para las trampas: las desmagnetiza ya en vuelo — mientras el círculo cubre una trampa, esta no retiene a nadie y suelta a los capturados. ~30 s sobre una trampa; si no hay, lo mismo sobre el almacén y luego cae e incendia una celda.",
   "payload.stealth": "Invisible",
   "payload.stealthHint": "estalla como el simple, pero los cañones y las lanzaderas no lo ven: ni apuntan ni guían el misil. Solo quedan tus manos y las trampas.",
+  "payload.blower": "Soplador de globos",
+  "payload.blowerHint": "estalla como el simple, pero en vuelo empuja los globos de barrera: el globo que entra en su zona se aparta varias celdas del dron. No los revienta, solo despeja el camino, y el enjambre deja un corredor tras de sí.",
   "raid.pattern": "Patrón de oleadas",
   "raid.from": "Desde dónde",
   "raid.send": "Enviar {n} drones",
