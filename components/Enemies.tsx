@@ -429,7 +429,6 @@ function RaidDialog({
   return (
     <Modal
       title={t("raid.title", { name: enemy.name })}
-      subtitle={t("raid.subtitle")}
       onClose={onCancel}
       footer={
         <div className="flex flex-wrap justify-center gap-2">

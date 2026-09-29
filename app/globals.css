@@ -139,3 +139,12 @@ body {
 .toast-in {
   animation: toast-in 0.18s ease-out;
 }
+
+/*
+ * Chrome прячет стрелки number до фокуса/ховера. В планировщике волн их
+ * нужно видеть сразу — иначе непонятно, что поле крутится.
+ */
+.spin-always::-webkit-inner-spin-button,
+.spin-always::-webkit-outer-spin-button {
+  opacity: 1;
+}

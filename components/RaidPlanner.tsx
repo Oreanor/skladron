@@ -137,13 +137,15 @@ export default function RaidPlanner({
                     })
                   }
                   className={
-                    "w-10 shrink-0 rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 " +
+                    "spin-always w-14 shrink-0 rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 " +
                     "text-center font-mono text-xs text-neutral-200 " +
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500"
                   }
                 />
                 <span className="shrink-0 text-xs text-neutral-400">{t("battle.seconds")}</span>
-                <SectionTitle>{t("raid.wave", { n: wi + 1 })}</SectionTitle>
+                <span className="ml-2">
+                  <SectionTitle>{t("raid.wave", { n: wi + 1 })}</SectionTitle>
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-mono text-xs text-neutral-500">

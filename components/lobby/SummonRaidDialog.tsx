@@ -69,7 +69,6 @@ export default function SummonRaidDialog({
   return (
     <Modal
       title={t("raid.testTitle")}
-      subtitle={t("raid.subtitle")}
       onClose={onCancel}
       footer={
         <div className="flex flex-wrap justify-center gap-2">
