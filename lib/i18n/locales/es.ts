@@ -388,6 +388,17 @@ const es: Dict = {
   "raid.sending": "Enviando…",
   "raid.notEnough": "No se pudo reunir esa cantidad de drones",
 
+  "competition.title": "Competición n.º {n}",
+  "competition.subtitle": "Enjambre fijo según el número. No cuesta nada; gana para abrir el siguiente.",
+  "competition.start": "Empezar",
+  "competition.targetSelf": "A ti — competición n.º {n}",
+  "competition.hint": "La composición la fija el número. En los difíciles: mezcla de cargas en una oleada y varias oleadas de tipos distintos.",
+  "competition.drones": "Drones",
+  "competition.droneLevel": "Nivel de drones",
+  "competition.waves": "Oleadas",
+  "competition.wave": "Oleada {n}",
+  "competition.queued": "Competición n.º {n} en cola · {size} drones",
+
   "stats.battles": "Combates",
   "stats.dronesKilled": "Drones derribados",
   "stats.cellsBurned": "Celdas quemadas",

@@ -388,6 +388,17 @@ const ru: Dict = {
   "raid.sending": "Отправляю…",
   "raid.notEnough": "Не удалось собрать нужное количество дронов",
 
+  "competition.title": "Состязание №{n}",
+  "competition.subtitle": "Фиксированный рой по номеру. Ничего не стоит; победа открывает следующий.",
+  "competition.start": "Начать",
+  "competition.targetSelf": "Себе — состязание №{n}",
+  "competition.hint": "Состав задаёт номер. На сложных — микс начинок в одной волне и несколько волн разного типа.",
+  "competition.drones": "Дронов",
+  "competition.droneLevel": "Уровень дронов",
+  "competition.waves": "Волн",
+  "competition.wave": "Волна {n}",
+  "competition.queued": "Состязание №{n} в очереди · {size} дронов",
+
   "stats.battles": "Боёв",
   "stats.dronesKilled": "Дронов сбито",
   "stats.cellsBurned": "Клеток сгорело",

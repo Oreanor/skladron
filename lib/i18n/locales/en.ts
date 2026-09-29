@@ -388,6 +388,17 @@ const en = {
   "raid.sending": "Sending…",
   "raid.notEnough": "Could not gather that many drones",
 
+  "competition.title": "Competition #{n}",
+  "competition.subtitle": "Fixed swarm for this stage. Costs nothing; win to unlock the next.",
+  "competition.start": "Start",
+  "competition.targetSelf": "Yourself — competition #{n}",
+  "competition.hint": "Composition is set by the stage number. Harder stages mix warheads in a wave and send several waves of different types.",
+  "competition.drones": "Drones",
+  "competition.droneLevel": "Drone level",
+  "competition.waves": "Waves",
+  "competition.wave": "Wave {n}",
+  "competition.queued": "Competition #{n} queued · {size} drones",
+
   "stats.battles": "Battles",
   "stats.dronesKilled": "Drones downed",
   "stats.cellsBurned": "Cells burnt",

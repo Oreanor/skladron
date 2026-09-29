@@ -388,6 +388,17 @@ const de: Dict = {
   "raid.sending": "Wird geschickt…",
   "raid.notEnough": "So viele Drohnen kamen nicht zusammen",
 
+  "competition.title": "Wettkampf Nr. {n}",
+  "competition.subtitle": "Fester Schwarm nach Nummer. Kostet nichts; Sieg öffnet den nächsten.",
+  "competition.start": "Starten",
+  "competition.targetSelf": "Selbst — Wettkampf Nr. {n}",
+  "competition.hint": "Die Zusammensetzung hängt von der Nummer ab. Schwerer: gemischte Gefechtsköpfe in einer Welle und mehrere Wellen unterschiedlicher Art.",
+  "competition.drones": "Drohnen",
+  "competition.droneLevel": "Drohnenstufe",
+  "competition.waves": "Wellen",
+  "competition.wave": "Welle {n}",
+  "competition.queued": "Wettkampf Nr. {n} in der Schlange · {size} Drohnen",
+
   "stats.battles": "Kämpfe",
   "stats.dronesKilled": "Drohnen abgeschossen",
   "stats.cellsBurned": "Felder verbrannt",

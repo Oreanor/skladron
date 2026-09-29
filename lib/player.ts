@@ -96,6 +96,11 @@ export interface Player {
   incoming: AttackOrder[];
   enemies: Enemy[];
   stats: PlayerStats;
+  /**
+   * Какое состязание открыто следующим (1…). Растёт только после чистой
+   * победы в текущем; проигрыш номер не откатывает.
+   */
+  competitionAt: number;
 }
 
 interface Stored {
@@ -115,6 +120,7 @@ interface Stored {
   incoming: AttackOrder[];
   enemies: Enemy[];
   stats: PlayerStats;
+  competitionAt?: number;
 }
 
 const KEY = "wb.player.v1";
@@ -144,6 +150,7 @@ export function newPlayer(now = Date.now()): Player {
       raids: 0,
       looted: 0,
     },
+    competitionAt: 1,
   };
 }
 
@@ -160,6 +167,7 @@ export function wipe(p: Player, now = Date.now()): Player {
   fresh.credits = Math.max(p.credits, CREDITS_START);
   fresh.stats = { ...p.stats, wipes: p.stats.wipes + 1 };
   fresh.enemies = p.enemies;
+  fresh.competitionAt = p.competitionAt;
   return fresh;
 }
 
@@ -219,6 +227,7 @@ export function load(): Player {
       incoming: s.incoming ?? [],
       enemies: s.enemies ?? [],
       stats: s.stats,
+      competitionAt: Math.max(1, s.competitionAt ?? 1),
     };
   } catch {
     return newPlayer();
@@ -244,6 +253,7 @@ export function save(p: Player) {
     incoming: p.incoming,
     enemies: p.enemies,
     stats: p.stats,
+    competitionAt: p.competitionAt,
   };
   try {
     window.localStorage.setItem(KEY, JSON.stringify(s));

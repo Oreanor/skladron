@@ -241,15 +241,25 @@ function EnemyProfile({
         </Button>
       }
     >
-      <div className="space-y-4">
-        <div className="flex items-start gap-4">
+      {/*
+        Слева вся инфа столбиком, справа только карта — под снимок ничего
+        не кладём. Атака и разведка живут в списке соперников.
+      */}
+      <div
+        className={
+          enemy.scout
+            ? "flex flex-col gap-4 sm:flex-row sm:items-start"
+            : "flex flex-col gap-4"
+        }
+      >
+        <div className="flex w-full shrink-0 flex-col gap-3 sm:w-44">
           <Avatar
             avatar={enemy.avatar ?? null}
             name={enemy.name}
             email={enemy.email}
             size="lg"
           />
-          <dl className="min-w-0 flex-1 space-y-1.5 font-mono text-sm">
+          <dl className="space-y-1.5 font-mono text-sm">
             <div className="flex justify-between gap-3">
               <dt className="text-neutral-500">{t("enemies.burnedByMe")}</dt>
               <dd className="text-neutral-200">{enemy.burnedByMe}</dd>
@@ -260,7 +270,7 @@ function EnemyProfile({
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-neutral-500">{t("enemies.lastRaid")}</dt>
-              <dd className="text-neutral-200">
+              <dd className="text-right text-neutral-200">
                 {last ?? t("enemies.noRaidYet")}
               </dd>
             </div>
@@ -271,23 +281,8 @@ function EnemyProfile({
               </div>
             )}
           </dl>
-        </div>
-
-        {enemy.scout && counts && (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-            {/*
-              Снимок крупно: атака и разведка живут в списке соперников,
-              здесь только смотреть. Клик — полная карта с советами.
-            */}
-            <button
-              type="button"
-              onClick={onShowMap}
-              title={t("scout.map")}
-              className="min-w-0 flex-1 cursor-pointer overflow-hidden rounded-md border border-neutral-700 transition hover:border-neutral-500"
-            >
-              <ScoutThumb snapshot={enemy.scout} />
-            </button>
-            <ul className="shrink-0 space-y-2 font-mono text-sm sm:w-40">
+          {counts && (
+            <ul className="space-y-2 border-t border-neutral-800 pt-3 font-mono text-sm">
               <li className="text-xs uppercase tracking-widest text-neutral-500">
                 {t("scout.analysis")}
               </li>
@@ -305,7 +300,18 @@ function EnemyProfile({
                 </li>
               ))}
             </ul>
-          </div>
+          )}
+        </div>
+
+        {enemy.scout && (
+          <button
+            type="button"
+            onClick={onShowMap}
+            title={t("scout.map")}
+            className="min-w-0 flex-1 cursor-pointer overflow-hidden rounded-md border border-neutral-700 transition hover:border-neutral-500"
+          >
+            <ScoutThumb snapshot={enemy.scout} />
+          </button>
         )}
       </div>
     </Modal>

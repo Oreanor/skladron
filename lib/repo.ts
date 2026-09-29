@@ -292,6 +292,7 @@ class LocalRepo implements Repo {
     fresh.name = p.name;
     fresh.enemies = p.enemies;
     fresh.founded = p.founded;
+    fresh.competitionAt = p.competitionAt;
     localSave(fresh);
     return fresh;
   }
@@ -878,7 +879,7 @@ class CloudRepo implements Repo {
     // имя и знакомства переживают перезапуск: это не имущество
     fresh.name = p.name;
     fresh.enemies = p.enemies;
-    fresh.founded = true;
+    fresh.competitionAt = p.competitionAt;
     return fresh;
   }
 
@@ -894,6 +895,7 @@ class CloudRepo implements Repo {
     fresh.credits = Math.max(p.credits, CREDITS_START);
     fresh.stats = { ...p.stats, wipes: p.stats.wipes + 1 };
     fresh.enemies = p.enemies;
+    fresh.competitionAt = p.competitionAt;
     return fresh;
   }
 }

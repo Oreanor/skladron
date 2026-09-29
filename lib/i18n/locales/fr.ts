@@ -388,6 +388,17 @@ const fr: Dict = {
   "raid.sending": "Envoi…",
   "raid.notEnough": "Impossible de réunir autant de drones",
 
+  "competition.title": "Épreuve n°{n}",
+  "competition.subtitle": "Essaim fixe selon le numéro. Ne coûte rien ; gagne pour débloquer le suivant.",
+  "competition.start": "Lancer",
+  "competition.targetSelf": "Toi-même — épreuve n°{n}",
+  "competition.hint": "La composition dépend du numéro. Plus dur : mélange de charges dans une vague et plusieurs vagues de types différents.",
+  "competition.drones": "Drones",
+  "competition.droneLevel": "Niveau des drones",
+  "competition.waves": "Vagues",
+  "competition.wave": "Vague {n}",
+  "competition.queued": "Épreuve n°{n} en file · {size} drones",
+
   "stats.battles": "Combats",
   "stats.dronesKilled": "Drones abattus",
   "stats.cellsBurned": "Cases brûlées",

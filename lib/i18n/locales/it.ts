@@ -388,6 +388,17 @@ const it: Dict = {
   "raid.sending": "Invio…",
   "raid.notEnough": "Non è stato possibile radunare tanti droni",
 
+  "competition.title": "Gara n. {n}",
+  "competition.subtitle": "Sciame fisso in base al numero. Non costa nulla; vinci per sbloccare il successivo.",
+  "competition.start": "Inizia",
+  "competition.targetSelf": "Te stesso — gara n. {n}",
+  "competition.hint": "La composizione la decide il numero. Nei più difficili: mix di cariche in un’ondata e più ondate di tipi diversi.",
+  "competition.drones": "Droni",
+  "competition.droneLevel": "Livello dei droni",
+  "competition.waves": "Ondate",
+  "competition.wave": "Ondata {n}",
+  "competition.queued": "Gara n. {n} in coda · {size} droni",
+
   "stats.battles": "Combattimenti",
   "stats.dronesKilled": "Droni abbattuti",
   "stats.cellsBurned": "Celle bruciate",

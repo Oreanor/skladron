@@ -68,6 +68,7 @@ import {
   normName,
   type Player,
 } from "@/lib/player";
+import { loadCompetitionAt, saveCompetitionAt } from "@/lib/competition";
 import { getRepo } from "@/lib/repo";
 import {
   type Enemy,
@@ -403,6 +404,8 @@ export default function Lobby({
       .then(({ player, income, reports: loadedReports }) => {
         if (!alive) return;
         playerRef.current = player;
+        player.competitionAt = Math.max(player.competitionAt ?? 1, loadCompetitionAt());
+        saveCompetitionAt(player.competitionAt);
         setReports(loadedReports);
         setReady(true);
         loadRaids();
@@ -631,6 +634,16 @@ export default function Lobby({
             o.result.killedByGuns + o.result.killedByMg + o.result.killedByBalloons;
           p.stats.dronesKilled += killed;
           p.stats.cellsBurned += o.result.burned;
+          // Состязание пройдено — открываем следующий номер. Только победа
+          // и только тот номер, что сейчас открыт: старые в очереди не двигают.
+          if (
+            o.won &&
+            battle.competitionStage &&
+            battle.competitionStage === p.competitionAt
+          ) {
+            p.competitionAt = battle.competitionStage + 1;
+            saveCompetitionAt(p.competitionAt);
+          }
           p.credits +=
             insurance(
               o.result.burned,
@@ -964,21 +977,28 @@ export default function Lobby({
   };
 
   /**
-   * Пробный налёт на свой же склад: та же панель, но ничего не стоит и
-   * никуда не пишется. Заказ кладём прямо в свою очередь — сервер о нём не
-   * знает, как и о ботах с кнопки «+ налёт».
+   * Состязание на свой склад: фиксированный состав по номеру, бесплатно,
+   * в локальную очередь. Сервер о нём не знает.
    */
-  const testRaid = (waves: WavePlan[], droneLevel: number): string | null => {
+  const testRaid = (
+    waves: WavePlan[],
+    droneLevel: number,
+    stage: number
+  ): string | null => {
     const n = raidTotal(waves);
     if (n < 1) return t("raid.empty");
-    const order = makeOrder(t("raid.testTitle"), n, waves[0].pattern, waves[0].direction);
+    const order = makeOrder(
+      t("competition.title", { n: stage }),
+      n,
+      waves[0].pattern,
+      waves[0].direction
+    );
     order.waves = waves;
-    // Уровень дронов задаётся явно: от него зависит и скорость роя, и радиус
-    // подавления, а без него пробный налёт всегда шёл первым уровнем.
     order.droneLevel = droneLevel;
+    order.competitionStage = stage;
     p.incoming.push(order);
     setTestRaid(false);
-    setMessage(t("raid.testQueued", { count: 1, size: n }));
+    setMessage(t("competition.queued", { n: stage, size: n }));
     notifyTestRaid(n);
     touch();
     return null;
@@ -1995,7 +2015,7 @@ export default function Lobby({
       {testRaidOpen && (
         <TestRaidDialog
           initial={suggestedRaid()}
-          level={p.levels.drones}
+          competitionAt={p.competitionAt ?? 1}
           enemies={p.enemies}
           drones={drones}
           credits={p.credits}
