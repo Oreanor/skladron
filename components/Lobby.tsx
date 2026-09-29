@@ -1472,7 +1472,7 @@ export default function Lobby({
           {t("doomed.text")}
         </p>
         <Button
-          variant="neutral"
+          variant="build"
           size="lg"
           onClick={async () => {
             try {
@@ -2130,7 +2130,12 @@ export default function Lobby({
                   </a>
                 )
               )}
-              <Button onClick={() => setModal(null)}>{t("common.ok")}</Button>
+              <Button
+                variant={telegram?.linked || !TG_BOT ? "build" : "outline"}
+                onClick={() => setModal(null)}
+              >
+                {t("common.ok")}
+              </Button>
             </div>
           }
         >

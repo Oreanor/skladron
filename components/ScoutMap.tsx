@@ -100,7 +100,7 @@ export default function ScoutMap({
         <span className="min-w-0 flex-1 truncate text-xs text-neutral-500">
           {stale.length > 0 ? t("scout.stale", { patches: stale.length }) : t("scout.viewHint", { ago })}
         </span>
-        <Button variant="neutral" size="sm" onClick={onClose}>
+        <Button variant="build" size="sm" onClick={onClose}>
           {t("common.ok")}
         </Button>
       </div>

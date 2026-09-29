@@ -301,7 +301,7 @@ const de: Dict = {
   "controls.fallingDrone": "Eine getroffene Drohne fällt drei Felder weiter — schieß sie nicht überm Lager ab.",
   "map.zoomIn": "Heranzoomen",
   "map.zoomOut": "Herauszoomen",
-  "controls.zoomDesktop": "Scrollen oder mit der mittleren Taste ziehen bewegt die Karte; Pinch, Strg+Rad oder die +/−-Tasten zoomen.",
+  "controls.zoomDesktop": "Rad zoomt; mittlere oder rechte Taste zieht die Karte; +/−-Tasten zoomen auch.",
   "controls.zoomTouch": "Zwei Finger bewegen die Karte, Pinch zoomt; auf der Karte gibt es auch +/−-Tasten.",
   "controls.tapCell": "Tippe ein Feld neben dem Gebäude an, um es zu bauen.",
   "controls.dragDraft": "Ziehen erzeugt einen Flächenentwurf, der bestätigt werden muss.",

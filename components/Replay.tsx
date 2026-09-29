@@ -265,7 +265,7 @@ export default function Replay({
           </Button>
         )}
         {onClose && (
-          <Button variant="neutral" className={shareId ? "" : "ml-auto"} onClick={onClose}>
+          <Button variant="build" className={shareId ? "" : "ml-auto"} onClick={onClose}>
             {t("common.ok")}
           </Button>
         )}

@@ -246,7 +246,9 @@ function EnemyProfile({
             )}
           </div>
           <div className="flex justify-center">
-            <Button onClick={onClose}>{t("common.ok")}</Button>
+            <Button variant="build" onClick={onClose}>
+              {t("common.ok")}
+            </Button>
           </div>
         </div>
       }
@@ -326,7 +328,7 @@ function ScoutDialog({
           >
             {max < 1 ? t("scout.needPlanes") : t("scout.send", { n })}
           </Button>
-          <Button onClick={onCancel}>{t("common.cancel")}</Button>
+          <Button variant="outline" onClick={onCancel}>{t("common.cancel")}</Button>
         </div>
       }
     >
@@ -411,7 +413,7 @@ function RaidDialog({
           >
             {sending ? t("raid.sending") : t("raid.send", { n: total })}
           </Button>
-          <Button onClick={onCancel}>{t("common.cancel")}</Button>
+          <Button variant="outline" onClick={onCancel}>{t("common.cancel")}</Button>
         </div>
       }
     >

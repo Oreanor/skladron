@@ -302,7 +302,7 @@ const en = {
   "controls.fallingDrone": "A hit drone falls three cells on — do not shoot it over your warehouse.",
   "map.zoomIn": "Zoom in",
   "map.zoomOut": "Zoom out",
-  "controls.zoomDesktop": "Scroll or drag with the middle button to move the map; pinch, Ctrl+wheel or the +/− buttons to zoom.",
+  "controls.zoomDesktop": "Wheel zooms; middle or right button drags the map; +/− buttons zoom too.",
   "controls.zoomTouch": "Two fingers move the map, pinch zooms; the +/− buttons on the map zoom too.",
   "controls.tapCell": "Tap a cell next to the building — build it.",
   "controls.dragDraft": "Drag — an area draft, it has to be confirmed.",

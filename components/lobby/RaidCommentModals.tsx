@@ -24,7 +24,7 @@ export function RaidOpenerModal({
       subtitle={t("raidComment.openerSubtitle")}
       onClose={() => onDone("")}
       footer={
-        <Button className="w-full" onClick={() => onDone(reply.trim())}>
+        <Button className="w-full" variant="build" onClick={() => onDone(reply.trim())}>
           {t("common.ok")}
         </Button>
       }
@@ -83,7 +83,7 @@ export function PostRaidCommentModal({
           <Button variant="build" className="flex-1" disabled={busy} onClick={() => send()}>
             {t("raidComment.send")}
           </Button>
-          <Button disabled={busy} onClick={() => finish(null)}>
+          <Button variant="outline" disabled={busy} onClick={() => finish(null)}>
             {t("raidComment.skip")}
           </Button>
         </div>

@@ -46,7 +46,7 @@ export function UpgradeDialog({
       title={t("tool.upgrade")}
       onClose={onClose}
       footer={
-        <Button variant="neutral" block onClick={onClose}>
+        <Button variant="build" block onClick={onClose}>
           {t("common.ok")}
         </Button>
       }
@@ -115,7 +115,11 @@ export function InsuranceDialog({
               {t("upgrade.buy", { cost: fmt(cost) })}
             </Button>
           )}
-          <Button className={canUpgrade ? "" : "flex-1"} onClick={onClose}>
+          <Button
+            variant={canUpgrade ? "outline" : "build"}
+            className={canUpgrade ? "" : "flex-1"}
+            onClick={onClose}
+          >
             {t("common.ok")}
           </Button>
         </div>
@@ -192,7 +196,9 @@ export function LoanDialog({
               {t("loan.take", { amount: fmt(amount) })}
             </Button>
           )}
-          <Button onClick={onClose}>{t(owed ? "common.ok" : "common.cancel")}</Button>
+          <Button variant="outline" onClick={onClose}>
+            {t(owed ? "common.ok" : "common.cancel")}
+          </Button>
         </div>
       }
     >

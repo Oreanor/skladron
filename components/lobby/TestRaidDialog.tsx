@@ -106,7 +106,7 @@ export default function TestRaidDialog({
                 ? t("raid.sending")
                 : t("raid.send", { n: total })}
           </Button>
-          <Button onClick={onCancel}>{t("common.cancel")}</Button>
+          <Button variant="outline" onClick={onCancel}>{t("common.cancel")}</Button>
         </div>
       }
     >

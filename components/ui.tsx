@@ -14,12 +14,12 @@ export { IconDrone, IconMenu, IconTarget, IconUsers } from "./icons";
 import { useT } from "@/lib/i18n";
 
 /*
- * Общая мелочь интерфейса. Правило простое: цвет означает смысл, а не вкус.
- *   emerald — постройка и подтверждение,
- *   red     — атака и опасность,
- *   amber   — временный режим (раскладка контейнеров),
- *   светлый — нейтральное завершение (купить, закрыть, вернуться),
- *   обводка — второстепенное.
+ * Общая мелочь интерфейса. Цвет = роль, не вкус.
+ *   build   — primary: OK, купить, подтвердить (изумруд);
+ *   danger  — опасное действие: атака, снос;
+ *   outline — secondary: отмена, пропуск, рядом с primary;
+ *   neutral — светлое завершение экрана-итога (редко; чаще build);
+ *   ghost   — тихая иконка/крест в шапке.
  * Размеры на телефоне крупнее, чем на десктопе: это зашито в сами размеры,
  * чтобы каждая кнопка не дописывала себе lg:py-*.
  */
@@ -429,7 +429,7 @@ export function NameDialog({
           >
             {confirm}
           </Button>
-          <Button onClick={onCancel}>{t("common.cancel")}</Button>
+          <Button variant="outline" onClick={onCancel}>{t("common.cancel")}</Button>
         </div>
       }
     >
@@ -476,7 +476,7 @@ export function ConfirmDialog({
           <Button variant="danger" className="flex-1" onClick={onConfirm}>
             {confirm}
           </Button>
-          <Button onClick={onCancel}>{t("common.cancel")}</Button>
+          <Button variant="outline" onClick={onCancel}>{t("common.cancel")}</Button>
         </div>
       }
     >

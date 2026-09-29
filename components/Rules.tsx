@@ -81,7 +81,7 @@ export default function Rules({ onClose }: { onClose: () => void }) {
       wide
       onClose={onClose}
       footer={
-        <Button variant="neutral" block onClick={onClose}>
+        <Button variant="build" block onClick={onClose}>
           {t("common.ok")}
         </Button>
       }

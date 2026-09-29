@@ -301,7 +301,7 @@ const pt: Dict = {
   "controls.fallingDrone": "Um drone atingido cai três células à frente — não o abatas sobre o armazém.",
   "map.zoomIn": "Aproximar",
   "map.zoomOut": "Afastar",
-  "controls.zoomDesktop": "Desloca ou arrasta com o botão do meio para mover o mapa; pinça, Ctrl+roda ou os botões +/− para o zoom.",
+  "controls.zoomDesktop": "A roda aproxima; o botão do meio ou direito arrasta o mapa; há também botões +/−.",
   "controls.zoomTouch": "Dois dedos movem o mapa, a pinça aproxima; há também botões +/− no mapa.",
   "controls.tapCell": "Toca numa célula junto ao edifício para a construir.",
   "controls.dragDraft": "Arrastar cria um rascunho de área que é preciso confirmar.",

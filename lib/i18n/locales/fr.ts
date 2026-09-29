@@ -301,7 +301,7 @@ const fr: Dict = {
   "controls.fallingDrone": "Un drone touché tombe trois cases plus loin — ne l’abats pas au-dessus de l’entrepôt.",
   "map.zoomIn": "Zoom avant",
   "map.zoomOut": "Zoom arrière",
-  "controls.zoomDesktop": "Défile ou fais glisser avec le bouton du milieu pour déplacer la carte ; pincement, Ctrl+molette ou les boutons +/− pour le zoom.",
+  "controls.zoomDesktop": "La molette zoome ; le bouton du milieu ou droit déplace la carte ; boutons +/− aussi.",
   "controls.zoomTouch": "Deux doigts déplacent la carte, le pincement zoome ; il y a aussi les boutons +/− sur la carte.",
   "controls.tapCell": "Touche une case voisine du bâtiment pour la construire.",
   "controls.dragDraft": "Le glisser crée une ébauche de surface, à valider.",

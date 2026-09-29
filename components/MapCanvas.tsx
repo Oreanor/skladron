@@ -179,36 +179,24 @@ export default function MapCanvas({
     const canvas = canvasRef.current;
     if (!canvas) return;
     /**
-     * Колесо и тачпад приходят одним и тем же событием, и различает их
-     * только ctrlKey: щипок по тачпаду браузер присылает как wheel с
-     * ctrlKey, обычная прокрутка двумя пальцами — без него.
-     *
-     * Поэтому щипок и ctrl+колесо зумят, а простая прокрутка тащит карту —
-     * как во всяком редакторе. Раньше колесо зумило всегда, и на тачпаде
-     * карту нельзя было сдвинуть вовсе: два пальца давали зум.
+     * Колесо всегда зумит — привычка мыши. Щипок по тачпаду приходит как
+     * wheel с ctrlKey и тоже зумит (чуть резче). Карту тащат средней/правой
+     * кнопкой или двумя пальцами; кнопки +/− рядом с масштабом — запасной
+     * путь, когда колеса нет.
      */
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       wake();
-      if (e.ctrlKey) {
-        const r = canvas.getBoundingClientRect();
-        zoomAt(Math.exp(-e.deltaY * 0.01), e.clientX - r.left, e.clientY - r.top);
-        return;
-      }
-      // Строки и страницы приводим к пикселям: мышь шлёт строки, тачпад — пиксели.
-      const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? boxSize.current.h : 1;
-      const v = viewRef.current;
-      // Shift — общая привычка: прокрутка вбок, когда её нечем дать.
-      const dx = e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX;
-      const dy = e.shiftKey && !e.deltaX ? 0 : e.deltaY;
-      v.panX += (dx * k) / v.zoom;
-      v.panY += (dy * k) / v.zoom;
-      clampPan(v);
-      viewDirty.current = true;
+      const r = canvas.getBoundingClientRect();
+      zoomAt(
+        Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0022)),
+        e.clientX - r.left,
+        e.clientY - r.top
+      );
     };
     canvas.addEventListener("wheel", onWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", onWheel);
-  }, [zoomAt, wake, clampPan]);
+  }, [zoomAt, wake]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -397,8 +385,7 @@ export default function MapCanvas({
         style={{ cursor, width: box.w || undefined, height: box.h || undefined }}
         className="block touch-none select-none [image-rendering:pixelated]"
       />
-      {/* Зум кнопками: колесо теперь тащит, и иначе на тачпаде без щипка
-          приблизиться было бы нечем. */}
+      {/* Зум кнопками — запасной путь без колеса; колесо само по себе зумит. */}
       <div className="absolute left-2 top-2 flex items-center gap-1 rounded bg-black/50 px-1 py-0.5 font-mono text-xs text-white">
         <button
           type="button"

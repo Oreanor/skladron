@@ -268,7 +268,7 @@ export default function Scout({
                   <Row label={t("scout.gunsFound")} value={String(visibleGuns(done))} />
                   <Row label={t("scout.lost")} value={String(done.lost)} />
                 </dl>
-                <Button variant="neutral" block onClick={() => onFinish(done)}>
+                <Button variant="build" block onClick={() => onFinish(done)}>
                   {t("scout.keep")}
                 </Button>
               </div>

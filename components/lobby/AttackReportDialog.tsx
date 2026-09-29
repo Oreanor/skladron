@@ -56,7 +56,11 @@ export default function AttackReportDialog({
               {t("replay.watch")}
             </Button>
           )}
-          <Button variant="neutral" className={onWatch ? "" : "flex-1"} onClick={onClose}>
+          <Button
+            variant={onWatch ? "outline" : "build"}
+            className={onWatch ? "" : "flex-1"}
+            onClick={onClose}
+          >
             {t("common.ok")}
           </Button>
         </div>
