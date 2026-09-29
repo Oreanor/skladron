@@ -16,7 +16,7 @@ export const SCRAP_REWARD = 5;
 
 /** Заём: от и до, ставка за срок и сам срок. */
 export const LOAN_MIN = 1000;
-export const LOAN_MAX = 5000;
+export const LOAN_MAX = 10_000;
 export const LOAN_STEP = 500;
 export const LOAN_RATE = 10; // процентов
 export const LOAN_HOURS = 24;
@@ -38,6 +38,13 @@ export const SALE_MULTIPLIER = 2;
 export const INCOME_CAP_SHIFTS = 28; // потолок накопления — две недели смен
 export const CELL_LOOT_REWARD = 50; // нападавшему за каждую сожжённую клетку склада
 export const INSURANCE_CELL = 5; // страховка за сгоревшую клетку — ровно на ремонт
+/** Премия защитнику за чистый отбой: столько за каждого дрона в рое.
+ *  ~15 × 50–80 дронов ≈ 750–1200 кр — в 2–3 раза меньше типичного лута атаки. */
+export const DEFENSE_CLEAN_PER_DRONE = 15;
+/** Премия за участие, если что-то всё же сгорело. */
+export const DEFENSE_DIRTY_PER_DRONE = 6;
+/** Сколько снимает с грязной премии каждая сгоревшая клетка. */
+export const DEFENSE_BURN_PENALTY = 8;
 /** Прибавка к покрытию за каждый уровень страховки. */
 export const INSURANCE_PER_LEVEL = 0.25;
 /** Выше пятого уровня страховать нечего: покрытие и так полное. */
@@ -73,6 +80,17 @@ export const insurance = (
       trapsLost * TRAP_COST) *
       insuranceShare(level)
   );
+
+/**
+ * Премия защитнику за отбитый налёт. Чистый отбой платит лучше; сожжённые
+ * клетки быстро съедают «грязную» ставку — основные деньги по-прежнему в атаке.
+ */
+export const defenseBounty = (drones: number, burned: number) => {
+  const n = Math.max(0, Math.floor(drones));
+  const b = Math.max(0, Math.floor(burned));
+  if (b === 0) return n * DEFENSE_CLEAN_PER_DRONE;
+  return Math.max(0, n * DEFENSE_DIRTY_PER_DRONE - b * DEFENSE_BURN_PENALTY);
+};
 /**
  * Уровни. Апгрейд общий на класс: дорожает и уже лежащее на складе, и всё,
  * что купишь потом. Второй уровень стоит 5 000, третий 10 000, и так далее —

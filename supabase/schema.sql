@@ -33,11 +33,14 @@ language sql immutable as $$
     when 'upgrade' then 5000 -- апгрейд на любую ступень стоит одинаково
     when 'price_step' then 10 -- на столько процентов дорожает вещь за уровень
     when 'loan_min'   then 1000  -- меньше этого банк не выдаёт
-    when 'loan_max'   then 5000  -- и больше тоже
+    when 'loan_max'   then 10000 -- потолок займа = стартовая казна
     when 'loan_rate'  then 10    -- процент за сутки
     when 'loan_hours' then 24    -- срок займа
     when 'max_raid' then 500 -- потолок одного налёта, тот же и на клиенте
     when 'start'    then 10000 -- с чего начинает новый склад и к чему сбрасывает restart_game
+    when 'defend_clean' then 15 -- защитнику за дрона при чистом отбое (~2–3× меньше лута атаки)
+    when 'defend_dirty' then 6  -- за дрона, если что-то сгорело
+    when 'defend_burn'  then 8  -- штраф грязной премии за сгоревшую клетку
     when 'queued'   then 3   -- столько своих налётов можно держать в чужой очереди разом
     -- Надбавка за начинку, процентов от цены дрона. Те же числа в PAYLOAD
     -- на клиенте: их обязаны считать одинаково, иначе окно налёта покажет
@@ -1323,6 +1326,7 @@ declare
   depots_lost int;
   payout int;
   cover int;
+  drones_sent int;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   if octet_length(bin) <> 10000 then raise exception 'bad map size'; end if;
@@ -1397,8 +1401,19 @@ begin
               + greatest(0, gun_count(cur_guns, 'trap') - gun_count(new_guns, 'trap'))
                 * price('trap')) * cover) / 100;
 
+  -- Премия за отбой: чистый платит лучше; сожжённые клетки съедают грязную ставку.
+  drones_sent := greatest(0, coalesce((result->>'dronesSent')::int, 0));
+  if burned = 0 then
+    payout := payout + drones_sent * price('defend_clean');
+  else
+    payout := payout + greatest(
+      0,
+      drones_sent * price('defend_dirty') - burned * price('defend_burn')
+    );
+  end if;
+
   -- За сбитых не платят: деньги приносит товар, а не стрельба. Зато
-  -- погорельцу выплачивается страховка.
+  -- погорельцу выплачивается страховка и премия за отбой.
   update profiles
      set drones = depot_sum(new_depots),
          credits = profiles.credits + payout,
@@ -1602,7 +1617,7 @@ begin
    where user_id = uid;
 
   update profiles
-     set credits = profiles.credits,
+     set credits = greatest(profiles.credits, price('start')),
          drones = 0, founded = false, last_income_at = now(),
          stats = jsonb_set(stats, '{wipes}', to_jsonb((stats->>'wipes')::int + 1))
    where id = uid;

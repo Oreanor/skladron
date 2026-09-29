@@ -38,6 +38,7 @@ import {
   loanDebt,
   goodsValue,
   insurance,
+  defenseBounty,
   GUN_COST,
   ROCKET_COST,
   SPRAY_COST,
@@ -592,15 +593,16 @@ export default function Lobby({
           const killed = o.result.killedByGuns + o.result.killedByMg;
           p.stats.dronesKilled += killed;
           p.stats.cellsBurned += o.result.burned;
-          p.credits += insurance(
-            o.result.burned,
-            goodsBefore - goodsValue(o.depots),
-            o.result.gunsLost,
-            p.levels.insurance,
-            o.result.spraysLost,
-            o.result.trapsLost,
-            o.result.rocketsLost
-          );
+          p.credits +=
+            insurance(
+              o.result.burned,
+              goodsBefore - goodsValue(o.depots),
+              o.result.gunsLost,
+              p.levels.insurance,
+              o.result.spraysLost,
+              o.result.trapsLost,
+              o.result.rocketsLost
+            ) + defenseBounty(battle.drones, o.result.burned);
           // Счёт вражды: записываем, сколько он у нас сжёг. Ищем по почте —
           // имя склада не уникально и меняется переименованием.
           const foe = findFoe(p, battle);

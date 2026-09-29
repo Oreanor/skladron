@@ -80,6 +80,7 @@ const it: Dict = {
   "replay.of": "attacco a",
   "scout.map": "Mappa",
   "battle.insurance": "assicurazione",
+  "battle.defenseBounty": "premio di difesa",
   "restart.menu": "Ricomincia",
   "restart.title": "Ricominciare la partita?",
   "restart.hint": "Magazzino, crediti, droni, cannoni e livelli tornano all’inizio. Il nome e la lista dei rivali restano. Non si torna indietro.",

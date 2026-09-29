@@ -155,7 +155,8 @@ export function wipe(p: Player, now = Date.now()): Player {
   // долг сносом склада не списывается
   fresh.loan = p.loan;
   fresh.loanDue = p.loanDue;
-  fresh.credits = p.credits;
+  // После сноса — не меньше стартовой казны: иначе с нуля не отстроиться.
+  fresh.credits = Math.max(p.credits, CREDITS_START);
   fresh.stats = { ...p.stats, wipes: p.stats.wipes + 1 };
   fresh.enemies = p.enemies;
   return fresh;

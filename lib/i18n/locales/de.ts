@@ -80,6 +80,7 @@ const de: Dict = {
   "replay.of": "Angriff auf",
   "scout.map": "Karte",
   "battle.insurance": "Versicherung",
+  "battle.defenseBounty": "Abwehrprämie",
   "restart.menu": "Neu anfangen",
   "restart.title": "Das Spiel neu anfangen?",
   "restart.hint": "Lager, Kredite, Drohnen, Geschütze und Stufen gehen ganz an den Anfang zurück. Name und Gegnerliste bleiben. Rückgängig geht das nicht.",

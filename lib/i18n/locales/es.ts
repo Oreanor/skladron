@@ -80,6 +80,7 @@ const es: Dict = {
   "replay.of": "ataque a",
   "scout.map": "Mapa",
   "battle.insurance": "seguro",
+  "battle.defenseBounty": "prima de defensa",
   "restart.menu": "Empezar de nuevo",
   "restart.title": "¿Empezar la partida de nuevo?",
   "restart.hint": "El almacén, los créditos, los drones, los cañones y los niveles vuelven al principio. El nombre y la lista de rivales se mantienen. No se puede deshacer.",

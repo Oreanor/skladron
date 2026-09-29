@@ -14,7 +14,7 @@ import {
   type GameState,
 } from "@/lib/engine";
 import { drawFrame, COLORS } from "@/lib/render";
-import { goodsValue, insurance, fmt } from "@/lib/economy";
+import { goodsValue, insurance, defenseBounty, fmt } from "@/lib/economy";
 import MapCanvas, { type Pt } from "./MapCanvas";
 import { Button, Chip, ChipBar, IconButton, Panel, Row } from "./ui";
 import { encodeTrace, type Frame } from "@/lib/replay";
@@ -175,13 +175,15 @@ export default function Battle({
 
   const patternName = t(`pattern.${order.pattern}` as Key).toLowerCase();
   const seconds = `${Math.floor(hud?.time ?? 0)} ${t("battle.seconds")}`;
-  // За сбитых не платят. Что реально придёт — страховка за пепелище.
-  const payout = insurance(
+  // За сбитых не платят. Что реально придёт — страховка и премия за отбой.
+  const insurePay = insurance(
     hud?.burned ?? 0,
     hud?.goodsLost ?? 0,
     hud?.gunsLost ?? 0,
     insuranceLevel
   );
+  const bountyPay = defenseBounty(order.drones, hud?.burned ?? 0);
+  const payout = insurePay + bountyPay;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-4">
@@ -294,6 +296,12 @@ export default function Battle({
                       done.result.trapsLost
                     )
                   )} ${t("battle.creditsSuffix")}`}
+                />
+                <Row
+                  label={t("battle.defenseBounty")}
+                  value={`+${fmt(defenseBounty(order.drones, done.result.burned))} ${t(
+                    "battle.creditsSuffix"
+                  )}`}
                 />
                 <Row label={t("battle.leaked")} value={String(done.result.leaked)} />
                 <Row

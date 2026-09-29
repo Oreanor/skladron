@@ -12,7 +12,7 @@ import {
   sanitizeGuns,
 } from "./base";
 
-import { LOAN_HOURS, MAX_LEVEL, loanDebt, upgradeCost } from "./economy";
+import { CREDITS_START, LOAN_HOURS, MAX_LEVEL, loanDebt, upgradeCost } from "./economy";
 import { normalizeAvatarForStorage, type Avatar } from "./avatar";
 import type {
   AttackOrder,
@@ -801,7 +801,8 @@ class CloudRepo implements Repo {
     // Уровни переживают пожар: на сервере они и не сбрасывались, а клиент
     // забывал их и потом предлагал апгрейд по цене первого уровня.
     fresh.levels = { ...p.levels };
-    fresh.credits = p.credits;
+    // Сервер уже поднял казну до старта, если было меньше; зеркалим здесь.
+    fresh.credits = Math.max(p.credits, CREDITS_START);
     fresh.stats = { ...p.stats, wipes: p.stats.wipes + 1 };
     fresh.enemies = p.enemies;
     return fresh;

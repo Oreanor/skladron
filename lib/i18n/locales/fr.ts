@@ -80,6 +80,7 @@ const fr: Dict = {
   "replay.of": "raid sur",
   "scout.map": "Carte",
   "battle.insurance": "assurance",
+  "battle.defenseBounty": "prime de défense",
   "restart.menu": "Tout recommencer",
   "restart.title": "Recommencer la partie ?",
   "restart.hint": "L’entrepôt, les crédits, les drones, les canons et les niveaux repartent de zéro. Le nom et la liste des rivaux restent. C’est irréversible.",

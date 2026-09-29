@@ -81,6 +81,7 @@ const en = {
   "replay.of": "raid on",
   "scout.map": "Map",
   "battle.insurance": "insurance",
+  "battle.defenseBounty": "defence bounty",
   "restart.menu": "Start over",
   "restart.title": "Start the game over?",
   "restart.hint": "The warehouse, credits, drones, guns and levels go back to the very beginning. The name and the rival list stay. This cannot be undone.",
