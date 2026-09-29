@@ -462,12 +462,23 @@ alter table attacks add column if not exists trace text;
 -- ровно те, что писались до версий.
 alter table attacks add column if not exists simulation_version int;
 
--- Бои прежних версий отыграть нечем: волны у них строились иначе, и запись
--- рук к новой геометрии не подходит. Пока игра не вышла, такие просто
--- вычищаем — и старые, и те, что останутся от следующего поднятия версии.
--- Прогон схемы после смены sim_version() сам подметает за собой.
-delete from attacks
- where simulation_version is null or simulation_version <> sim_version();
+-- Версия боя у налёта значит разное до и после того, как его отыграли.
+--
+-- Неотбитый налёт хранит только состав волн, зерно и сторону: расписание
+-- вылетов по ним строится в тот миг, когда защитник входит в бой. Играть
+-- его новыми правилами можно — он ещё не игран, и расходиться не с чем.
+-- Такие просто перештамповываем, иначе очередь запирается наглухо: она
+-- разбирается строго по порядку, и один неиграбельный налёт в голове
+-- останавливает всё.
+update attacks
+   set simulation_version = sim_version()
+ where status = 'pending'
+   and (simulation_version is null or simulation_version <> sim_version());
+
+-- А вот отыгранный хранит ещё и запись рук защитника. Она снята под ту
+-- геометрию волн и к новой не подходит: повтор разошёлся бы с боем молча
+-- и неверно. Сам налёт с его добычей и разговором оставляем — пропадает
+-- только возможность его пересмотреть.
 
 alter table attacks alter column simulation_version set default sim_version();
 alter table attacks alter column simulation_version set not null;
@@ -771,7 +782,10 @@ begin
           head->>'pattern', coalesce((head->>'direction')::int, 0),
           attack_seed, attack_waves,
           (select coalesce((p.levels->>'drones')::int, 1) from profiles p where p.id = uid),
-          3)
+          -- Версию берём у sim_version(), а не числом: тут стояла тройка с
+          -- тех времён, когда версия и была тройкой, и каждое поднятие
+          -- делало все новые налёты неиграбельными.
+          sim_version())
   returning attacks.id into order_id;
   note := left(btrim(coalesce(opener, '')), 500);
   if note <> '' then

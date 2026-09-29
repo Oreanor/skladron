@@ -15,6 +15,7 @@ import {
 
 import { CREDITS_START, LOAN_HOURS, MAX_LEVEL, loanDebt, upgradeCost } from "./economy";
 import { normalizeAvatarForStorage, type Avatar } from "./avatar";
+import { SIMULATION_VERSION } from "./tuning";
 import type {
   AttackOrder,
   AttackReport,
@@ -423,7 +424,13 @@ class CloudRepo implements Repo {
     if (reportResult.error) throw reportResult.error;
     if (profileResult.error) throw profileResult.error;
 
-    const incoming = ((incomingResult.data ?? []) as IncomingAttackRow[]).map((row) => ({
+    const incoming = ((incomingResult.data ?? []) as IncomingAttackRow[])
+      // Налёт чужой версии отыграть нечем — у него другая геометрия волн.
+      // Выкидываем при чтении, а не при входе в бой: очередь разбирается
+      // строго по порядку, и такой налёт запер бы её целиком. Пропасть он
+      // не пропадёт — прогон схемы подметает их при поднятии версии.
+      .filter((row) => (row.simulation_version ?? 1) === SIMULATION_VERSION)
+      .map((row) => ({
       id: row.id,
       from: row.from_name,
       createdAt: Date.parse(row.created_at),
@@ -437,7 +444,7 @@ class CloudRepo implements Repo {
       waves: row.waves ?? undefined,
       // дроны летят на том уровне, до какого их довёл нападающий
       droneLevel: row.drone_level ?? 1,
-      simulationVersion: row.simulation_version ?? 1,
+      simulationVersion: row.simulation_version ?? SIMULATION_VERSION,
       fromEmail: row.from_email ?? undefined,
       avatar: row.avatar ?? null,
       opener: row.opener ?? undefined,
@@ -450,8 +457,11 @@ class CloudRepo implements Repo {
       result: row.result,
       loot: row.loot,
       destroyed: row.destroyed,
-      // повтор есть не у всех: старые налёты писались без слепка склада
-      replay: row.snap_cells
+      // Повтор есть не у всех: старые налёты писались без слепка склада, а
+      // у снятых под прежнюю версию боя запись рук к нынешней геометрии
+      // волн не подходит — такой повтор не показываем вовсе.
+      replay:
+        row.snap_cells && (row.simulation_version ?? 1) === SIMULATION_VERSION
         ? {
             order: {
               id: row.id,
@@ -711,6 +721,10 @@ class CloudRepo implements Repo {
       resolved_at: string;
     }[] | null)?.[0];
     if (!row) return null;
+    // Повтор, снятый под прежнюю версию боя, проигрывать нечем: запись рук
+    // не подходит к нынешней геометрии волн. Лучше честно сказать «нет
+    // повтора», чем уронить страницу на попытке его построить.
+    if ((row.simulation_version ?? 1) !== SIMULATION_VERSION) return null;
     return {
       order: {
         id,
