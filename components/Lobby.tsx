@@ -1920,7 +1920,7 @@ export default function Lobby({
         ))}
       </div>
 
-      <div className="order-2 flex min-h-0 flex-1 flex-col gap-2 lg:order-3 lg:grid lg:grid-cols-[minmax(0,1fr)_28rem] lg:gap-4">
+      <div className="order-2 flex min-h-0 flex-1 flex-col gap-2 lg:order-3 lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-4">
         {/* Левая колонка: карта забирает всю свободную высоту. */}
         <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
 
