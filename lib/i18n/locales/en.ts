@@ -17,7 +17,7 @@ const en = {
   "talk.send": "Send",
   "talk.remove": "Delete",
   "talk.signIn": "Sign in to leave a comment.",
-  "raidComment.openerField": "Note to defender (optional)",
+  "raidComment.openerField": "Message (optional)",
   "raidComment.openerFieldPlaceholder": "A short line before the battle…",
   "raidComment.openerTitle": "Message from {from}",
   "raidComment.openerSubtitle": "You can reply briefly — or skip and defend.",

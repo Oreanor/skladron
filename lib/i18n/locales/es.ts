@@ -16,7 +16,7 @@ const es: Dict = {
   "talk.send": "Enviar",
   "talk.remove": "Eliminar",
   "talk.signIn": "Inicia sesión para comentar.",
-  "raidComment.openerField": "Nota al defensor (opcional)",
+  "raidComment.openerField": "Mensaje (opcional)",
   "raidComment.openerFieldPlaceholder": "Una línea corta antes del combate…",
   "raidComment.openerTitle": "Mensaje de {from}",
   "raidComment.openerSubtitle": "Puedes responder en breve — o pasar a defender.",

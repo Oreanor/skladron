@@ -208,8 +208,14 @@ export function Card({ children, className = "" }: { children: ReactNode; classN
   );
 }
 
+/*
+ * Поле ввода. w-full тут обязателен: flex-1 растягивает только внутри
+ * строки-флекса, а в модалках поле стоит само по себе — и оставалось
+ * шириной по умолчанию, клеточек на двадцать. Флексу w-full не мешает:
+ * там ширину задаёт flex-basis.
+ */
 export const inputClass =
-  "min-w-0 flex-1 rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2.5 text-base " +
+  "w-full min-w-0 flex-1 rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2.5 text-base " +
   "text-neutral-200 placeholder:text-neutral-600 focus-visible:outline-none " +
   "focus-visible:ring-2 focus-visible:ring-neutral-500 lg:py-1.5 lg:text-sm";
 

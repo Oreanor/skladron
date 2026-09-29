@@ -16,7 +16,7 @@ const ru: Dict = {
   "talk.send": "Отправить",
   "talk.remove": "Удалить",
   "talk.signIn": "Войди, чтобы оставить комментарий.",
-  "raidComment.openerField": "Слово защитнику (необязательно)",
+  "raidComment.openerField": "Сообщение (необязат.)",
   "raidComment.openerFieldPlaceholder": "Короткая строка перед боем…",
   "raidComment.openerTitle": "Сообщение от «{from}»",
   "raidComment.openerSubtitle": "Можно ответить парой слов — или сразу отбивать.",
