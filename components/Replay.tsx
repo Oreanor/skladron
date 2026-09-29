@@ -152,11 +152,12 @@ export default function Replay({
   /** Счётчик прогонов: по нему эффект крутит бой с нуля в том же окне. */
   const [run, setRun] = useState(0);
   const [version, setVersion] = useState(0);
-  const [hud, setHud] = useState({ time: 0, inAir: 0, burned: 0, done: false });
+  const [hud, setHud] = useState({ time: 0, inAir: 0, burned: 0, done: false, progress: 0 });
   const speedRef = useRef(speed);
   speedRef.current = speed;
 
   const frames = useMemo(() => decodeTrace(replay.trace), [replay.trace]);
+  const totalSteps = Math.max(1, frames.length + SIM.tailFrames);
 
   const makeState = () =>
     createBattle(
@@ -214,21 +215,23 @@ export default function Replay({
       }
       if (now - hudAt > 100) {
         hudAt = now;
+        const done = cur.phase !== "playing";
         setHud({
           time: cur.time,
           inAir: cur.drones.length,
           burned: cur.result.burned,
-          done: cur.phase !== "playing",
+          done,
+          progress: done ? 1 : Math.min(1, step / totalSteps),
         });
       }
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [run, frames]);
+  }, [run, frames, totalSteps]);
 
   const restart = () => {
     state.current = makeState();
-    setHud({ time: 0, inAir: 0, burned: 0, done: false });
+    setHud({ time: 0, inAir: 0, burned: 0, done: false, progress: 0 });
     setVersion((v) => v + 1);
     setRun((n) => n + 1);
   };
@@ -246,21 +249,27 @@ export default function Replay({
         <Chip label={t("battle.burned")} value={fmt(hud.burned)} tone="text-orange-300" />
       </ChipBar>
 
-      <div className="relative min-h-0 flex-1">
-        <MapCanvas
-          className="h-full min-h-0"
-          scene={scene}
-          sceneVersion={version}
-          overlay={overlay}
-          cursor="default"
-        />
-        {hud.done && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-neutral-950/70">
-            <Button variant="build" onClick={restart}>
-              {t("replay.again")}
-            </Button>
-          </div>
-        )}
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="relative min-h-0 flex-1">
+          <MapCanvas
+            className="h-full min-h-0 rounded-b-none"
+            scene={scene}
+            sceneVersion={version}
+            overlay={overlay}
+            cursor="default"
+          />
+          {hud.done && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-neutral-950/70">
+              <Button variant="build" onClick={restart}>
+                {t("replay.again")}
+              </Button>
+            </div>
+          )}
+        </div>
+        {/* Прогресс повтора: тонкая белая линия вплотную под кадром. */}
+        <div className="h-0.5 w-full shrink-0 bg-neutral-800" aria-hidden>
+          <div className="h-full bg-white" style={{ width: `${hud.progress * 100}%` }} />
+        </div>
       </div>
 
       {shareId && <Talk battleId={shareId} />}
