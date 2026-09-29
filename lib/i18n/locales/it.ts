@@ -314,6 +314,13 @@ const it: Dict = {
   "enemies.notEmail": "Questa non sembra un’e-mail",
   "enemies.already": "Questo rivale è già nella lista",
   "enemies.notSaved": "Salvataggio non riuscito: {error}",
+  "enemies.burnedByMe": "Ho bruciato da loro",
+  "enemies.burnedByThem": "Hanno bruciato da me",
+  "enemies.lastRaid": "Il loro ultimo attacco",
+  "enemies.noRaidYet": "ancora nessuno",
+  "enemies.scoutStatus": "Ricognizione",
+  "enemies.scoutHasMap": "mappa pronta",
+  "enemies.scoutNone": "niente mappa",
 
   "raid.title": "Incursione su {name}",
   "raid.subtitle":
@@ -338,6 +345,9 @@ const it: Dict = {
   "raid.testTitle": "Incursione di prova",
   "raid.testSubtitle": "Sul tuo magazzino. Non costa nulla e non viene registrata.",
   "raid.testSend": "Lancia",
+  "raid.target": "Destinatario",
+  "raid.targetSelf": "Te stesso (prova)",
+  "raid.pickTarget": "Scegli un destinatario",
   "payload.plain": "Semplice",
   "payload.plainHint": "vola fino a una cella ed esplode",
   "payload.heavy": "Carica doppia",

@@ -42,6 +42,7 @@ export default function Enemies({
   const [error, setError] = useState<string | null>(null);
   const [target, setTarget] = useState<Enemy | null>(null);
   const [scoutTarget, setScoutTarget] = useState<Enemy | null>(null);
+  const [profile, setProfile] = useState<Enemy | null>(null);
   const [adding, setAdding] = useState(false);
 
   const add = async () => {
@@ -87,7 +88,11 @@ export default function Enemies({
           {enemies.map((e) => (
             <Card key={e.id}>
               <div className="flex items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-3">
+                <button
+                  type="button"
+                  className="flex min-w-0 flex-1 items-center gap-3 rounded-md text-left transition-colors hover:bg-neutral-800/50"
+                  onClick={() => setProfile(e)}
+                >
                   <Avatar avatar={e.avatar ?? null} name={e.name} email={e.email} />
                   <div className="min-w-0">
                     <div className="truncate font-medium text-neutral-200">{e.name}</div>
@@ -95,7 +100,7 @@ export default function Enemies({
                       {e.email}
                     </div>
                   </div>
-                </div>
+                </button>
                 <div className="flex shrink-0 gap-2">
                   {e.scout && (
                     <IconButton
@@ -131,6 +136,30 @@ export default function Enemies({
         </ul>
       )}
 
+      {profile && (
+        <EnemyProfile
+          enemy={profile}
+          drones={drones}
+          onClose={() => setProfile(null)}
+          onAttack={() => {
+            setProfile(null);
+            setTarget(profile);
+          }}
+          onScout={() => {
+            setProfile(null);
+            setScoutTarget(profile);
+          }}
+          onShowMap={
+            profile.scout
+              ? () => {
+                  setProfile(null);
+                  onShowMap(profile);
+                }
+              : undefined
+          }
+        />
+      )}
+
       {scoutTarget && (
         <ScoutDialog
           enemy={scoutTarget}
@@ -162,6 +191,95 @@ export default function Enemies({
         />
       )}
     </>
+  );
+}
+
+function EnemyProfile({
+  enemy,
+  drones,
+  onClose,
+  onAttack,
+  onScout,
+  onShowMap,
+}: {
+  enemy: Enemy;
+  drones: number;
+  onClose: () => void;
+  onAttack: () => void;
+  onScout: () => void;
+  onShowMap?: () => void;
+}) {
+  const t = useT();
+  const last =
+    enemy.lastRaidAt > 0
+      ? new Date(enemy.lastRaidAt).toLocaleString(undefined, {
+          day: "numeric",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : null;
+
+  return (
+    <Modal
+      title={enemy.name}
+      subtitle={enemy.email}
+      onClose={onClose}
+      footer={
+        <div className="flex w-full flex-wrap gap-2">
+          <Button
+            variant="danger"
+            className="flex-1"
+            disabled={drones < 10}
+            onClick={onAttack}
+          >
+            {t("enemies.attack")}
+          </Button>
+          <Button className="flex-1" onClick={onScout}>
+            {t("scout.button")}
+          </Button>
+          {onShowMap && (
+            <Button className="flex-1" onClick={onShowMap}>
+              {t("scout.map")}
+            </Button>
+          )}
+          <Button onClick={onClose}>{t("common.close")}</Button>
+        </div>
+      }
+    >
+      <div className="flex flex-col items-center gap-3">
+        <Avatar
+          avatar={enemy.avatar ?? null}
+          name={enemy.name}
+          email={enemy.email}
+          size="lg"
+        />
+        <dl className="w-full space-y-1.5 font-mono text-sm">
+          <div className="flex justify-between gap-3">
+            <dt className="text-neutral-500">{t("enemies.burnedByMe")}</dt>
+            <dd className="text-neutral-200">{enemy.burnedByMe}</dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-neutral-500">{t("enemies.burnedByThem")}</dt>
+            <dd className="text-neutral-200">{enemy.burnedByThem}</dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-neutral-500">{t("enemies.lastRaid")}</dt>
+            <dd className="text-neutral-200">
+              {last ?? t("enemies.noRaidYet")}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-neutral-500">{t("enemies.scoutStatus")}</dt>
+            <dd className="text-neutral-200">
+              {enemy.scout
+                ? t("enemies.scoutHasMap")
+                : t("enemies.scoutNone")}
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </Modal>
   );
 }
 

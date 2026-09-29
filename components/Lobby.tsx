@@ -2011,8 +2011,17 @@ export default function Lobby({
         <TestRaidDialog
           initial={suggestedRaid()}
           level={p.levels.drones}
+          enemies={p.enemies}
+          drones={drones}
+          credits={p.credits}
+          droneCost={droneCost}
           onCancel={() => setTestRaid(false)}
-          onSend={testRaid}
+          onSendSelf={testRaid}
+          onSendEnemy={async (enemy, waves, comment) => {
+            const err = await doRaid(enemy, waves, comment);
+            if (!err) setTestRaid(false);
+            return err;
+          }}
         />
       )}
 

@@ -314,6 +314,13 @@ const ru: Dict = {
   "enemies.notEmail": "Похоже, это не почта",
   "enemies.already": "Этот враг уже в списке",
   "enemies.notSaved": "Не удалось сохранить: {error}",
+  "enemies.burnedByMe": "Я сжёг у него",
+  "enemies.burnedByThem": "Он сжёг у меня",
+  "enemies.lastRaid": "Его последний налёт",
+  "enemies.noRaidYet": "ещё не было",
+  "enemies.scoutStatus": "Разведка",
+  "enemies.scoutHasMap": "карта есть",
+  "enemies.scoutNone": "карты нет",
 
   "raid.title": "Налёт на {name}",
   "raid.subtitle":
@@ -338,6 +345,9 @@ const ru: Dict = {
   "raid.testTitle": "Пробный налёт",
   "raid.testSubtitle": "На свой же склад. Ничего не стоит и никуда не записывается.",
   "raid.testSend": "Запустить",
+  "raid.target": "Адресат",
+  "raid.targetSelf": "Себе (пробный)",
+  "raid.pickTarget": "Выбери адресата",
   "payload.plain": "Простая",
   "payload.plainHint": "долетает до клетки и взрывается",
   "payload.heavy": "Двойная взрывчатка",

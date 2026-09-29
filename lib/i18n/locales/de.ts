@@ -314,6 +314,13 @@ const de: Dict = {
   "enemies.notEmail": "Das sieht nicht nach einer E-Mail aus",
   "enemies.already": "Dieser Gegner steht schon auf der Liste",
   "enemies.notSaved": "Speichern fehlgeschlagen: {error}",
+  "enemies.burnedByMe": "Von mir bei ihnen verbrannt",
+  "enemies.burnedByThem": "Von ihnen bei mir verbrannt",
+  "enemies.lastRaid": "Ihr letzter Angriff",
+  "enemies.noRaidYet": "noch keiner",
+  "enemies.scoutStatus": "Aufklärung",
+  "enemies.scoutHasMap": "Karte da",
+  "enemies.scoutNone": "keine Karte",
 
   "raid.title": "Angriff auf {name}",
   "raid.subtitle":
@@ -338,6 +345,9 @@ const de: Dict = {
   "raid.testTitle": "Testangriff",
   "raid.testSubtitle": "Auf das eigene Lager. Kostet nichts und wird nicht festgehalten.",
   "raid.testSend": "Starten",
+  "raid.target": "Ziel",
+  "raid.targetSelf": "Selbst (Test)",
+  "raid.pickTarget": "Ziel wählen",
   "payload.plain": "Einfach",
   "payload.plainHint": "fliegt zu einem Feld und explodiert",
   "payload.heavy": "Doppelladung",

@@ -314,6 +314,13 @@ const fr: Dict = {
   "enemies.notEmail": "Cela ne ressemble pas à un e-mail",
   "enemies.already": "Ce rival est déjà dans la liste",
   "enemies.notSaved": "Enregistrement impossible : {error}",
+  "enemies.burnedByMe": "J?ai br�l� chez eux",
+  "enemies.burnedByThem": "Ils ont br�l� chez moi",
+  "enemies.lastRaid": "Leur dernier raid",
+  "enemies.noRaidYet": "pas encore",
+  "enemies.scoutStatus": "Reconnaissance",
+  "enemies.scoutHasMap": "carte en main",
+  "enemies.scoutNone": "pas de carte",
 
   "raid.title": "Raid sur {name}",
   "raid.subtitle":
@@ -338,6 +345,9 @@ const fr: Dict = {
   "raid.testTitle": "Raid d’essai",
   "raid.testSubtitle": "Sur ton propre entrepôt. Ne coûte rien et n’est pas enregistré.",
   "raid.testSend": "Lancer",
+  "raid.target": "Destinataire",
+  "raid.targetSelf": "Toi-m�me (essai)",
+  "raid.pickTarget": "Choisis un destinataire",
   "payload.plain": "Simple",
   "payload.plainHint": "vole jusqu’à une case et explose",
   "payload.heavy": "Charge double",
