@@ -232,6 +232,18 @@ export interface GameState {
   /** Целые клетки склада — цели дронов. Список пересобираем, только когда он протух. */
   targets: number[];
   targetsStale: boolean;
+  /**
+   * Установки по id. Собирается один раз на бой: за бой они не появляются
+   * и не исчезают — только помечаются мёртвыми, — а пересобирать четыре
+   * сотни записей каждый кадр стоило дороже, чем всё, ради чего их ищут.
+   */
+  gunsById: Map<number, Gun>;
+  /**
+   * Те же установки, разложенные по блокам поля. Тоже раз на бой: за бой
+   * они не переезжают, а подавителю нужны не все четыре сотни, а те
+   * полдюжины, что попали ему под круг.
+   */
+  gunBlocks: Map<number, Gun[]>;
   /** Своя случайность вместо Math.random: бой должен быть повторим. */
   rnd: () => number;
   /** Уровень дронов нападающего и уровни защитника. */
@@ -353,6 +365,8 @@ export function createBattle(
     baseOk: ok,
     targets: baseCells.filter((i) => map[i] === G_BASE),
     targetsStale: false,
+    gunsById: new Map(),
+    gunBlocks: new Map(),
     rnd: mulberry32(levels.seed ?? ((Math.random() * 1e9) | 0)),
     result: {
       dronesSent: plan.length,
@@ -373,6 +387,13 @@ export function createBattle(
     dirty: true,
   };
 
+  for (const g of s.guns) {
+    s.gunsById.set(g.id, g);
+    const k = blockKey(g.cx, g.cy);
+    const cell = s.gunBlocks.get(k);
+    if (cell) cell.push(g);
+    else s.gunBlocks.set(k, [g]);
+  }
   releaseBalloons(s, depots, baseCells);
   return s;
 }
@@ -632,6 +653,25 @@ function loiterRing(s: GameState, payload: Payload) {
   };
 }
 
+/**
+ * Сетка блоками по полю: и огнетушителю, и подавителю нужно «что есть
+ * рядом», а перебирать ради этого всё подряд — квадрат. Блок в восемь
+ * клеток подобран под самые дальние радиусы: их круг накрывает считанные
+ * блоки, а внутри блока проверка остаётся точной, так что ответ тот же,
+ * что и у полного перебора.
+ */
+const BLOCK = 8;
+const BLOCKS = Math.ceil(GRID / BLOCK);
+const blockKey = (x: number, y: number) => ((y / BLOCK) | 0) * BLOCKS + ((x / BLOCK) | 0);
+
+/**
+ * Границы блоков, которые задевает круг радиуса r вокруг точки. Отдаём
+ * четыре числа, а не список: обход идёт в горячих циклах по сотням раз за
+ * кадр, и массив на каждый вызов давал бы мусора больше, чем экономил.
+ */
+const lo = (v: number, r: number) => Math.max(0, ((v - r) / BLOCK) | 0);
+const hi = (v: number, r: number) => Math.min(BLOCKS - 1, ((v + r) / BLOCK) | 0);
+
 /** Середина поля: вокруг неё строится всякий строй. */
 export const MID = GRID / 2;
 
@@ -833,11 +873,22 @@ function suppressTick(s: GameState, d: Drone) {
   const hunts = prey(d.payload);
   if (hunts === null) return;
   const reach = suppressRange(s, d.payload);
-  for (const g of s.guns) {
-    if (!g.alive || gunClass(g) !== hunts) continue;
-    const dx = g.cx + 0.5 - d.x;
-    const dy = g.cy + 0.5 - d.y;
-    if (dx * dx + dy * dy <= reach * reach) g.jammed = SUPPRESS.release;
+  const r2 = reach * reach;
+  // По блокам, а не по всему складу: на пяти сотнях подавителей против
+  // четырёх сотен установок полный перебор — двести тысяч сравнений за кадр.
+  const bx1 = hi(d.x, reach);
+  const by1 = hi(d.y, reach);
+  for (let by = lo(d.y, reach); by <= by1; by++) {
+    for (let bx = lo(d.x, reach); bx <= bx1; bx++) {
+      const here = s.gunBlocks.get(by * BLOCKS + bx);
+      if (!here) continue;
+      for (const g of here) {
+        if (!g.alive || gunClass(g) !== hunts) continue;
+        const dx = g.cx + 0.5 - d.x;
+        const dy = g.cy + 0.5 - d.y;
+        if (dx * dx + dy * dy <= r2) g.jammed = SUPPRESS.release;
+      }
+    }
   }
 }
 
@@ -1207,7 +1258,22 @@ function stepSprays(s: GameState, dt: number) {
   // первый же огонь на своём пути. Отсюда и потолок: восемь очагов разом, не
   // больше, — широкий фронт огня установку обходит.
   const reach = sprayRange(s);
+  const r2 = reach * reach;
   const douse = dt / SPRAY.soak;
+
+  // Очаги раскладываем по блокам один раз за кадр. Раньше каждая установка
+  // обходила весь пожар целиком, и на большом складе это был квадрат:
+  // четыре сотни установок на пять сотен горящих клеток.
+  const fireBlocks = new Map<number, number[]>();
+  if (s.fire.size) {
+    for (const i of s.fire.keys()) {
+      const k = blockKey(i % GRID, (i / GRID) | 0);
+      const cell = fireBlocks.get(k);
+      if (cell) cell.push(i);
+      else fireBlocks.set(k, [i]);
+    }
+  }
+
   for (const g of s.guns) {
     if (!g.alive || !g.spray) continue;
     // заглушённая пеной установка не льёт, но бак у неё не течёт
@@ -1217,12 +1283,22 @@ function stepSprays(s: GameState, dt: number) {
     const gy = g.cy + 0.5;
 
     let fireNear = false;
-    for (const i of s.fire.keys()) {
-      const dx = (i % GRID) + 0.5 - gx;
-      const dy = ((i / GRID) | 0) + 0.5 - gy;
-      if (dx * dx + dy * dy <= reach * reach) {
-        fireNear = true;
-        break;
+    if (fireBlocks.size) {
+      const bx1 = hi(gx, reach);
+      const by1 = hi(gy, reach);
+      for (let by = lo(gy, reach); by <= by1 && !fireNear; by++) {
+        for (let bx = lo(gx, reach); bx <= bx1 && !fireNear; bx++) {
+          const here = fireBlocks.get(by * BLOCKS + bx);
+          if (!here) continue;
+          for (const i of here) {
+            const dx = (i % GRID) + 0.5 - gx;
+            const dy = ((i / GRID) | 0) + 0.5 - gy;
+            if (dx * dx + dy * dy <= r2) {
+              fireNear = true;
+              break;
+            }
+          }
+        }
       }
     }
     if (fireNear && g.tank > 0) g.wet = SPRAY.hold;
@@ -1319,12 +1395,14 @@ function stepGuns(s: GameState, dt: number) {
   }
 }
 
-/** Ракеты: догоняют цель, стареют, уходят за край. */
-function stepMissiles(s: GameState, dt: number) {
-  // Цель ищем по индексу: раньше каждая ракета перебирала весь рой, и на
-  // трёх сотнях дронов это выходило в десятки тысяч сравнений за кадр.
-  const byId = s.missiles.length ? new Map<number, Drone>() : null;
-  if (byId) for (const d of s.drones) byId.set(d.id, d);
+/**
+ * Ракеты: догоняют цель, стареют, уходят за край.
+ *
+ * Цель ищем по индексу, а не перебором: на пятистах дронах это выходило в
+ * десятки тысяч сравнений за кадр. Индекс собирает шаг боя — один на такт,
+ * после того как рой отработал и мёртвые из него вычеркнуты.
+ */
+function stepMissiles(s: GameState, dt: number, byId: Map<number, Drone>) {
   for (let i = s.missiles.length - 1; i >= 0; i--) {
     const m = s.missiles[i];
     m.life -= dt;
@@ -1339,7 +1417,7 @@ function stepMissiles(s: GameState, dt: number) {
     // Сбитый пулемётом дрон ещё планирует к земле, но он уже посчитан:
     // ракета его больше не видит, иначе один дрон уходил бы в счёт дважды —
     // и сумма сбитых переваливала за размер роя.
-    const found = byId!.get(m.target);
+    const found = byId.get(m.target);
     const t = found && !found.hit ? found : undefined;
     if (t) {
       const a = Math.atan2(t.y - m.y, t.x - m.x);
@@ -1359,7 +1437,7 @@ function stepMissiles(s: GameState, dt: number) {
       s.booms.push({ x: t.x, y: t.y, t: 0, r: 2 });
       const at = s.drones.indexOf(t);
       if (at >= 0) s.drones.splice(at, 1);
-      byId!.delete(t.id);
+      byId.delete(t.id);
       s.missiles.splice(i, 1);
       s.result.killedByGuns++;
       continue;
@@ -1668,17 +1746,18 @@ export function update(s: GameState, dt: number) {
   if (s.phase !== "playing") return;
   s.time += dt;
 
-  // Карта установок по id — один раз на тик: захваченных и кружащих
-  // подавителей иначе каждая фаза гоняла бы через guns.find.
-  const gunsById = new Map<number, Gun>();
-  for (const g of s.guns) gunsById.set(g.id, g);
-
   stepSpawns(s);
   stepHands(s, dt);
-  stepDrones(s, dt, gunsById);
+  stepDrones(s, dt, s.gunsById);
   stepSprays(s, dt);
   stepGuns(s, dt);
-  stepMissiles(s, dt);
+
+  // Индекс роя собираем здесь, после того как рой отработал: до этого в нём
+  // были бы и те, кого в этом же кадре сбили. Одна карта на такт — раньше
+  // её строила себе каждая фаза, которой нужен дрон по номеру.
+  const dronesById = new Map<number, Drone>();
+  if (s.missiles.length) for (const d of s.drones) dronesById.set(d.id, d);
+  stepMissiles(s, dt, dronesById);
   stepRockets(s, dt);
   stepBalloons(s, dt);
   stepFire(s, dt);
