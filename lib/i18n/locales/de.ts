@@ -318,7 +318,7 @@ const de: Dict = {
   "enemies.burnedByThem": "Von ihnen bei mir verbrannt",
   "enemies.lastRaid": "Ihr letzter Angriff",
   "enemies.noRaidYet": "noch keiner",
-  "enemies.scoutStatus": "Aufkl‰rung",
+  "enemies.scoutStatus": "Aufkl√§rung",
   "enemies.scoutHasMap": "Karte da",
   "enemies.scoutNone": "keine Karte",
 
@@ -347,7 +347,7 @@ const de: Dict = {
   "raid.testSend": "Starten",
   "raid.target": "Ziel",
   "raid.targetSelf": "Selbst (Test)",
-  "raid.pickTarget": "Ziel w‰hlen",
+  "raid.pickTarget": "Ziel w√§hlen",
   "payload.plain": "Einfach",
   "payload.plainHint": "fliegt zu einem Feld und explodiert",
   "payload.heavy": "Doppelladung",
