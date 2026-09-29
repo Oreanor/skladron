@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import {
   GRID,
   G_BASE,
@@ -1843,7 +1850,20 @@ export default function Lobby({
         Ширина кнопки плывёт: на узком десктопе она ужимается до трёх
         четвертей, и ряд инструментов не съедает высоту, отведённую карте.
       */}
-      <div className="order-3 mx-auto grid w-full max-w-96 shrink-0 grid-cols-5 gap-1.5 lg:order-2 lg:mx-0 lg:max-w-none lg:grid-cols-[repeat(auto-fill,clamp(3.75rem,7.4vw,5rem))] lg:gap-2">
+      {/*
+        На десктопе ряд занимает строку целиком: колонок ровно столько,
+        сколько инструментов, и каждая тянется на равную долю. Число берём
+        из самого списка — добавится инструмент, ряд пересчитается сам, а
+        классом это не задать: Tailwind собирает их чтением исходника и
+        вычисленного имени не найдёт.
+
+        На телефоне по-прежнему пять в ряд и не шире 384 точек: там кнопку
+        растягивать некуда, её и так хватает под палец.
+      */}
+      <div
+        style={{ "--tools": TOOLS.length } as CSSProperties}
+        className="order-3 mx-auto grid w-full max-w-96 shrink-0 grid-cols-5 gap-1.5 lg:order-2 lg:mx-0 lg:max-w-none lg:gap-2 lg:[grid-template-columns:repeat(var(--tools),minmax(0,1fr))]"
+      >
         {TOOLS.map((item) => (
           <ToolButton
             key={item.id}
