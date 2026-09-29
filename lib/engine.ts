@@ -802,7 +802,7 @@ function arrive(s: GameState, d: Drone): boolean {
 
   ignite(s, d.ti);
   s.booms.push({ x: d.tx, y: d.ty, t: 0, r: 2.5 });
-  // Двойная взрывчатка забирает не одну клетку, а кольцо вокруг неё.
+  // Взрывчатка забирает не одну клетку, а квадрат вокруг неё.
   const ring = PAYLOAD[d.payload].ring;
   if (ring > 0) {
     const cx = d.ti % GRID;

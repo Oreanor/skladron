@@ -48,7 +48,7 @@ const en: RuleSection[] = [
     title: "Raids",
     lines: [
       "Add a rival by e-mail — they have to be playing too.",
-      "Build the raid from waves: each has its own pattern, side and warheads (plain, double charge, gun, sprinkler or trap jammer, stealth). Up to {maxRaid} drones. A bigger swarm makes the formation denser — the raid barely lasts longer. Drones leave the warehouse at once; warheads cost an extra credit surcharge.",
+      "Build the raid from waves: each has its own pattern, side and warheads (empty, explosive, gun, sprinkler or trap jammer, stealth, blower). Up to {maxRaid} drones. A bigger swarm makes the formation denser — the raid barely lasts longer. Drones leave the warehouse at once; warheads cost an extra credit surcharge.",
       "A blower warhead explodes like a plain one and, on the way in, shoves barrage balloons aside — several cells away from the drone, without popping them. A handful of blowers in the swarm noticeably cuts what the balloons take; a third of the swarm brings it near zero.",
       "The trap jammer works the same way, but its circle is half a trap's — it has to come in close, under the guns. While the circle covers a trap, the trap holds nobody and lets the caught go.",
       "A stealth warhead blows up like a plain one, but guns and launchers do not see it at all — neither will aim, and no missile will lock on. Only your own hands and the traps are left against it.",
@@ -120,7 +120,7 @@ const ru: RuleSection[] = [
     title: "Налёты",
     lines: [
       "Добавь соперника по почте — он тоже должен играть.",
-      "Собери налёт из волн: у каждой свой рисунок, сторона и начинка (простая, двойная, подавление пушек, огнетушителей или ловушек, невидимка). До {maxRaid} дронов. Чем больше рой, тем гуще строй — налёт почти не растягивается. Дроны уходят со склада сразу, за начинку доплачиваются кредиты.",
+      "Собери налёт из волн: у каждой свой рисунок, сторона и начинка (пустая, взрывчатка, подавление пушек, огнетушителей или ловушек, невидимка, обдув). До {maxRaid} дронов. Чем больше рой, тем гуще строй — налёт почти не растягивается. Дроны уходят со склада сразу, за начинку доплачиваются кредиты.",
       "Начинка «обдув» взрывается как простая, а на подлёте расталкивает аэростаты: шар отходит на несколько клеток в сторону от дрона, не лопаясь. Несколько таких в рое заметно сокращают потери на заграждении, треть роя — сводит их почти к нулю.",
       "Подавление ловушек работает так же, но круг у него вдвое меньше, чем у самой ловушки: приходится подходить вплотную, под пушки. Пока круг накрывает магнит, тот никого не держит и отпускает захваченных.",
       "Начинка «невидимка» взрывается как обычная, но пушки и ракетницы её не видят вовсе: ни целятся, ни наводят ракету. Против неё остаются только руки игрока и ловушки.",
@@ -192,7 +192,7 @@ const es: RuleSection[] = [
     title: "Ataques",
     lines: [
       "Añade un rival por correo: también tiene que estar jugando.",
-      "Arma el ataque en oleadas: cada una con su patrón, lado y carga (simple, doble, inhibidor de cañones, de extintores o de trampas, invisible). Hasta {maxRaid} drones. Un enjambre mayor hace la formación más densa — el ataque casi no se alarga. Los drones salen del almacén enseguida; las cargas cuestan un recargo en créditos.",
+      "Arma el ataque en oleadas: cada una con su patrón, lado y carga (vacía, explosivo, inhibidor de cañones, de extintores o de trampas, invisible, soplador). Hasta {maxRaid} drones. Un enjambre mayor hace la formación más densa — el ataque casi no se alarga. Los drones salen del almacén enseguida; las cargas cuestan un recargo en créditos.",
       "La carga de soplado estalla como la simple y, de camino, aparta los globos de barrera: el globo se desplaza varias celdas lejos del dron sin reventar. Unos pocos sopladores en el enjambre ya recortan mucho lo que se llevan los globos; un tercio del enjambre lo deja casi en cero.",
       "El inhibidor de trampas funciona igual, pero su círculo es la mitad del de la trampa: tiene que acercarse mucho, bajo los cañones. Mientras el círculo cubre el imán, este no retiene a nadie y suelta a los capturados.",
       "La carga invisible estalla como la simple, pero los cañones y las lanzaderas no la ven en absoluto: ni apuntan ni guían el misil. Contra ella solo quedan tus manos y las trampas.",
@@ -264,7 +264,7 @@ const pt: RuleSection[] = [
     title: "Ataques",
     lines: [
       "Adiciona um rival por e-mail — ele também tem de estar a jogar.",
-      "Monta o ataque em vagas: cada uma com o seu padrão, lado e carga (simples, dupla, inibidor de canhões, de extintores ou de armadilhas, invisível). Até {maxRaid} drones. Um enxame maior torna a formação mais densa — o ataque quase não se alonga. Os drones saem do armazém logo; as cargas custam um extra em créditos.",
+      "Monta o ataque em vagas: cada uma com o seu padrão, lado e carga (vazia, explosivo, inibidor de canhões, de extintores ou de armadilhas, invisível, soprador). Até {maxRaid} drones. Um enxame maior torna a formação mais densa — o ataque quase não se alonga. Os drones saem do armazém logo; as cargas custam um extra em créditos.",
       "A carga de sopro explode como a simples e, na aproximação, afasta os balões de barragem: o balão desloca-se várias células para longe do drone sem rebentar. Alguns sopradores no enxame já cortam bastante o que os balões levam; um terço do enxame deixa isso quase em zero.",
       "O inibidor de armadilhas funciona igual, mas o seu círculo é metade do da armadilha: tem de chegar perto, debaixo dos canhões. Enquanto o círculo cobre o íman, este não segura ninguém e larga os capturados.",
       "A carga invisível explode como a simples, mas canhões e lançadores não a veem de todo: não apontam nem guiam o míssil. Contra ela restam só as tuas mãos e as armadilhas.",
@@ -336,7 +336,7 @@ const fr: RuleSection[] = [
     title: "Raids",
     lines: [
       "Ajoute un rival par e-mail — il doit jouer lui aussi.",
-      "Compose le raid en vagues : chacune a son schéma, son côté et sa charge (simple, double, brouilleur de canons, d’extincteurs ou de pièges, furtive). Jusqu’à {maxRaid} drones. Un plus gros essaim densifie la formation — le raid s’allonge à peine. Les drones quittent l’entrepôt aussitôt ; les charges coûtent un surcoût en crédits.",
+      "Compose le raid en vagues : chacune a son schéma, son côté et sa charge (vide, explosif, brouilleur de canons, d’extincteurs ou de pièges, furtive, souffleur). Jusqu’à {maxRaid} drones. Un plus gros essaim densifie la formation — le raid s’allonge à peine. Les drones quittent l’entrepôt aussitôt ; les charges coûtent un surcoût en crédits.",
       "La charge souffleuse explose comme une charge simple et, à l’approche, écarte les ballons de barrage : le ballon dérive de plusieurs cases loin du drone sans crever. Quelques souffleurs dans l’essaim réduisent déjà nettement ce que prennent les ballons ; un tiers de l’essaim ramène cela presque à zéro.",
       "Le brouilleur de pièges fonctionne pareil, mais son cercle vaut la moitié de celui du piège : il doit venir tout près, sous les canons. Tant que le cercle couvre l’aimant, celui-ci ne retient personne et lâche ses prises.",
       "La charge furtive explose comme une charge simple, mais canons et lance-roquettes ne la voient pas du tout : ni visée, ni guidage. Contre elle il ne reste que tes mains et les pièges.",
@@ -408,7 +408,7 @@ const de: RuleSection[] = [
     title: "Angriffe",
     lines: [
       "Füge einen Gegner per E-Mail hinzu — er muss ebenfalls spielen.",
-      "Baue den Angriff aus Wellen: jede mit eigenem Muster, Seite und Ladung (einfach, doppelt, Geschütz-, Sprinkler- oder Fallenstörer, Tarnkappe). Bis {maxRaid} Drohnen. Ein größerer Schwarm macht die Formation dichter — der Angriff dauert kaum länger. Die Drohnen verlassen das Lager sofort; Ladungen kosten einen Kreditaufschlag.",
+      "Baue den Angriff aus Wellen: jede mit eigenem Muster, Seite und Ladung (leer, Sprengstoff, Geschütz-, Sprinkler- oder Fallenstörer, Tarnkappe, Bläser). Bis {maxRaid} Drohnen. Ein größerer Schwarm macht die Formation dichter — der Angriff dauert kaum länger. Die Drohnen verlassen das Lager sofort; Ladungen kosten einen Kreditaufschlag.",
       "Der Bläser-Sprengkopf explodiert wie ein einfacher und schiebt im Anflug Sperrballons beiseite: der Ballon treibt mehrere Felder von der Drohne weg, ohne zu zerplatzen. Schon ein paar Bläser im Schwarm senken deutlich, was die Ballons holen; ein Drittel des Schwarms bringt es nahe null.",
       "Der Fallenstörer arbeitet genauso, doch sein Kreis ist halb so groß wie der der Falle: er muss dicht heran, unter die Geschütze. Solange der Kreis den Magneten deckt, hält dieser niemanden und lässt die Gefangenen los.",
       "Der Tarnkappen-Sprengkopf explodiert wie ein einfacher, doch Geschütze und Werfer sehen ihn gar nicht: kein Zielen, kein Lenken. Gegen ihn bleiben nur deine Hände und die Fallen.",
@@ -480,7 +480,7 @@ const it: RuleSection[] = [
     title: "Attacchi",
     lines: [
       "Aggiungi un rivale per e-mail: deve giocare anche lui.",
-      "Componi l’attacco a ondate: ognuna con schema, lato e carica (semplice, doppia, disturbatore di cannoni, di estintori o di trappole, invisibile). Fino a {maxRaid} droni. Uno sciame più grande rende la formazione più fitta — l’attacco quasi non si allunga. I droni lasciano subito il magazzino; le cariche costano un sovrapprezzo in crediti.",
+      "Componi l’attacco a ondate: ognuna con schema, lato e carica (vuota, esplosivo, disturbatore di cannoni, di estintori o di trappole, invisibile, soffiatore). Fino a {maxRaid} droni. Uno sciame più grande rende la formazione più fitta — l’attacco quasi non si allunga. I droni lasciano subito il magazzino; le cariche costano un sovrapprezzo in crediti.",
       "La carica soffiante esplode come quella semplice e, in avvicinamento, scosta i palloni di sbarramento: il pallone si allontana di qualche cella dal drone senza scoppiare. Bastano pochi soffiatori nello sciame per ridurre molto quel che prendono i palloni; un terzo dello sciame lo porta quasi a zero.",
       "Il disturbatore di trappole funziona allo stesso modo, ma il suo cerchio è metà di quello della trappola: deve avvicinarsi molto, sotto i cannoni. Finché il cerchio copre il magnete, questo non trattiene nessuno e libera i catturati.",
       "La carica invisibile esplode come quella semplice, ma cannoni e lanciarazzi non la vedono affatto: niente mira, niente guida. Contro di lei restano solo le tue mani e le trappole.",
