@@ -153,6 +153,11 @@ export interface Puff {
   y: number;
   t: number;
   r: number;
+  /**
+   * Сколько живёт этот клуб. Пусто — общий FX.smokeLife: так дымят подбитые.
+   * След ракеты живёт меньше, иначе он тянулся бы через всю карту.
+   */
+  life?: number;
 }
 
 export interface Hole {
@@ -1348,6 +1353,7 @@ function stepRockets(s: GameState, dt: number) {
         y: m.y - m.dy * 0.4,
         t: 0,
         r: ROCKET.smokeSize,
+        life: ROCKET.smokeLife,
       });
     }
 
@@ -1409,8 +1415,9 @@ function stepEffects(s: GameState, dt: number) {
     if (s.shots[i].t > FX.shotLife) s.shots.splice(i, 1);
   }
   for (let i = s.puffs.length - 1; i >= 0; i--) {
-    s.puffs[i].t += dt;
-    if (s.puffs[i].t > FX.smokeLife) s.puffs.splice(i, 1);
+    const p = s.puffs[i];
+    p.t += dt;
+    if (p.t > (p.life ?? FX.smokeLife)) s.puffs.splice(i, 1);
   }
 }
 

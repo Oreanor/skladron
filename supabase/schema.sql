@@ -8,7 +8,7 @@
 -- Версия боевого движка. Должна совпадать с SIMULATION_VERSION в
 -- lib/tuning.ts: по ней отсекаются бои, посчитанные прежней геометрией волн.
 create or replace function sim_version() returns int
-language sql immutable as $$ select 5 $$;
+language sql immutable as $$ select 6 $$;
 
 -- держим в одном месте, чтобы клиент и сервер не разъезжались
 create or replace function price(kind text) returns int

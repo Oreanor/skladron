@@ -313,7 +313,7 @@ export function drawFrame(
 
   // чёрный дым за подбитыми
   for (const p of s.puffs) {
-    const k = p.t / FX.smokeLife;
+    const k = p.t / (p.life ?? FX.smokeLife);
     ctx.fillStyle = `rgba(${COLORS.smoke}, ${0.5 * (1 - k)})`;
     ctx.beginPath();
     ctx.arc(p.x * cell, p.y * cell, p.r * cell * (0.6 + k * 1.6), 0, Math.PI * 2);
