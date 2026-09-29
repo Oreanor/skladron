@@ -23,7 +23,22 @@ export interface Gun {
   kind?: GunKind;
 }
 
-export const gunKind = (g: Gun): GunKind => g.kind ?? "gun";
+/**
+ * Вид установки. В складе лежит kind; в бою — флаги spray/trap/rocket
+ * (исторически так). Читаем оба, чтобы один switch работал везде.
+ */
+export const gunKind = (g: {
+  kind?: GunKind;
+  spray?: boolean;
+  trap?: boolean;
+  rocket?: boolean;
+}): GunKind => {
+  if (g.kind) return g.kind;
+  if (g.trap) return "trap";
+  if (g.spray) return "spray";
+  if (g.rocket) return "rocket";
+  return "gun";
+};
 export const countKind = (guns: Gun[], kind: GunKind) =>
   guns.reduce((n, g) => (gunKind(g) === kind ? n + 1 : n), 0);
 

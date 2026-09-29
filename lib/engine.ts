@@ -397,12 +397,21 @@ function releaseHeld(s: GameState, trapId: number) {
 function killGun(s: GameState, g: Gun) {
   if (!g.alive) return;
   g.alive = false;
-  if (g.trap) {
-    s.result.trapsLost++;
-    releaseHeld(s, g.id);
-  } else if (g.spray) s.result.spraysLost++;
-  else if (g.rocket) s.result.rocketsLost++;
-  else s.result.gunsLost++;
+  switch (gunKind(g)) {
+    case "trap":
+      s.result.trapsLost++;
+      releaseHeld(s, g.id);
+      break;
+    case "spray":
+      s.result.spraysLost++;
+      break;
+    case "rocket":
+      s.result.rocketsLost++;
+      break;
+    default:
+      s.result.gunsLost++;
+      break;
+  }
 }
 
 /** Ближайший дрон к точке прицела и близко ли он настолько, что это захват. */
@@ -584,18 +593,23 @@ function spawnDrone(s: GameState, t: SpawnTicket) {
     const along = Math.max(-5, Math.min(GRID + 5, t.ox ?? 0));
     const off = t.oy ?? 0;
     const edge = t.edge ?? 0;
-    if (edge === 0) {
-      x = along;
-      y = -3 + off;
-    } else if (edge === 1) {
-      x = along;
-      y = GRID + 3 + off;
-    } else if (edge === 2) {
-      x = -3 + off;
-      y = along;
-    } else {
-      x = GRID + 3 + off;
-      y = along;
+    switch (edge) {
+      case 0:
+        x = along;
+        y = -3 + off;
+        break;
+      case 1:
+        x = along;
+        y = GRID + 3 + off;
+        break;
+      case 2:
+        x = -3 + off;
+        y = along;
+        break;
+      default:
+        x = GRID + 3 + off;
+        y = along;
+        break;
     }
   }
 

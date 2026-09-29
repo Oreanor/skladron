@@ -70,18 +70,23 @@ function genBase(rnd: () => number) {
     const over = 1 + ((rnd() * 2) | 0);
     let x: number;
     let y: number;
-    if (side === 0) {
-      x = base.x + base.w - over;
-      y = base.y + ((rnd() * base.h) | 0) - (h >> 1);
-    } else if (side === 1) {
-      x = base.x - w + over;
-      y = base.y + ((rnd() * base.h) | 0) - (h >> 1);
-    } else if (side === 2) {
-      x = base.x + ((rnd() * base.w) | 0) - (w >> 1);
-      y = base.y + base.h - over;
-    } else {
-      x = base.x + ((rnd() * base.w) | 0) - (w >> 1);
-      y = base.y - h + over;
+    switch (side) {
+      case 0:
+        x = base.x + base.w - over;
+        y = base.y + ((rnd() * base.h) | 0) - (h >> 1);
+        break;
+      case 1:
+        x = base.x - w + over;
+        y = base.y + ((rnd() * base.h) | 0) - (h >> 1);
+        break;
+      case 2:
+        x = base.x + ((rnd() * base.w) | 0) - (w >> 1);
+        y = base.y + base.h - over;
+        break;
+      default:
+        x = base.x + ((rnd() * base.w) | 0) - (w >> 1);
+        y = base.y - h + over;
+        break;
     }
     rects.push({
       x: Math.max(12, Math.min(GRID - 12 - w, x)),

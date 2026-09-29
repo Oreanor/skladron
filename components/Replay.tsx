@@ -184,6 +184,16 @@ export default function Replay({
     let hudAt = 0;
     let mapAt = 0;
     const cur = state.current!;
+
+    /** Конец повтора: оставшийся огонь → пепел, как после настоящего боя. */
+    const finish = (won: boolean) => {
+      for (const i of cur.fire.keys()) cur.cells[i] = G_BURNT;
+      cur.fire.clear();
+      cur.phase = won ? "won" : "lost";
+      cur.dirty = true;
+      setVersion((v) => v + 1);
+    };
+
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
       const dt = Math.min(0.05, (now - last) / 1000);
@@ -195,11 +205,7 @@ export default function Replay({
         // Запись кончилась — доигрываем хвост без рук защитника и на этом
         // всё: дожигать склад, которого он не терял, повтор не должен.
         if (frames.length && step >= frames.length + SIM.tailFrames) {
-          // что горело к этому мгновению — то и осталось пепелищем
-          for (const i of cur.fire.keys()) cur.cells[i] = G_BURNT;
-          cur.fire.clear();
-          cur.phase = cur.baseOk > 0 ? "won" : "lost";
-          setVersion((v) => v + 1);
+          finish(cur.baseOk > 0);
           break;
         }
         carry -= SIM.step;
@@ -208,6 +214,12 @@ export default function Replay({
         setAim(cur, f ? { x: f.x + 0.5, y: f.y + 0.5 } : null);
         setFiring(cur, Boolean(f?.firing));
         update(cur, SIM.step);
+        // Движок мог закончить бой (склад пал или всё потухло) — огонь на
+        // кадре всё ещё мигает, пока не свести его в пепел, как settle().
+        if (cur.phase !== "playing") {
+          finish(cur.phase === "won");
+          break;
+        }
       }
 
       if (cur.dirty && now - mapAt > 100) {
@@ -218,14 +230,21 @@ export default function Replay({
       if (now - hudAt > 100) {
         hudAt = now;
         const done = cur.phase !== "playing";
+        // Полоска доходит до края только когда повтор реально кончился.
+        // Пока крутится хвост после записи — чуть не дожимаем до 100%.
+        let progress = 0;
+        if (done) progress = 1;
+        else if (step < progressSteps) progress = (step / progressSteps) * 0.97;
+        else {
+          const tail = Math.min(1, (step - progressSteps) / Math.max(1, SIM.tailFrames));
+          progress = 0.97 + 0.03 * tail;
+        }
         setHud({
           time: cur.time,
           inAir: cur.drones.length,
           burned: cur.result.burned,
           done,
-          // Ускорение 2×/4× только крутит шаги быстрее — процент от длины
-          // записи, а не от стенных часов, иначе бар врал бы на разных скоростях.
-          progress: done ? 1 : Math.min(1, step / progressSteps),
+          progress,
         });
       }
     };

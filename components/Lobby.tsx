@@ -82,6 +82,7 @@ import Enemies from "./Enemies";
 import {
   drawCoverage,
   drawDepots,
+  drawRocket,
   drawSpray,
   drawTrap,
   drawTurret,
@@ -742,16 +743,20 @@ export default function Lobby({
     }
 
     const cells = p.cells.slice();
-    if (tool === "scrap") {
-      scrapRect(cells, draftRect);
-      setMessage(t("scrap.done", { cells: draftCells, gain: fmt(draftCells * SCRAP_REWARD) }));
-    } else if (tool === "repair") {
-      repairRect(cells, draftRect);
-      p.stats.cellsRepaired += draftCells;
-      setMessage(t("repair.done", { cells: draftCells, cost: fmt(draftCost) }));
-    } else {
-      applyRect(cells, draftRect);
-      setMessage(t("draft.built", { cells: draftCells, cost: fmt(draftCost) }));
+    switch (tool) {
+      case "scrap":
+        scrapRect(cells, draftRect);
+        setMessage(t("scrap.done", { cells: draftCells, gain: fmt(draftCells * SCRAP_REWARD) }));
+        break;
+      case "repair":
+        repairRect(cells, draftRect);
+        p.stats.cellsRepaired += draftCells;
+        setMessage(t("repair.done", { cells: draftCells, cost: fmt(draftCost) }));
+        break;
+      default:
+        applyRect(cells, draftRect);
+        setMessage(t("draft.built", { cells: draftCells, cost: fmt(draftCost) }));
+        break;
     }
     p.cells = cells;
     p.credits -= draftCost;
@@ -1226,31 +1231,36 @@ export default function Lobby({
     const dy = pt.y - drag.startY;
     if (Math.abs(dx) > 0.4 || Math.abs(dy) > 0.4) drag.moved = true;
 
-    if (drag.mode === "create") {
-      draftRef.current = {
-        x: drag.origin.x,
-        y: drag.origin.y,
-        w: Math.round(pt.x - drag.origin.x),
-        h: Math.round(pt.y - drag.origin.y),
-      };
-    } else if (drag.mode === "move") {
-      draftRef.current = {
-        x: drag.origin.x + Math.round(dx),
-        y: drag.origin.y + Math.round(dy),
-        w: drag.origin.w,
-        h: drag.origin.h,
-      };
-    } else {
-      const o = drag.origin;
-      let x0 = o.x;
-      let y0 = o.y;
-      let x1 = o.x + o.w;
-      let y1 = o.y + o.h;
-      if (drag.corner === 0 || drag.corner === 2) x0 = Math.round(pt.x);
-      else x1 = Math.round(pt.x);
-      if (drag.corner === 0 || drag.corner === 1) y0 = Math.round(pt.y);
-      else y1 = Math.round(pt.y);
-      draftRef.current = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    switch (drag.mode) {
+      case "create":
+        draftRef.current = {
+          x: drag.origin.x,
+          y: drag.origin.y,
+          w: Math.round(pt.x - drag.origin.x),
+          h: Math.round(pt.y - drag.origin.y),
+        };
+        break;
+      case "move":
+        draftRef.current = {
+          x: drag.origin.x + Math.round(dx),
+          y: drag.origin.y + Math.round(dy),
+          w: drag.origin.w,
+          h: drag.origin.h,
+        };
+        break;
+      default: {
+        const o = drag.origin;
+        let x0 = o.x;
+        let y0 = o.y;
+        let x1 = o.x + o.w;
+        let y1 = o.y + o.h;
+        if (drag.corner === 0 || drag.corner === 2) x0 = Math.round(pt.x);
+        else x1 = Math.round(pt.x);
+        if (drag.corner === 0 || drag.corner === 1) y0 = Math.round(pt.y);
+        else y1 = Math.round(pt.y);
+        draftRef.current = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+        break;
+      }
     }
     // Рамку каждый кадр рисует overlay прямо из ref. React нужен только
     // ради цифр в подсказке — а они меняются, лишь когда рамка сменила
@@ -1418,9 +1428,20 @@ export default function Lobby({
           const px = onMap(hx, hy) ? hx : from.cx;
           const py = onMap(hx, hy) ? hy : from.cy;
           const angle = Math.atan2(py + 0.5 - GRID / 2, px + 0.5 - GRID / 2);
-          if (kind === "spray") drawSpray(ctx, px, py, cell, angle, 0, ok);
-          else if (kind === "trap") drawTrap(ctx, px, py, cell, ok);
-          else drawTurret(ctx, px, py, cell, angle, ok);
+          switch (kind) {
+            case "spray":
+              drawSpray(ctx, px, py, cell, angle, 0, ok);
+              break;
+            case "trap":
+              drawTrap(ctx, px, py, cell, ok);
+              break;
+            case "rocket":
+              drawRocket(ctx, px, py, cell, angle, ok);
+              break;
+            default:
+              drawTurret(ctx, px, py, cell, angle, ok);
+              break;
+          }
         }
       }
       drawDropTarget(ctx, cell, hx, hy, ok, dragGunRef.current ? "#8ecae6" : "#f5c56f");
@@ -1431,10 +1452,20 @@ export default function Lobby({
     if (hover && !d && onMap(hx, hy) && tool !== "drones") {
       const v = p.cells[idx(hx, hy)];
       let ok = false;
-      if (tool === "area") ok = !isBuilding(v) && (!hasBuilding || touchesBuilding(p.cells, hx, hy));
-      else if (tool === "repair") ok = v === G_BURNT;
-      else if (tool === "gun" || tool === "spray" || tool === "trap")
-        ok = v === G_BASE && !p.depots.some((q) => q.cx === hx && q.cy === hy);
+      switch (tool) {
+        case "area":
+          ok = !isBuilding(v) && (!hasBuilding || touchesBuilding(p.cells, hx, hy));
+          break;
+        case "repair":
+          ok = v === G_BURNT;
+          break;
+        case "gun":
+        case "spray":
+        case "trap":
+        case "rocket":
+          ok = v === G_BASE && !p.depots.some((q) => q.cx === hx && q.cy === hy);
+          break;
+      }
       drawHoverCell(ctx, cell, hx, hy, ok);
     }
 
@@ -1451,7 +1482,20 @@ export default function Lobby({
       let label: string | null = null;
       if (gun) {
         const kind = gunKind(gun);
-        label = t(kind === "spray" ? "tool.spray" : kind === "trap" ? "tool.trap" : "tool.gun");
+        switch (kind) {
+          case "spray":
+            label = t("tool.spray");
+            break;
+          case "trap":
+            label = t("tool.trap");
+            break;
+          case "rocket":
+            label = t("tool.rocket");
+            break;
+          default:
+            label = t("tool.gun");
+            break;
+        }
       } else if (depot) {
         label = t("map.hover.drones", {
           n: depot.n,

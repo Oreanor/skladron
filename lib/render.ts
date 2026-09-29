@@ -131,10 +131,20 @@ export function drawStatic(
     const kind = gunKind(g as Gun);
     // Ствол смотрит наружу от середины склада, пока не начался бой: в бою
     // поверх этого слоя рисуется живая башня со своим углом.
-    if (kind === "spray") drawSpray(ctx, g.cx, g.cy, cell, angle, 0, g.alive !== false);
-    else if (kind === "trap") drawTrap(ctx, g.cx, g.cy, cell, g.alive !== false);
-    else if (kind === "rocket") drawRocket(ctx, g.cx, g.cy, cell, angle, g.alive !== false);
-    else drawTurret(ctx, g.cx, g.cy, cell, angle, g.alive !== false);
+    switch (kind) {
+      case "spray":
+        drawSpray(ctx, g.cx, g.cy, cell, angle, 0, g.alive !== false);
+        break;
+      case "trap":
+        drawTrap(ctx, g.cx, g.cy, cell, g.alive !== false);
+        break;
+      case "rocket":
+        drawRocket(ctx, g.cx, g.cy, cell, angle, g.alive !== false);
+        break;
+      default:
+        drawTurret(ctx, g.cx, g.cy, cell, angle, g.alive !== false);
+        break;
+    }
   }
 }
 
@@ -246,17 +256,25 @@ export function drawFrame(
   const launched = new Set<number>();
   for (const r of s.rockets) launched.add(r.from);
   for (const g of s.guns) {
-    if (g.spray)
-      drawSpray(ctx, g.cx, g.cy, cell, g.angle, g.wet, g.alive, reach, g.tank / SPRAY.tank);
-    else if (g.rocket)
-      drawRocket(ctx, g.cx, g.cy, cell, g.angle, g.alive, !launched.has(g.id));
-    else if (g.trap) {
-      let held = 0;
-      if (g.alive) {
-        for (const d of s.drones) if (d.heldBy === g.id) held++;
+    switch (gunKind(g)) {
+      case "spray":
+        drawSpray(ctx, g.cx, g.cy, cell, g.angle, g.wet, g.alive, reach, g.tank / SPRAY.tank);
+        break;
+      case "rocket":
+        drawRocket(ctx, g.cx, g.cy, cell, g.angle, g.alive, !launched.has(g.id));
+        break;
+      case "trap": {
+        let held = 0;
+        if (g.alive) {
+          for (const d of s.drones) if (d.heldBy === g.id) held++;
+        }
+        drawTrap(ctx, g.cx, g.cy, cell, g.alive, held, now, trapsReach);
+        break;
       }
-      drawTrap(ctx, g.cx, g.cy, cell, g.alive, held, now, trapsReach);
-    } else drawTurret(ctx, g.cx, g.cy, cell, g.angle, g.alive);
+      default:
+        drawTurret(ctx, g.cx, g.cy, cell, g.angle, g.alive);
+        break;
+    }
   }
 
   // прицел красим тем же правилом, по которому игра и стреляет: захваченный

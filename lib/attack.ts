@@ -400,198 +400,215 @@ function waveTickets(
     });
   };
 
-  if (pattern === "swarm") {
-    // Крупный рой жмётся: меньше размазни по времени и по краю. Длительность
-    // входа не растёт с n — наоборот, уплотняется.
-    const jitter = Math.max(
-      WAVE.swarm.jitterMin,
-      WAVE.swarm.jitter - n * WAVE.swarm.jitterPerDrone
-    );
-    const spread = Math.max(
-      WAVE.swarm.spreadMin,
-      WAVE.swarm.spread - n * WAVE.swarm.spreadPerDrone
-    );
-    for (let i = 0; i < n; i++) {
-      push(start + rnd() * jitter, direction, spread);
-    }
-  } else if (pattern === "lines" || pattern === "random") {
-    // Чем крупнее рой, тем шире шеренга и короче пауза: три сотни дронов не
-    // должны заходить теми же восьмёрками, что и полтора десятка.
-    const rowSize = Math.min(
-      WAVE.lines.rowMax,
-      WAVE.lines.rowBase +
-        Math.floor(rnd() * WAVE.lines.rowSpread) +
-        Math.floor(n * WAVE.lines.rowPerDrone)
-    );
-    const rows = Math.max(1, Math.ceil(n / rowSize));
-    const duration = raidDuration(n);
-    const gap = Math.max(
-      WAVE.lines.gapMin,
-      Math.min(WAVE.lines.gap - n * WAVE.lines.gapPerDrone, duration / Math.max(1, rows - 1))
-    );
-    let t = start;
-    let left = n;
-    while (left > 0) {
-      const size = Math.min(left, rowSize);
-      const edge = pattern === "lines" ? direction : Math.floor(rnd() * 4);
-      // Шеренга — это шеренга: дроны встают ровно по фронту и входят разом.
-      for (let i = 0; i < size; i++) {
-        plan.push({
-          at: t,
-          edge,
-          ox: ((i + 0.5) / size) * GRID,
-          oy: (rnd() - 0.5) * WAVE.lines.depth,
-        });
+  switch (pattern) {
+    case "swarm": {
+      // Крупный рой жмётся: меньше размазни по времени и по краю. Длительность
+      // входа не растёт с n — наоборот, уплотняется.
+      const jitter = Math.max(
+        WAVE.swarm.jitterMin,
+        WAVE.swarm.jitter - n * WAVE.swarm.jitterPerDrone
+      );
+      const spread = Math.max(
+        WAVE.swarm.spreadMin,
+        WAVE.swarm.spread - n * WAVE.swarm.spreadPerDrone
+      );
+      for (let i = 0; i < n; i++) {
+        push(start + rnd() * jitter, direction, spread);
       }
-      left -= size;
-      t += gap;
+      break;
     }
-  } else if (pattern === "rings") {
-    // Всегда одно кольцо: дроны равномерно по полному кругу. Раньше лишние
-    // шли вторым рядом в соседние слоты — получалась шеренга с одной стороны;
-    // а несколько концентрических слоёв дробили маленький рой на сектора.
-    const phase = rnd() < 0.5 ? 0.5 / Math.max(1, n) : 0;
-    const spin = rnd() < 0.5 ? 1 : -1;
-    for (let j = 0; j < n; j++) {
-      plan.push({
-        at: start,
-        form: true,
-        ang: ((j + phase) / n) * TAU,
-        rad: WAVE.formRadius,
-        swirl: spin * WAVE.rings.swirl,
-      });
+    case "lines":
+    case "random": {
+      // Чем крупнее рой, тем шире шеренга и короче пауза: три сотни дронов не
+      // должны заходить теми же восьмёрками, что и полтора десятка.
+      const rowSize = Math.min(
+        WAVE.lines.rowMax,
+        WAVE.lines.rowBase +
+          Math.floor(rnd() * WAVE.lines.rowSpread) +
+          Math.floor(n * WAVE.lines.rowPerDrone)
+      );
+      const rows = Math.max(1, Math.ceil(n / rowSize));
+      const duration = raidDuration(n);
+      const gap = Math.max(
+        WAVE.lines.gapMin,
+        Math.min(WAVE.lines.gap - n * WAVE.lines.gapPerDrone, duration / Math.max(1, rows - 1))
+      );
+      let t = start;
+      let left = n;
+      while (left > 0) {
+        const size = Math.min(left, rowSize);
+        const edge = pattern === "lines" ? direction : Math.floor(rnd() * 4);
+        // Шеренга — это шеренга: дроны встают ровно по фронту и входят разом.
+        for (let i = 0; i < size; i++) {
+          plan.push({
+            at: t,
+            edge,
+            ox: ((i + 0.5) / size) * GRID,
+            oy: (rnd() - 0.5) * WAVE.lines.depth,
+          });
+        }
+        left -= size;
+        t += gap;
+      }
+      break;
     }
-  } else if (pattern === "spiral") {
-    // Рукава растут с роем и каждый наматывает turns оборотов — как у
-    // галактики. Сдвиг точки вылета равномерно раскладывает эти обороты по
-    // слоям; закрутка полёта против знака сдвига, чтобы рой шёл по изгибу ветви.
-    const arms = scaleCount(
-      n,
-      WAVE.spiral.armsMin,
-      1 / WAVE.spiral.perArm,
-      WAVE.spiral.armsCap,
-      WAVE.spiral.armsSpread,
-      rnd
-    );
-    const layers = Math.ceil(n / arms);
-    const duration = raidDuration(n);
-    const gap = Math.min(
-      WAVE.spiral.gapMax,
-      Math.max(WAVE.spiral.gapMin, duration / Math.max(1, layers - 1))
-    );
-    const emit = layers > 1 ? (WAVE.spiral.turns * TAU) / (layers - 1) : 0;
-    const spin = rnd() < 0.5 ? 1 : -1;
-    const from = rnd() * TAU;
-    for (let i = 0; i < n; i++) {
-      const wave = (i / arms) | 0;
-      const arm = i % arms;
-      plan.push({
-        at: start + wave * gap,
-        form: true,
-        ang: from + spin * wave * emit + (arm / arms) * TAU,
-        rad: WAVE.formRadius,
-        swirl: -spin * WAVE.spiral.swirl,
-      });
-    }
-  } else if (pattern === "flower") {
-    // Лепестки тоже наращиваем с роем — иначе крупные цветы отличаются от
-    // мелких только длиннее «стебля», а не густотой.
-    const arms = scaleCount(
-      n,
-      WAVE.flower.armsMin,
-      1 / WAVE.flower.perArm,
-      WAVE.flower.armsCap,
-      WAVE.flower.armsSpread,
-      rnd
-    );
-    const layers = Math.ceil(n / arms);
-    const duration = raidDuration(n);
-    const gap = Math.min(
-      WAVE.flower.gapMax,
-      Math.max(WAVE.flower.gapMin, duration / Math.max(1, layers - 1))
-    );
-    for (let i = 0; i < n; i++) {
-      const wave = (i / arms) | 0;
-      const arm = i % arms;
-      plan.push({
-        at: start + wave * gap,
-        form: true,
-        ang: (arm / arms + wave * WAVE.flower.twist) * TAU,
-        rad: WAVE.formRadius,
-        swirl: (arm % 2 ? 1 : -1) * WAVE.flower.swirl,
-      });
-    }
-  } else if (pattern === "sweep") {
-    // Ширина ручья и число проходов растут с n; шаг по дуге — из сублинейной
-    // длительности. Один тонкий ручеёк на двести дронов больше не выходит.
-    const passes = scaleCount(
-      n,
-      WAVE.sweep.passesMin,
-      1 / WAVE.sweep.perPass,
-      WAVE.sweep.passesCap,
-      WAVE.sweep.passesSpread,
-      rnd
-    );
-    const width = scaleCount(
-      n,
-      WAVE.sweep.widthMin,
-      WAVE.sweep.perWidth,
-      WAVE.sweep.widthCap,
-      0,
-      rnd
-    );
-    const from = rnd() * TAU;
-    const spin = rnd() < 0.5 ? 1 : -1;
-    const slots = Math.ceil(n / width);
-    const duration = raidDuration(n);
-    const gap = Math.max(WAVE.sweep.gapMin, duration / Math.max(1, slots - 1));
-    let placed = 0;
-    for (let s = 0; s < slots && placed < n; s++) {
-      const k = (s / Math.max(1, slots - 1)) * passes;
-      const wave = 2 * Math.abs(k - Math.floor(k + 0.5));
-      const baseAng = from + (wave - 0.5) * WAVE.sweep.arc * TAU;
-      const batch = Math.min(width, n - placed);
-      for (let w = 0; w < batch; w++) {
-        const offset = (w - (batch - 1) / 2) * WAVE.sweep.widthSpan * TAU;
+    case "rings": {
+      // Всегда одно кольцо: дроны равномерно по полному кругу. Раньше лишние
+      // шли вторым рядом в соседние слоты — получалась шеренга с одной стороны;
+      // а несколько концентрических слоёв дробили маленький рой на сектора.
+      const phase = rnd() < 0.5 ? 0.5 / Math.max(1, n) : 0;
+      const spin = rnd() < 0.5 ? 1 : -1;
+      for (let j = 0; j < n; j++) {
         plan.push({
-          at: start + s * gap,
+          at: start,
           form: true,
-          ang: baseAng + offset,
+          ang: ((j + phase) / n) * TAU,
           rad: WAVE.formRadius,
-          swirl: spin * WAVE.sweep.swirl,
+          swirl: spin * WAVE.rings.swirl,
         });
-        placed++;
       }
+      break;
     }
-  } else {
-    // Капель → водопад: длительность сублинейна. При малом рое редкие капли
-    // сгущаются к концу; при большом средний шаг уже мелкий — старт почти
-    // такой же плотный, как финиш, и это сразу водопад, а не «потом польёт».
-    const seconds = Math.min(
-      WAVE.drip.secondsCap,
-      WAVE.drip.secondsBase + WAVE.drip.secondsPerSqrt * Math.sqrt(Math.max(1, n))
-    );
-    const steps = Math.max(1, n - 1);
-    const avg = seconds / steps;
-    const fade = Math.max(
-      0,
-      Math.min(1, (avg - WAVE.drip.firstMin) / (WAVE.drip.firstMax - WAVE.drip.firstMin))
-    );
-    let first = Math.min(
-      WAVE.drip.firstMax,
-      Math.max(avg, avg * (1 + (WAVE.drip.squeeze - 1) * fade * 0.5))
-    );
-    let last = 2 * avg - first;
-    if (last < WAVE.drip.lastMin) {
-      last = WAVE.drip.lastMin;
-      first = Math.min(WAVE.drip.firstMax, 2 * avg - last);
+    case "spiral": {
+      // Рукава растут с роем и каждый наматывает turns оборотов — как у
+      // галактики. Сдвиг точки вылета равномерно раскладывает эти обороты по
+      // слоям; закрутка полёта против знака сдвига, чтобы рой шёл по изгибу ветви.
+      const arms = scaleCount(
+        n,
+        WAVE.spiral.armsMin,
+        1 / WAVE.spiral.perArm,
+        WAVE.spiral.armsCap,
+        WAVE.spiral.armsSpread,
+        rnd
+      );
+      const layers = Math.ceil(n / arms);
+      const duration = raidDuration(n);
+      const gap = Math.min(
+        WAVE.spiral.gapMax,
+        Math.max(WAVE.spiral.gapMin, duration / Math.max(1, layers - 1))
+      );
+      const emit = layers > 1 ? (WAVE.spiral.turns * TAU) / (layers - 1) : 0;
+      const spin = rnd() < 0.5 ? 1 : -1;
+      const from = rnd() * TAU;
+      for (let i = 0; i < n; i++) {
+        const wave = (i / arms) | 0;
+        const arm = i % arms;
+        plan.push({
+          at: start + wave * gap,
+          form: true,
+          ang: from + spin * wave * emit + (arm / arms) * TAU,
+          rad: WAVE.formRadius,
+          swirl: -spin * WAVE.spiral.swirl,
+        });
+      }
+      break;
     }
-    first = Math.max(WAVE.drip.firstMin, first);
-    let t = start;
-    for (let i = 0; i < n; i++) {
-      push(t, Math.floor(rnd() * 4), WAVE.edgeSpread);
-      const k = i / Math.max(1, n - 1);
-      t += first - k * (first - last);
+    case "flower": {
+      // Лепестки тоже наращиваем с роем — иначе крупные цветы отличаются от
+      // мелких только длиннее «стебля», а не густотой.
+      const arms = scaleCount(
+        n,
+        WAVE.flower.armsMin,
+        1 / WAVE.flower.perArm,
+        WAVE.flower.armsCap,
+        WAVE.flower.armsSpread,
+        rnd
+      );
+      const layers = Math.ceil(n / arms);
+      const duration = raidDuration(n);
+      const gap = Math.min(
+        WAVE.flower.gapMax,
+        Math.max(WAVE.flower.gapMin, duration / Math.max(1, layers - 1))
+      );
+      for (let i = 0; i < n; i++) {
+        const wave = (i / arms) | 0;
+        const arm = i % arms;
+        plan.push({
+          at: start + wave * gap,
+          form: true,
+          ang: (arm / arms + wave * WAVE.flower.twist) * TAU,
+          rad: WAVE.formRadius,
+          swirl: (arm % 2 ? 1 : -1) * WAVE.flower.swirl,
+        });
+      }
+      break;
+    }
+    case "sweep": {
+      // Ширина ручья и число проходов растут с n; шаг по дуге — из сублинейной
+      // длительности. Один тонкий ручеёк на двести дронов больше не выходит.
+      const passes = scaleCount(
+        n,
+        WAVE.sweep.passesMin,
+        1 / WAVE.sweep.perPass,
+        WAVE.sweep.passesCap,
+        WAVE.sweep.passesSpread,
+        rnd
+      );
+      const width = scaleCount(
+        n,
+        WAVE.sweep.widthMin,
+        WAVE.sweep.perWidth,
+        WAVE.sweep.widthCap,
+        0,
+        rnd
+      );
+      const from = rnd() * TAU;
+      const spin = rnd() < 0.5 ? 1 : -1;
+      const slots = Math.ceil(n / width);
+      const duration = raidDuration(n);
+      const gap = Math.max(WAVE.sweep.gapMin, duration / Math.max(1, slots - 1));
+      let placed = 0;
+      for (let s = 0; s < slots && placed < n; s++) {
+        const k = (s / Math.max(1, slots - 1)) * passes;
+        const wave = 2 * Math.abs(k - Math.floor(k + 0.5));
+        const baseAng = from + (wave - 0.5) * WAVE.sweep.arc * TAU;
+        const batch = Math.min(width, n - placed);
+        for (let w = 0; w < batch; w++) {
+          const offset = (w - (batch - 1) / 2) * WAVE.sweep.widthSpan * TAU;
+          plan.push({
+            at: start + s * gap,
+            form: true,
+            ang: baseAng + offset,
+            rad: WAVE.formRadius,
+            swirl: spin * WAVE.sweep.swirl,
+          });
+          placed++;
+        }
+      }
+      break;
+    }
+    case "drip":
+    default: {
+      // Капель → водопад: длительность сублинейна. При малом рое редкие капли
+      // сгущаются к концу; при большом средний шаг уже мелкий — старт почти
+      // такой же плотный, как финиш, и это сразу водопад, а не «потом польёт».
+      const seconds = Math.min(
+        WAVE.drip.secondsCap,
+        WAVE.drip.secondsBase + WAVE.drip.secondsPerSqrt * Math.sqrt(Math.max(1, n))
+      );
+      const steps = Math.max(1, n - 1);
+      const avg = seconds / steps;
+      const fade = Math.max(
+        0,
+        Math.min(1, (avg - WAVE.drip.firstMin) / (WAVE.drip.firstMax - WAVE.drip.firstMin))
+      );
+      let first = Math.min(
+        WAVE.drip.firstMax,
+        Math.max(avg, avg * (1 + (WAVE.drip.squeeze - 1) * fade * 0.5))
+      );
+      let last = 2 * avg - first;
+      if (last < WAVE.drip.lastMin) {
+        last = WAVE.drip.lastMin;
+        first = Math.min(WAVE.drip.firstMax, 2 * avg - last);
+      }
+      first = Math.max(WAVE.drip.firstMin, first);
+      let t = start;
+      for (let i = 0; i < n; i++) {
+        push(t, Math.floor(rnd() * 4), WAVE.edgeSpread);
+        const k = i / Math.max(1, n - 1);
+        t += first - k * (first - last);
+      }
+      break;
     }
   }
 
