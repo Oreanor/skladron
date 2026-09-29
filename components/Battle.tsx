@@ -186,7 +186,9 @@ export default function Battle({
   const payout = insurePay + bountyPay;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-4">
+    // Колонка со счётом жмётся вместе с окном: на узком десктопе поле боя
+    // важнее, чем ровная ширина цифр.
+    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(12rem,20vw,18rem)] lg:gap-4">
       <div className="relative flex min-h-0 flex-1 flex-col gap-2">
         <MapCanvas
           className="min-h-0 flex-1"

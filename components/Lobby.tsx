@@ -1944,7 +1944,11 @@ export default function Lobby({
         На телефоне она уезжает под карту, под большой палец, и складывается
         в два ряда по пять.
       */}
-      <div className="order-3 grid shrink-0 grid-cols-5 gap-1.5 lg:order-2 lg:grid-cols-[repeat(auto-fill,5rem)] lg:gap-2">
+      {/*
+        Ширина кнопки плывёт: на узком десктопе она ужимается до трёх
+        четвертей, и ряд инструментов не съедает высоту, отведённую карте.
+      */}
+      <div className="order-3 grid shrink-0 grid-cols-5 gap-1.5 lg:order-2 lg:grid-cols-[repeat(auto-fill,clamp(3.75rem,7.4vw,5rem))] lg:gap-2">
         {TOOLS.map((item) => (
           <ToolButton
             key={item.id}
@@ -1964,7 +1968,11 @@ export default function Lobby({
         ))}
       </div>
 
-      <div className="order-2 flex min-h-0 flex-1 flex-col gap-2 lg:order-3 lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-4">
+      {/*
+        Правая колонка не фиксированная, а сжимается вместе с окном: на
+        восьмистах точках прежние 24rem не оставляли карте ничего.
+      */}
+      <div className="order-2 flex min-h-0 flex-1 flex-col gap-2 lg:order-3 lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(14rem,26vw,24rem)] lg:gap-4">
         {/* Левая колонка: карта забирает всю свободную высоту. */}
         <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
 
