@@ -392,7 +392,6 @@ const pt: Dict = {
   "competition.subtitle": "Enxame fixo pelo número. Não custa nada; vence para abrir o seguinte.",
   "competition.start": "Começar",
   "competition.targetSelf": "A ti — competição n.º {n}",
-  "competition.hint": "A composição é dada pelo número. Nos difíceis: mistura de cargas numa vaga e várias vagas de tipos diferentes.",
   "competition.drones": "Drones",
   "competition.droneLevel": "Nível dos drones",
   "competition.waves": "Vagas",

@@ -392,7 +392,6 @@ const fr: Dict = {
   "competition.subtitle": "Essaim fixe selon le numéro. Ne coûte rien ; gagne pour débloquer le suivant.",
   "competition.start": "Lancer",
   "competition.targetSelf": "Toi-même — épreuve n°{n}",
-  "competition.hint": "La composition dépend du numéro. Plus dur : mélange de charges dans une vague et plusieurs vagues de types différents.",
   "competition.drones": "Drones",
   "competition.droneLevel": "Niveau des drones",
   "competition.waves": "Vagues",

@@ -392,7 +392,6 @@ const de: Dict = {
   "competition.subtitle": "Fester Schwarm nach Nummer. Kostet nichts; Sieg öffnet den nächsten.",
   "competition.start": "Starten",
   "competition.targetSelf": "Selbst — Wettkampf Nr. {n}",
-  "competition.hint": "Die Zusammensetzung hängt von der Nummer ab. Schwerer: gemischte Gefechtsköpfe in einer Welle und mehrere Wellen unterschiedlicher Art.",
   "competition.drones": "Drohnen",
   "competition.droneLevel": "Drohnenstufe",
   "competition.waves": "Wellen",

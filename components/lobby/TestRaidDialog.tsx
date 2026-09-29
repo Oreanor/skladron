@@ -128,7 +128,6 @@ export default function TestRaidDialog({
 
       {toSelf ? (
         <div className="space-y-3">
-          <p className="text-sm text-neutral-400">{t("competition.hint")}</p>
           <dl className="space-y-1 font-mono text-sm">
             <div className="flex justify-between gap-3">
               <dt className="text-neutral-500">{t("competition.drones")}</dt>
