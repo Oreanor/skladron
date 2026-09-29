@@ -22,8 +22,7 @@ language sql immutable as $$
     when 'trap'   then 200  -- ловушка дороже огнетушителя: держит рой в радиусе
     when 'refund' then 50
     when 'drones' then 1000
-    when 'scout'  then 10    -- разведчик проще: ни боеголовки, ни брони
-    when 'drone'  then 25    -- ударный дрон дороже
+    when 'drone'  then 25
     when 'income' then 10  -- кредитов в сутки с каждой целой клетки
     when 'sale'   then 2   -- отгрузка идёт вдвое дороже закупки
     when 'loot'   then 50   -- нападавшему за каждую сожжённую клетку склада
@@ -124,7 +123,7 @@ create or replace function depot_value(d jsonb) returns int
 language sql immutable as $$
   select coalesce(sum(
     (e->>'n')::int
-    * case when coalesce(e->>'kind', 'basic') = 'scout' then price('scout') else price('drone') end
+    * price('drone')
   ), 0)::int
   from jsonb_array_elements(coalesce(d, '[]'::jsonb)) e;
 $$;
@@ -147,7 +146,7 @@ create or replace function depots_only_changed(
     depot_sum_kind(after, k) =
       depot_sum_kind(before, k) + case when k = kind then delta else 0 end
   )
-  from unnest(array['basic', 'scout']) as k;
+  from unnest(array['basic']) as k;
 $$;
 
 -- контейнеры обязаны стоять на целых клетках, по одному на клетку, не поверх пушек
@@ -172,6 +171,8 @@ begin
     ) then return false; end if;
     if e->>'cx' is null or e->>'cy' is null or e->>'n' is null then return false; end if;
     if coalesce(e->>'kind', 'basic') not in ('basic', 'scout') then return false; end if;
+    -- scout — legacy: клиент при сохранении переводит в basic; новые не принимаем
+    if coalesce(e->>'kind', 'basic') = 'scout' then return false; end if;
     begin
       cx := (e->>'cx')::int;
       cy := (e->>'cy')::int;
@@ -299,7 +300,10 @@ begin
   if want is null or want < 1 then raise exception 'bad drone count'; end if;
   for i in reverse jsonb_array_length(arr) - 1 .. 0 loop
     e := arr -> i;
-    if coalesce(e->>'kind', 'basic') = want_kind and need > 0 then
+    if need > 0 and (
+      coalesce(e->>'kind', 'basic') = want_kind
+      or (want_kind = 'basic' and coalesce(e->>'kind', 'basic') = 'scout')
+    ) then
       n := coalesce((e->>'n')::int, 0);
       grab := least(n, need);
       need := need - grab;
@@ -473,6 +477,7 @@ update profiles
 -- unique». Поэтому старые варианты убираем явно, до создания новых.
 
 drop function if exists buy_drones(int, jsonb);
+drop function if exists buy_drones(int, jsonb, text);
 drop function if exists buy_scouts(int);
 drop function if exists spend_scouts(int);
 -- claim/resolve настоящего налёта: добавился token, старые формы мешают PostgREST
@@ -713,9 +718,9 @@ language sql security definer set search_path = public as $$
    where lower(p.email) = any (select lower(e) from unnest(emails) e);
 $$;
 
--- ---------- разведчики ----------
--- Лежат в контейнерах: на карте их нет, гореть им негде. Карта врага и
--- списание самолётов — одна операция: иначе карту запрашивали бы бесплатно.
+-- ---------- разведка ----------
+-- Списывает обычных дронов со склада и отдаёт карту врага одной операцией:
+-- иначе карту запрашивали бы бесплатно.
 
 create or replace function launch_scout(target_email text, n int)
 returns table (scouts int, depots jsonb, cells text, guns jsonb, gun_level int)
@@ -742,10 +747,10 @@ begin
   if cur is null then raise exception 'no base'; end if;
 
   -- как и с ударными дронами: снимает сервер, клиент только просит
-  next_depots := take_from_depots(cur_depots, n, 'scout');
+  next_depots := take_from_depots(cur_depots, n, 'basic');
 
   update bases set drone_cells = next_depots, updated_at = now() where user_id = uid;
-  scouts := depot_sum_kind(next_depots, 'scout');
+  scouts := depot_sum(next_depots);
   depots := next_depots;
   select encode(b.cells, 'base64'), b.guns,
          coalesce((p.levels->>'guns')::int, 1)
@@ -965,10 +970,10 @@ begin
   -- Цену берём с учётом уровня, ту же, по какой товар и покупался: иначе
   -- прокачка съедала бы маржу — на десятом уровне дрон обходился в 47, а
   -- уходил за те же 50.
-  drones_out := depot_sum_kind(cur_depots, 'basic');
-  scouts_out := depot_sum_kind(cur_depots, 'scout');
-  sale := (drones_out * price_at(price('drone'), coalesce((prof.levels->>'drones')::int, 1))
-         + scouts_out * price_at(price('scout'), coalesce((prof.levels->>'scouts')::int, 1)))
+  drones_out := depot_sum_kind(cur_depots, 'basic')
+              + depot_sum_kind(cur_depots, 'scout');
+  scouts_out := 0;
+  sale := drones_out * price_at(price('drone'), coalesce((prof.levels->>'drones')::int, 1))
          * price('sale');
 
   update bases
@@ -1134,7 +1139,7 @@ declare
   cost int;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
-  if kind not in ('drones', 'guns', 'sprays', 'traps', 'scouts', 'mg', 'water', 'insurance') then
+  if kind not in ('drones', 'guns', 'sprays', 'traps', 'mg', 'water', 'insurance') then
     raise exception 'bad upgrade kind';
   end if;
 
@@ -1162,7 +1167,7 @@ $$;
 
 -- Параметр packs сохранён по имени для бесшовного обновления старой RPC,
 -- но его значение теперь означает точное количество дронов.
-create or replace function buy_drones(packs int, new_depots jsonb, kind text default 'basic')
+create or replace function buy_drones(packs int, new_depots jsonb)
 returns table (credits int, drones int)
 language plpgsql security definer set search_path = public as $$
 declare
@@ -1176,10 +1181,9 @@ begin
   if packs is null or packs < 1 or packs > 100000 then
     raise exception 'bad drone amount';
   end if;
-  if kind not in ('basic', 'scout') then raise exception 'bad drone kind'; end if;
   select packs * price_at(
-           price(case kind when 'scout' then 'scout' else 'drone' end),
-           coalesce((p.levels->>(case kind when 'scout' then 'scouts' else 'drones' end))::int, 1)
+           price('drone'),
+           coalesce((p.levels->>'drones')::int, 1)
          )
     into cost
     from profiles p where p.id = uid;
@@ -1199,7 +1203,7 @@ begin
   end if;
 
   -- купленное обязано лечь на склад: ровно запрошенное число новых дронов
-  if not depots_only_changed(cur_depots, new_depots, kind, packs) then
+  if not depots_only_changed(cur_depots, new_depots, 'basic', packs) then
     raise exception 'depots must hold exactly the purchased drones';
   end if;
   if not depots_valid(new_depots, cur, cur_guns) then

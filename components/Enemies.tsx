@@ -12,8 +12,6 @@ import { useT } from "@/lib/i18n";
 interface Props {
   enemies: Enemy[];
   drones: number;
-  /** Сколько разведчиков лежит в контейнерах: больше не отправить. */
-  scouts: number;
   /** Кредиты и цена дрона: из них считается надбавка за начинку. */
   credits: number;
   droneCost: number;
@@ -29,7 +27,6 @@ interface Props {
 export default function Enemies({
   enemies,
   drones,
-  scouts,
   credits,
   droneCost,
   onAdd,
@@ -130,7 +127,7 @@ export default function Enemies({
       {scoutTarget && (
         <ScoutDialog
           enemy={scoutTarget}
-          stock={scouts}
+          stock={drones}
           onCancel={() => setScoutTarget(null)}
           onSend={async (n) => {
             const error = await onScout(scoutTarget, n);

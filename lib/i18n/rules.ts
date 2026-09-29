@@ -14,7 +14,7 @@ const en: RuleSection[] = [
     lines: [
       "You start with {credits} cr and a {starter}×{starter} warehouse standing in the middle of the field — it is yours for free.",
       "Every {shift} hours the warehouse pays rent: {income} cr for every intact cell.",
-      "The same moment everything stored ships out at double the purchase price: drones at {droneSale} cr, recon planes at {scoutSale} cr. Whatever you did not send into battle is sold.",
+      "The same moment everything stored ships out at double the purchase price: drones at {droneSale} cr. Whatever you did not send into battle is sold.",
       "Away for a while? The rent accrues for at most {capDays} days.",
       "Short of money? The bank lends {loanMin}–{loanMax} cr for {loanHours} hours at {loanRate}%. The goods you buy with it can burn in a raid — the debt will not.",
     ],
@@ -28,7 +28,7 @@ const en: RuleSection[] = [
       "«Gun» — {gun} cr on a free intact cell. Guns are not sold back, but they can be dragged anywhere on the warehouse.",
       "«Sprinkler» — {spray} cr, placed and dragged just like a gun. It does not shoot: when a cell within {sprayRange} catches fire, the sprinkler spins up and sweeps eight jets around itself. A jet stops at the first blaze it meets and needs a moment to douse it, and the tank holds only {sprayTank} s of water per raid — a dense ring of them still loses to a big enough fire.",
       "«Trap» — {trap} cr, placed and dragged like a gun. It magnetically holds up to {trapCap} drones within {trapRange} cells; extras fly past. Guns can still shoot held drones; if the trap burns, the hold drops.",
-      "«Drones» and «Recon» — a container of {perCell} pieces: {droneBox} cr for drones, {scoutBox} for recon planes. Every level makes them {priceStep}% dearer to buy.",
+      "«Drones» — a container of {perCell} pieces for {droneBox} cr. Every drone level makes them {priceStep}% dearer to buy.",
       "Guns and containers can be dragged around the warehouse in any mode, and that costs nothing.",
     ],
   },
@@ -55,7 +55,7 @@ const en: RuleSection[] = [
   {
     title: "Recon",
     lines: [
-      "Recon planes live in their own containers and are spent by flying.",
+      "Recon sorties spend drones from the same warehouse containers as raids.",
       "A flight takes you over the rival's map under fog of war. The plane comes in from a random edge and uncovers a circle around itself; steer with the left and right arrows.",
       "Their guns can shoot it down. Out of planes — the sortie is over.",
       "What you mapped stays yours, gaps and all — the «Map» button on the rival's card. But it goes stale: wherever they have rebuilt since your flight, the fog creeps back over that patch.",
@@ -65,7 +65,7 @@ const en: RuleSection[] = [
     title: "Upgrades",
     lines: [
       "Classes cost {upgrade} cr per level. Ten levels each, except the insurance policy: it tops out at five, where cover is already full.",
-      "Drones fly faster, guns reach further and shoot quicker, recon planes see more and fly faster, the machine gun aims better, the hose covers more, sprinklers douse a wider circle, traps grab farther.",
+      "Drones fly faster and see farther on recon, guns reach further and shoot quicker, the machine gun aims better, the hose covers more, sprinklers douse a wider circle, traps grab farther.",
       "A level applies to everything at once — to what is already in stock and to everything bought later.",
     ],
   },
@@ -77,7 +77,7 @@ const ru: RuleSection[] = [
     lines: [
       "Начинаешь с {credits} кр и складом {starter}×{starter} посреди поля — он твой даром.",
       "Каждые {shift} часов склад приносит аренду: {income} кр с каждой целой клетки.",
-      "Тогда же уходит отгрузка: всё, что лежит, продаётся вдвое дороже закупки — дроны по {droneSale} кр, разведчики по {scoutSale}. Что не пустил в дело, то продано.",
+      "Тогда же уходит отгрузка: всё, что лежит, продаётся вдвое дороже закупки — дроны по {droneSale} кр. Что не пустил в дело, то продано.",
       "Не заходил долго — аренда копится не больше чем за {capDays} суток.",
       "Не хватает денег — банк даёт {loanMin}–{loanMax} кр на {loanHours} часа под {loanRate}%. Купленный на них товар может сгореть в налёте, долг — нет.",
     ],
@@ -91,7 +91,7 @@ const ru: RuleSection[] = [
       "«Пушка» — {gun} кр на свободную целую клетку. Обратно пушка не продаётся, но её можно перетащить куда угодно по складу.",
       "«Огнетушитель» — {spray} кр, ставится и таскается так же, как пушка. Он не стреляет: как только в радиусе {sprayRange} клеток занимается огонь, установка раскручивается и бьёт восемью струями вокруг себя. Струя упирается в первый же очаг и гасит его не сразу, а бака хватает на {sprayTank} с полива за налёт — так что и плотный ковёр установок большому пожару проигрывает.",
       "«Ловушка» — {trap} кр, ставится и таскается как пушка. Магнитом удерживает до {trapCap} дронов в радиусе {trapRange} клеток; лишние пролетают. Зенитки всё ещё могут сбивать захваченных; если ловушка сгорает — захват сбрасывается.",
-      "«Дроны» и «Разведка» — контейнер на {perCell} штук: {droneBox} кр за дронов, {scoutBox} за разведчиков. С каждым уровнем закупка дорожает на {priceStep}%.",
+      "«Дроны» — контейнер на {perCell} штук за {droneBox} кр. С каждым уровнем дронов закупка дорожает на {priceStep}%.",
       "Пушки и контейнеры таскаются по складу в любом режиме, и это бесплатно.",
     ],
   },
@@ -118,9 +118,9 @@ const ru: RuleSection[] = [
   {
     title: "Разведка",
     lines: [
-      "Разведчики лежат в своих контейнерах и тратятся вылетом.",
+      "На разведку тратятся те же дроны, что лежат в контейнерах склада.",
       "Вылет уносит тебя на карту соперника под туманом войны. Самолёт заходит со случайного края и открывает круг вокруг себя; рулишь стрелками влево-вправо.",
-      "Его могут сбить чужие пушки. Кончились разведчики — вылет окончен.",
+      "Его могут сбить чужие пушки. Кончились дроны — вылет окончен.",
       "Снятое остаётся твоим вместе с пробелами — кнопка «Карта» в карточке соперника. Но данные стареют: где враг с тех пор перестраивался, тот участок снова затягивает туманом.",
     ],
   },
@@ -128,7 +128,7 @@ const ru: RuleSection[] = [
     title: "Прокачка",
     lines: [
       "Классы стоят {upgrade} кр за уровень. У каждого по десять уровней, кроме полиса: у него пять, дальше покрывать нечего.",
-      "Дроны летят быстрее, пушки бьют дальше и резвее, разведчики видят дальше и летят быстрее, пулемёт точнее, струя шире, огнетушители заливают круг побольше, ловушки хватают дальше.",
+      "Дроны летят быстрее и на разведке видят дальше, пушки бьют дальше и резвее, пулемёт точнее, струя шире, огнетушители заливают круг побольше, ловушки хватают дальше.",
       "Уровень достаётся всему классу разом — и тому, что уже на складе, и тому, что купишь потом.",
     ],
   },
@@ -140,7 +140,7 @@ const es: RuleSection[] = [
     lines: [
       "Empiezas con {credits} cr y un almacén de {starter}×{starter} en medio del campo: es tuyo gratis.",
       "Cada {shift} horas el almacén paga renta: {income} cr por cada celda intacta.",
-      "En ese mismo momento se expide todo lo almacenado al doble del precio de compra: drones a {droneSale} cr, aviones a {scoutSale}. Lo que no enviaste al combate, se vende.",
+      "En ese mismo momento se expide todo lo almacenado al doble del precio de compra: drones a {droneSale} cr. Lo que no enviaste al combate, se vende.",
       "¿Estuviste fuera? La renta se acumula como mucho {capDays} días.",
       "¿Falta dinero? El banco presta {loanMin}–{loanMax} cr por {loanHours} horas al {loanRate}%. La mercancía comprada puede arder en un ataque; la deuda no.",
     ],
@@ -154,7 +154,7 @@ const es: RuleSection[] = [
       "«Cañón»: {gun} cr en una celda intacta libre. Los cañones no se revenden, pero se arrastran a cualquier punto del almacén.",
       "«Extintor»: {spray} cr, se coloca y se arrastra igual que un cañón. No dispara: en cuanto arde una celda a menos de {sprayRange}, la instalación gira y lanza ocho chorros a su alrededor. Cada chorro se detiene en el primer foco y tarda en apagarlo, y el depósito da para {sprayTank} s de riego por ataque: ni un anillo denso aguanta un incendio grande.",
       "«Trampa»: {trap} cr, se coloca y se arrastra como un cañón. Retiene magnéticamente hasta {trapCap} drones a {trapRange} celdas; el resto pasa. Los cañones aún pueden derribar a los atrapados; si la trampa arde, la sujeción se pierde.",
-      "«Drones» y «Exploración»: un contenedor de {perCell} unidades: {droneBox} cr los drones, {scoutBox} los exploradores. Cada nivel encarece la compra un {priceStep}%.",
+      "«Drones»: un contenedor de {perCell} unidades por {droneBox} cr. Cada nivel de drones encarece la compra un {priceStep}%.",
       "Cañones y contenedores se arrastran por el almacén en cualquier modo, y eso no cuesta nada.",
     ],
   },
@@ -181,7 +181,7 @@ const es: RuleSection[] = [
   {
     title: "Exploración",
     lines: [
-      "Los aviones de reconocimiento están en sus contenedores y se gastan al volar.",
+      "La exploración gasta drones de los mismos contenedores del almacén que los ataques.",
       "El vuelo te lleva sobre el mapa del rival bajo niebla de guerra. El avión entra por un borde al azar y descubre un círculo a su alrededor; guía con las flechas.",
       "Sus cañones pueden derribarlo. Sin aviones, la salida termina.",
       "Lo cartografiado es tuyo, huecos incluidos: botón «Mapa» en la ficha del rival. Pero envejece: donde el rival haya reconstruido desde tu vuelo, la niebla vuelve a cubrir esa zona.",
@@ -191,7 +191,7 @@ const es: RuleSection[] = [
     title: "Mejoras",
     lines: [
       "Las clases cuestan {upgrade} cr por nivel. Diez niveles cada una, salvo la póliza: la suya acaba en el quinto, cuando la cobertura ya es total.",
-      "Los drones vuelan más rápido, los cañones llegan más lejos y disparan antes, los exploradores ven más y vuelan más, la ametralladora apunta mejor, la manguera cubre más, los extintores riegan un círculo mayor, las trampas atrapan más lejos.",
+      "Los drones vuelan más rápido y ven más lejos en exploración, los cañones llegan más lejos y disparan antes, la ametralladora apunta mejor, la manguera cubre más, los extintores riegan un círculo mayor, las trampas atrapan más lejos.",
       "El nivel vale para toda la clase a la vez: lo que ya tienes y lo que compres después.",
     ],
   },
@@ -203,7 +203,7 @@ const pt: RuleSection[] = [
     lines: [
       "Começas com {credits} cr e um armazém de {starter}×{starter} no meio do campo — é teu de graça.",
       "A cada {shift} horas o armazém paga renda: {income} cr por cada célula intacta.",
-      "No mesmo momento sai a expedição: tudo o que está guardado vende-se ao dobro da compra — drones a {droneSale} cr, aviões a {scoutSale}. O que não mandaste ao combate, foi vendido.",
+      "No mesmo momento sai a expedição: tudo o que está guardado vende-se ao dobro da compra — drones a {droneSale} cr. O que não mandaste ao combate, foi vendido.",
       "Estiveste fora? A renda acumula no máximo {capDays} dias.",
       "Falta dinheiro? O banco empresta {loanMin}–{loanMax} cr por {loanHours} horas a {loanRate}%. A mercadoria comprada pode arder num ataque; a dívida não.",
     ],
@@ -217,7 +217,7 @@ const pt: RuleSection[] = [
       "«Canhão» — {gun} cr numa célula intacta livre. Os canhões não se revendem, mas arrastam-se para onde quiseres no armazém.",
       "«Extintor» — {spray} cr, coloca-se e arrasta-se tal como um canhão. Não dispara: assim que uma célula a menos de {sprayRange} pega fogo, a instalação gira e lança oito jactos à sua volta. Cada jacto pára no primeiro foco e demora a apagá-lo, e o depósito dá para {sprayTank} s de rega por ataque: nem um anel denso trava um incêndio grande.",
       "«Armadilha» — {trap} cr, coloca-se e arrasta-se como um canhão. Retém magneticamente até {trapCap} drones a {trapRange} células; os demais passam. Os canhões ainda podem abater os capturados; se a armadilha arder, a retenção cai.",
-      "«Drones» e «Reconhecimento» — um contentor de {perCell} unidades: {droneBox} cr os drones, {scoutBox} os reconhecedores. Cada nível encarece a compra em {priceStep}%.",
+      "«Drones» — um contentor de {perCell} unidades por {droneBox} cr. Cada nível de drones encarece a compra em {priceStep}%.",
       "Canhões e contentores arrastam-se pelo armazém em qualquer modo, e isso não custa nada.",
     ],
   },
@@ -244,7 +244,7 @@ const pt: RuleSection[] = [
   {
     title: "Reconhecimento",
     lines: [
-      "Os aviões de reconhecimento ficam nos seus contentores e gastam-se a voar.",
+      "O reconhecimento gasta drones dos mesmos contentores do armazém que os ataques.",
       "O voo leva-te sobre o mapa do rival sob nevoeiro de guerra. O avião entra por um bordo ao acaso e descobre um círculo à sua volta; guia com as setas.",
       "Os canhões dele podem abatê-lo. Sem aviões, a saída acaba.",
       "O que mapeaste fica teu, falhas incluídas — botão «Mapa» na ficha do rival. Mas envelhece: onde ele reconstruiu depois do teu voo, o nevoeiro volta a cobrir essa zona.",
@@ -254,7 +254,7 @@ const pt: RuleSection[] = [
     title: "Melhorias",
     lines: [
       "As classes custam {upgrade} cr por nível. Dez níveis cada, exceto a apólice: a dela acaba no quinto, quando a cobertura já é total.",
-      "Os drones voam mais depressa, os canhões alcançam mais longe e disparam mais rápido, os reconhecedores veem mais e voam mais, a metralhadora acerta melhor, a mangueira cobre mais, os extintores regam um círculo maior, as armadilhas apanham mais longe.",
+      "Os drones voam mais depressa e veem mais longe em reconhecimento, os canhões alcançam mais longe e disparam mais rápido, a metralhadora acerta melhor, a mangueira cobre mais, os extintores regam um círculo maior, as armadilhas apanham mais longe.",
       "O nível vale para toda a classe de uma vez: o que já tens e o que comprares depois.",
     ],
   },
@@ -266,7 +266,7 @@ const fr: RuleSection[] = [
     lines: [
       "Tu commences avec {credits} cr et un entrepôt de {starter}×{starter} au milieu du terrain — il est à toi gratuitement.",
       "Toutes les {shift} heures l’entrepôt rapporte un loyer : {income} cr par case intacte.",
-      "Au même moment part l’expédition : tout ce qui est stocké se vend au double du prix d’achat — drones à {droneSale} cr, avions à {scoutSale}. Ce que tu n’as pas envoyé au combat est vendu.",
+      "Au même moment part l’expédition : tout ce qui est stocké se vend au double du prix d’achat — drones à {droneSale} cr. Ce que tu n’as pas envoyé au combat est vendu.",
       "Absent longtemps ? Le loyer s’accumule sur {capDays} jours au maximum.",
       "À court d’argent ? La banque prête {loanMin}–{loanMax} cr pour {loanHours} heures à {loanRate} %. La marchandise achetée peut brûler dans un raid, la dette non.",
     ],
@@ -280,7 +280,7 @@ const fr: RuleSection[] = [
       "« Canon » — {gun} cr sur une case intacte libre. Un canon ne se revend pas, mais se déplace où tu veux dans l’entrepôt.",
       "« Extincteur » — {spray} cr, il se pose et se déplace comme un canon. Il ne tire pas : dès qu’une case s’enflamme à moins de {sprayRange}, l’installation se met à tourner et projette huit jets autour d’elle. Un jet bute sur le premier foyer et met un temps à l’éteindre, et le réservoir ne tient que {sprayTank} s par raid : même un anneau serré cède devant un grand incendie.",
       "« Piège » — {trap} cr, posé et déplacé comme un canon. Il retient magnétiquement jusqu’à {trapCap} drones dans un rayon de {trapRange} cases ; les autres passent. Les canons peuvent encore abattre les capturés ; si le piège brûle, la prise tombe.",
-      "« Drones » et « Reconnaissance » — un conteneur de {perCell} pièces : {droneBox} cr les drones, {scoutBox} les éclaireurs. Chaque niveau renchérit l’achat de {priceStep} %.",
+      "« Drones » — un conteneur de {perCell} pièces pour {droneBox} cr. Chaque niveau de drones renchérit l’achat de {priceStep} %.",
       "Canons et conteneurs se déplacent dans l’entrepôt dans n’importe quel mode, et cela ne coûte rien.",
     ],
   },
@@ -307,7 +307,7 @@ const fr: RuleSection[] = [
   {
     title: "Reconnaissance",
     lines: [
-      "Les avions de reconnaissance tiennent dans leurs conteneurs et se dépensent en vol.",
+      "La reconnaissance dépense les drones des mêmes conteneurs d’entrepôt que les raids.",
       "Le vol t’emmène au-dessus de la carte du rival sous brouillard de guerre. L’avion entre par un bord au hasard et dégage un cercle autour de lui ; tu diriges avec les flèches.",
       "Ses canons peuvent l’abattre. Plus d’avions, la sortie est finie.",
       "Ce que tu as cartographié reste à toi, trous compris — bouton « Carte » sur la fiche du rival. Mais cela vieillit : là où il a rebâti depuis ton vol, le brouillard revient sur la zone.",
@@ -317,7 +317,7 @@ const fr: RuleSection[] = [
     title: "Améliorations",
     lines: [
       "Les classes coûtent {upgrade} cr le niveau. Dix niveaux chacune, sauf la police d’assurance : elle s’arrête au cinquième, la couverture y est déjà totale.",
-      "Les drones volent plus vite, les canons portent plus loin et tirent plus vite, les éclaireurs voient plus et volent plus vite, la mitrailleuse vise mieux, la lance couvre plus, les extincteurs arrosent un cercle plus large, les pièges attrapent plus loin.",
+      "Les drones volent plus vite et voient plus loin en reconnaissance, les canons portent plus loin et tirent plus vite, la mitrailleuse vise mieux, la lance couvre plus, les extincteurs arrosent un cercle plus large, les pièges attrapent plus loin.",
       "Le niveau vaut pour toute la classe d’un coup : ce que tu as déjà et ce que tu achèteras ensuite.",
     ],
   },
@@ -329,7 +329,7 @@ const de: RuleSection[] = [
     lines: [
       "Du startest mit {credits} Cr und einem {starter}×{starter}-Lager mitten im Feld — es gehört dir umsonst.",
       "Alle {shift} Stunden bringt das Lager Miete: {income} Cr pro heilem Feld.",
-      "Im selben Moment geht die Verladung raus: alles Eingelagerte wird zum doppelten Einkaufspreis verkauft — Drohnen zu {droneSale} Cr, Aufklärer zu {scoutSale}. Was du nicht in den Einsatz geschickt hast, ist verkauft.",
+      "Im selben Moment geht die Verladung raus: alles Eingelagerte wird zum doppelten Einkaufspreis verkauft — Drohnen zu {droneSale} Cr. Was du nicht in den Einsatz geschickt hast, ist verkauft.",
       "Länger weg gewesen? Die Miete läuft höchstens {capDays} Tage auf.",
       "Zu wenig Geld? Die Bank leiht {loanMin}–{loanMax} Cr für {loanHours} Stunden zu {loanRate} %. Die dafür gekaufte Ware kann bei einem Angriff verbrennen — die Schuld nicht.",
     ],
@@ -343,7 +343,7 @@ const de: RuleSection[] = [
       "«Geschütz» — {gun} Cr auf ein freies heiles Feld. Zurückverkaufen lässt sich ein Geschütz nicht, ziehen dagegen überallhin im Lager.",
       "«Löschanlage» — {spray} Cr, wird wie ein Geschütz gesetzt und gezogen. Sie schießt nicht: brennt ein Feld im Umkreis von {sprayRange}, dreht sie auf und schleudert acht Strahlen um sich. Ein Strahl bleibt am ersten Brandherd hängen und braucht Zeit, ihn zu löschen, und der Tank reicht für {sprayTank} s je Angriff — auch ein dichter Ring verliert gegen ein großes Feuer.",
       "«Falle» — {trap} Cr, wird wie ein Geschütz gesetzt und gezogen. Sie hält magnetisch bis zu {trapCap} Drohnen im Umkreis von {trapRange} Feldern; Überschuss fliegt weiter. Geschütze können gefangene Drohnen weiter abschießen; brennt die Falle, endet der Halt.",
-      "«Drohnen» und «Aufklärung» — ein Container mit {perCell} Stück: {droneBox} Cr für Drohnen, {scoutBox} für Aufklärer. Jede Stufe verteuert den Einkauf um {priceStep} %.",
+      "«Drohnen» — ein Container mit {perCell} Stück für {droneBox} Cr. Jede Drohnenstufe verteuert den Einkauf um {priceStep} %.",
       "Geschütze und Container lassen sich in jedem Modus über das Lager ziehen, und das kostet nichts.",
     ],
   },
@@ -370,9 +370,9 @@ const de: RuleSection[] = [
   {
     title: "Aufklärung",
     lines: [
-      "Aufklärer liegen in eigenen Containern und werden durch Flüge verbraucht.",
+      "Aufklärung verbraucht dieselben Lagerdrohnen in Containern wie Angriffe.",
       "Ein Flug führt dich über die Karte des Gegners im Nebel des Krieges. Das Flugzeug kommt von einer zufälligen Kante und deckt einen Kreis um sich auf; gesteuert wird mit den Pfeiltasten.",
-      "Seine Geschütze können es abschießen. Sind die Aufklärer alle, ist der Einsatz vorbei.",
+      "Seine Geschütze können es abschießen. Sind die Drohnen alle, ist der Einsatz vorbei.",
       "Das Kartierte bleibt deins, samt Lücken — Knopf «Karte» beim Gegner. Es veraltet aber: wo er seit deinem Flug umgebaut hat, kriecht der Nebel über dieses Feld zurück.",
     ],
   },
@@ -380,7 +380,7 @@ const de: RuleSection[] = [
     title: "Ausbau",
     lines: [
       "Klassen kosten {upgrade} Cr pro Stufe. Je zehn Stufen, außer der Police: sie endet bei fünf, dort ist die Deckung schon voll.",
-      "Drohnen fliegen schneller, Geschütze reichen weiter und schießen zügiger, Aufklärer sehen mehr und fliegen schneller, das MG trifft besser, der Schlauch deckt mehr ab, Löschanlagen begießen einen größeren Kreis, Fallen greifen weiter.",
+      "Drohnen fliegen schneller und sehen in der Aufklärung weiter, Geschütze reichen weiter und schießen zügiger, das MG trifft besser, der Schlauch deckt mehr ab, Löschanlagen begießen einen größeren Kreis, Fallen greifen weiter.",
       "Eine Stufe gilt für die ganze Klasse auf einmal — für Vorhandenes und für später Gekauftes.",
     ],
   },
@@ -392,7 +392,7 @@ const it: RuleSection[] = [
     lines: [
       "Parti con {credits} cr e un magazzino {starter}×{starter} in mezzo al campo: è tuo gratis.",
       "Ogni {shift} ore il magazzino rende affitto: {income} cr per ogni cella intatta.",
-      "Nello stesso momento parte la spedizione: tutto ciò che è stoccato si vende al doppio dell’acquisto — droni a {droneSale} cr, ricognitori a {scoutSale}. Quello che non hai mandato in battaglia è venduto.",
+      "Nello stesso momento parte la spedizione: tutto ciò che è stoccato si vende al doppio dell’acquisto — droni a {droneSale} cr. Quello che non hai mandato in battaglia è venduto.",
       "Sei stato via? L’affitto si accumula al massimo per {capDays} giorni.",
       "Soldi finiti? La banca presta {loanMin}–{loanMax} cr per {loanHours} ore al {loanRate}%. La merce comprata può bruciare in un attacco, il debito no.",
     ],
@@ -406,7 +406,7 @@ const it: RuleSection[] = [
       "«Cannone» — {gun} cr su una cella intatta libera. Il cannone non si rivende, ma si trascina ovunque nel magazzino.",
       "«Estintore» — {spray} cr, si posa e si trascina come un cannone. Non spara: appena una cella entro {sprayRange} prende fuoco, l’impianto gira e lancia otto getti attorno a sé. Un getto si ferma sul primo focolaio e ci mette un po’ a spegnerlo, e il serbatoio basta per {sprayTank} s a incursione: anche un anello fitto cede a un incendio grosso.",
       "«Trappola» — {trap} cr, si posa e si trascina come un cannone. Tiene magneticamente fino a {trapCap} droni entro {trapRange} celle; gli altri passano. I cannoni possono ancora abbattere i catturati; se la trappola brucia, la presa cade.",
-      "«Droni» e «Ricognizione» — un container da {perCell} pezzi: {droneBox} cr i droni, {scoutBox} i ricognitori. Ogni livello rincara l’acquisto del {priceStep}%.",
+      "«Droni» — un container da {perCell} pezzi per {droneBox} cr. Ogni livello droni rincara l’acquisto del {priceStep}%.",
       "Cannoni e container si trascinano per il magazzino in qualsiasi modalità, e non costa nulla.",
     ],
   },
@@ -433,7 +433,7 @@ const it: RuleSection[] = [
   {
     title: "Ricognizione",
     lines: [
-      "I ricognitori stanno nei loro container e si consumano volando.",
+      "La ricognizione spende gli stessi droni di magazzino usati negli attacchi.",
       "Il volo ti porta sulla mappa del rivale sotto la nebbia di guerra. L’aereo entra da un bordo a caso e scopre un cerchio attorno a sé; si guida con le frecce.",
       "I suoi cannoni possono abbatterlo. Finiti i ricognitori, la sortita è chiusa.",
       "Quello che hai mappato resta tuo, buchi compresi — pulsante «Mappa» nella scheda del rivale. Ma invecchia: dove lui ha ricostruito dopo il tuo volo, la nebbia torna su quella zona.",
@@ -443,7 +443,7 @@ const it: RuleSection[] = [
     title: "Potenziamenti",
     lines: [
       "Le classi costano {upgrade} cr per livello. Dieci livelli ciascuna, tranne la polizza: la sua finisce al quinto, dove la copertura è già piena.",
-      "I droni volano più veloci, i cannoni arrivano più lontano e sparano prima, i ricognitori vedono di più e volano più veloci, la mitragliatrice mira meglio, la manichetta copre di più, gli estintori bagnano un cerchio più ampio, le trappole afferrano più lontano.",
+      "I droni volano più veloci e vedono più lontano in ricognizione, i cannoni arrivano più lontano e sparano prima, la mitragliatrice mira meglio, la manichetta copre di più, gli estintori bagnano un cerchio più ampio, le trappole afferrano più lontano.",
       "Il livello vale per tutta la classe in una volta: per ciò che hai già e per ciò che comprerai poi.",
     ],
   },

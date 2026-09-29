@@ -2,13 +2,13 @@
 // и поверх Supabase — Lobby знает только этот интерфейс.
 
 import {
-  type DroneKind,
   type Depot,
   type Gun,
   CELLS,
   decodeCells,
   decodePgBytea,
   encodeRle,
+  normalizeDepots,
 } from "./base";
 
 import { LOAN_HOURS, MAX_LEVEL, loanDebt, upgradeCost } from "./economy";
@@ -31,7 +31,7 @@ export interface Income {
   credits: number;
   days: number;
   /** Что ушло с отгрузкой: склад продаёт остатки раз в сутки. */
-  sold?: { drones: number; scouts: number } | null;
+  sold?: { drones: number } | null;
 }
 
 export interface Repo {
@@ -85,7 +85,7 @@ export interface Repo {
    * наша копия разъехалась с его, и правда — на сервере.
    */
   reloadBase(p: Player): Promise<void>;
-  buyDrones(p: Player, amount: number, kind?: DroneKind): Promise<Partial<Player>>;
+  buyDrones(p: Player, amount: number): Promise<Partial<Player>>;
   /**
    * Налёт волнами. Дронов снимает сервер со своей копии склада, надбавку за
    * начинку списывает кредитами, обратно приходит id и новый склад.
@@ -150,7 +150,7 @@ class LocalRepo implements Repo {
   }
 
   async launchScout(p: Player, email: string, n: number) {
-    takeDrones(p.depots, n, "scout");
+    takeDrones(p.depots, n);
     localSave(p);
     const enemy = p.enemies.find((item) => item.email.toLowerCase() === email.toLowerCase());
     return {
@@ -197,7 +197,7 @@ class LocalRepo implements Repo {
     return { credits: p.credits, levels: p.levels };
   }
 
-  async buyDrones(p: Player, _amount: number, _kind?: DroneKind) {
+  async buyDrones(p: Player, _amount: number) {
     localSave(p);
     return {};
   }
@@ -354,7 +354,7 @@ class CloudRepo implements Repo {
       loanDue: row.loan_due ? Date.parse(row.loan_due) : null,
       cells: decodePgBytea(b.cells),
       guns: b.guns ?? [],
-      depots: b.drone_cells ?? [],
+      depots: normalizeDepots(b.drone_cells ?? []),
       incoming: attacks.incoming,
       enemies: row.enemies ?? [],
     };
@@ -376,9 +376,10 @@ class CloudRepo implements Repo {
       income: {
         credits: first?.credits_added ?? 0,
         days: first?.days ?? 0,
-        sold: first && (first.sold_drones || first.sold_scouts)
-          ? { drones: first.sold_drones, scouts: first.sold_scouts }
-          : null,
+        sold:
+          first && (first.sold_drones || first.sold_scouts)
+            ? { drones: (first.sold_drones ?? 0) + (first.sold_scouts ?? 0) }
+            : null,
       },
       reports: attacks.reports,
     };
@@ -566,13 +567,12 @@ class CloudRepo implements Repo {
 
 
 
-  async buyDrones(p: Player, amount: number, kind: DroneKind = "basic") {
+  async buyDrones(p: Player, amount: number) {
     const { data, error } = await this.db().rpc("buy_drones", {
       // Имя SQL-параметра оставлено для совместимости со старой функцией,
       // но теперь это точное количество дронов, а не число пачек.
       packs: amount,
       new_depots: p.depots,
-      kind,
     });
     if (error) throw error;
     const row = (data as { credits: number }[] | null)?.[0];

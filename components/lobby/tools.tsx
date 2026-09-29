@@ -14,7 +14,6 @@ import {
   Hammer,
   LayoutGrid,
   Magnet,
-  Plane,
   Rocket,
   ShieldCheck,
   Wrench,
@@ -39,7 +38,7 @@ import type { Player } from "@/lib/player";
 import type { Key } from "@/lib/i18n/dict";
 import { IconDrone } from "../ui";
 
-export type Tool = "area" | "repair" | "scrap" | "gun" | "spray" | "trap" | "drones" | "scouts";
+export type Tool = "area" | "repair" | "scrap" | "gun" | "spray" | "trap" | "drones";
 /** Кнопка «Апгрейд» карты не касается: она только открывает модалку. */
 export type ToolId = Tool | "upgrade" | "insurance" | "loan";
 /** Панели, которые на телефоне открываются шторкой снизу. */
@@ -61,7 +60,7 @@ export const TOOLS: {
   /** Какой класс он показывает уровнем. */
   levelKind?: UpgradeKind;
   /** Что считать в уголке кнопки: этого добра столько-то на складе. */
-  countKind?: "intact" | "burnt" | "guns" | "sprays" | "traps" | "drones" | "scouts" | "loan";
+  countKind?: "intact" | "burnt" | "guns" | "sprays" | "traps" | "drones" | "loan";
 }[] = [
   {
     id: "area",
@@ -96,16 +95,6 @@ export const TOOLS: {
     icon: <Rocket className={ICON} />,
     levelKind: "guns",
     countKind: "guns",
-  },
-  {
-    id: "scouts",
-    label: "tool.scouts",
-    hint: "tool.scoutsHint",
-    vars: { perCell: DRONES_PER_CELL },
-    priceKey: "tool.priceBox",
-    icon: <Plane className={ICON} />,
-    levelKind: "scouts",
-    countKind: "scouts",
   },
   {
     id: "drones",
@@ -202,7 +191,9 @@ export function readPanels(): {
       ...(saved.order ?? []).filter((id) => DEFAULT_PANELS.includes(id)),
       ...DEFAULT_PANELS.filter((id) => !(saved.order ?? []).includes(id)),
     ];
-    return { order, hidden: saved.hidden ?? {}, tool: saved.tool };
+    const tool =
+      (saved.tool as string | undefined) === "scouts" ? "drones" : saved.tool;
+    return { order, hidden: saved.hidden ?? {}, tool };
   } catch {
     return { order: DEFAULT_PANELS, hidden: {} };
   }

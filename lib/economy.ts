@@ -29,8 +29,8 @@ export const loanDebt = (amount: number) =>
  */
 export const INCOME_PER_CELL = 10;
 /**
- * Раз в сутки склад отгружает всё, что на нём лежит: дроны и разведчики
- * уходят вдвое дороже закупки. Не успел пустить их в дело — они проданы.
+ * Раз в сутки склад отгружает всё, что на нём лежит: дроны уходят вдвое
+ * дороже закупки. Не успел пустить их в дело — они проданы.
  */
 export const SALE_MULTIPLIER = 2;
 export const INCOME_CAP_SHIFTS = 28; // потолок накопления — две недели смен
@@ -49,13 +49,8 @@ export const insuranceShare = (level: number) =>
   Math.min(1, Math.max(0, level - 1) * INSURANCE_PER_LEVEL);
 
 /** Во что обошлось то, что лежит в контейнерах. */
-export const goodsValue = (
-  depots: { n: number; kind?: string }[]
-) =>
-  depots.reduce(
-    (sum, d) => sum + d.n * (d.kind === "scout" ? SCOUT_UNIT_COST : DRONE_UNIT_COST),
-    0
-  );
+export const goodsValue = (depots: { n: number }[]) =>
+  depots.reduce((sum, d) => sum + d.n * DRONE_UNIT_COST, 0);
 
 /** Страховая выплата: расчистка клеток плюс доля стоимости потерянного. */
 export const insurance = (
@@ -74,7 +69,6 @@ export const insurance = (
       trapsLost * TRAP_COST) *
       insuranceShare(level)
   );
-export const SCOUT_UNIT_COST = 10; // разведчик проще: ни боеголовки, ни брони
 /**
  * Уровни. Апгрейд общий на класс: дорожает и уже лежащее на складе, и всё,
  * что купишь потом. Второй уровень стоит 5 000, третий 10 000, и так далее —
@@ -91,7 +85,6 @@ export type UpgradeKind =
   | "guns"
   | "sprays"
   | "traps"
-  | "scouts"
   | "mg"
   | "water"
   | "insurance";
@@ -100,7 +93,6 @@ export const UPGRADE_KINDS: UpgradeKind[] = [
   "guns",
   "sprays",
   "traps",
-  "scouts",
   "mg",
   "water",
   "insurance",

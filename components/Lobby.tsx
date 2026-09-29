@@ -9,7 +9,6 @@ import {
   DRONES_PER_CELL,
   type Rect,
   applyRect,
-  depotKind,
   droneCount,
   countFreeCells,
   countKind,
@@ -50,7 +49,6 @@ import {
   TRAP_COST,
   MIN_BASE_CELLS,
   REPAIR_COST,
-  SCOUT_UNIT_COST,
   maxLevel,
   UPGRADE_KINDS,
   upgradeCost,
@@ -138,7 +136,6 @@ import {
   decodeRle,
   encodeRle,
   fogPatches,
-  type DroneKind,
   type Gun,
 } from "@/lib/base";
 import {
@@ -383,21 +380,12 @@ export default function Lobby({
               hours: income.days * SHIFT_HOURS,
               credits: fmt(income.credits),
             }) +
-              (sold && (sold.drones || sold.scouts)
+              (sold && sold.drones
                 ? t("income.sold", {
                     drones: sold.drones,
-                    // Считаем по тем же ценам, что и сервер: с учётом уровня.
-                    // Иначе в сообщении стояла бы одна сумма, а на счёт
-                    // приходила другая.
                     dronesValue: fmt(
                       sold.drones *
                         priceAt(DRONE_UNIT_COST, player.levels.drones) *
-                        SALE_MULTIPLIER
-                    ),
-                    scouts: sold.scouts,
-                    scoutsValue: fmt(
-                      sold.scouts *
-                        priceAt(SCOUT_UNIT_COST, player.levels.scouts) *
                         SALE_MULTIPLIER
                     ),
                   })
@@ -497,13 +485,12 @@ export default function Lobby({
    * при идущей атаке, а таких проходов тут было пять на каждый.
    */
   const counts = useMemo(() => {
-    if (!p) return { intact: 0, burnt: 0, free: 0, drones: 0, scouts: 0 };
+    if (!p) return { intact: 0, burnt: 0, free: 0, drones: 0 };
     return {
       intact: intactCells(p),
       burnt: burntCells(p),
       free: countFreeCells(p.cells, p.guns, p.depots),
-      drones: droneCount(p.depots, "basic"),
-      scouts: droneCount(p.depots, "scout"),
+      drones: droneCount(p.depots),
     };
     // version меняется при любой правке склада — он и есть ключ кэша
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -519,7 +506,7 @@ export default function Lobby({
     return <div className="p-6 text-sm text-neutral-500">{t("app.loading")}</div>;
   }
 
-  const { intact, burnt, drones, scouts } = counts;
+  const { intact, burnt, drones } = counts;
   /** Во что обходится дрон при нынешнем уровне: от него считается надбавка. */
   const droneCost = priceAt(DRONE_UNIT_COST, p.levels.drones);
   // то же самое, но под ключи кнопок: у каждой в углу своё число
@@ -529,7 +516,6 @@ export default function Lobby({
     if (item.id === "spray") return priceAt(SPRAY_COST, p.levels.sprays);
     if (item.id === "trap") return priceAt(TRAP_COST, p.levels.traps);
     if (item.id === "drones") return priceAt(DRONE_UNIT_COST, p.levels.drones) * DRONES_PER_CELL;
-    if (item.id === "scouts") return priceAt(SCOUT_UNIT_COST, p.levels.scouts) * DRONES_PER_CELL;
     return item.vars.cost;
   };
 
@@ -539,8 +525,7 @@ export default function Lobby({
       return { ...item.vars, range: Math.round(sprayRange({ sprayLevel: p.levels.sprays })) };
     if (item.id === "trap")
       return { ...item.vars, range: Math.round(trapRange({ trapLevel: p.levels.traps })) };
-    if (item.id === "drones" || item.id === "scouts")
-      return { ...item.vars, cost: toolPrice(item) };
+    if (item.id === "drones") return { ...item.vars, cost: toolPrice(item) };
     return item.vars;
   };
 
@@ -551,7 +536,6 @@ export default function Lobby({
     sprays: countKind(p.guns, "spray"),
     traps: countKind(p.guns, "trap"),
     drones,
-    scouts,
     // у кредита в углу висит долг, а если долгов нет — ничего
     loan: p.loan || undefined,
   };
@@ -657,7 +641,7 @@ export default function Lobby({
         cells={scout.cells}
         guns={scout.guns}
         planes={scout.planes}
-        level={p.levels.scouts}
+        level={p.levels.drones}
         gunLevel={scout.gunLevel}
         known={known}
         onFinish={async (o: ScoutOutcome) => {
@@ -834,7 +818,7 @@ export default function Lobby({
    * Контейнер покупается прямо на карте, как пушка: ткнул в свободную клетку —
    * появился ящик на десять дронов, деньги списались. Никаких окошек.
    */
-  const buyDepotAt = async (x: number, y: number, kind: DroneKind) => {
+  const buyDepotAt = async (x: number, y: number) => {
     if (x < 0 || y < 0 || x >= GRID || y >= GRID) return;
     if (p.cells[idx(x, y)] !== G_BASE) {
       setMessage(t("depot.onlyIntact"));
@@ -845,29 +829,20 @@ export default function Lobby({
       return;
     }
     if (p.depots.some((d) => d.cx === x && d.cy === y)) return;
-    const cost =
-      priceAt(
-        kind === "scout" ? SCOUT_UNIT_COST : DRONE_UNIT_COST,
-        kind === "scout" ? p.levels.scouts : p.levels.drones
-      ) * DRONES_PER_CELL;
+    const cost = priceAt(DRONE_UNIT_COST, p.levels.drones) * DRONES_PER_CELL;
     if (p.credits < cost) {
       setMessage(t("depot.noCredits", { cost: fmt(cost) }));
       return;
     }
     const previousDepots = p.depots;
     const previousCredits = p.credits;
-    p.depots = [
-      ...p.depots,
-      kind === "scout"
-        ? { cx: x, cy: y, n: DRONES_PER_CELL, kind }
-        : { cx: x, cy: y, n: DRONES_PER_CELL },
-    ];
+    p.depots = [...p.depots, { cx: x, cy: y, n: DRONES_PER_CELL }];
     p.credits -= cost;
     showPrice(x, y, -cost);
     setVersion((v) => v + 1);
     forceRender((v) => v + 1);
     try {
-      const patch = await repo.buyDrones(p, DRONES_PER_CELL, kind);
+      const patch = await repo.buyDrones(p, DRONES_PER_CELL);
       if (patch.credits !== undefined) p.credits = patch.credits;
       forceRender((v) => v + 1);
     } catch (e) {
@@ -997,7 +972,7 @@ export default function Lobby({
   };
 
   const doScout = async (enemy: Enemy, planes: number): Promise<string | null> => {
-    if (scouts < planes) return t("scout.needPlanes");
+    if (drones < planes) return t("scout.needPlanes");
     try {
       await flushPersist();
       // Карта и списание самолётов приходят одной серверной операцией:
@@ -1157,8 +1132,8 @@ export default function Lobby({
       return;
     }
 
-    if (tool === "drones" || tool === "scouts") {
-      void buyDepotAt(c.x, c.y, tool === "scouts" ? "scout" : "basic");
+    if (tool === "drones") {
+      void buyDepotAt(c.x, c.y);
       return;
     }
     if (tool === "gun" || tool === "spray" || tool === "trap") {
@@ -1313,9 +1288,8 @@ export default function Lobby({
     if (tool === "gun" || tool === "spray" || tool === "trap") {
       return p.guns.filter((g) => gunKind(g) === tool);
     }
-    if (tool === "drones" || tool === "scouts") {
-      const want = tool === "scouts" ? "scout" : "basic";
-      return p.depots.filter((d) => depotKind(d) === want);
+    if (tool === "drones") {
+      return p.depots;
     }
     return [];
   };
@@ -1371,7 +1345,7 @@ export default function Lobby({
     // и куда можно, и куда нельзя.
     const placing =
       tool === "gun" || tool === "spray" || tool === "trap" || dragGunRef.current;
-    const stacking = tool === "drones" || tool === "scouts" || draggedDepot;
+    const stacking = tool === "drones" || draggedDepot;
     if (placing || stacking) {
       drawFreeCells(
         ctx,
@@ -1398,7 +1372,7 @@ export default function Lobby({
 
     // Клетка под курсором — сработает тут инструмент или нет. При раскладке
     // контейнеров не рисуем: там уже подсвечены все свободные клетки.
-    if (hover && !d && onMap(hx, hy) && tool !== "drones" && tool !== "scouts") {
+    if (hover && !d && onMap(hx, hy) && tool !== "drones") {
       const v = p.cells[idx(hx, hy)];
       let ok = false;
       if (tool === "area") ok = !isBuilding(v) && (!hasBuilding || touchesBuilding(p.cells, hx, hy));
@@ -1423,7 +1397,7 @@ export default function Lobby({
         const kind = gunKind(gun);
         label = t(kind === "spray" ? "tool.spray" : kind === "trap" ? "tool.trap" : "tool.gun");
       } else if (depot) {
-        label = t(depotKind(depot) === "scout" ? "map.hover.scouts" : "map.hover.drones", {
+        label = t("map.hover.drones", {
           n: depot.n,
         });
       }
@@ -1801,7 +1775,6 @@ export default function Lobby({
     <Enemies
       enemies={p.enemies}
       drones={drones}
-      scouts={scouts}
       credits={p.credits}
       droneCost={droneCost}
       onAdd={addEnemy}

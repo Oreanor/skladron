@@ -5,7 +5,6 @@
 import {
   type Depot,
   type DroneKind,
-  depotKind,
   GRID,
   G_BASE,
   type Gun,
@@ -155,7 +154,11 @@ export function makeEnemy(
 export function takeDrones(depots: Depot[], count: number, kind?: DroneKind) {
   let left = count;
   for (let i = depots.length - 1; i >= 0 && left > 0; i--) {
-    if (kind && depotKind(depots[i]) !== kind) continue;
+    if (kind) {
+      const k = depots[i].kind ?? "basic";
+      const same = k === kind || (kind === "basic" && k === "scout");
+      if (!same) continue;
+    }
     const take = Math.min(depots[i].n, left);
     depots[i].n -= take;
     left -= take;

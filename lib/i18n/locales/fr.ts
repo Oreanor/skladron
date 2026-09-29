@@ -75,7 +75,6 @@ const fr: Dict = {
   "common.ok": "OK",
   "upgrade.mg": "Mitrailleuse",
   "upgrade.water": "Lance à incendie",
-  "tool.scoutsHint": "Un conteneur de {perCell} avions de reconnaissance pour {cost} cr. Clique une case libre de l’entrepôt ; les conteneurs se déplacent à la souris.",
   "depot.noCredits": "Pas assez de crédits pour un conteneur : {cost} cr",
   "tool.upgrade": "Amélioration",
   "tool.upgradeHint": "Fait monter d’un niveau canons, drones et avions de reconnaissance. Le premier palier coûte {cost} cr, les suivants davantage.",
@@ -89,8 +88,6 @@ const fr: Dict = {
   "upgrade.spraysEffect": "+25 % de rayon d’extinction par niveau",
   "upgrade.traps": "Pièges",
   "upgrade.trapsEffect": "+25 % de rayon de capture par niveau",
-  "upgrade.scouts": "Reconnaissance",
-  "upgrade.scoutsEffect": "+25 % de champ de vision et de vitesse par niveau",
   "upgrade.level": "niv. {level}",
   "upgrade.buy": "{cost} cr",
   "upgrade.max": "max",
@@ -99,7 +96,6 @@ const fr: Dict = {
   "upgrade.cantAfford": "Crédits insuffisants : l’amélioration coûte {cost} cr",
   "scout.finish": "Terminer la sortie",
   "scout.finishHint": "Met fin au vol et garde ce qui est cartographié. Les avions encore en réserve sont dépensés quand même.",
-  "tool.scouts": "Reconnaissance",
   "scout.needPlanes": "Aucun avion au hangar — achètes-en d’abord",
   "scout.failed": "Impossible d’obtenir la carte : {error}",
   "scout.button": "Reconnaître",
@@ -360,7 +356,6 @@ const fr: Dict = {
 
   "map.wholeMap": "Toute la carte",
   "map.hover.drones": "Drones · {n}",
-  "map.hover.scouts": "Reconnaissance · {n}",
 
   "menu.language": "Langue",
   "menu.theme": "Thème",

@@ -75,7 +75,6 @@ const pt: Dict = {
   "common.ok": "OK",
   "upgrade.mg": "Metralhadora",
   "upgrade.water": "Mangueira",
-  "tool.scoutsHint": "Um contentor de {perCell} aviões de reconhecimento por {cost} cr. Toca numa célula livre do armazém; os contentores arrastam-se.",
   "depot.noCredits": "Sem créditos para um contentor: {cost} cr",
   "tool.upgrade": "Melhoria",
   "tool.upgradeHint": "Sobe o nível de canhões, drones e aviões de reconhecimento. O primeiro passo custa {cost} cr e os seguintes mais.",
@@ -89,8 +88,6 @@ const pt: Dict = {
   "upgrade.spraysEffect": "+25% de raio de extinção por nível",
   "upgrade.traps": "Armadilhas",
   "upgrade.trapsEffect": "+25% de raio de captura por nível",
-  "upgrade.scouts": "Reconhecimento",
-  "upgrade.scoutsEffect": "+25% de visão e velocidade por nível",
   "upgrade.level": "nív. {level}",
   "upgrade.buy": "{cost} cr",
   "upgrade.max": "máx",
@@ -99,7 +96,6 @@ const pt: Dict = {
   "upgrade.cantAfford": "Créditos insuficientes: a melhoria custa {cost} cr",
   "scout.finish": "Terminar a saída",
   "scout.finishHint": "Termina o voo e guarda o que foi mapeado. Os aviões ainda em reserva gastam-se na mesma.",
-  "tool.scouts": "Reconhecimento",
   "scout.needPlanes": "Não há aviões no hangar — compra primeiro",
   "scout.failed": "Não foi possível obter o mapa: {error}",
   "scout.button": "Explorar",
@@ -360,7 +356,6 @@ const pt: Dict = {
 
   "map.wholeMap": "Mapa inteiro",
   "map.hover.drones": "Drones · {n}",
-  "map.hover.scouts": "Reconhecimento · {n}",
 
   "menu.language": "Idioma",
   "menu.theme": "Tema",

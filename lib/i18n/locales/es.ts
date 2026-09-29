@@ -75,7 +75,6 @@ const es: Dict = {
   "common.ok": "OK",
   "upgrade.mg": "Ametralladora",
   "upgrade.water": "Manguera",
-  "tool.scoutsHint": "Un contenedor de {perCell} aviones de reconocimiento por {cost} cr. Pulsa una celda libre del almacén; los contenedores se arrastran.",
   "depot.noCredits": "No hay créditos para un contenedor: {cost} cr",
   "tool.upgrade": "Mejora",
   "tool.upgradeHint": "Sube de nivel cañones, drones y aviones de reconocimiento. El primer paso cuesta {cost} cr y cada siguiente más.",
@@ -89,8 +88,6 @@ const es: Dict = {
   "upgrade.spraysEffect": "+25% de radio de extinción por nivel",
   "upgrade.traps": "Trampas",
   "upgrade.trapsEffect": "+25% de radio de captura por nivel",
-  "upgrade.scouts": "Reconocimiento",
-  "upgrade.scoutsEffect": "+25% de visión y velocidad por nivel",
   "upgrade.level": "niv. {level}",
   "upgrade.buy": "{cost} cr",
   "upgrade.max": "máx",
@@ -99,7 +96,6 @@ const es: Dict = {
   "upgrade.cantAfford": "No hay créditos suficientes: la mejora cuesta {cost} cr",
   "scout.finish": "Terminar la salida",
   "scout.finishHint": "Termina el vuelo y conserva lo cartografiado. Los aviones que quedan en reserva se gastan igual.",
-  "tool.scouts": "Exploración",
   "scout.needPlanes": "No hay aviones en el hangar: compra alguno primero",
   "scout.failed": "No se pudo obtener el mapa: {error}",
   "scout.button": "Explorar",
@@ -360,7 +356,6 @@ const es: Dict = {
 
   "map.wholeMap": "Todo el mapa",
   "map.hover.drones": "Drones · {n}",
-  "map.hover.scouts": "Exploración · {n}",
 
   "menu.language": "Idioma",
   "menu.theme": "Tema",

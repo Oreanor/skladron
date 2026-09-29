@@ -7,7 +7,6 @@ import {
   REPAIR_COST,
   INCOME_PER_CELL,
   SALE_MULTIPLIER,
-  SCOUT_UNIT_COST,
   STARTER_SIDE,
   accrue,
   priceAt,
@@ -18,8 +17,8 @@ import {
   G_BASE,
   G_BURNT,
   type Gun,
-  depotKind,
   droneCount,
+  normalizeDepots,
   countCells,
   decodeCells,
   encodeCells,
@@ -55,7 +54,6 @@ export interface Levels {
   sprays: number;
   /** Ловушки: радиус захвата. */
   traps: number;
-  scouts: number;
   /** Пулемёт игрока: меткость очереди. */
   mg: number;
   /** Брандспойт: ширина струи. */
@@ -69,7 +67,6 @@ export const startLevels = (): Levels => ({
   guns: 1,
   sprays: 1,
   traps: 1,
-  scouts: 1,
   mg: 1,
   water: 1,
   insurance: 1,
@@ -163,18 +160,9 @@ export const burntCells = (p: Player) => countCells(p.cells, G_BURNT);
  * маржу: на десятом уровне дрон покупался за 47, а продавался за те же 50.
  */
 export function saleOf(p: Player) {
-  let drones = 0;
-  let scouts = 0;
-  for (const d of p.depots) {
-    if (depotKind(d) === "scout") scouts += d.n;
-    else drones += d.n;
-  }
-  return {
-    drones,
-    scouts,
-    dronesValue: drones * priceAt(DRONE_UNIT_COST, p.levels.drones) * SALE_MULTIPLIER,
-    scoutsValue: scouts * priceAt(SCOUT_UNIT_COST, p.levels.scouts) * SALE_MULTIPLIER,
-  };
+  const drones = droneCount(p.depots);
+  const dronesValue = drones * priceAt(DRONE_UNIT_COST, p.levels.drones) * SALE_MULTIPLIER;
+  return { drones, dronesValue };
 }
 
 /**
@@ -184,7 +172,7 @@ export function saleOf(p: Player) {
  */
 export const shiftIncome = (p: Player) => {
   const sale = saleOf(p);
-  return intactCells(p) * INCOME_PER_CELL + sale.dronesValue + sale.scoutsValue;
+  return intactCells(p) * INCOME_PER_CELL + sale.dronesValue;
 };
 
 /** Склад выгорел полностью и чинить не на что — дальше только заново. */
@@ -211,7 +199,7 @@ export function load(): Player {
       loanDue: s.loanDue ?? null,
       cells,
       guns: s.guns ?? [],
-      depots: s.depots ?? [],
+      depots: normalizeDepots(s.depots ?? []),
       lastIncomeAt: s.lastIncomeAt,
       createdAt: s.createdAt,
       founded: s.founded,
@@ -259,6 +247,6 @@ export function collectIncome(p: Player, now = Date.now()) {
   const sale = saleOf(p);
   p.depots = [];
   p.lastIncomeAt = nextAt;
-  p.credits += credits + sale.dronesValue + sale.scoutsValue;
-  return { credits: credits + sale.dronesValue + sale.scoutsValue, days, sold: sale };
+  p.credits += credits + sale.dronesValue;
+  return { credits: credits + sale.dronesValue, days, sold: sale };
 }

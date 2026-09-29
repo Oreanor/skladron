@@ -1,6 +1,6 @@
 /*
  * Как выглядят предметы на карте: контейнер, огнетушитель, ловушка, турель,
- * самолёт разведки. Отдельно от остальной отрисовки потому, что правят это
+ * дроны в контейнере. Отдельно от остальной отрисовки потому, что правят это
  * чаще всего остального и по одному: поменять вид ловушки — значит зайти
  * сюда, а не листать кадр боя целиком.
  *
@@ -14,39 +14,24 @@ import { COLORS } from "./colors";
 /** Контейнеры с дронами — их видит только хозяин склада. */
 /**
  * Контейнеры на складе. На крышке рисуем то, что внутри: винты квадрокоптера
- * у ударных дронов и силуэт самолёта у разведчиков — иначе на карте не
- * отличить, где какой ящик.
+ * винты квадрокоптера на крышке.
  */
 export function drawDepots(
   ctx: CanvasRenderingContext2D,
-  depots: { cx: number; cy: number; n: number; kind?: "basic" | "scout" }[],
+  depots: { cx: number; cy: number; n: number }[],
   cell: number,
   dim = false
 ) {
   for (const d of depots) {
     const x = d.cx * cell;
     const y = d.cy * cell;
-    const scout = d.kind === "scout";
-    const fill = scout ? "58, 74, 46" : "122, 90, 46";
-    const line = scout ? "168, 200, 130" : "214, 168, 92";
+    const fill = "122, 90, 46";
+    const line = "214, 168, 92";
     ctx.fillStyle = `rgba(${fill}, ${dim ? 0.5 : 1})`;
     ctx.fillRect(x, y, cell, cell);
     ctx.strokeStyle = `rgba(${line}, ${dim ? 0.5 : 1})`;
     ctx.lineWidth = 1;
     ctx.strokeRect(x + 0.5, y + 0.5, cell - 1, cell - 1);
-
-    // у разведчиков вместо винтов силуэт самолёта
-    if (scout) {
-      ctx.beginPath();
-      ctx.moveTo(x + cell * 0.5, y + cell * 0.15);
-      ctx.lineTo(x + cell * 0.5, y + cell * 0.85);
-      ctx.moveTo(x + cell * 0.18, y + cell * 0.52);
-      ctx.lineTo(x + cell * 0.82, y + cell * 0.52);
-      ctx.moveTo(x + cell * 0.34, y + cell * 0.8);
-      ctx.lineTo(x + cell * 0.66, y + cell * 0.8);
-      ctx.stroke();
-      continue;
-    }
 
     // винты по углам и корпус между ними — клетка всего 7 px, так что это
     // не рисунок, а узнаваемое пятно

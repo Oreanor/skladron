@@ -75,7 +75,6 @@ const it: Dict = {
   "common.ok": "OK",
   "upgrade.mg": "Mitragliatrice",
   "upgrade.water": "Manichetta",
-  "tool.scoutsHint": "Un container da {perCell} ricognitori per {cost} cr. Tocca una cella libera del magazzino; i container si trascinano.",
   "depot.noCredits": "Crediti insufficienti per un container: {cost} cr",
   "tool.upgrade": "Potenziamento",
   "tool.upgradeHint": "Alza di un livello cannoni, droni e ricognitori. Il primo passo costa {cost} cr, i successivi di più.",
@@ -89,8 +88,6 @@ const it: Dict = {
   "upgrade.spraysEffect": "+25% di raggio di spegnimento per livello",
   "upgrade.traps": "Trappole",
   "upgrade.trapsEffect": "+25% di raggio di cattura per livello",
-  "upgrade.scouts": "Ricognitori",
-  "upgrade.scoutsEffect": "+25% di vista e velocità per livello",
   "upgrade.level": "liv. {level}",
   "upgrade.buy": "{cost} cr",
   "upgrade.max": "max",
@@ -99,7 +96,6 @@ const it: Dict = {
   "upgrade.cantAfford": "Crediti insufficienti: il potenziamento costa {cost} cr",
   "scout.finish": "Termina la sortita",
   "scout.finishHint": "Chiude il volo e tiene quanto mappato. I ricognitori ancora in riserva si consumano lo stesso.",
-  "tool.scouts": "Ricognizione",
   "scout.needPlanes": "Nessun ricognitore in hangar: comprane prima",
   "scout.failed": "Non è stato possibile ottenere la mappa: {error}",
   "scout.button": "Ricognizione",
@@ -360,7 +356,6 @@ const it: Dict = {
 
   "map.wholeMap": "Tutta la mappa",
   "map.hover.drones": "Droni · {n}",
-  "map.hover.scouts": "Ricognizione · {n}",
 
   "menu.language": "Lingua",
   "menu.theme": "Tema",

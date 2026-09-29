@@ -28,23 +28,31 @@ export const countKind = (guns: Gun[], kind: GunKind) =>
   guns.reduce((n, g) => (gunKind(g) === kind ? n + 1 : n), 0);
 
 /** Контейнер с дронами: занимает клетку склада, вмещает DRONES_PER_CELL штук. */
-/** Что лежит в контейнере: ударные дроны или разведчики. */
-export type DroneKind = "basic" | "scout";
+export type DroneKind = "basic";
 
 export interface Depot {
   cx: number;
   cy: number;
   n: number;
-  /** Отсутствует — значит обычные: так старые сохранения читаются как есть. */
-  kind?: DroneKind;
+  /** Раньше бывал kind=scout; при загрузке приводим к обычным дронам. */
+  kind?: DroneKind | "scout";
 }
-
-export const depotKind = (d: Depot): DroneKind => d.kind ?? "basic";
 
 export const DRONES_PER_CELL = 10;
 
-export const droneCount = (depots: Depot[], kind?: DroneKind) =>
-  depots.reduce((sum, d) => (kind && depotKind(d) !== kind ? sum : sum + d.n), 0);
+export const droneCount = (depots: Depot[]) =>
+  depots.reduce((sum, d) => sum + d.n, 0);
+
+/** Старые контейнеры разведчиков превращаем в обычные — один склад дронов. */
+export function normalizeDepots(depots: Depot[]): Depot[] {
+  return depots.map((d) => {
+    if (d.kind === "scout") {
+      const { kind: _k, ...rest } = d;
+      return rest;
+    }
+    return d;
+  });
+}
 
 /** Клетки, куда можно поставить контейнер: целые, без пушки и без склада. */
 export function freeCells(cells: Uint8Array, guns: Gun[], depots: Depot[]) {
