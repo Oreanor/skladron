@@ -69,11 +69,8 @@ export function createScout(
   gunLevel = 1
 ): ScoutState {
   const k = levelBonus(level, SCOUT.perLevel);
-  // огнетушители и ловушки по самолётам не стреляют — в разведке их просто нет
-  guns = guns.filter((g) => {
-    const kind = gunKind(g);
-    return kind !== "spray" && kind !== "trap";
-  });
+  // Огнетушители и ловушки по самолётам не стреляют, но в снимок их
+  // оставляем: по ним потом видно, какую начинку слать в налёт.
   return {
     cells,
     guns,
@@ -196,6 +193,9 @@ export function updateScout(s: ScoutState, dt: number) {
   for (let i = 0; i < s.guns.length; i++) {
     s.cool[i] -= dt;
     const g = s.guns[i];
+    const kind = gunKind(g);
+    // огнетушитель и ловушка по самолёту не бьют — только зенитка и ракетница
+    if (kind === "spray" || kind === "trap") continue;
     const d = Math.hypot(g.cx + 0.5 - p.x, g.cy + 0.5 - p.y);
     if (d <= s.gunRange && s.cool[i] <= 0) {
       fire(s, g, p);
@@ -210,9 +210,11 @@ export function updateScout(s: ScoutState, dt: number) {
   }
 }
 
-/** Самолёт в зоне хотя бы одной пушки — по этому зажигаем предупреждение. */
+/** Самолёт в зоне хотя бы одной стреляющей установки — по этому зажигаем предупреждение. */
 export function underFire(s: ScoutState, x: number, y: number) {
   for (const g of s.guns) {
+    const kind = gunKind(g);
+    if (kind === "spray" || kind === "trap") continue;
     const dx = g.cx + 0.5 - x;
     const dy = g.cy + 0.5 - y;
     if (dx * dx + dy * dy <= s.gunRange * s.gunRange) return true;
@@ -225,4 +227,27 @@ export function seenShare(seen: Uint8Array) {
   let n = 0;
   for (let i = 0; i < seen.length; i++) if (seen[i]) n++;
   return n / seen.length;
+}
+
+/** Сколько установок каждого вида видно на снятой карте. */
+export type ScoutCounts = Record<"gun" | "rocket" | "spray" | "trap", number>;
+
+export function scoutCounts(guns: Gun[]): ScoutCounts {
+  const out: ScoutCounts = { gun: 0, rocket: 0, spray: 0, trap: 0 };
+  for (const g of guns) out[gunKind(g)]++;
+  return out;
+}
+
+/** Советы по начинке под то, что сняли. */
+export function scoutPayloadTips(counts: ScoutCounts): Array<
+  "scout.tip.aa" | "scout.tip.spray" | "scout.tip.trap" | "scout.tip.none"
+> {
+  const tips: Array<
+    "scout.tip.aa" | "scout.tip.spray" | "scout.tip.trap" | "scout.tip.none"
+  > = [];
+  if (counts.gun + counts.rocket > 0) tips.push("scout.tip.aa");
+  if (counts.spray > 0) tips.push("scout.tip.spray");
+  if (counts.trap > 0) tips.push("scout.tip.trap");
+  if (!tips.length) tips.push("scout.tip.none");
+  return tips;
 }

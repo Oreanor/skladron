@@ -28,7 +28,7 @@ import {
 } from "./render/pieces";
 
 // Палитра и сами предметы живут в render/: их правят отдельно от кадра боя.
-export { COLORS } from "./render/colors";
+export { COLORS, installColors } from "./render/colors";
 export {
   drawBalloons,
   drawDepots,

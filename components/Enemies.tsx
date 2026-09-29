@@ -4,6 +4,8 @@ import { useState } from "react";
 import { RAID_COMMENT_MAX } from "@/lib/comments";
 import { payloadCost, raidTotal, type WavePlan } from "@/lib/attack";
 import { MAX_ATTACK_DRONES, type Enemy } from "@/lib/enemy";
+import { scoutCounts } from "@/lib/scout";
+import { installColors } from "@/lib/render";
 import { SCOUT } from "@/lib/tuning";
 import { Crosshair, MessageSquare, Plane } from "lucide-react";
 import ScoutThumb from "./lobby/ScoutThumb";
@@ -11,6 +13,15 @@ import { Button, Card, IconButton, Modal, inputClass } from "./ui";
 import Avatar from "./Avatar";
 import RaidPlanner, { newWave } from "./RaidPlanner";
 import { useT } from "@/lib/i18n";
+import type { Key } from "@/lib/i18n/dict";
+
+const SCOUT_KINDS = ["gun", "rocket", "spray", "trap"] as const;
+const SCOUT_KIND_LABEL: Record<(typeof SCOUT_KINDS)[number], Key> = {
+  gun: "tool.gun",
+  rocket: "tool.rocket",
+  spray: "tool.spray",
+  trap: "tool.trap",
+};
 
 interface Props {
   enemies: Enemy[];
@@ -230,6 +241,7 @@ function EnemyProfile({
           minute: "2-digit",
         })
       : null;
+  const counts = enemy.scout ? scoutCounts(enemy.scout.guns) : null;
 
   return (
     <Modal
@@ -296,14 +308,26 @@ function EnemyProfile({
               {last ?? t("enemies.noRaidYet")}
             </dd>
           </div>
-          <div className="flex justify-between gap-3">
-            <dt className="text-neutral-500">{t("enemies.scoutStatus")}</dt>
-            <dd className="text-neutral-200">
-              {enemy.scout
-                ? t("enemies.scoutHasMap")
-                : t("enemies.scoutNone")}
-            </dd>
-          </div>
+          {counts ? (
+            SCOUT_KINDS.map((kind) => (
+              <div key={kind} className="flex items-center justify-between gap-3">
+                <dt className="flex items-center gap-2 text-neutral-500">
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-sm ring-1 ring-black/40"
+                    style={{ background: installColors(kind).top }}
+                    aria-hidden
+                  />
+                  {t(SCOUT_KIND_LABEL[kind])}
+                </dt>
+                <dd className="text-neutral-200">{counts[kind]}</dd>
+              </div>
+            ))
+          ) : (
+            <div className="flex justify-between gap-3">
+              <dt className="text-neutral-500">{t("enemies.scoutStatus")}</dt>
+              <dd className="text-neutral-200">{t("enemies.scoutNone")}</dd>
+            </div>
+          )}
         </dl>
       </div>
     </Modal>

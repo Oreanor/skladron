@@ -6,8 +6,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { CELLS, GRID, type Gun } from "@/lib/base";
-import { COLORS, drawCoverage, drawScoutPlane } from "@/lib/render";
+import { CELLS, GRID, gunKind, type Gun } from "@/lib/base";
+import { COLORS, drawCoverage, drawScoutPlane, installColors } from "@/lib/render";
 import {
   createScout,
   seenShare,
@@ -188,9 +188,10 @@ export default function Scout({
     if (known.length) {
       drawCoverage(ctx, known, CELL, s.gunRange);
       for (const g of known) {
-        ctx.fillStyle = COLORS.gun;
+        const paint = installColors(gunKind(g));
+        ctx.fillStyle = paint.body;
         ctx.fillRect(g.cx * CELL, g.cy * CELL, CELL, CELL);
-        ctx.fillStyle = COLORS.gunTop;
+        ctx.fillStyle = paint.top;
         ctx.fillRect(g.cx * CELL + CELL * 0.25, g.cy * CELL + CELL * 0.25, CELL * 0.5, CELL * 0.5);
       }
     }

@@ -13,8 +13,8 @@
  */
 
 import { useEffect, useRef } from "react";
-import { GRID, G_BASE, G_BURNT, G_FIRE, decodeRle } from "@/lib/base";
-import { COLORS } from "@/lib/render";
+import { GRID, G_BASE, G_BURNT, G_FIRE, decodeRle, gunKind } from "@/lib/base";
+import { installColors } from "@/lib/render";
 import type { ScoutSnapshot } from "@/lib/enemy";
 
 /** Сколько клеток оставляем вокруг снятого: с полем читается лучше. */
@@ -72,10 +72,10 @@ export default function ScoutThumb({ snapshot }: { snapshot: ScoutSnapshot }) {
       }
     }
 
-    // Пушки точкой: их положение — главное, ради чего и летали.
-    ctx.fillStyle = COLORS.gunTop;
+    // Установки цветной точкой: по цвету сразу видно, что именно стоит.
     for (const g of snapshot.guns) {
       if (g.cx < x0 || g.cx > x1 || g.cy < y0 || g.cy > y1) continue;
+      ctx.fillStyle = installColors(gunKind(g)).top;
       ctx.fillRect(g.cx - x0, g.cy - y0, 1, 1);
     }
   }, [snapshot]);

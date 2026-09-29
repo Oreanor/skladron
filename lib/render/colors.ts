@@ -89,3 +89,17 @@ export const COLORS = {
   flash: "#ffe9a8",
   smoke: "20, 20, 20",
 };
+
+/** Цвета маркера установки на карте разведки — те же, что и в бою. */
+export function installColors(kind: "gun" | "rocket" | "spray" | "trap") {
+  switch (kind) {
+    case "rocket":
+      return { body: COLORS.rocket, top: COLORS.rocketTop };
+    case "spray":
+      return { body: COLORS.spray, top: COLORS.sprayTop };
+    case "trap":
+      return { body: COLORS.trap, top: COLORS.trapTop };
+    default:
+      return { body: COLORS.gun, top: COLORS.gunTop };
+  }
+}
