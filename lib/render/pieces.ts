@@ -27,8 +27,8 @@ export function drawDepots(
     const x = d.cx * cell;
     const y = d.cy * cell;
     const balloons = d.kind === "balloon";
-    const fill = balloons ? "70, 96, 120" : "122, 90, 46";
-    const line = balloons ? "160, 200, 242" : "214, 168, 92";
+    const fill = balloons ? "118, 42, 46" : "122, 90, 46";
+    const line = balloons ? "244, 140, 138" : "214, 168, 92";
     ctx.fillStyle = `rgba(${fill}, ${dim ? 0.5 : 1})`;
     ctx.fillRect(x, y, cell, cell);
     ctx.strokeStyle = `rgba(${line}, ${dim ? 0.5 : 1})`;
