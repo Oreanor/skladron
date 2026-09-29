@@ -8,7 +8,7 @@
 -- Версия боевого движка. Должна совпадать с SIMULATION_VERSION в
 -- lib/tuning.ts: по ней отсекаются бои, посчитанные прежней геометрией волн.
 create or replace function sim_version() returns int
-language sql immutable as $$ select 3 $$;
+language sql immutable as $$ select 4 $$;
 
 -- держим в одном месте, чтобы клиент и сервер не разъезжались
 create or replace function price(kind text) returns int
@@ -20,6 +20,7 @@ language sql immutable as $$
     when 'gun'    then 100
     when 'spray'  then 150  -- огнетушитель дороже зенитки: бережёт и площадь, и товар
     when 'trap'   then 200  -- ловушка дороже огнетушителя: держит рой в радиусе
+    when 'rocket' then 200  -- ракетница вдвое дороже зенитки: и достаёт вдвое дальше
     when 'refund' then 50
     when 'drones' then 1000
     when 'drone'  then 25
@@ -49,6 +50,7 @@ language sql immutable as $$
     when 'pay_heavy'  then 50
     when 'pay_jammer' then 40
     when 'pay_foamer' then 30
+    when 'pay_stealth' then 60  -- невидимка снимает всю автоматику склада, оттого и дороже всех
   end;
 $$;
 
@@ -238,7 +240,9 @@ begin
        where key not in ('cx', 'cy', 'kind')
     ) then return false; end if;
     if e->>'cx' is null or e->>'cy' is null then return false; end if;
-    if coalesce(e->>'kind', 'gun') not in ('gun', 'spray', 'trap') then return false; end if;
+    if coalesce(e->>'kind', 'gun') not in ('gun', 'rocket', 'spray', 'trap') then
+      return false;
+    end if;
     begin
       cx := (e->>'cx')::int;
       cy := (e->>'cy')::int;
@@ -415,12 +419,12 @@ alter table profiles add column if not exists base_name text;
 alter table profiles add column if not exists scouts int not null default 0;
 -- уровни классов: с ними растут скорость дронов, дальнобойность пушек и обзор разведки
 alter table profiles add column if not exists levels jsonb not null
-  default '{"drones":1,"guns":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb;
+  default '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb;
 alter table profiles alter column levels set default
-  '{"drones":1,"guns":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb;
+  '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb;
 -- пулемёт, брандспойт, полис, огнетушители и ловушки добавились позже: у заведённых профилей их нет
 update profiles set levels =
-  '{"drones":1,"guns":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb || levels;
+  '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb || levels;
 -- кольца и спираль появились позже: у заведённой таблицы ограничение старое,
 -- а create table if not exists его не трогает
 alter table attacks drop constraint if exists attacks_pattern_check;
@@ -658,7 +662,8 @@ begin
       raise exception 'bad wave groups';
     end if;
     for g in select * from jsonb_array_elements(wave->'groups') loop
-      if coalesce(g->>'payload', '') not in ('plain', 'heavy', 'jammer', 'foamer') then
+      if coalesce(g->>'payload', '') not in
+         ('plain', 'heavy', 'jammer', 'foamer', 'stealth') then
         raise exception 'bad drone payload';
       end if;
       if coalesce((g->>'n')::int, -1) < 0 then raise exception 'bad group size'; end if;
@@ -1084,6 +1089,7 @@ declare
   free_left int;
   paid int;
   guns_added int;
+  rockets_added int;
   sprays_added int;
   traps_added int;
   guns_removed int;
@@ -1150,14 +1156,17 @@ begin
   end loop;
 
   guns_added := greatest(0, gun_count(new_guns, 'gun') - gun_count(cur_guns, 'gun'));
+  rockets_added := greatest(0, gun_count(new_guns, 'rocket') - gun_count(cur_guns, 'rocket'));
   sprays_added := greatest(0, gun_count(new_guns, 'spray') - gun_count(cur_guns, 'spray'));
   traps_added := greatest(0, gun_count(new_guns, 'trap') - gun_count(cur_guns, 'trap'));
   -- Возврат только за реально снятые установки известных видов, а не за
   -- разницу длин массива: иначе неизвестный kind давал бы бесплатный refund.
   guns_removed := greatest(
     0,
-    gun_count(cur_guns, 'gun') + gun_count(cur_guns, 'spray') + gun_count(cur_guns, 'trap')
-      - gun_count(new_guns, 'gun') - gun_count(new_guns, 'spray') - gun_count(new_guns, 'trap')
+    gun_count(cur_guns, 'gun') + gun_count(cur_guns, 'rocket')
+      + gun_count(cur_guns, 'spray') + gun_count(cur_guns, 'trap')
+      - gun_count(new_guns, 'gun') - gun_count(new_guns, 'rocket')
+      - gun_count(new_guns, 'spray') - gun_count(new_guns, 'trap')
   );
 
   -- первые price('free') клеток склада бесплатны, считаем от того, что уже стоит
@@ -1167,6 +1176,7 @@ begin
   cost := paid * price('cell')
         + repaired * price('repair')
         + guns_added * price_at(price('gun'), coalesce((prof.levels->>'guns')::int, 1))
+        + rockets_added * price_at(price('rocket'), coalesce((prof.levels->>'rockets')::int, 1))
         + sprays_added * price_at(price('spray'), coalesce((prof.levels->>'sprays')::int, 1))
         + traps_added * price_at(price('trap'), coalesce((prof.levels->>'traps')::int, 1))
         - guns_removed * price('refund')
@@ -1211,7 +1221,8 @@ declare
   cost int;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
-  if kind not in ('drones', 'guns', 'sprays', 'traps', 'mg', 'water', 'insurance') then
+  if kind not in
+     ('drones', 'guns', 'rockets', 'sprays', 'traps', 'mg', 'water', 'insurance') then
     raise exception 'bad upgrade kind';
   end if;
 
@@ -1396,6 +1407,8 @@ begin
           + ((depots_lost
               + greatest(0, gun_count(cur_guns, 'gun') - gun_count(new_guns, 'gun'))
                 * price('gun')
+              + greatest(0, gun_count(cur_guns, 'rocket') - gun_count(new_guns, 'rocket'))
+                * price('rocket')
               + greatest(0, gun_count(cur_guns, 'spray') - gun_count(new_guns, 'spray'))
                 * price('spray')
               + greatest(0, gun_count(cur_guns, 'trap') - gun_count(new_guns, 'trap'))
@@ -1666,10 +1679,14 @@ begin
   if uid is null then raise exception 'not authenticated'; end if;
   perform settle_loan(uid);
   if amount is null or amount < price('loan_min') or amount > price('loan_max') then
-    raise exception 'bad loan amount';
+    -- Говорим суммой, а не 'bad amount': без цифр не понять, потолок
+    -- это, порог или устаревшая на сервере цена.
+    raise exception 'loan must be between % and %, asked %',
+      price('loan_min'), price('loan_max'), amount;
   end if;
   if (select p.loan from profiles p where p.id = uid) > 0 then
-    raise exception 'previous loan is not repaid';
+    raise exception 'previous loan of % is not repaid',
+      (select p.loan from profiles p where p.id = uid);
   end if;
 
   update profiles
@@ -1997,7 +2014,7 @@ begin
          loan_due = null,
          founded = true,
          last_income_at = now(),
-         levels = '{"drones":1,"guns":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb,
+         levels = '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb,
          stats = '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,
                    "wipes":0,"raids":0,"looted":0}'::jsonb
    where id = uid;

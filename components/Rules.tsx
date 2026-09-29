@@ -12,6 +12,7 @@ import {
   DEFENSE_DIRTY_PER_DRONE,
   DRONE_UNIT_COST,
   GUN_COST,
+  ROCKET_COST,
   SPRAY_COST,
   TRAP_COST,
   INCOME_CAP_SHIFTS,
@@ -33,7 +34,7 @@ import {
 } from "@/lib/economy";
 
 import { DRONES_PER_CELL } from "@/lib/base";
-import { FIRE, GUN, RAID, SPRAY, TRAP } from "@/lib/tuning";
+import { FIRE, GUN, RAID, ROCKET, SPRAY, TRAP } from "@/lib/tuning";
 import { RULES } from "@/lib/i18n/rules";
 import { useSettings } from "@/lib/i18n";
 import { Button, Modal, SectionTitle } from "./ui";
@@ -51,6 +52,9 @@ const values: Record<string, string> = {
   spray: String(SPRAY_COST),
   sprayRange: String(SPRAY.range),
   sprayTank: String(SPRAY.tank),
+  rocket: String(ROCKET_COST),
+  rocketRange: String(ROCKET.range),
+  rocketReload: String(ROCKET.cooldown),
   trap: String(TRAP_COST),
   trapRange: String(TRAP.range),
   trapCap: String(TRAP.capacity),

@@ -125,8 +125,13 @@ const RAIDS = [
   ]],
 ];
 
-const DEFENCE = [...spread(30, 7), ...spread(30, 9, "spray"), ...spread(30, 11, "trap")];
-const LEVELS = { guns: 2, sprays: 2, traps: 2, mg: 3, water: 2 };
+const DEFENCE = [
+  ...spread(30, 7),
+  ...spread(30, 9, "spray"),
+  ...spread(30, 11, "trap"),
+  ...spread(30, 13, "rocket"),
+];
+const LEVELS = { guns: 2, rockets: 2, sprays: 2, traps: 2, mg: 3, water: 2 };
 
 console.log("— пересчёт на сервере совпадает с тем, что играл защитник —");
 for (const [label, waves] of RAIDS) {
@@ -259,6 +264,76 @@ console.log("\n— начинке не по кому работать: целе�
   // установки есть, но их снесут в бою — жертва пропадает из-под глушилки
   probe("жертву сносят прямо из-под глушилки", spread(30, 12),
     [wave("swarm", [g("plain", 40), g("jammer", 20)])], { guns: 1 });
+}
+
+console.log("\n— ракетницы и невидимка —");
+{
+  const ord = (waves, extra) => order(waves, { seed: 7171, ...extra });
+  const run = (guns, waves, levels, extra) =>
+    S.resolveBattle({
+      cells: base(), guns, depots: [], order: ord(waves, extra),
+      levels, trace: "",
+    }).result;
+
+  const launchers = spread(30, 9, "rocket");
+  const swarm = [wave("rings", [g("plain", 60)])];
+
+  // Ракетницы должны стрелять и попадать: голый склад берём точкой отсчёта,
+  // иначе «сбито 0» списали бы на то, что рой и так не долетел.
+  const bare = run([], swarm, {});
+  const withRockets = run(launchers, swarm, { rockets: 2 });
+  check("ракетницы сбивают рой", withRockets.killedByGuns > bare.killedByGuns,
+    `голый склад ${bare.killedByGuns}, с ракетницами ${withRockets.killedByGuns}`);
+
+  // Дальнобойность — это вся её роль: на том же складе ракетница должна
+  // успеть больше зенитки, потому что берёт рой раньше.
+  const byGuns = run(spread(30, 9), swarm, { guns: 2 }).killedByGuns;
+  check("ракетница достаёт дальше зенитки", withRockets.killedByGuns > byGuns,
+    `зенитки ${byGuns}, ракетницы ${withRockets.killedByGuns}`);
+
+  // Невидимку автоматика не видит вовсе. Пулемёт дежурной смены её достаёт —
+  // потому и смотрим именно killedByGuns.
+  const ghost = run(
+    [...launchers, ...spread(30, 9)],
+    [wave("rings", [g("stealth", 40)])],
+    { guns: 2, rockets: 2 }
+  );
+  check("невидимку не берут ни пушки, ни ракетницы", ghost.killedByGuns === 0,
+    `сбито автоматикой ${ghost.killedByGuns}`);
+  const seen = run(
+    [...launchers, ...spread(30, 9)],
+    [wave("rings", [g("plain", 40)])],
+    { guns: 2, rockets: 2 }
+  );
+  check("та же волна без невидимости выбивается", seen.killedByGuns > 0,
+    `сбито автоматикой ${seen.killedByGuns}`);
+
+  // Одна направляющая: в воздухе не может висеть две ракеты одной установки.
+  // Заодно меряем, во что обходится дымный след — ради него и считаем пик
+  // клубов, а не среднее.
+  {
+    const s = E.createBattle(base(), launchers, [],
+      A.buildPlan(ord([wave("swarm", [g("plain", 120)])])),
+      { seed: 7171, rockets: 2 });
+    const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);
+    let doubled = 0, peak = 0, puffs = 0, launched = 0;
+    const seenIds = new Set();
+    for (let step = 0; step < cap && s.phase === "playing"; step++) {
+      E.update(s, T.SIM.step);
+      const per = new Map();
+      for (const r of s.rockets) {
+        per.set(r.from, (per.get(r.from) ?? 0) + 1);
+        if (!seenIds.has(r.id)) { seenIds.add(r.id); launched++; }
+      }
+      for (const n of per.values()) if (n > 1) doubled++;
+      peak = Math.max(peak, s.rockets.length);
+      puffs = Math.max(puffs, s.puffs.length);
+    }
+    check("ракетница держит в воздухе одну ракету", doubled === 0,
+      doubled ? `сдвоенных замеров ${doubled}` : `пусков ${launched}, разом до ${peak}`);
+    check("след не разрастается", puffs < 4000,
+      `клубов разом до ${puffs} при ${peak} ракетах`);
+  }
 }
 
 console.log("\n— бой прежней версии движка не играется —");

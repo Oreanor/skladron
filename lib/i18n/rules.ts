@@ -17,6 +17,7 @@ const en: RuleSection[] = [
       "The same moment everything stored ships out at double the purchase price: drones at {droneSale} cr. Whatever you did not send into battle is sold.",
       "Away for a while? The rent accrues for at most {capDays} days.",
       "Short of money? The bank lends {loanMin}–{loanMax} cr for {loanHours} hours at {loanRate}%. The goods you buy with it can burn in a raid — the debt will not.",
+      "Money strategy: the real income is burning rival warehouses ({loot} cr per cell). Defence bounty is smaller — a clean stop of a big swarm pays hundreds or about a thousand, usually two to three times less than a successful attack; a test raid on yourself earns it too. Flat broke — take a loan, defend a self-raid, or wipe and get a floor of at least {credits} cr.",
     ],
   },
   {
@@ -26,6 +27,7 @@ const en: RuleSection[] = [
       "«Repair» — the same, {repair} cr per burnt cell.",
       "«Demolish» — sell the remains of burnt cells for {scrap} cr each. Bare ground is left behind, and the warehouse must stay in one piece.",
       "«Gun» — {gun} cr on a free intact cell. Guns are not sold back, but they can be dragged anywhere on the warehouse.",
+      "«Launcher» — {rocket} cr, placed and dragged like a gun. It reaches {rocketRange} cells — twice a gun — but fires wide: the missile then steers onto whichever drone is nearest to it at that moment. One missile per launcher in the air, {rocketReload} s to reload.",
       "«Sprinkler» — {spray} cr, placed and dragged just like a gun. It does not shoot: when a cell within {sprayRange} catches fire, the sprinkler spins up and sweeps eight jets around itself. A jet stops at the first blaze it meets and needs a moment to douse it, and the tank holds only {sprayTank} s of water per raid — a dense ring of them still loses to a big enough fire.",
       "«Trap» — {trap} cr, placed and dragged like a gun. It magnetically holds up to {trapCap} drones within {trapRange} cells; extras fly past. Guns can still shoot held drones; if the trap burns, the hold drops.",
       "«Drones» — a container of {perCell} pieces for {droneBox} cr. Every drone level makes them {priceStep}% dearer to buy.",
@@ -46,6 +48,7 @@ const en: RuleSection[] = [
     lines: [
       "Add a rival by e-mail — they have to be playing too.",
       "Build the raid from waves: each has its own pattern, side and warheads (plain, double charge, gun or sprinkler jammer). Up to {maxRaid} drones. A bigger swarm makes the formation denser — the raid barely lasts longer. Drones leave the warehouse at once; warheads cost an extra credit surcharge.",
+      "A stealth warhead blows up like a plain one, but guns and launchers do not see it at all — neither will aim, and no missile will lock on. Only your own hands and the traps are left against it.",
       "The defender fights the raid on their own screen. You get a report afterwards — and can watch the whole thing replayed.",
       "For every cell you burn down you get a {loot} cr bonus. The defender gets a defence bounty: {defendClean} cr per drone when nothing burns, or {defendDirty} cr per drone minus {defendBurn} cr per burnt cell. Insurance pays them {insureCell} cr per burnt cell — exactly the repair. The basic policy stops there; every level of it adds {insureShare}% cover for goods and guns lost in the fire, up to the full value.",
       "After a total wipe the warehouse resets, but the account is topped up to at least {credits} cr so you can rebuild.",
@@ -67,6 +70,7 @@ const en: RuleSection[] = [
     lines: [
       "Classes cost {upgrade} cr per level. Ten levels each, except the insurance policy: it tops out at five, where cover is already full.",
       "Drones fly faster and see farther on recon, guns reach further and shoot quicker, the machine gun aims better, the hose covers more, sprinklers douse a wider circle, traps grab farther.",
+      "Launchers grow the same way: more range and a faster missile with every level.",
       "A level applies to everything at once — to what is already in stock and to everything bought later.",
     ],
   },
@@ -81,6 +85,7 @@ const ru: RuleSection[] = [
       "Тогда же уходит отгрузка: всё, что лежит, продаётся вдвое дороже закупки — дроны по {droneSale} кр. Что не пустил в дело, то продано.",
       "Не заходил долго — аренда копится не больше чем за {capDays} суток.",
       "Не хватает денег — банк даёт {loanMin}–{loanMax} кр на {loanHours} часа под {loanRate}%. Купленный на них товар может сгореть в налёте, долг — нет.",
+      "Стратегия кассы: основные деньги — с чужих складов ({loot} кр за сожжённую клетку). Премия за отбой меньше — при чистом отбое крупного роя это сотни или около тысячи, в среднем вдвое–втрое скромнее атаки; тестовый налёт на себя тоже её даёт. Упал в ноль — заём, отбитый тест на себя или полный снос с подушкой не меньше {credits} кр.",
     ],
   },
   {
@@ -90,6 +95,7 @@ const ru: RuleSection[] = [
       "«Ремонт» — так же, {repair} кр за сгоревшую клетку.",
       "«Снос» — сдать остатки сгоревших клеток во вторсырьё, {scrap} кр за клетку. Остаётся голая земля, и склад не должен развалиться надвое.",
       "«Пушка» — {gun} кр на свободную целую клетку. Обратно пушка не продаётся, но её можно перетащить куда угодно по складу.",
+      "«Ракетница» — {rocket} кр, ставится и таскается как пушка. Достаёт на {rocketRange} клеток — вдвое дальше зенитки, — но пускает неточно: ракета сама доворачивает на того, кто в этот миг к ней ближе. В воздухе держит одну ракету, перезарядка {rocketReload} с.",
       "«Огнетушитель» — {spray} кр, ставится и таскается так же, как пушка. Он не стреляет: как только в радиусе {sprayRange} клеток занимается огонь, установка раскручивается и бьёт восемью струями вокруг себя. Струя упирается в первый же очаг и гасит его не сразу, а бака хватает на {sprayTank} с полива за налёт — так что и плотный ковёр установок большому пожару проигрывает.",
       "«Ловушка» — {trap} кр, ставится и таскается как пушка. Магнитом удерживает до {trapCap} дронов в радиусе {trapRange} клеток; лишние пролетают. Зенитки всё ещё могут сбивать захваченных; если ловушка сгорает — захват сбрасывается.",
       "«Дроны» — контейнер на {perCell} штук за {droneBox} кр. С каждым уровнем дронов закупка дорожает на {priceStep}%.",
@@ -110,6 +116,7 @@ const ru: RuleSection[] = [
     lines: [
       "Добавь соперника по почте — он тоже должен играть.",
       "Собери налёт из волн: у каждой свой рисунок, сторона и начинка (простая, двойная, подавление пушек или огнетушителей). До {maxRaid} дронов. Чем больше рой, тем гуще строй — налёт почти не растягивается. Дроны уходят со склада сразу, за начинку доплачиваются кредиты.",
+      "Начинка «невидимка» взрывается как обычная, но пушки и ракетницы её не видят вовсе: ни целятся, ни наводят ракету. Против неё остаются только руки игрока и ловушки.",
       "Налёт отбивает защитник у себя. Тебе приходит отчёт — и повтор боя, который можно посмотреть целиком.",
       "За каждую сожжённую клетку тебе идёт премия {loot} кр. Защитнику — премия за отбой: {defendClean} кр за дрона при чистом отбое, иначе {defendDirty} кр за дрона минус {defendBurn} кр за сгоревшую клетку. Страховая платит {insureCell} кр за клетку — ровно на ремонт. Базовый полис на этом и кончается; каждый его уровень добавляет {insureShare}% покрытия сгоревшего товара и пушек, до полной стоимости.",
       "После полного сноса склад сбрасывается, но на счету будет не меньше {credits} кр — чтобы было на чем отстроиться.",
@@ -131,6 +138,7 @@ const ru: RuleSection[] = [
     lines: [
       "Классы стоят {upgrade} кр за уровень. У каждого по десять уровней, кроме полиса: у него пять, дальше покрывать нечего.",
       "Дроны летят быстрее и на разведке видят дальше, пушки бьют дальше и резвее, пулемёт точнее, струя шире, огнетушители заливают круг побольше, ловушки хватают дальше.",
+      "Ракетницы растут так же: с каждым уровнем дальше достают и быстрее гонят ракету.",
       "Уровень достаётся всему классу разом — и тому, что уже на складе, и тому, что купишь потом.",
     ],
   },
@@ -145,6 +153,7 @@ const es: RuleSection[] = [
       "En ese mismo momento se expide todo lo almacenado al doble del precio de compra: drones a {droneSale} cr. Lo que no enviaste al combate, se vende.",
       "¿Estuviste fuera? La renta se acumula como mucho {capDays} días.",
       "¿Falta dinero? El banco presta {loanMin}–{loanMax} cr por {loanHours} horas al {loanRate}%. La mercancía comprada puede arder en un ataque; la deuda no.",
+      "Estrategia de caja: el dinero gordo viene de quemar almacenes rivales ({loot} cr por celda). La prima de defensa es menor — un rechazo limpio de un enjambre grande da cientos o cerca de mil, unas dos o tres veces menos que un ataque bueno; un ataque de prueba contra ti también la paga. Sin un cr — préstamo, defensa de un autoataque o derribo total con un suelo de al menos {credits} cr.",
     ],
   },
   {
@@ -154,6 +163,7 @@ const es: RuleSection[] = [
       "«Reparar»: igual, {repair} cr por celda quemada.",
       "«Demoler»: vende los restos de las celdas quemadas a {scrap} cr cada una. Queda tierra desnuda y el almacén debe seguir de una pieza.",
       "«Cañón»: {gun} cr en una celda intacta libre. Los cañones no se revenden, pero se arrastran a cualquier punto del almacén.",
+      "«Lanzadera» — {rocket} cr, se coloca y se arrastra como un cañón. Alcanza {rocketRange} celdas, el doble que un cañón, pero dispara con desvío: el misil se dirige solo al dron que en ese instante le quede más cerca. Un misil por lanzadera en el aire y {rocketReload} s de recarga.",
       "«Extintor»: {spray} cr, se coloca y se arrastra igual que un cañón. No dispara: en cuanto arde una celda a menos de {sprayRange}, la instalación gira y lanza ocho chorros a su alrededor. Cada chorro se detiene en el primer foco y tarda en apagarlo, y el depósito da para {sprayTank} s de riego por ataque: ni un anillo denso aguanta un incendio grande.",
       "«Trampa»: {trap} cr, se coloca y se arrastra como un cañón. Retiene magnéticamente hasta {trapCap} drones a {trapRange} celdas; el resto pasa. Los cañones aún pueden derribar a los atrapados; si la trampa arde, la sujeción se pierde.",
       "«Drones»: un contenedor de {perCell} unidades por {droneBox} cr. Cada nivel de drones encarece la compra un {priceStep}%.",
@@ -174,6 +184,7 @@ const es: RuleSection[] = [
     lines: [
       "Añade un rival por correo: también tiene que estar jugando.",
       "Arma el ataque en oleadas: cada una con su patrón, lado y carga (simple, doble, inhibidor de cañones o de extintores). Hasta {maxRaid} drones. Un enjambre mayor hace la formación más densa — el ataque casi no se alarga. Los drones salen del almacén enseguida; las cargas cuestan un recargo en créditos.",
+      "La carga invisible estalla como la simple, pero los cañones y las lanzaderas no la ven en absoluto: ni apuntan ni guían el misil. Contra ella solo quedan tus manos y las trampas.",
       "El defensor combate el ataque en su pantalla. Tú recibes un informe y la repetición completa del combate.",
       "Por cada celda quemada recibes una prima de {loot} cr. Al defensor, una prima de defensa: {defendClean} cr por dron si no arde nada, o {defendDirty} cr por dron menos {defendBurn} cr por celda quemada. El seguro le paga {insureCell} cr por celda: justo la reparación. La póliza básica acaba ahí; cada nivel añade un {insureShare}% de cobertura de la mercancía y los cañones perdidos, hasta el valor total.",
       "Tras un derribo total el almacén se reinicia, pero la cuenta sube al menos a {credits} cr para poder reconstruir.",
@@ -195,6 +206,7 @@ const es: RuleSection[] = [
     lines: [
       "Las clases cuestan {upgrade} cr por nivel. Diez niveles cada una, salvo la póliza: la suya acaba en el quinto, cuando la cobertura ya es total.",
       "Los drones vuelan más rápido y ven más lejos en exploración, los cañones llegan más lejos y disparan antes, la ametralladora apunta mejor, la manguera cubre más, los extintores riegan un círculo mayor, las trampas atrapan más lejos.",
+      "Las lanzaderas crecen igual: más alcance y misil más rápido con cada nivel.",
       "El nivel vale para toda la clase a la vez: lo que ya tienes y lo que compres después.",
     ],
   },
@@ -209,6 +221,7 @@ const pt: RuleSection[] = [
       "No mesmo momento sai a expedição: tudo o que está guardado vende-se ao dobro da compra — drones a {droneSale} cr. O que não mandaste ao combate, foi vendido.",
       "Estiveste fora? A renda acumula no máximo {capDays} dias.",
       "Falta dinheiro? O banco empresta {loanMin}–{loanMax} cr por {loanHours} horas a {loanRate}%. A mercadoria comprada pode arder num ataque; a dívida não.",
+      "Estratégia de caixa: o dinheiro grosso vem de queimar armazéns rivais ({loot} cr por célula). O prémio de defesa é menor — uma defesa limpa de um enxame grande dá centenas ou cerca de mil, em média duas a três vezes menos que um ataque bom; um ataque de teste a ti próprio também o paga. A zero — empréstimo, defesa de um autoataque ou derrube total com chão de pelo menos {credits} cr.",
     ],
   },
   {
@@ -218,6 +231,7 @@ const pt: RuleSection[] = [
       "«Reparar» — igual, {repair} cr por célula queimada.",
       "«Demolir» — vende os restos das células queimadas a {scrap} cr cada. Fica terra nua, e o armazém tem de continuar inteiro.",
       "«Canhão» — {gun} cr numa célula intacta livre. Os canhões não se revendem, mas arrastam-se para onde quiseres no armazém.",
+      "«Lançador» — {rocket} cr, coloca-se e arrasta-se como um canhão. Alcança {rocketRange} células, o dobro de um canhão, mas dispara torto: o míssil vira sozinho para o drone que nesse momento lhe estiver mais perto. Um míssil por lançador no ar e {rocketReload} s de recarga.",
       "«Extintor» — {spray} cr, coloca-se e arrasta-se tal como um canhão. Não dispara: assim que uma célula a menos de {sprayRange} pega fogo, a instalação gira e lança oito jactos à sua volta. Cada jacto pára no primeiro foco e demora a apagá-lo, e o depósito dá para {sprayTank} s de rega por ataque: nem um anel denso trava um incêndio grande.",
       "«Armadilha» — {trap} cr, coloca-se e arrasta-se como um canhão. Retém magneticamente até {trapCap} drones a {trapRange} células; os demais passam. Os canhões ainda podem abater os capturados; se a armadilha arder, a retenção cai.",
       "«Drones» — um contentor de {perCell} unidades por {droneBox} cr. Cada nível de drones encarece a compra em {priceStep}%.",
@@ -238,6 +252,7 @@ const pt: RuleSection[] = [
     lines: [
       "Adiciona um rival por e-mail — ele também tem de estar a jogar.",
       "Monta o ataque em vagas: cada uma com o seu padrão, lado e carga (simples, dupla, inibidor de canhões ou de extintores). Até {maxRaid} drones. Um enxame maior torna a formação mais densa — o ataque quase não se alonga. Os drones saem do armazém logo; as cargas custam um extra em créditos.",
+      "A carga invisível explode como a simples, mas canhões e lançadores não a veem de todo: não apontam nem guiam o míssil. Contra ela restam só as tuas mãos e as armadilhas.",
       "O defensor trava o ataque no ecrã dele. Tu recebes um relatório — e a repetição completa do combate.",
       "Por cada célula queimada recebes um prémio de {loot} cr. Ao defensor, um prémio de defesa: {defendClean} cr por drone se nada arder, ou {defendDirty} cr por drone menos {defendBurn} cr por célula queimada. O seguro paga {insureCell} cr por célula — exatamente a reparação. A apólice básica fica por aí; cada nível acrescenta {insureShare}% de cobertura da mercadoria e dos canhões perdidos, até ao valor total.",
       "Depois de um derrube total o armazém reinicia, mas a conta sobe pelo menos a {credits} cr para poderes reconstruir.",
@@ -259,6 +274,7 @@ const pt: RuleSection[] = [
     lines: [
       "As classes custam {upgrade} cr por nível. Dez níveis cada, exceto a apólice: a dela acaba no quinto, quando a cobertura já é total.",
       "Os drones voam mais depressa e veem mais longe em reconhecimento, os canhões alcançam mais longe e disparam mais rápido, a metralhadora acerta melhor, a mangueira cobre mais, os extintores regam um círculo maior, as armadilhas apanham mais longe.",
+      "Os lançadores crescem do mesmo modo: mais alcance e míssil mais rápido a cada nível.",
       "O nível vale para toda a classe de uma vez: o que já tens e o que comprares depois.",
     ],
   },
@@ -273,6 +289,7 @@ const fr: RuleSection[] = [
       "Au même moment part l’expédition : tout ce qui est stocké se vend au double du prix d’achat — drones à {droneSale} cr. Ce que tu n’as pas envoyé au combat est vendu.",
       "Absent longtemps ? Le loyer s’accumule sur {capDays} jours au maximum.",
       "À court d’argent ? La banque prête {loanMin}–{loanMax} cr pour {loanHours} heures à {loanRate} %. La marchandise achetée peut brûler dans un raid, la dette non.",
+      "Stratégie de caisse : le gros de l’argent vient des entrepôts rivaux ({loot} cr par case brûlée). La prime de défense est plus petite — un rejet propre d’un gros essaim rapporte des centaines ou environ mille, en moyenne deux à trois fois moins qu’une bonne attaque ; un raid-test sur soi-même la donne aussi. À zéro — emprunt, défense d’un auto-raid, ou wipe avec un plancher d’au moins {credits} cr.",
     ],
   },
   {
@@ -282,6 +299,7 @@ const fr: RuleSection[] = [
       "« Réparer » — pareil, {repair} cr par case brûlée.",
       "« Démolir » — revends les restes des cases brûlées à {scrap} cr pièce. Il reste de la terre nue, et l’entrepôt doit rester d’un seul tenant.",
       "« Canon » — {gun} cr sur une case intacte libre. Un canon ne se revend pas, mais se déplace où tu veux dans l’entrepôt.",
+      "« Lance-roquettes » — {rocket} cr, posé et déplacé comme un canon. Il porte à {rocketRange} cases, deux fois plus qu’un canon, mais tire large : le missile se rabat ensuite sur le drone qui lui est alors le plus proche. Un seul missile en l’air par lanceur, {rocketReload} s de recharge.",
       "« Extincteur » — {spray} cr, il se pose et se déplace comme un canon. Il ne tire pas : dès qu’une case s’enflamme à moins de {sprayRange}, l’installation se met à tourner et projette huit jets autour d’elle. Un jet bute sur le premier foyer et met un temps à l’éteindre, et le réservoir ne tient que {sprayTank} s par raid : même un anneau serré cède devant un grand incendie.",
       "« Piège » — {trap} cr, posé et déplacé comme un canon. Il retient magnétiquement jusqu’à {trapCap} drones dans un rayon de {trapRange} cases ; les autres passent. Les canons peuvent encore abattre les capturés ; si le piège brûle, la prise tombe.",
       "« Drones » — un conteneur de {perCell} pièces pour {droneBox} cr. Chaque niveau de drones renchérit l’achat de {priceStep} %.",
@@ -302,6 +320,7 @@ const fr: RuleSection[] = [
     lines: [
       "Ajoute un rival par e-mail — il doit jouer lui aussi.",
       "Compose le raid en vagues : chacune a son schéma, son côté et sa charge (simple, double, brouilleur de canons ou d’extincteurs). Jusqu’à {maxRaid} drones. Un plus gros essaim densifie la formation — le raid s’allonge à peine. Les drones quittent l’entrepôt aussitôt ; les charges coûtent un surcoût en crédits.",
+      "La charge furtive explose comme une charge simple, mais canons et lance-roquettes ne la voient pas du tout : ni visée, ni guidage. Contre elle il ne reste que tes mains et les pièges.",
       "Le défenseur mène le combat chez lui. Tu reçois un rapport — et le replay complet de la bataille.",
       "Pour chaque case brûlée tu touches une prime de {loot} cr. Le défenseur reçoit une prime de défense : {defendClean} cr par drone si rien ne brûle, ou {defendDirty} cr par drone moins {defendBurn} cr par case brûlée. L’assurance lui verse {insureCell} cr par case — juste la réparation. La police de base s’arrête là ; chaque niveau ajoute {insureShare} % de couverture de la marchandise et des canons perdus, jusqu’à la valeur entière.",
       "Après un wipe total l’entrepôt repart, mais le compte est remis au moins à {credits} cr pour reconstruire.",
@@ -323,6 +342,7 @@ const fr: RuleSection[] = [
     lines: [
       "Les classes coûtent {upgrade} cr le niveau. Dix niveaux chacune, sauf la police d’assurance : elle s’arrête au cinquième, la couverture y est déjà totale.",
       "Les drones volent plus vite et voient plus loin en reconnaissance, les canons portent plus loin et tirent plus vite, la mitrailleuse vise mieux, la lance couvre plus, les extincteurs arrosent un cercle plus large, les pièges attrapent plus loin.",
+      "Les lance-roquettes progressent pareil : plus de portée et un missile plus rapide à chaque niveau.",
       "Le niveau vaut pour toute la classe d’un coup : ce que tu as déjà et ce que tu achèteras ensuite.",
     ],
   },
@@ -337,6 +357,7 @@ const de: RuleSection[] = [
       "Im selben Moment geht die Verladung raus: alles Eingelagerte wird zum doppelten Einkaufspreis verkauft — Drohnen zu {droneSale} Cr. Was du nicht in den Einsatz geschickt hast, ist verkauft.",
       "Länger weg gewesen? Die Miete läuft höchstens {capDays} Tage auf.",
       "Zu wenig Geld? Die Bank leiht {loanMin}–{loanMax} Cr für {loanHours} Stunden zu {loanRate} %. Die dafür gekaufte Ware kann bei einem Angriff verbrennen — die Schuld nicht.",
+      "Geldstrategie: das große Geld kommt von fremden Lagern ({loot} Cr je abgebranntem Feld). Die Abwehrprämie ist kleiner — saubere Abwehr eines großen Schwarms bringt Hunderte oder etwa tausend, im Schnitt zwei- bis dreimal weniger als ein guter Angriff; ein Testangriff auf dich selbst zahlt sie auch. Bei null — Kredit, Abwehr eines Selbstangriffs oder Totalverlust mit Boden von mindestens {credits} Cr.",
     ],
   },
   {
@@ -346,6 +367,7 @@ const de: RuleSection[] = [
       "«Reparieren» — genauso, {repair} Cr je abgebranntem Feld.",
       "«Abriss» — die Reste abgebrannter Felder für je {scrap} Cr verwerten. Zurück bleibt nackter Boden, und das Lager muss ein Stück bleiben.",
       "«Geschütz» — {gun} Cr auf ein freies heiles Feld. Zurückverkaufen lässt sich ein Geschütz nicht, ziehen dagegen überallhin im Lager.",
+      "«Raketenwerfer» — {rocket} Cr, wird wie ein Geschütz gesetzt und gezogen. Er reicht {rocketRange} Felder, doppelt so weit wie ein Geschütz, schießt aber ungenau: die Rakete dreht danach selbst auf die Drohne ein, die ihr gerade am nächsten ist. Eine Rakete je Werfer in der Luft, {rocketReload} s Nachladen.",
       "«Löschanlage» — {spray} Cr, wird wie ein Geschütz gesetzt und gezogen. Sie schießt nicht: brennt ein Feld im Umkreis von {sprayRange}, dreht sie auf und schleudert acht Strahlen um sich. Ein Strahl bleibt am ersten Brandherd hängen und braucht Zeit, ihn zu löschen, und der Tank reicht für {sprayTank} s je Angriff — auch ein dichter Ring verliert gegen ein großes Feuer.",
       "«Falle» — {trap} Cr, wird wie ein Geschütz gesetzt und gezogen. Sie hält magnetisch bis zu {trapCap} Drohnen im Umkreis von {trapRange} Feldern; Überschuss fliegt weiter. Geschütze können gefangene Drohnen weiter abschießen; brennt die Falle, endet der Halt.",
       "«Drohnen» — ein Container mit {perCell} Stück für {droneBox} Cr. Jede Drohnenstufe verteuert den Einkauf um {priceStep} %.",
@@ -366,6 +388,7 @@ const de: RuleSection[] = [
     lines: [
       "Füge einen Gegner per E-Mail hinzu — er muss ebenfalls spielen.",
       "Baue den Angriff aus Wellen: jede mit eigenem Muster, Seite und Ladung (einfach, doppelt, Geschütz- oder Sprinklerstörer). Bis {maxRaid} Drohnen. Ein größerer Schwarm macht die Formation dichter — der Angriff dauert kaum länger. Die Drohnen verlassen das Lager sofort; Ladungen kosten einen Kreditaufschlag.",
+      "Der Tarnkappen-Sprengkopf explodiert wie ein einfacher, doch Geschütze und Werfer sehen ihn gar nicht: kein Zielen, kein Lenken. Gegen ihn bleiben nur deine Hände und die Fallen.",
       "Der Verteidiger schlägt den Angriff bei sich. Du bekommst einen Bericht — und die vollständige Wiederholung des Gefechts.",
       "Für jedes abgebrannte Feld bekommst du eine Prämie von {loot} Cr. Der Verteidiger bekommt eine Abwehrprämie: {defendClean} Cr je Drohne bei sauberer Abwehr, sonst {defendDirty} Cr je Drohne minus {defendBurn} Cr je abgebranntem Feld. Die Versicherung zahlt {insureCell} Cr je Feld — genau die Reparatur. Die Grundpolice endet dort; jede Stufe deckt zusätzlich {insureShare} % von verbrannter Ware und Geschützen, bis zum vollen Wert.",
       "Nach einem Totalverlust startet das Lager neu, das Konto wird aber auf mindestens {credits} Cr aufgefüllt, damit du wieder bauen kannst.",
@@ -387,6 +410,7 @@ const de: RuleSection[] = [
     lines: [
       "Klassen kosten {upgrade} Cr pro Stufe. Je zehn Stufen, außer der Police: sie endet bei fünf, dort ist die Deckung schon voll.",
       "Drohnen fliegen schneller und sehen in der Aufklärung weiter, Geschütze reichen weiter und schießen zügiger, das MG trifft besser, der Schlauch deckt mehr ab, Löschanlagen begießen einen größeren Kreis, Fallen greifen weiter.",
+      "Raketenwerfer wachsen genauso: mehr Reichweite und eine schnellere Rakete je Stufe.",
       "Eine Stufe gilt für die ganze Klasse auf einmal — für Vorhandenes und für später Gekauftes.",
     ],
   },
@@ -401,6 +425,7 @@ const it: RuleSection[] = [
       "Nello stesso momento parte la spedizione: tutto ciò che è stoccato si vende al doppio dell’acquisto — droni a {droneSale} cr. Quello che non hai mandato in battaglia è venduto.",
       "Sei stato via? L’affitto si accumula al massimo per {capDays} giorni.",
       "Soldi finiti? La banca presta {loanMin}–{loanMax} cr per {loanHours} ore al {loanRate}%. La merce comprata può bruciare in un attacco, il debito no.",
+      "Strategia di cassa: i soldi grossi vengono dai magazzini rivali ({loot} cr per cella bruciata). Il premio di difesa è minore — un respingimento pulito di uno sciame grande dà centinaia o circa mille, in media due-tre volte meno di un buon attacco; anche un attacco di prova su di te lo paga. A zero — prestito, difesa di un auto-attacco o wipe con un pavimento di almeno {credits} cr.",
     ],
   },
   {
@@ -410,6 +435,7 @@ const it: RuleSection[] = [
       "«Riparare» — lo stesso, {repair} cr per cella bruciata.",
       "«Demolisci» — vendi i resti delle celle bruciate a {scrap} cr l’una. Resta terra nuda, e il magazzino deve restare tutto d’un pezzo.",
       "«Cannone» — {gun} cr su una cella intatta libera. Il cannone non si rivende, ma si trascina ovunque nel magazzino.",
+      "«Lanciarazzi» — {rocket} cr, si piazza e si trascina come un cannone. Arriva a {rocketRange} celle, il doppio di un cannone, ma spara largo: il missile poi vira da solo sul drone che in quel momento gli è più vicino. Un missile per lanciarazzi in aria e {rocketReload} s di ricarica.",
       "«Estintore» — {spray} cr, si posa e si trascina come un cannone. Non spara: appena una cella entro {sprayRange} prende fuoco, l’impianto gira e lancia otto getti attorno a sé. Un getto si ferma sul primo focolaio e ci mette un po’ a spegnerlo, e il serbatoio basta per {sprayTank} s a incursione: anche un anello fitto cede a un incendio grosso.",
       "«Trappola» — {trap} cr, si posa e si trascina come un cannone. Tiene magneticamente fino a {trapCap} droni entro {trapRange} celle; gli altri passano. I cannoni possono ancora abbattere i catturati; se la trappola brucia, la presa cade.",
       "«Droni» — un container da {perCell} pezzi per {droneBox} cr. Ogni livello droni rincara l’acquisto del {priceStep}%.",
@@ -430,6 +456,7 @@ const it: RuleSection[] = [
     lines: [
       "Aggiungi un rivale per e-mail: deve giocare anche lui.",
       "Componi l’attacco a ondate: ognuna con schema, lato e carica (semplice, doppia, disturbatore di cannoni o di estintori). Fino a {maxRaid} droni. Uno sciame più grande rende la formazione più fitta — l’attacco quasi non si allunga. I droni lasciano subito il magazzino; le cariche costano un sovrapprezzo in crediti.",
+      "La carica invisibile esplode come quella semplice, ma cannoni e lanciarazzi non la vedono affatto: niente mira, niente guida. Contro di lei restano solo le tue mani e le trappole.",
       "Il difensore affronta l’attacco da sé. A te arriva un rapporto — e la replica completa della battaglia.",
       "Per ogni cella bruciata ricevi un premio di {loot} cr. Al difensore, un premio di difesa: {defendClean} cr per drone se non brucia nulla, oppure {defendDirty} cr per drone meno {defendBurn} cr per cella bruciata. L’assicurazione paga {insureCell} cr per cella: esattamente la riparazione. La polizza base finisce lì; ogni livello aggiunge il {insureShare}% di copertura di merce e cannoni perduti, fino al valore pieno.",
       "Dopo un wipe totale il magazzino riparte, ma il conto viene portato almeno a {credits} cr per ricostruire.",
@@ -451,6 +478,7 @@ const it: RuleSection[] = [
     lines: [
       "Le classi costano {upgrade} cr per livello. Dieci livelli ciascuna, tranne la polizza: la sua finisce al quinto, dove la copertura è già piena.",
       "I droni volano più veloci e vedono più lontano in ricognizione, i cannoni arrivano più lontano e sparano prima, la mitragliatrice mira meglio, la manichetta copre di più, gli estintori bagnano un cerchio più ampio, le trappole afferrano più lontano.",
+      "I lanciarazzi crescono allo stesso modo: più gittata e missile più veloce a ogni livello.",
       "Il livello vale per tutta la classe in una volta: per ciò che hai già e per ciò che comprerai poi.",
     ],
   },
