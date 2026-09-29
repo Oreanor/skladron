@@ -464,9 +464,9 @@ alter table attacks add column if not exists resolved_notified_at timestamptz;
 -- Колонка пустая у старых строк — их читают как одну волну простых дронов.
 alter table attacks add column if not exists waves jsonb;
 
--- Лицо игрока. Пусто — рисуем инициалы; «1»…«80» — готовое из public/avatars;
--- строка с http — своя картинка, лежащая в хранилище. Разбирает её клиент,
--- серверу достаточно отдать её тем, кто игрока видит.
+-- Лицо игрока. Пусто — инициалы; «1»…«80» — готовое из public/avatars;
+-- строка с http — своя картинка в хранилище. Новым и тем, у кого было
+-- пусто, ставим случайный пресет (см. ensure_player / patch).
 alter table profiles add column if not exists avatar text;
 
 alter table profiles add column if not exists tg_chat_id bigint;
@@ -585,14 +585,15 @@ declare uid uuid := auth.uid();
 begin
   if uid is null then raise exception 'not authenticated'; end if;
 
-  insert into profiles (id, email, display_name)
+  insert into profiles (id, email, display_name, avatar)
   values (
     uid,
     (select email from auth.users where id = uid),
     coalesce(
       (select raw_user_meta_data->>'full_name' from auth.users where id = uid),
       split_part((select email from auth.users where id = uid), '@', 1)
-    )
+    ),
+    (1 + floor(random() * 80))::int::text
   )
   on conflict (id) do nothing;
 

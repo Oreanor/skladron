@@ -308,9 +308,11 @@ export default function Battle({
                 <Row label={t("battle.spraysLost")} value={String(done.result.spraysLost)} />
                 <Row label={t("battle.trapsLost")} value={String(done.result.trapsLost)} />
               </dl>
-              <Button variant="build" block onClick={() => onFinish(done)}>
-                {t("battle.back")}
-              </Button>
+              <div className="flex justify-center px-8 pt-1">
+                <Button variant="build" onClick={() => onFinish(done)}>
+                  {t("battle.back")}
+                </Button>
+              </div>
             </div>
           </div>
         )}

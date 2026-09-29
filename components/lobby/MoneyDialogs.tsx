@@ -46,7 +46,7 @@ export function UpgradeDialog({
       title={t("tool.upgrade")}
       onClose={onClose}
       footer={
-        <Button variant="build" block onClick={onClose}>
+        <Button variant="build" onClick={onClose}>
           {t("common.ok")}
         </Button>
       }
@@ -104,22 +104,17 @@ export function InsuranceDialog({
       title={`${t("tool.insurance")} · ${t("upgrade.level", { level })}`}
       onClose={onClose}
       footer={
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-center gap-2">
           {canUpgrade && (
             <Button
               variant="build"
-              className="flex-1"
               disabled={player.credits < cost}
               onClick={() => onUpgrade("insurance")}
             >
               {t("upgrade.buy", { cost: fmt(cost) })}
             </Button>
           )}
-          <Button
-            variant={canUpgrade ? "outline" : "build"}
-            className={canUpgrade ? "" : "flex-1"}
-            onClick={onClose}
-          >
+          <Button variant={canUpgrade ? "outline" : "build"} onClick={onClose}>
             {t("common.ok")}
           </Button>
         </div>
@@ -181,18 +176,17 @@ export function LoanDialog({
       title={t("loan.title")}
       onClose={onClose}
       footer={
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-center gap-2">
           {owed ? (
             <Button
               variant="build"
-              className="flex-1"
               disabled={player.credits < player.loan}
               onClick={onRepay}
             >
               {t("loan.repay", { debt: fmt(player.loan) })}
             </Button>
           ) : (
-            <Button variant="build" className="flex-1" onClick={onTake}>
+            <Button variant="build" onClick={onTake}>
               {t("loan.take", { amount: fmt(amount) })}
             </Button>
           )}

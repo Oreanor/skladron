@@ -226,31 +226,18 @@ function EnemyProfile({
       subtitle={enemy.email}
       onClose={onClose}
       footer={
-        <div className="flex w-full flex-col gap-2">
-          <div className="flex w-full flex-wrap gap-2">
-            <Button
-              variant="danger"
-              className="flex-1"
-              disabled={drones < 10}
-              onClick={onAttack}
-            >
+        <>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button variant="danger" disabled={drones < 10} onClick={onAttack}>
               {t("enemies.attack")}
             </Button>
-            <Button className="flex-1" onClick={onScout}>
-              {t("scout.button")}
-            </Button>
-            {onShowMap && (
-              <Button className="flex-1" onClick={onShowMap}>
-                {t("scout.map")}
-              </Button>
-            )}
+            <Button onClick={onScout}>{t("scout.button")}</Button>
+            {onShowMap && <Button onClick={onShowMap}>{t("scout.map")}</Button>}
           </div>
-          <div className="flex justify-center">
-            <Button variant="build" onClick={onClose}>
-              {t("common.ok")}
-            </Button>
-          </div>
-        </div>
+          <Button variant="build" onClick={onClose}>
+            {t("common.ok")}
+          </Button>
+        </>
       }
     >
       <div className="flex flex-col items-center gap-3">
@@ -319,10 +306,9 @@ function ScoutDialog({
       subtitle={t("scout.subtitle")}
       onClose={onCancel}
       footer={
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-center gap-2">
           <Button
             variant="build"
-            className="flex-1"
             disabled={sending || max < 1}
             onClick={() => void send()}
           >
@@ -404,10 +390,9 @@ function RaidDialog({
       subtitle={t("raid.subtitle")}
       onClose={onCancel}
       footer={
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-center gap-2">
           <Button
             variant="danger"
-            className="flex-1"
             onClick={() => void send()}
             disabled={sending || problem !== null}
           >

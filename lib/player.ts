@@ -28,7 +28,7 @@ import {
 } from "./base";
 import type { AttackOrder } from "./attack";
 import type { Enemy } from "./enemy";
-import type { Avatar } from "./avatar";
+import { randomPresetAvatar, type Avatar } from "./avatar";
 
 export interface PlayerStats {
   battles: number;
@@ -121,7 +121,7 @@ const KEY = "wb.player.v1";
 export function newPlayer(now = Date.now()): Player {
   return {
     name: "",
-    avatar: null,
+    avatar: randomPresetAvatar(),
     credits: CREDITS_START,
     levels: startLevels(),
     loan: 0,
@@ -150,6 +150,7 @@ export function newPlayer(now = Date.now()): Player {
 export function wipe(p: Player, now = Date.now()): Player {
   const fresh = newPlayer(now);
   fresh.name = p.name;
+  fresh.avatar = p.avatar;
   fresh.levels = { ...p.levels };
   // долг сносом склада не списывается
   fresh.loan = p.loan;

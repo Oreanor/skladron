@@ -2104,11 +2104,10 @@ export default function Lobby({
           title={t("tg.title")}
           onClose={() => setModal(null)}
           footer={
-            <div className="flex gap-2">
+            <div className="flex flex-wrap justify-center gap-2">
               {telegram?.linked ? (
                 <Button
                   variant="danger"
-                  className="flex-1"
                   onClick={() => {
                     void repo.telegramUnlink().then(() => setTelegram({ code: telegram.code, linked: false }));
                   }}
@@ -2119,14 +2118,11 @@ export default function Lobby({
                 telegram &&
                 TG_BOT && (
                   <a
-                    className="flex-1"
                     href={`https://t.me/${TG_BOT}?start=${encodeURIComponent(telegram.code)}`}
                     target="_blank"
                     rel="noreferrer"
                   >
-                    <Button variant="build" block>
-                      {t("tg.link")}
-                    </Button>
+                    <Button variant="build">{t("tg.link")}</Button>
                   </a>
                 )
               )}

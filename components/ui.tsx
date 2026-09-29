@@ -383,8 +383,10 @@ export function Modal({
           {children}
         </div>
         {footer && (
-          <div className="shrink-0 border-t border-neutral-800 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:pb-3">
-            {footer}
+          <div className="shrink-0 border-t border-neutral-800 px-8 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-12 sm:pb-3">
+            <div className="flex flex-col items-center gap-2 [&>*]:max-w-full">
+              {footer}
+            </div>
           </div>
         )}
       </div>
@@ -420,13 +422,8 @@ export function NameDialog({
       subtitle={subtitle}
       onClose={onCancel}
       footer={
-        <div className="flex gap-2">
-          <Button
-            variant="build"
-            className="flex-1"
-            disabled={!ready}
-            onClick={() => onSubmit(value)}
-          >
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button variant="build" disabled={!ready} onClick={() => onSubmit(value)}>
             {confirm}
           </Button>
           <Button variant="outline" onClick={onCancel}>{t("common.cancel")}</Button>
@@ -472,8 +469,8 @@ export function ConfirmDialog({
       subtitle={subtitle}
       onClose={onCancel}
       footer={
-        <div className="flex gap-2">
-          <Button variant="danger" className="flex-1" onClick={onConfirm}>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button variant="danger" onClick={onConfirm}>
             {confirm}
           </Button>
           <Button variant="outline" onClick={onCancel}>{t("common.cancel")}</Button>

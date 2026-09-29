@@ -50,17 +50,13 @@ export default function AttackReportDialog({
       subtitle={t("report.subtitle")}
       onClose={onClose}
       footer={
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-center gap-2">
           {onWatch && (
-            <Button variant="build" className="flex-1" onClick={onWatch}>
+            <Button variant="build" onClick={onWatch}>
               {t("replay.watch")}
             </Button>
           )}
-          <Button
-            variant={onWatch ? "outline" : "build"}
-            className={onWatch ? "" : "flex-1"}
-            onClick={onClose}
-          >
+          <Button variant={onWatch ? "outline" : "build"} onClick={onClose}>
             {t("common.ok")}
           </Button>
         </div>

@@ -93,10 +93,9 @@ export default function TestRaidDialog({
       subtitle={toSelf ? t("raid.testSubtitle") : t("raid.subtitle")}
       onClose={onCancel}
       footer={
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-center gap-2">
           <Button
             variant="danger"
-            className="flex-1"
             disabled={sending || problem !== null}
             onClick={() => void send()}
           >

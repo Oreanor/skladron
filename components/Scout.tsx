@@ -268,9 +268,11 @@ export default function Scout({
                   <Row label={t("scout.gunsFound")} value={String(visibleGuns(done))} />
                   <Row label={t("scout.lost")} value={String(done.lost)} />
                 </dl>
-                <Button variant="build" block onClick={() => onFinish(done)}>
-                  {t("scout.keep")}
-                </Button>
+                <div className="flex justify-center px-8">
+                  <Button variant="build" onClick={() => onFinish(done)}>
+                    {t("scout.keep")}
+                  </Button>
+                </div>
               </div>
             </div>
           )}

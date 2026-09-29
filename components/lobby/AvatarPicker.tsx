@@ -4,6 +4,10 @@
  * Выбор аватара: большой кружок сверху — то, что выберешь, — а под ним
  * лента мелких со стрелками. Тычешь в мелкое, оно поднимается в большой.
  *
+ * Стрелки по бокам ленты и ←/→ на клавиатуре листают выбранное лицо —
+ * так быстрее, чем целиться в мелкий кружок. Ленту всё ещё можно
+ * тащить пальцем или мышью.
+ *
  * Загруженная своя картинка встаёт в ту же ленту первой и сразу
  * поднимается в большой кружок: своё лицо ищут не листанием. Ужимается она
  * здесь же, до отправки, — снимок с телефона весит мегабайты, а нужен
@@ -13,7 +17,7 @@
  * можно, ничего при этом не меняя.
  */
 
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
@@ -77,13 +81,37 @@ export default function AvatarPicker({
   const [faces, setFaces] = useState<string[]>(() => stripFaces(avatar));
   const [picked, setPicked] = useState<AvatarValue>(() => normalizeAvatarForStorage(avatar));
   const [uploadVersion, setUploadVersion] = useState(0);
+  const facesRef = useRef(faces);
+  const pickedRef = useRef(picked);
+  facesRef.current = faces;
+  pickedRef.current = picked;
 
-  /** Лента шире окна: стрелки прокручивают её почти на экран. */
-  const slide = (by: number) =>
-    stripRef.current?.scrollBy({
-      left: by * Math.max(THUMB * 3, stripRef.current.clientWidth * 0.8),
-      behavior: "smooth",
-    });
+  /** Сдвиг выбранного: стрелки ленты и ←/→ на клавиатуре. */
+  const step = (by: number) => {
+    const list = facesRef.current;
+    if (!list.length) return;
+    const cur = pickedRef.current;
+    const i = cur ? list.indexOf(cur) : -1;
+    const next = list[(i < 0 ? 0 : i + by + list.length) % list.length]!;
+    setPicked(next);
+    const strip = stripRef.current;
+    const thumb = strip?.children[list.indexOf(next)] as HTMLElement | undefined;
+    thumb?.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        step(-1);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        step(1);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const endStripDrag = (e: ReactPointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
@@ -158,19 +186,17 @@ export default function AvatarPicker({
       subtitle={t("avatar.hint")}
       onClose={onClose}
       footer={
-        // Загрузка и инициалы — рядом одной строкой, «ОК» под ними во всю
-        // ширину: он закрывает окно, а те двое только меняют, что в кружке.
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
+        <>
+          <div className="flex flex-wrap justify-center gap-2">
             <Button
-              className="flex-1 whitespace-nowrap"
+              className="whitespace-nowrap"
               disabled={busy}
               onClick={() => fileRef.current?.click()}
             >
               {busy ? t("avatar.uploading") : t("avatar.upload")}
             </Button>
             <Button
-              className="flex-1 whitespace-nowrap"
+              className="whitespace-nowrap"
               disabled={busy}
               onClick={() => {
                 void applyPick(null);
@@ -182,7 +208,6 @@ export default function AvatarPicker({
           </div>
           <Button
             variant="build"
-            className="w-full"
             disabled={busy}
             onClick={() => {
               void applyPick(picked);
@@ -191,7 +216,7 @@ export default function AvatarPicker({
           >
             {t("common.ok")}
           </Button>
-        </div>
+        </>
       }
     >
       <div className="mb-4 flex justify-center">
@@ -212,7 +237,7 @@ export default function AvatarPicker({
           type="button"
           aria-label={t("avatar.prev")}
           title={t("avatar.prev")}
-          onClick={() => slide(-1)}
+          onClick={() => step(-1)}
           className={arrow}
         >
           <ChevronLeft className="h-5 w-5" />
@@ -283,7 +308,7 @@ export default function AvatarPicker({
           type="button"
           aria-label={t("avatar.next")}
           title={t("avatar.next")}
-          onClick={() => slide(1)}
+          onClick={() => step(1)}
           className={arrow}
         >
           <ChevronRight className="h-5 w-5" />
