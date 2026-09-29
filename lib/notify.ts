@@ -52,6 +52,11 @@ export function notifyRivalAdded(email: string) {
   quiet(() => post({ event: "rival", email }));
 }
 
+/** Написал сопернику — ему уйдёт телеграм с самой репликой. */
+export function notifyMessage(email: string, messageId: string) {
+  quiet(() => post({ event: "message", email, messageId }));
+}
+
 /** Пробный налёт на себя: в таблице атак его нет, пишем прямо себе. */
 export function notifyTestRaid(drones: number) {
   quiet(() => post({ event: "test", drones }));

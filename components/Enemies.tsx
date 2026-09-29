@@ -5,7 +5,8 @@ import { RAID_COMMENT_MAX } from "@/lib/comments";
 import { payloadCost, raidTotal, type WavePlan } from "@/lib/attack";
 import { MAX_ATTACK_DRONES, type Enemy } from "@/lib/enemy";
 import { SCOUT } from "@/lib/tuning";
-import { Crosshair, Map, Plane } from "lucide-react";
+import { Crosshair, MessageSquare, Plane } from "lucide-react";
+import ScoutThumb from "./lobby/ScoutThumb";
 import { Button, Card, IconButton, Modal, inputClass } from "./ui";
 import Avatar from "./Avatar";
 import RaidPlanner, { newWave } from "./RaidPlanner";
@@ -21,8 +22,12 @@ interface Props {
   onRaid: (enemy: Enemy, waves: WavePlan[], comment?: string) => Promise<string | null>;
   /** Разведка: сколько самолётов послать. Вернёт текст ошибки или null. */
   onScout: (enemy: Enemy, planes: number) => Promise<string | null>;
-  /** Показать снятую карту врага. */
+  /** Показать снятую карту врага во весь экран. */
   onShowMap: (enemy: Enemy) => void;
+  /** Открыть разговор с соперником. */
+  onWrite: (enemy: Enemy) => void;
+  /** Сколько непрочитанного от кого, по почте в нижнем регистре. */
+  unread: Record<string, number>;
   onChanged: () => void;
 }
 
@@ -35,6 +40,8 @@ export default function Enemies({
   onRaid,
   onScout,
   onShowMap,
+  onWrite,
+  unread,
   onChanged,
 }: Props) {
   const t = useT();
@@ -102,16 +109,20 @@ export default function Enemies({
                   </div>
                 </button>
                 <div className="flex shrink-0 gap-2">
-                  {e.scout && (
-                    <IconButton
-                      label={t("scout.map")}
-                      title={t("scout.map")}
-                      className="h-9 w-9"
-                      onClick={() => onShowMap(e)}
-                    >
-                      <Map className="h-4 w-4" />
-                    </IconButton>
-                  )}
+                  {/*
+                    Карта переехала внутрь карточки соперника: там ей место
+                    рядом со счётом вражды, а в строке нужнее то, чем
+                    пользуются каждый день.
+                  */}
+                  <IconButton
+                    label={t("chat.button")}
+                    title={t("chat.button")}
+                    badge={unread[e.email.toLowerCase()]}
+                    className="h-9 w-9"
+                    onClick={() => onWrite(e)}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                  </IconButton>
                   <IconButton
                     label={t("scout.button")}
                     title={t("scout.button")}
@@ -247,6 +258,21 @@ function EnemyProfile({
           email={enemy.email}
           size="lg"
         />
+        {/*
+          Разведанный склад показываем тут же: цифры вражды без картинки
+          мало что говорят, а ради картинки открывать отдельное окно —
+          лишний шаг. Кнопка полного просмотра остаётся внизу.
+        */}
+        {enemy.scout && (
+          <button
+            type="button"
+            onClick={onShowMap}
+            title={t("scout.map")}
+            className="w-full cursor-pointer overflow-hidden rounded-md border border-neutral-700 transition hover:border-neutral-500"
+          >
+            <ScoutThumb snapshot={enemy.scout} />
+          </button>
+        )}
         <dl className="w-full space-y-1.5 font-mono text-sm">
           <div className="flex justify-between gap-3">
             <dt className="text-neutral-500">{t("enemies.burnedByMe")}</dt>

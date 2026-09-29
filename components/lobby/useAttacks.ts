@@ -44,6 +44,11 @@ export interface AttacksOptions {
   setReports: (reports: AttackReport[]) => void;
   /** Часы: по ним лобби считает срок займа. */
   setNow: (at: number) => void;
+  /**
+   * Сколько непрочитанного и от кого. Опрос приносит это вместе с
+   * налётами: отдельного таймера ради переписки заводить незачем.
+   */
+  setUnread: (by: Record<string, number>) => void;
   /** Перечитать склад с сервера, когда он отверг нашу запись. */
   reloadBase: () => Promise<void>;
   loadRaids: () => void;
@@ -72,6 +77,8 @@ export function useAttacks(o: AttacksOptions): Attacks {
 
   /** Налёты, отбитые нами, но ещё не закрытые сервером. */
   const resolved = useRef(new Set<string>());
+  /** Что было непрочитано в прошлый опрос: говорим только про прибавку. */
+  const unreadAt = useRef<Record<string, number>>({});
   const namesAt = useRef(0);
 
   // ---------- опрос сервера ----------
@@ -118,6 +125,27 @@ export function useAttacks(o: AttacksOptions): Attacks {
         refresh();
       } catch {
         // Сеть может кратко пропасть — следующий опрос повторит попытку.
+      }
+
+      // Переписка: счётчики у кнопок и одно сообщение в полосу, когда
+      // пришло новое. Говорим только про свежее — иначе строка твердила бы
+      // про непрочитанное каждые десять секунд, пока не откроешь окно.
+      try {
+        const cur = player.current;
+        const by = await repo.unread();
+        if (!alive || !cur) return;
+        for (const [mail, n] of Object.entries(by)) {
+          const was = unreadAt.current[mail] ?? 0;
+          if (n <= was) continue;
+          const who = cur.enemies.find((e) => e.email.toLowerCase() === mail);
+          opt.current.say(
+            opt.current.t.current("chat.arrived", { name: who?.name ?? mail, body: "" }).trim()
+          );
+        }
+        unreadAt.current = by;
+        opt.current.setUnread(by);
+      } catch {
+        // переписка — не бой: не пришли счётчики, придут через десять секунд
       }
 
       // Склад врага могли переименовать прямо сейчас — время от времени

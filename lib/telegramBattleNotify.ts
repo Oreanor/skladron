@@ -255,3 +255,38 @@ export async function notifyRivalAdded(
   await send(Number(to.tg_chat_id), rivalAddedMessage(nameOf(from)));
   return { sent: true };
 }
+
+/** Текст того, кому написали. Саму реплику показываем: ради неё и пишем. */
+export function rivalMessageText(fromName: string, body: string): string {
+  const line = body.length > 300 ? `${body.slice(0, 300)}…` : body;
+  return `Сообщение от склада «${fromName}»:\n\n${line}\n\n${SITE}`;
+}
+
+/**
+ * Извещение о новой реплике в разговоре с соперником. Метки «уже слали»
+ * тут нет и не нужно: реплика каждый раз новая, а от лавины бережёт
+ * потолок непрочитанного в send_message.
+ */
+export async function notifyRivalMessage(
+  db: SupabaseClient,
+  messageId: string
+): Promise<{ sent: boolean; error?: string }> {
+  const { data: message, error } = await db
+    .from("rival_messages")
+    .select("id, from_id, to_id, body")
+    .eq("id", messageId)
+    .maybeSingle();
+  if (error) return { sent: false, error: error.message };
+  if (!message) return { sent: false };
+
+  const { data: people } = await db
+    .from("profiles")
+    .select("id, base_name, display_name, email, tg_chat_id")
+    .in("id", [message.from_id, message.to_id]);
+  const from = people?.find((p) => p.id === message.from_id) as ProfileRow | undefined;
+  const to = people?.find((p) => p.id === message.to_id) as ProfileRow | undefined;
+  if (!from || !to?.tg_chat_id) return { sent: false };
+
+  await send(Number(to.tg_chat_id), rivalMessageText(nameOf(from), message.body));
+  return { sent: true };
+}

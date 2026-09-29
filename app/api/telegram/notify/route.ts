@@ -6,6 +6,7 @@ import {
   notifyRaidComment,
   notifyResolvedRaid,
   notifyRivalAdded,
+  notifyRivalMessage,
   notifySentRaid,
 } from "@/lib/telegramBattleNotify";
 
@@ -15,7 +16,7 @@ const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://skladron.vercel.app";
 
-type Event = "sent" | "resolved" | "test" | "comment" | "rival";
+type Event = "sent" | "resolved" | "test" | "comment" | "rival" | "message";
 
 async function send(chatId: number, text: string) {
   if (!TOKEN) return;
@@ -47,9 +48,10 @@ export async function POST(request: Request) {
     drones?: number;
     commentId?: string;
     email?: string;
+    messageId?: string;
   };
   const event = body.event;
-  const known: Event[] = ["sent", "resolved", "test", "comment", "rival"];
+  const known: Event[] = ["sent", "resolved", "test", "comment", "rival", "message"];
   if (!event || !known.includes(event)) {
     return new Response("bad request", { status: 400 });
   }
@@ -76,6 +78,25 @@ export async function POST(request: Request) {
       `Пробный налёт на твой склад — ${drones} дронов в очереди. Открой игру: ${SITE}`
     );
     return Response.json({ ok: true, sent: true });
+  }
+
+  // Реплика в разговоре. Проверка простая и надёжная: писать извещение
+  // вправе только тот, чьё это сообщение, — а кому оно уйдёт, записано в
+  // самой строке, и подменить адресата клиент не может.
+  if (event === "message") {
+    const messageId = body.messageId;
+    if (!messageId) return new Response("bad request", { status: 400 });
+    const { data: message } = await db
+      .from("rival_messages")
+      .select("id, from_id")
+      .eq("id", messageId)
+      .maybeSingle();
+    if (!message) return new Response("no such message", { status: 404 });
+    if (message.from_id !== uid) return new Response("not your message", { status: 403 });
+
+    const { sent, error: notifyError } = await notifyRivalMessage(db, messageId);
+    if (notifyError) return Response.json({ ok: false, reason: notifyError });
+    return Response.json({ ok: true, sent });
   }
 
   // Знакомство: пишем тому, кого добавили. На слово не верим — сверяемся

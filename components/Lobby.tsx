@@ -106,6 +106,7 @@ import {
 import Battle, { type BattleOutcome } from "./Battle";
 import TestRaidDialog from "./lobby/TestRaidDialog";
 import AttackReportDialog from "./lobby/AttackReportDialog";
+import MessageDialog from "./lobby/MessageDialog";
 import BaseName from "./lobby/BaseName";
 import { TEST_RAID_MAX } from "./lobby/limits";
 import { useAttacks } from "./lobby/useAttacks";
@@ -221,6 +222,9 @@ export default function Lobby({
   const [loanAmount, setLoanAmount] = useState(LOAN_MIN);
   /** Чью снятую карту сейчас смотрим и что на ней успело устареть. */
   const [mapOf, setMapOf] = useState<Enemy | null>(null);
+  /** С кем открыт разговор и сколько непрочитанного от кого. */
+  const [writeTo, setWriteTo] = useState<Enemy | null>(null);
+  const [unread, setUnread] = useState<Record<string, number>>({});
   const [stale, setStale] = useState<number[]>([]);
   /** Что сейчас крутим: чей бой и сама запись. */
   const [watching, setWatching] = useState<
@@ -355,6 +359,7 @@ export default function Lobby({
     say: setMessage,
     setReports,
     setNow,
+    setUnread,
     reloadBase: resyncBase,
     loadRaids,
   });
@@ -1642,6 +1647,19 @@ export default function Lobby({
             .catch(() => setStale([]));
         }
       }}
+      onWrite={(enemy) => {
+        setSheet(null);
+        setWriteTo(enemy);
+        // Окно на экране — значит увидел: гасим счётчик, не дожидаясь
+        // следующего опроса, иначе он висел бы ещё полминуты.
+        setUnread((was) => {
+          const next = { ...was };
+          delete next[enemy.email.toLowerCase()];
+          return next;
+        });
+        void repo.readMessages(enemy.email).catch(() => {});
+      }}
+      unread={unread}
       onChanged={() => forceRender((v) => v + 1)}
     />
   );
@@ -2111,6 +2129,15 @@ export default function Lobby({
           {!TG_BOT && <p className="mt-2 text-xs text-neutral-500">{t("tg.noBot")}</p>}
         </Modal>
       )}
+      {writeTo && (
+        <MessageDialog
+          enemy={writeTo}
+          load={(email) => repo.messages(email)}
+          onSend={(email, body) => repo.sendMessage(email, body)}
+          onClose={() => setWriteTo(null)}
+        />
+      )}
+
       {modal === "avatar" && (
         <AvatarPicker
           avatar={p.avatar}

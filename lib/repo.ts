@@ -16,9 +16,11 @@ import {
 import { CREDITS_START, LOAN_HOURS, MAX_LEVEL, loanDebt, upgradeCost } from "./economy";
 import { normalizeAvatarForStorage, type Avatar } from "./avatar";
 import { SIMULATION_VERSION } from "./tuning";
+import { notifyMessage } from "./notify";
 import type {
   AttackOrder,
   AttackReport,
+  Message,
   Pattern,
   RaidLog,
   SnapLevels,
@@ -111,6 +113,14 @@ export interface Repo {
     seed: number,
     opener?: string
   ): Promise<string | null>;
+  /** Весь разговор с этим соперником, старые сверху. */
+  messages(email: string): Promise<Message[]>;
+  /** Пишет сопернику. Отдаёт ошибку строкой, если писать нельзя. */
+  sendMessage(email: string, body: string): Promise<string | null>;
+  /** Отмечает прочитанным всё, что пришло от этого соперника. */
+  readMessages(email: string): Promise<void>;
+  /** Сколько непрочитанного и от кого: по этому в списке горит счётчик. */
+  unread(): Promise<Record<string, number>>;
   /** Код привязки телеграма и то, привязан ли он уже. */
   telegram(): Promise<{ code: string; linked: boolean } | null>;
   telegramUnlink(): Promise<void>;
@@ -226,6 +236,22 @@ class LocalRepo implements Repo {
 
   async sendAttack(): Promise<string | null> {
     throw new Error("Атаки на друзей доступны после входа через Google");
+  }
+
+  // Локальная игра идёт без сервера, а разговаривать не с кем: соперники
+  // тут выдуманные. Отдаём пустоту, чтобы окно открывалось и не падало.
+  async messages() {
+    return [];
+  }
+
+  async sendMessage() {
+    return "Переписка доступна после входа через Google";
+  }
+
+  async readMessages() {}
+
+  async unread() {
+    return {};
   }
 
   async telegram() {
@@ -591,6 +617,52 @@ class CloudRepo implements Repo {
     if (error) throw error;
     const row = (data as { email: string; name: string }[] | null)?.[0];
     return row?.name ?? null;
+  }
+
+  async messages(email: string): Promise<Message[]> {
+    const { data, error } = await this.db().rpc("message_thread", { peer_email: email });
+    if (error) throw error;
+    return ((data ?? []) as {
+      id: string;
+      mine: boolean;
+      body: string;
+      created_at: string;
+      read_at: string | null;
+    }[]).map((row) => ({
+      id: row.id,
+      mine: row.mine,
+      body: row.body,
+      at: Date.parse(row.created_at),
+      seen: !row.mine || row.read_at !== null,
+    }));
+  }
+
+  async sendMessage(email: string, body: string) {
+    const { data, error } = await this.db().rpc("send_message", {
+      target_email: email,
+      body,
+    });
+    if (error) return error.message;
+    // Извещение шлём сами, отдельной ручкой: серверу нужен номер реплики,
+    // а он рождается только здесь.
+    const row = (data as { id: string }[] | null)?.[0];
+    if (row) notifyMessage(email, row.id);
+    return null;
+  }
+
+  async readMessages(email: string) {
+    const { error } = await this.db().rpc("read_messages", { peer_email: email });
+    if (error) throw error;
+  }
+
+  async unread() {
+    const { data, error } = await this.db().rpc("unread_messages");
+    if (error) throw error;
+    const out: Record<string, number> = {};
+    for (const row of (data ?? []) as { email: string; n: number }[]) {
+      out[row.email.toLowerCase()] = row.n;
+    }
+    return out;
   }
 
   async upgrade(p: Player, kind: UpgradeKind) {

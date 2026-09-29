@@ -1786,6 +1786,135 @@ begin
 end;
 $$;
 
+-- ---------- переписка с соперником ----------
+-- Разговор идёт не о налёте, а вообще: соперник заведён — можно писать.
+-- Хранится парой отправитель/получатель, а не «веткой»: веток тут не
+-- бывает, а пара и есть весь разговор.
+
+create table if not exists rival_messages (
+  id uuid primary key default gen_random_uuid(),
+  from_id uuid not null references profiles(id) on delete cascade,
+  to_id uuid not null references profiles(id) on delete cascade,
+  body text not null,
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+-- Выборка всегда одна и та же: «весь разговор с этим, свежие снизу».
+create index if not exists rival_messages_pair
+  on rival_messages (least(from_id, to_id), greatest(from_id, to_id), created_at);
+-- И вторая: «сколько мне непрочитанного». Частичный — прочитанное в неё
+-- не попадает, а его со временем становится почти всё.
+create index if not exists rival_messages_unread
+  on rival_messages (to_id, from_id) where read_at is null;
+
+alter table rival_messages enable row level security;
+
+drop policy if exists rival_messages_read on rival_messages;
+create policy rival_messages_read on rival_messages
+  for select using (auth.uid() = from_id or auth.uid() = to_id);
+
+drop policy if exists rival_messages_mark on rival_messages;
+-- Отмечать прочитанным вправе только получатель и только это поле; тело
+-- и стороны не меняются никем и никогда.
+create policy rival_messages_mark on rival_messages
+  for update using (auth.uid() = to_id) with check (auth.uid() = to_id);
+
+-- Писать только через send_message: там сверяется знакомство и длина.
+revoke insert, delete on rival_messages from anon, authenticated;
+
+create or replace function send_message(target_email text, body text)
+returns table (id uuid, created_at timestamptz)
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  target profiles;
+  note text;
+  waiting int;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  note := left(btrim(coalesce(body, '')), 500);
+  if note = '' then raise exception 'empty message'; end if;
+
+  select p.* into target
+    from profiles p where lower(p.email) = lower(btrim(target_email)) limit 1;
+  if not found then raise exception 'player with this email has not joined yet'; end if;
+  if target.id = uid then raise exception 'cannot write to yourself'; end if;
+
+  -- Пишут только знакомым: соперник заводится взаимно, так что своя
+  -- карточка у него в списке — и есть право на разговор.
+  if not exists (
+    select 1 from jsonb_array_elements(target.enemies) e
+     where lower(e->>'email') = lower((select p.email from profiles p where p.id = uid))
+  ) then
+    raise exception 'add each other first';
+  end if;
+
+  -- Потолок на неразобранное: без него один человек завалит чужой чат и
+  -- телеграм. Прочитал — пиши дальше.
+  select count(*) into waiting
+    from rival_messages m
+   where m.from_id = uid and m.to_id = target.id and m.read_at is null;
+  if waiting >= 20 then raise exception 'too many unread messages to this player'; end if;
+
+  return query
+  insert into rival_messages (from_id, to_id, body)
+  values (uid, target.id, note)
+  returning rival_messages.id, rival_messages.created_at;
+end;
+$$;
+
+/** Весь разговор с этим соперником, старые сверху. */
+create or replace function message_thread(peer_email text)
+returns table (id uuid, mine boolean, body text, created_at timestamptz, read_at timestamptz)
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  peer uuid;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  select p.id into peer
+    from profiles p where lower(p.email) = lower(btrim(peer_email)) limit 1;
+  if peer is null then return; end if;
+
+  return query
+  select m.id, m.from_id = uid, m.body, m.created_at, m.read_at
+    from rival_messages m
+   where (m.from_id = uid and m.to_id = peer)
+      or (m.from_id = peer and m.to_id = uid)
+   order by m.created_at
+   limit 200;
+end;
+$$;
+
+/** Отмечает прочитанным всё, что пришло от этого соперника. */
+create or replace function read_messages(peer_email text) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  peer uuid;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  select p.id into peer
+    from profiles p where lower(p.email) = lower(btrim(peer_email)) limit 1;
+  if peer is null then return; end if;
+
+  update rival_messages
+     set read_at = now()
+   where to_id = uid and from_id = peer and read_at is null;
+end;
+$$;
+
+/** Сколько непрочитанного и от кого: по этому в списке горит счётчик. */
+create or replace function unread_messages()
+returns table (email text, n int)
+language sql security definer set search_path = public as $$
+  select p.email, count(*)::int
+    from rival_messages m
+    join profiles p on p.id = m.from_id
+   where m.to_id = auth.uid() and m.read_at is null
+   group by p.email;
+$$;
+
 -- Кому уже написали «тебя добавили во враги». Ключ из пары: знакомство
 -- заводится один раз, и повторные попытки не должны звенеть в телеграме
 -- ещё раз. Клиент сюда не ходит — пишет только сервер извещений.
@@ -2133,6 +2262,7 @@ $perm$;
 grant execute on function ensure_player, collect_income, save_base,
   buy_depot, apply_battle, wipe_base, rename_base, save_enemies,
   base_names, stale_patches, launch_scout, upgrade, add_rival,
+  send_message, message_thread, read_messages, unread_messages,
   take_loan, repay_loan, raid_log, hide_raid,
   send_attack, pending_attacks, attack_reports, ack_attack_report, restart_game to authenticated;
 
