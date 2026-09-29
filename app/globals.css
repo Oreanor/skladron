@@ -147,4 +147,14 @@ body {
 .spin-always::-webkit-inner-spin-button,
 .spin-always::-webkit-outer-spin-button {
   opacity: 1;
+  margin: 0;
+  height: auto;
+}
+
+/* Браузер раздувает number под «длинное» значение — держим сами. */
+.spin-delay {
+  width: 2.5rem;
+  min-width: 2.5rem;
+  max-width: 2.5rem;
+  box-sizing: border-box;
 }

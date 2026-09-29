@@ -46,6 +46,7 @@ export async function POST(request: Request) {
     attackId?: string;
     event?: Event;
     drones?: number;
+    stage?: number;
     commentId?: string;
     email?: string;
     messageId?: string;
@@ -61,12 +62,14 @@ export async function POST(request: Request) {
 
   const db = createClient(URL, SERVICE, { auth: { persistSession: false } });
 
-  // Пробный налёт не пишется в attacks: извещаем только самого игрока.
+  // Состязание / локальный тест не пишется в attacks: извещаем только игрока.
   if (event === "test") {
     const drones = Math.floor(Number(body.drones));
     if (!Number.isFinite(drones) || drones < 1 || drones > 500) {
       return new Response("bad request", { status: 400 });
     }
+    const stage = Math.floor(Number(body.stage));
+    const hasStage = Number.isFinite(stage) && stage >= 1;
     const { data: me } = await db
       .from("profiles")
       .select("tg_chat_id")
@@ -75,7 +78,9 @@ export async function POST(request: Request) {
     if (!me?.tg_chat_id) return Response.json({ ok: true, sent: false });
     await send(
       Number(me.tg_chat_id),
-      `Пробный налёт на твой склад — ${drones} дронов в очереди. Открой игру: ${SITE}`
+      hasStage
+        ? `Состязание №${stage} — ${drones} дронов в очереди. Открой игру: ${SITE}`
+        : `Налёт на твой склад — ${drones} дронов в очереди. Открой игру: ${SITE}`
     );
     return Response.json({ ok: true, sent: true });
   }

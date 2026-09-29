@@ -5,8 +5,8 @@ import type { Dict } from "../dict";
 const de: Dict = {
   "scout.stale": "{patches} Felder haben sich seit deinem Flug verändert — sie liegen wieder im Nebel.",
   "tg.title": "Telegram",
-  "tg.explain": "Verknüpfe Telegram — der Bot schreibt über Angriffe, deine Ausgänge und Testangriffe auf dich selbst.",
-  "tg.linked": "Telegram ist verknüpft: der Bot schreibt über Angriffe, Ausgänge und deine Testangriffe.",
+  "tg.explain": "Verknüpfe Telegram — der Bot schreibt über Angriffe, deine Ausgänge und Wettkämpfe.",
+  "tg.linked": "Telegram ist verknüpft: der Bot schreibt über Angriffe, Ausgänge und Wettkämpfe.",
   "tg.link": "Telegram verknüpfen",
   "tg.unlink": "Trennen",
   "tg.noBot": "In dieser Fassung ist der Bot nicht eingerichtet.",

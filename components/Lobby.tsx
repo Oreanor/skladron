@@ -1001,7 +1001,7 @@ export default function Lobby({
     p.incoming.push(order);
     setTestRaid(false);
     setMessage(t("competition.queued", { n: stage, size: n }));
-    notifyTestRaid(n);
+    notifyTestRaid(n, stage);
     touch();
     return null;
   };

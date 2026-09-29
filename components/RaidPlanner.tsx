@@ -38,7 +38,7 @@ const selectClass =
   "text-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500";
 
 const numberClass =
-  "w-16 shrink-0 rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-right " +
+  "w-14 shrink-0 rounded-md border border-neutral-700 bg-neutral-950 px-1 py-1.5 text-right " +
   "font-mono text-sm text-neutral-200 focus-visible:outline-none focus-visible:ring-2 " +
   "focus-visible:ring-neutral-500";
 
@@ -126,19 +126,20 @@ export default function RaidPlanner({
                 <input
                   type="number"
                   min={0}
-                  max={300}
+                  max={99}
                   step={1}
+                  size={2}
                   value={wave.delay ?? 0}
                   aria-label={t("raid.waveDelay")}
                   title={t("raid.waveDelayHint")}
                   onChange={(e) =>
                     patch(wi, {
-                      delay: Math.max(0, Math.min(300, Number(e.target.value) || 0)),
+                      delay: Math.max(0, Math.min(99, Number(e.target.value) || 0)),
                     })
                   }
                   className={
-                    "spin-always w-14 shrink-0 rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 " +
-                    "text-center font-mono text-xs text-neutral-200 " +
+                    "spin-always spin-delay shrink-0 rounded border border-neutral-700 bg-neutral-950 " +
+                    "px-0 py-0.5 text-right font-mono text-xs text-neutral-200 " +
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500"
                   }
                 />
@@ -282,7 +283,7 @@ export default function RaidPlanner({
           const prev = waves[waves.length - 1]?.delay ?? 0;
           onChange([
             ...waves,
-            newWave(Math.max(1, Math.min(20, max - total)), prev + 1),
+            newWave(Math.max(1, Math.min(20, max - total)), Math.min(99, prev + 1)),
           ]);
         }}
       >

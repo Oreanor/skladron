@@ -5,8 +5,8 @@ import type { Dict } from "../dict";
 const it: Dict = {
   "scout.stale": "{patches} zone sono cambiate dal tuo volo: tornano sotto la nebbia.",
   "tg.title": "Telegram",
-  "tg.explain": "Collega Telegram — il bot scrive di attacchi, esiti dei tuoi e incursioni di prova su di te.",
-  "tg.linked": "Telegram collegato: il bot scrive di attacchi, esiti e le tue incursioni di prova.",
+  "tg.explain": "Collega Telegram — il bot scrive di attacchi, esiti dei tuoi e gare.",
+  "tg.linked": "Telegram collegato: il bot scrive di attacchi, esiti e gare.",
   "tg.link": "Collega Telegram",
   "tg.unlink": "Scollega",
   "tg.noBot": "In questa build il bot non è configurato.",
