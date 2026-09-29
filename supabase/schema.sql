@@ -24,8 +24,8 @@ language sql immutable as $$
     when 'refund' then 50
     when 'drones' then 1000
     when 'drone'  then 25
-    -- Шар стоит кредит: контейнер на десяток — десятка. Прокачки нет.
-    when 'balloon' then 1
+    -- Шар стоит пятёрку: контейнер на десяток — полсотни. Прокачки нет.
+    when 'balloon' then 5
     when 'income' then 10  -- кредитов в сутки с каждой целой клетки
     when 'sale'   then 2   -- отгрузка идёт вдвое дороже закупки
     when 'loot'   then 50   -- нападавшему за каждую сожжённую клетку склада
