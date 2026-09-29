@@ -44,7 +44,7 @@ export type ToolId = Tool | "upgrade" | "insurance" | "loan";
 /** Панели, которые на телефоне открываются шторкой снизу. */
 export type SheetId = "attacks" | "enemies" | "menu";
 /** Панели инструментов: они всплывают модалкой и вёрстку не разрывают. */
-export type ModalId = "upgrade" | "insurance" | "loan" | "telegram";
+export type ModalId = "upgrade" | "insurance" | "loan" | "telegram" | "avatar";
 
 const ICON = "h-5 w-5";
 

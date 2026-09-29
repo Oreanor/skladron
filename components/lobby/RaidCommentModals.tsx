@@ -5,6 +5,7 @@ import type { AttackOrder } from "@/lib/attack";
 import { RAID_COMMENT_MAX } from "@/lib/comments";
 import { useT } from "@/lib/i18n";
 import { Button, Modal, inputClass } from "../ui";
+import Avatar from "../Avatar";
 
 /** Перед боем: записка нападающего и необязательный быстрый ответ. */
 export function RaidOpenerModal({
@@ -28,7 +29,11 @@ export function RaidOpenerModal({
         </Button>
       }
     >
-      <p className="mb-3 whitespace-pre-wrap text-sm text-neutral-200">{order.opener}</p>
+      {/* Лицо крупно: перед боем это единственное, что видно о сопернике. */}
+      <div className="mb-4 flex items-start gap-4">
+        <Avatar avatar={order.avatar ?? null} name={order.from} size="lg" />
+        <p className="whitespace-pre-wrap text-sm text-neutral-200">{order.opener}</p>
+      </div>
       <label className="mb-1 block text-xs uppercase tracking-wider text-neutral-400">
         {t("raidComment.replyLabel")}
       </label>

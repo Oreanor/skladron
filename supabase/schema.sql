@@ -464,6 +464,11 @@ alter table attacks add column if not exists resolved_notified_at timestamptz;
 -- Колонка пустая у старых строк — их читают как одну волну простых дронов.
 alter table attacks add column if not exists waves jsonb;
 
+-- Лицо игрока. Пусто — рисуем инициалы; «1»…«16» — готовое из public/avatars;
+-- строка с http — своя картинка, лежащая в хранилище. Разбирает её клиент,
+-- серверу достаточно отдать её тем, кто игрока видит.
+alter table profiles add column if not exists avatar text;
+
 alter table profiles add column if not exists tg_chat_id bigint;
 alter table profiles add column if not exists tg_code text;
 create unique index if not exists profiles_tg_code on profiles (tg_code) where tg_code is not null;
@@ -543,6 +548,11 @@ drop function if exists enemy_base(text);
 drop function if exists my_raids();
 -- в журнал добавились ещё не отыгранные налёты: состав колонок другой
 drop function if exists raid_log();
+-- base_names отдаёт ещё и лицо игрока
+drop function if exists base_names(text[]);
+-- комментарии тоже: рядом с автором идёт его лицо
+drop function if exists battle_comments(uuid);
+drop function if exists add_battle_comment(uuid, text);
 
 -- public_replay тоже отдаёт теперь волны: возвращаемый тип сменился
 drop function if exists public_replay(uuid);
@@ -755,10 +765,11 @@ $$;
 -- Как зовут склады по адресам. Отдаём только имя: список врагов и так
 -- строится по почте, а больше о чужом профиле знать незачем.
 create or replace function base_names(emails text[])
-returns table (email text, name text)
+returns table (email text, name text, avatar text)
 language sql security definer set search_path = public as $$
   select p.email,
-         coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1))
+         coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
+         p.avatar
     from profiles p
    where lower(p.email) = any (select lower(e) from unnest(emails) e);
 $$;
@@ -849,6 +860,7 @@ returns table (
   drones int, pattern text, direction int, seed int, waves jsonb, drone_level int,
   simulation_version int,
   from_email text,
+  avatar text,
   opener text
 )
 language plpgsql security definer set search_path = public as $$
@@ -876,7 +888,7 @@ begin
     select a.id,
            coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
            a.created_at, a.activated_at, a.drones, a.pattern, a.direction, a.seed,
-           a.waves, a.drone_level, a.simulation_version, p.email,
+           a.waves, a.drone_level, a.simulation_version, p.email, p.avatar,
            (select c.body
               from battle_comments c
              where c.attack_id = a.id and c.author_id = a.attacker_id
@@ -1763,11 +1775,11 @@ grant execute on function tg_code, tg_unlink to authenticated;
 -- ---------- разговор о бою ----------
 
 create or replace function battle_comments(target uuid)
-returns table (id uuid, author text, body text, created_at timestamptz, mine boolean)
+returns table (id uuid, author text, avatar text, body text, created_at timestamptz, mine boolean)
 language sql security definer set search_path = public stable as $$
   select c.id,
          coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
-         c.body, c.created_at, c.author_id = auth.uid()
+         p.avatar, c.body, c.created_at, c.author_id = auth.uid()
     from battle_comments c
     join profiles p on p.id = c.author_id
    where c.attack_id = target
@@ -1775,7 +1787,7 @@ language sql security definer set search_path = public stable as $$
 $$;
 
 create or replace function add_battle_comment(target uuid, message text)
-returns table (id uuid, author text, body text, created_at timestamptz, mine boolean)
+returns table (id uuid, author text, avatar text, body text, created_at timestamptz, mine boolean)
 language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
@@ -1795,8 +1807,8 @@ begin
 
   select fresh.id,
          coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
-         fresh.body, fresh.created_at, true
-    into id, author, body, created_at, mine
+         p.avatar, fresh.body, fresh.created_at, true
+    into id, author, avatar, body, created_at, mine
     from profiles p where p.id = uid;
   return next;
 end;
@@ -1812,6 +1824,58 @@ $$;
 
 grant execute on function battle_comments to anon, authenticated;
 grant execute on function add_battle_comment, delete_battle_comment to authenticated;
+
+-- ---------- хранилище под свои аватарки ----------
+-- Картинку ужимает клиент до трёхсот с небольшим пикселей, так что файл
+-- выходит в десятки килобайт. Каждый кладёт её под своим id и только свою;
+-- читают все — лицо видно и сопернику, и под комментарием.
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('avatars', 'avatars', true, 262144, array['image/webp', 'image/png', 'image/jpeg'])
+on conflict (id) do update
+  set public = true,
+      file_size_limit = 262144,
+      allowed_mime_types = array['image/webp', 'image/png', 'image/jpeg'];
+
+drop policy if exists "avatars readable" on storage.objects;
+create policy "avatars readable" on storage.objects for select
+  using (bucket_id = 'avatars');
+
+-- Имя файла начинается с id владельца: своё перезаписать можно, чужое нет.
+drop policy if exists "own avatar write" on storage.objects;
+create policy "own avatar write" on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'avatars' and split_part(name, '.', 1) = auth.uid()::text
+  );
+
+drop policy if exists "own avatar replace" on storage.objects;
+create policy "own avatar replace" on storage.objects for update to authenticated
+  using (bucket_id = 'avatars' and split_part(name, '.', 1) = auth.uid()::text);
+
+drop policy if exists "own avatar remove" on storage.objects;
+create policy "own avatar remove" on storage.objects for delete to authenticated
+  using (bucket_id = 'avatars' and split_part(name, '.', 1) = auth.uid()::text);
+
+-- ---------- лицо игрока ----------
+-- Своё меняет только сам игрок. Готовое — это номер, своя картинка — адрес
+-- в нашем же хранилище: чужие ссылки не берём, иначе профиль стал бы местом
+-- для картинки с любого сайта.
+
+create or replace function set_avatar(value text)
+returns void language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  if value is not null
+     and value !~ '^([1-9]|1[0-6])$'
+     and value not like 'https://%/storage/v1/object/public/avatars/%' then
+    raise exception 'bad avatar';
+  end if;
+  update profiles set avatar = value where id = uid;
+end;
+$$;
+
+grant execute on function set_avatar to authenticated;
 
 -- ---------- журнал боёв ----------
 -- И свои налёты, и те, где отбивался ты: по журналу открываются повторы.

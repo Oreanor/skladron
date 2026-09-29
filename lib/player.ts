@@ -28,6 +28,7 @@ import {
 } from "./base";
 import type { AttackOrder } from "./attack";
 import type { Enemy } from "./enemy";
+import type { Avatar } from "./avatar";
 
 export interface PlayerStats {
   battles: number;
@@ -75,6 +76,8 @@ export const startLevels = (): Levels => ({
 
 export interface Player {
   name: string;
+  /** Лицо: пусто — инициалы, номер — готовое, адрес — своя картинка. */
+  avatar: Avatar;
   credits: number;
   levels: Levels;
   /** Сколько должен банку и когда срок. Ноль — долгов нет. */
@@ -94,6 +97,7 @@ export interface Player {
 interface Stored {
   v: 1;
   name?: string;
+  avatar?: Avatar;
   credits: number;
   levels?: Partial<Levels>;
   loan?: number;
@@ -114,6 +118,7 @@ const KEY = "wb.player.v1";
 export function newPlayer(now = Date.now()): Player {
   return {
     name: "",
+    avatar: null,
     credits: CREDITS_START,
     levels: startLevels(),
     loan: 0,
@@ -194,6 +199,7 @@ export function load(): Player {
     if (cells.length !== CELLS) return newPlayer();
     return {
       name: s.name ?? "",
+      avatar: s.avatar ?? null,
       credits: s.credits,
       levels: { ...startLevels(), ...(s.levels ?? {}) },
       loan: s.loan ?? 0,
@@ -218,6 +224,7 @@ export function save(p: Player) {
   const s: Stored = {
     v: 1,
     name: p.name,
+    avatar: p.avatar,
     credits: p.credits,
     levels: p.levels,
     loan: p.loan,

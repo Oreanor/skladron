@@ -131,8 +131,10 @@ export function useAttacks(o: AttacksOptions): Attacks {
         let changed = false;
         for (const e of cur.enemies) {
           const actual = names.get(e.email.toLowerCase());
-          if (actual && actual !== e.name) {
-            e.name = actual;
+          if (!actual) continue;
+          if (actual.name !== e.name || actual.avatar !== e.avatar) {
+            e.name = actual.name;
+            e.avatar = actual.avatar;
             changed = true;
           }
         }

@@ -3,6 +3,7 @@
 import { GRID } from "./base";
 import { levelBonus } from "./economy";
 import type { BattleResult } from "./engine";
+import type { Avatar } from "./avatar";
 import { DRONE, GUN, PAYLOAD, RAID, SIMULATION_VERSION, WAVE } from "./tuning";
 
 /**
@@ -131,6 +132,8 @@ export interface AttackOrder {
   droneLevel?: number;
   /** Версия правил симуляции: старые повторы нельзя молча считать новыми. */
   simulationVersion?: number;
+  /** Лицо нападавшего: показываем в окне перед боем. */
+  avatar?: Avatar;
   /** Почта нападавшего: по ней он попадает в список соперников. */
   fromEmail?: string;
   /** Короткая записка нападающего при отправке — показывается перед отбиванием. */

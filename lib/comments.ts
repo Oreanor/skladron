@@ -3,6 +3,7 @@
 
 import { notifyComment } from "./notify";
 import { supabase } from "./supabase";
+import type { Avatar } from "./avatar";
 
 /** Максимальная длина реплики — как в базе. */
 export const RAID_COMMENT_MAX = 500;
@@ -10,6 +11,8 @@ export const RAID_COMMENT_MAX = 500;
 export interface BattleComment {
   id: string;
   author: string;
+  /** Лицо автора: рядом с подписью под боем. */
+  avatar: Avatar;
   body: string;
   createdAt: number;
   /** Своё — значит можно удалить. */
@@ -19,6 +22,7 @@ export interface BattleComment {
 interface Row {
   id: string;
   author: string;
+  avatar: string | null;
   body: string;
   created_at: string;
   mine: boolean;
@@ -27,6 +31,7 @@ interface Row {
 const toComment = (row: Row): BattleComment => ({
   id: row.id,
   author: row.author,
+  avatar: row.avatar,
   body: row.body,
   createdAt: Date.parse(row.created_at),
   mine: row.mine,

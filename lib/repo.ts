@@ -13,6 +13,7 @@ import {
 } from "./base";
 
 import { LOAN_HOURS, MAX_LEVEL, loanDebt, upgradeCost } from "./economy";
+import type { Avatar } from "./avatar";
 import type { AttackOrder, AttackReport, Pattern, RaidLog, WavePlan } from "./attack";
 import type { ReplayData } from "@/components/Replay";
 import type { BattleResult } from "./engine";
@@ -55,7 +56,9 @@ export interface Repo {
    * Как называются склады по этим адресам. Врага зовут именем его склада,
    * а не выдумкой клиента, поэтому имя всегда спрашиваем у сервера.
    */
-  baseNames(emails: string[]): Promise<Map<string, string>>;
+  baseNames(emails: string[]): Promise<Map<string, { name: string; avatar: Avatar }>>;
+  /** Сменить своё лицо: номер готового, адрес своей картинки или null. */
+  setAvatar(p: Player, value: Avatar): Promise<void>;
   /**
    * Вылет разведки одной операцией: сервер одновременно списывает самолёты
    * и отдаёт карту, чтобы карту нельзя было запросить бесплатно.
@@ -150,7 +153,12 @@ class LocalRepo implements Repo {
   }
 
   async baseNames(_emails: string[]) {
-    return new Map<string, string>();
+    return new Map<string, { name: string; avatar: Avatar }>();
+  }
+
+  async setAvatar(p: Player, value: Avatar) {
+    p.avatar = value;
+    localSave(p);
   }
 
   async launchScout(p: Player, email: string, n: number) {
@@ -257,6 +265,7 @@ class LocalRepo implements Repo {
 
 interface ProfileRow {
   base_name: string | null;
+  avatar: string | null;
   credits: number;
   founded: boolean;
   last_income_at: string;
@@ -296,6 +305,7 @@ interface IncomingAttackRow {
   drone_level: number | null;
   simulation_version: number | null;
   from_email: string | null;
+  avatar: string | null;
   opener: string | null;
 }
 
@@ -348,6 +358,7 @@ class CloudRepo implements Repo {
     const player: Player = {
       ...fresh,
       name: row.base_name ?? "",
+      avatar: row.avatar ?? null,
       credits: attacks.credits ?? row.credits,
       founded: row.founded,
       lastIncomeAt: Date.parse(row.last_income_at),
@@ -369,7 +380,9 @@ class CloudRepo implements Repo {
       const names = await this.baseNames(player.enemies.map((e) => e.email));
       for (const e of player.enemies) {
         const actual = names.get(e.email.toLowerCase());
-        if (actual && actual !== e.name) e.name = actual;
+        if (!actual) continue;
+        e.name = actual.name;
+        e.avatar = actual.avatar;
       }
     } catch {
       // имена — украшение списка, из-за них вход в игру ломаться не должен
@@ -417,6 +430,7 @@ class CloudRepo implements Repo {
       droneLevel: row.drone_level ?? 1,
       simulationVersion: row.simulation_version ?? 1,
       fromEmail: row.from_email ?? undefined,
+      avatar: row.avatar ?? null,
       opener: row.opener ?? undefined,
       remote: true,
     }));
@@ -486,14 +500,23 @@ class CloudRepo implements Repo {
   }
 
   async baseNames(emails: string[]) {
-    const out = new Map<string, string>();
+    const out = new Map<string, { name: string; avatar: Avatar }>();
     if (!emails.length) return out;
     const { data, error } = await this.db().rpc("base_names", { emails });
     if (error) throw error;
-    for (const row of (data as { email: string; name: string }[] | null) ?? []) {
-      if (row.email && row.name) out.set(row.email.toLowerCase(), row.name);
+    const rows = (data as { email: string; name: string; avatar: string | null }[] | null) ?? [];
+    for (const row of rows) {
+      if (row.email && row.name) {
+        out.set(row.email.toLowerCase(), { name: row.name, avatar: row.avatar });
+      }
     }
     return out;
+  }
+
+  async setAvatar(p: Player, value: Avatar) {
+    const { error } = await this.db().rpc("set_avatar", { value });
+    if (error) throw error;
+    p.avatar = value;
   }
   async launchScout(p: Player, email: string, n: number) {
     const { data, error } = await this.db().rpc("launch_scout", {

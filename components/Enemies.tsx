@@ -7,6 +7,7 @@ import { MAX_ATTACK_DRONES, type Enemy } from "@/lib/enemy";
 import { SCOUT } from "@/lib/tuning";
 import { Crosshair, Map, Plane } from "lucide-react";
 import { Button, Card, IconButton, Modal, inputClass } from "./ui";
+import Avatar from "./Avatar";
 import RaidPlanner, { newWave } from "./RaidPlanner";
 import { useT } from "@/lib/i18n";
 
@@ -86,9 +87,14 @@ export default function Enemies({
           {enemies.map((e) => (
             <Card key={e.id}>
               <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="truncate font-medium text-neutral-200">{e.name}</div>
-                  <div className="truncate font-mono text-[11px] text-neutral-500">{e.email}</div>
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar avatar={e.avatar ?? null} name={e.name} email={e.email} />
+                  <div className="min-w-0">
+                    <div className="truncate font-medium text-neutral-200">{e.name}</div>
+                    <div className="truncate font-mono text-[11px] text-neutral-500">
+                      {e.email}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex shrink-0 gap-2">
                   {e.scout && (

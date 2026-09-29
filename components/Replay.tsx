@@ -15,6 +15,7 @@ import { fmt } from "@/lib/economy";
 import { useT } from "@/lib/i18n";
 import MapCanvas, { CELL } from "./MapCanvas";
 import { Button, Chip, ChipBar, inputClass } from "./ui";
+import Avatar from "./Avatar";
 import {
   deleteComment,
   loadComments,
@@ -87,7 +88,9 @@ function Talk({ battleId }: { battleId: string }) {
           <p className="text-neutral-600">{t("talk.empty")}</p>
         ) : (
           items.map((c) => (
-            <p key={c.id} className="text-neutral-300">
+            <p key={c.id} className="flex items-start gap-3 text-neutral-300">
+              <Avatar avatar={c.avatar} name={c.author} className="mt-0.5" />
+              <span className="min-w-0 flex-1">
               <span className="text-neutral-500">{c.author}: </span>
               {c.body}
               {c.mine && (
@@ -101,6 +104,7 @@ function Talk({ battleId }: { battleId: string }) {
                   ×
                 </button>
               )}
+              </span>
             </p>
           ))
         )}

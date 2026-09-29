@@ -15,6 +15,7 @@ import {
   normRect,
 } from "./base";
 import { mulberry32 } from "./attack";
+import type { Avatar } from "./avatar";
 import { RAID } from "./tuning";
 
 export const MAX_ATTACK_DRONES = RAID.max;
@@ -30,6 +31,8 @@ export interface ScoutSnapshot {
 }
 
 export interface Enemy {
+  /** Лицо соперника: приходит с сервера вместе с именем склада. */
+  avatar?: Avatar;
   id: string;
   name: string;
   email: string;

@@ -1,13 +1,15 @@
 "use client";
 
-// Кружок с инициалами вместо строки «имя + выйти»: в шапке дорога каждая
-// точка ширины. По клику — имя, язык, тема и выход. Тот же список настроек
+// Лицо игрока вместо строки «имя + выйти»: в шапке дорога каждая точка
+// ширины. Лицо не выбрано — на его месте инициалы. По клику — имя, язык, тема и выход. Тот же список настроек
 // показывается на телефоне внутри шторки меню.
 
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, LogOut, Moon, RotateCcw, Send, Sun } from "lucide-react";
+import { UserRound, BookOpen, LogOut, Moon, RotateCcw, Send, Sun } from "lucide-react";
 import { LOCALES, LOCALE_NAMES, useSettings, type Locale } from "@/lib/i18n";
 import { SectionTitle } from "./ui";
+import AvatarView from "./Avatar";
+import type { Avatar } from "@/lib/avatar";
 
 /** Одна-две буквы: из имени берём инициалы слов, иначе первые буквы адреса. */
 export function initials(name: string | null, email: string | null) {
@@ -59,11 +61,14 @@ function ThemeSwitch() {
 
 /** Язык, тема и выход — одинаковые и в выпадашке, и в мобильной шторке. */
 export function SettingsList({
+  onAvatar,
   onTelegram,
   onRules,
   onRestart,
   onSignOut,
 }: {
+  /** Открыть выбиралку лиц. Без неё пункт не показываем. */
+  onAvatar?: () => void;
   /** Привязать телеграм для извещений. */
   onTelegram?: () => void;
   /** Показать правила игры. */
@@ -100,8 +105,14 @@ export function SettingsList({
       </div>
       <ThemeSwitch />
 
-      {(onTelegram || onRules) && (
+      {(onAvatar || onTelegram || onRules) && (
         <div className="mt-1 border-t border-neutral-800 pt-1">
+          {onAvatar && (
+            <button onClick={onAvatar} className={ROW}>
+              <UserRound className="h-4 w-4" />
+              <span className="flex-1">{t("avatar.change")}</span>
+            </button>
+          )}
           {onTelegram && (
             <button onClick={onTelegram} className={ROW}>
               <Send className="h-4 w-4" />
@@ -141,6 +152,8 @@ export function SettingsList({
 export default function AccountMenu({
   name,
   email,
+  avatar,
+  onAvatar,
   onTelegram,
   onRules,
   onRestart,
@@ -148,6 +161,10 @@ export default function AccountMenu({
 }: {
   name: string | null;
   email: string | null;
+  /** Лицо: выбрано — вместо инициалов. */
+  avatar?: Avatar;
+  /** Открыть выбиралку лиц. Без неё пункт меню не показываем. */
+  onAvatar?: () => void;
   onTelegram?: () => void;
   onRules?: () => void;
   onRestart?: () => void;
@@ -180,9 +197,9 @@ export default function AccountMenu({
         onClick={() => setOpen((v) => !v)}
         aria-label={t("panel.account")}
         aria-expanded={open}
-        className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-neutral-700 bg-neutral-900/60 text-xs font-bold uppercase tracking-wide text-neutral-200 transition hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400"
+        className="cursor-pointer rounded-full transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400"
       >
-        {initials(name, email)}
+        <AvatarView avatar={avatar ?? null} name={name} email={email} size="chip" />
       </button>
 
       {open && (
@@ -197,6 +214,7 @@ export default function AccountMenu({
           )}
           <div className="border-t border-neutral-800" />
           <SettingsList
+            onAvatar={onAvatar}
             onTelegram={
               onTelegram
                 ? () => {

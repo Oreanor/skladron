@@ -96,6 +96,7 @@ import { TEST_RAID_MAX } from "./lobby/limits";
 import { useAttacks } from "./lobby/useAttacks";
 import { InsuranceDialog, LoanDialog, UpgradeDialog } from "./lobby/MoneyDialogs";
 import RaidsPanel, { StatsPanel } from "./lobby/RaidsPanel";
+import AvatarPicker from "./lobby/AvatarPicker";
 import {
   drawDraft,
   drawDropTarget,
@@ -1828,6 +1829,8 @@ export default function Lobby({
     <AccountMenu
       name={account?.name ?? null}
       email={account?.email ?? null}
+      avatar={p.avatar}
+      onAvatar={() => setModal("avatar")}
       onTelegram={() => {
         setModal("telegram");
         setTelegram(null);
@@ -2116,6 +2119,22 @@ export default function Lobby({
           )}
           {!TG_BOT && <p className="mt-2 text-xs text-neutral-500">{t("tg.noBot")}</p>}
         </Modal>
+      )}
+      {modal === "avatar" && (
+        <AvatarPicker
+          avatar={p.avatar}
+          name={p.name || (account?.name ?? null)}
+          email={account?.email ?? null}
+          onPick={async (value) => {
+            try {
+              await repo.setAvatar(p, value);
+              forceRender((v) => v + 1);
+            } catch (e) {
+              setMessage(t("save.rejected", { error: (e as Error).message }));
+            }
+          }}
+          onClose={() => setModal(null)}
+        />
       )}
       {modal === "loan" && (
         <LoanDialog
