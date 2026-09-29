@@ -18,6 +18,8 @@ import { initials } from "./AccountMenu";
 const SIZES = {
   sm: { px: 48, cls: "h-12 w-12 text-sm" },
   lg: { px: 96, cls: "h-24 w-24 text-2xl" },
+  /** Главный кружок в выбиралке: там лицо и есть весь разговор. */
+  xl: { px: 160, cls: "h-40 w-40 text-5xl" },
   /** Кружок в шапке: там места ровно под кнопку. */
   chip: { px: 40, cls: "h-10 w-10 text-xs" },
 } as const;
