@@ -1499,15 +1499,20 @@ function stepBalloons(s: GameState, dt: number) {
     if (cellList) cellList.push(b);
     else at.set(key, [b]);
   }
-  const r2 = BALLOON.radius * BALLOON.radius;
   const popped = new Set<number>();
 
-  /** Первый шар, накрывающий эту точку. Лопнувшие в этом кадре не в счёт. */
-  const hitAt = (x: number, y: number) => {
+  /**
+   * Первый шар, которого коснулось тело радиуса own. Лопнувшие в этом же
+   * кадре не в счёт. Окно берём в две клетки: сумма радиусов больше клетки,
+   * и соседей через одного проверять всё равно придётся.
+   */
+  const hitAt = (x: number, y: number, own: number) => {
+    const reach = BALLOON.radius + own;
+    const r2 = reach * reach;
     const cx = x | 0;
     const cy = y | 0;
-    for (let oy = -1; oy <= 1; oy++) {
-      for (let ox = -1; ox <= 1; ox++) {
+    for (let oy = -2; oy <= 2; oy++) {
+      for (let ox = -2; ox <= 2; ox++) {
         const list = at.get(((cy + oy) << 8) | (cx + ox));
         if (!list) continue;
         for (const b of list) {
@@ -1526,7 +1531,7 @@ function stepBalloons(s: GameState, dt: number) {
   for (let i = s.drones.length - 1; i >= 0; i--) {
     const d = s.drones[i];
     if (d.hit || d.heldBy) continue;
-    const b = hitAt(d.x, d.y);
+    const b = hitAt(d.x, d.y, BALLOON.droneRadius);
     if (!b) continue;
     popped.add(b.id);
     s.booms.push({ x: d.x, y: d.y, t: 0, r: 1.2 });
@@ -1538,7 +1543,7 @@ function stepBalloons(s: GameState, dt: number) {
   // дрон за ним уцелел. Поэтому сплошное заграждение вредит и хозяину.
   for (let i = s.missiles.length - 1; i >= 0; i--) {
     const m = s.missiles[i];
-    const b = hitAt(m.x, m.y);
+    const b = hitAt(m.x, m.y, 0);
     if (!b) continue;
     popped.add(b.id);
     s.booms.push({ x: m.x, y: m.y, t: 0, r: 1 });
@@ -1546,7 +1551,7 @@ function stepBalloons(s: GameState, dt: number) {
   }
   for (let i = s.rockets.length - 1; i >= 0; i--) {
     const m = s.rockets[i];
-    const b = hitAt(m.x, m.y);
+    const b = hitAt(m.x, m.y, 0);
     if (!b) continue;
     popped.add(b.id);
     s.booms.push({ x: m.x, y: m.y, t: 0, r: 1 });
