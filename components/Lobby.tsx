@@ -2278,8 +2278,12 @@ export default function Lobby({
         <div className="space-y-5">
           {p.founded && (
             <div>
+              {/*
+                Шторка и так зовётся «Склад» — повторять это над полем
+                незачем: там стоит имя, о том и заголовок.
+              */}
               <div className="mb-2">
-                <SectionTitle>{t("panel.base")}</SectionTitle>
+                <SectionTitle>{t("panel.baseName")}</SectionTitle>
               </div>
               {baseNameBody}
             </div>

@@ -207,6 +207,7 @@ const en = {
 
 
   "panel.base": "Warehouse",
+  "panel.baseName": "Warehouse name",
   "panel.layout": "Warehouse layout",
   "panel.enemies": "Rivals",
   "panel.stats": "Statistics",

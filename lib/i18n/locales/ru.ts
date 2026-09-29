@@ -206,6 +206,7 @@ const ru: Dict = {
 
 
   "panel.base": "Склад",
+  "panel.baseName": "Название склада",
   "panel.layout": "Разметка склада",
   "panel.enemies": "Враги",
   "panel.stats": "Статистика",

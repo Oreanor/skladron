@@ -206,6 +206,7 @@ const de: Dict = {
 
 
   "panel.base": "Lager",
+  "panel.baseName": "Name des Lagers",
   "panel.layout": "Lagerplanung",
   "panel.enemies": "Gegner",
   "panel.stats": "Statistik",

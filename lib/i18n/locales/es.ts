@@ -206,6 +206,7 @@ const es: Dict = {
 
 
   "panel.base": "Almacén",
+  "panel.baseName": "Nombre del almacén",
   "panel.layout": "Trazado del almacén",
   "panel.enemies": "Rivales",
   "panel.stats": "Estadísticas",
