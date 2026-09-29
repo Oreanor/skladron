@@ -141,6 +141,7 @@ import { PostRaidCommentModal, RaidOpenerModal } from "./lobby/RaidCommentModals
 const TG_BOT = process.env.NEXT_PUBLIC_TELEGRAM_BOT;
 import MapCanvas, { type Pt } from "./MapCanvas";
 import AccountMenu, { SettingsList } from "./AccountMenu";
+import AvatarView from "./Avatar";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 import {
@@ -2294,10 +2295,42 @@ export default function Lobby({
             <div className="mb-2">
               <SectionTitle>{t("panel.account")}</SectionTitle>
             </div>
-            <div className="truncate px-2 text-sm font-semibold text-neutral-100">
-              {account?.name ?? account?.email ?? t("app.localMode")}
-            </div>
+            {/*
+              Лицо здесь же, рядом с именем: на телефоне шапки с аккаунтом
+              нет, и увидеть своё лицо больше негде. По тычку открывается
+              та же выбиралка, что и на десктопе.
+            */}
+            <button
+              type="button"
+              onClick={() => {
+                setSheet(null);
+                setModal("avatar");
+              }}
+              className="flex w-full min-w-0 cursor-pointer items-center gap-3 rounded px-2 py-1 text-left transition hover:bg-neutral-800"
+            >
+              <AvatarView
+                avatar={p.avatar}
+                name={account?.name ?? null}
+                email={account?.email ?? null}
+                size="sm"
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold text-neutral-100">
+                  {account?.name ?? account?.email ?? t("app.localMode")}
+                </span>
+                <span className="block truncate text-xs text-neutral-500">
+                  {t("avatar.change")}
+                </span>
+              </span>
+            </button>
+            {/* Пункта «выбрать аватар» тут нет: он уже кнопкой выше. */}
             <SettingsList
+              onTelegram={() => {
+                setSheet(null);
+                setModal("telegram");
+                setTelegram(null);
+                void repo.telegram().then(setTelegram).catch(() => setTelegram(null));
+              }}
               onRules={() => {
                 setSheet(null);
                 setShowRules(true);
