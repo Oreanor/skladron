@@ -33,7 +33,7 @@ import {
   CELL_COST,
   type UpgradeKind,
 } from "@/lib/economy";
-import { DRONES_PER_CELL } from "@/lib/base";
+import { DRONES_PER_CELL, type GunKind } from "@/lib/base";
 import { ROCKET, SPRAY, TRAP } from "@/lib/tuning";
 import type { AttackOrder } from "@/lib/attack";
 import type { Player } from "@/lib/player";
@@ -49,6 +49,15 @@ export type Tool =
   | "spray"
   | "trap"
   | "drones";
+/**
+ * Инструменты, которые ставят на клетку предмет: у них общий путь — цена
+ * по уровню, круг покрытия, подсветка уже стоящего, перетаскивание.
+ * Списком, а не четырьмя «или» по коду: с ракетницей их стало четверо, и
+ * один забытый «или» уже стоил того, что ракетница не ставилась вовсе.
+ */
+export const isBuildKind = (t: ToolId | null): t is GunKind =>
+  t === "gun" || t === "rocket" || t === "spray" || t === "trap";
+
 /** Кнопка «Апгрейд» карты не касается: она только открывает модалку. */
 export type ToolId = Tool | "upgrade" | "insurance" | "loan";
 /** Панели, которые на телефоне открываются шторкой снизу. */

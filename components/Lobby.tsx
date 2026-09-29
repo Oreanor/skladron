@@ -117,6 +117,7 @@ import {
   PANELS_KEY,
   TOOLS,
   findFoe,
+  isBuildKind,
   readPanels,
   type ModalId,
   type SheetId,
@@ -1182,7 +1183,7 @@ export default function Lobby({
       void buyDepotAt(c.x, c.y);
       return;
     }
-    if (tool === "gun" || tool === "spray" || tool === "trap") {
+    if (isBuildKind(tool)) {
       gunAt(c.x, c.y, tool);
       return;
     }
@@ -1336,7 +1337,7 @@ export default function Lobby({
    * по клеткам, а не по объектам.
    */
   const pickedSpots = (): { cx: number; cy: number }[] => {
-    if (tool === "gun" || tool === "rocket" || tool === "spray" || tool === "trap") {
+    if (isBuildKind(tool)) {
       return p.guns.filter((g) => gunKind(g) === tool);
     }
     if (tool === "drones") {
@@ -1346,8 +1347,7 @@ export default function Lobby({
   };
 
   const coverageFor = (): CoverageKind[] => {
-    if (tool === "gun" || tool === "rocket" || tool === "spray" || tool === "trap")
-      return [tool];
+    if (isBuildKind(tool)) return [tool];
     const from = dragGunRef.current;
     if (!from) return [];
     const g = p.guns.find((item) => item.cx === from.cx && item.cy === from.cy);
@@ -1396,8 +1396,7 @@ export default function Lobby({
 
     // Установки и контейнеры переставляются одинаково: тянем и роняем. Видно
     // и куда можно, и куда нельзя.
-    const placing =
-      tool === "gun" || tool === "spray" || tool === "trap" || dragGunRef.current;
+    const placing = isBuildKind(tool) || dragGunRef.current;
     const stacking = tool === "drones" || draggedDepot;
     if (placing || stacking) {
       drawFreeCells(
