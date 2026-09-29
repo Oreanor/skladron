@@ -1972,7 +1972,7 @@ export default function Lobby({
         Ширина кнопки плывёт: на узком десктопе она ужимается до трёх
         четвертей, и ряд инструментов не съедает высоту, отведённую карте.
       */}
-      <div className="order-3 grid shrink-0 grid-cols-5 gap-1.5 lg:order-2 lg:grid-cols-[repeat(auto-fill,clamp(3.75rem,7.4vw,5rem))] lg:gap-2">
+      <div className="order-3 mx-auto grid w-full max-w-96 shrink-0 grid-cols-5 gap-1.5 lg:order-2 lg:mx-0 lg:max-w-none lg:grid-cols-[repeat(auto-fill,clamp(3.75rem,7.4vw,5rem))] lg:gap-2">
         {TOOLS.map((item) => (
           <ToolButton
             key={item.id}
