@@ -11,11 +11,12 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { Send } from "lucide-react";
 import type { Enemy } from "@/lib/enemy";
 import type { Message } from "@/lib/attack";
 import { useT } from "@/lib/i18n";
 import Avatar from "../Avatar";
-import { Button, Modal, inputClass } from "../ui";
+import { Button, IconButton, Modal, inputClass } from "../ui";
 
 /** Длиннее сервер и не примет: в send_message то же число. */
 export const MESSAGE_MAX = 500;
@@ -93,7 +94,7 @@ export default function MessageDialog({
       onClose={onClose}
       footer={
         <>
-          <div className="flex w-full gap-2">
+          <div className="flex w-full min-w-0 items-center gap-2">
             <input
               value={draft}
               autoFocus
@@ -102,12 +103,17 @@ export default function MessageDialog({
                 if (e.key === "Enter") void send();
               }}
               placeholder={t("chat.placeholder")}
-              className={inputClass}
+              className={`${inputClass} min-w-0 flex-1`}
               maxLength={MESSAGE_MAX}
             />
-            <Button variant="build" disabled={busy || !draft.trim()} onClick={() => void send()}>
-              {t("chat.send")}
-            </Button>
+            <IconButton
+              label={t("chat.send")}
+              disabled={busy || !draft.trim()}
+              onClick={() => void send()}
+              className="h-9 w-9 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Send className="h-4 w-4" />
+            </IconButton>
           </div>
           <Button onClick={onClose}>{t("common.close")}</Button>
         </>

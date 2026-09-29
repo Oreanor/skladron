@@ -389,7 +389,7 @@ export function Modal({
           {children}
         </div>
         {footer && (
-          <div className="shrink-0 border-t border-neutral-800 px-8 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-12 sm:pb-3">
+          <div className="shrink-0 border-t border-neutral-800 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:pb-3">
             <div className="flex flex-col items-center gap-2 [&>*]:max-w-full">
               {footer}
             </div>
