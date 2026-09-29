@@ -75,29 +75,46 @@ export function drawBalloons(
   balloons: { id: number; x: number; y: number }[],
   cell: number
 ) {
+  const r = cell * 0.5;
+
+  // Тела одним проходом: цвет у всех один, а смена fillStyle стоит дороже
+  // самой заливки — шаров над складом бывают сотни.
+  ctx.beginPath();
   for (const b of balloons) {
-    const x = b.x * cell;
-    const y = b.y * cell;
-    const r = cell * 0.5;
-    const tint = COLORS.balloon[b.id % COLORS.balloon.length];
-
-    ctx.globalAlpha = 0.45;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fillStyle = tint;
-    ctx.fill();
-    ctx.globalAlpha = 1;
-
-    ctx.strokeStyle = COLORS.balloonLine;
-    ctx.lineWidth = Math.max(1, cell * 0.12);
-    ctx.stroke();
-
-    // Блик — по нему шар читается шаром, а не просто кружком.
-    ctx.beginPath();
-    ctx.arc(x - r * 0.3, y - r * 0.35, r * 0.22, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-    ctx.fill();
+    ctx.moveTo(b.x * cell + r, b.y * cell);
+    ctx.arc(b.x * cell, b.y * cell, r, 0, Math.PI * 2);
   }
+  ctx.globalAlpha = 0.9;
+  ctx.fillStyle = COLORS.balloon;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = COLORS.balloonDark;
+  ctx.lineWidth = Math.max(1, cell * 0.14);
+  ctx.stroke();
+
+  // Пипка снизу: сверху её видно кружком у самого края, и именно она
+  // отличает надутый шар от пузыря.
+  ctx.beginPath();
+  for (const b of balloons) {
+    const nx = b.x * cell;
+    const ny = b.y * cell + r * 0.78;
+    ctx.moveTo(nx + r * 0.2, ny);
+    ctx.arc(nx, ny, r * 0.2, 0, Math.PI * 2);
+  }
+  ctx.fillStyle = COLORS.balloonDark;
+  ctx.fill();
+
+  // Блик серпом по верхнему левому боку — тем же одним путём.
+  ctx.beginPath();
+  for (const b of balloons) {
+    ctx.moveTo(b.x * cell, b.y * cell);
+    ctx.arc(b.x * cell, b.y * cell, r * 0.62, Math.PI * 1.05, Math.PI * 1.55);
+  }
+  ctx.strokeStyle = COLORS.balloonGlare;
+  ctx.lineWidth = Math.max(1, cell * 0.16);
+  ctx.lineCap = "round";
+  ctx.stroke();
+  ctx.lineCap = "butt";
 }
 
 /**
