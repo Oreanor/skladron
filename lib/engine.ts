@@ -928,6 +928,15 @@ function captureTraps(s: GameState, dt: number) {
 
 /** Вылеты по расписанию. */
 function stepSpawns(s: GameState) {
+  // Защищать больше нечего — остаток роя не поднимаем. Иначе бой тянулся бы
+  // ещё полминуты, пока расписание не кончится, а на карте бы ничего не
+  // происходило: дроны без целой клетки исчезают в тот же кадр. В счёт они
+  // идут прорвавшимися — налёт своего добился.
+  if (s.baseOk <= 0) {
+    s.result.leaked += s.plan.length - s.planAt;
+    s.planAt = s.plan.length;
+    return;
+  }
   while (s.planAt < s.plan.length && s.plan[s.planAt].at <= s.time) {
     spawnDrone(s, s.plan[s.planAt]);
     s.planAt++;
@@ -1240,6 +1249,10 @@ function stepMissiles(s: GameState, dt: number) {
       s.missiles.splice(i, 1);
       continue;
     }
+    if (!s.drones.length) {
+      s.missiles.splice(i, 1);
+      continue;
+    }
     // Сбитый пулемётом дрон ещё планирует к земле, но он уже посчитан:
     // ракета его больше не видит, иначе один дрон уходил бы в счёт дважды —
     // и сумма сбитых переваливала за размер роя.
@@ -1327,6 +1340,12 @@ function stepRockets(s: GameState, dt: number) {
       continue;
     }
 
+    // Роя не стало — ракете не за кем гнаться, и держать ею конец боя
+    // незачем: догорает на месте.
+    if (!s.drones.length) {
+      s.rockets.splice(i, 1);
+      continue;
+    }
     // Цель не закреплена: кто ближе к самой ракете, на того и доворот.
     const t = nearestDrone(s, m.x, m.y, Infinity);
     if (t) {
@@ -1447,12 +1466,18 @@ export function update(s: GameState, dt: number) {
   stepEffects(s, dt);
 
   // --- конец боя ---
-  if (s.baseOk <= 0) {
-    s.phase = "lost";
-    return;
-  }
-  const done = s.planAt >= s.plan.length && s.drones.length === 0 && s.fire.size === 0;
-  if (done) s.phase = "won";
+  // Кончается он ровно тогда, когда смотреть больше не на что: расписание
+  // отработано, в воздухе пусто и нигде не горит. Падение склада бой само
+  // по себе не обрывает — раньше обрывало, и защитник получал экран итогов
+  // поверх горящего склада и подлетающего роя. Оно лишь решает, чем бой
+  // кончился: осталась хоть одна целая клетка — отбились.
+  const quiet =
+    s.planAt >= s.plan.length &&
+    s.drones.length === 0 &&
+    s.fire.size === 0 &&
+    s.rockets.length === 0 &&
+    s.missiles.length === 0;
+  if (quiet) s.phase = s.baseOk > 0 ? "won" : "lost";
 }
 
 /** Итоговая карта для склада: то, что горело, считается сгоревшим. */
@@ -1480,7 +1505,9 @@ export function settle(s: GameState) {
           ? { cx: g.cx, cy: g.cy, kind: "trap" as const }
           : g.spray
             ? { cx: g.cx, cy: g.cy, kind: "spray" as const }
-            : { cx: g.cx, cy: g.cy }
+            : g.rocket
+              ? { cx: g.cx, cy: g.cy, kind: "rocket" as const }
+              : { cx: g.cx, cy: g.cy }
       ),
     depots: s.depots.map((d) => ({ ...d })),
     result: s.result,

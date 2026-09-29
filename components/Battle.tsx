@@ -295,7 +295,8 @@ export default function Battle({
                       done.result.gunsLost,
                       insuranceLevel,
                       done.result.spraysLost,
-                      done.result.trapsLost
+                      done.result.trapsLost,
+                      done.result.rocketsLost
                     )
                   )} ${t("battle.creditsSuffix")}`}
                 />
@@ -315,6 +316,7 @@ export default function Battle({
                 <Row label={t("battle.extinguished")} value={String(done.result.extinguished)} />
                 <Row label={t("battle.dronesLost")} value={String(done.result.dronesLost)} />
                 <Row label={t("battle.gunsLost")} value={String(done.result.gunsLost)} />
+                <Row label={t("battle.rocketsLost")} value={String(done.result.rocketsLost)} />
                 <Row label={t("battle.spraysLost")} value={String(done.result.spraysLost)} />
                 <Row label={t("battle.trapsLost")} value={String(done.result.trapsLost)} />
               </dl>
