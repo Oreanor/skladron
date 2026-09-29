@@ -18,6 +18,7 @@ import type { AttackReport } from "@/lib/attack";
 import type { Player } from "@/lib/player";
 import type { Repo } from "@/lib/repo";
 import type { Key } from "@/lib/i18n/dict";
+import { notifyBattle } from "@/lib/notify";
 
 /** Как часто спрашиваем сервер, не летит ли к нам что-нибудь. */
 const POLL_MS = 10_000;
@@ -111,6 +112,9 @@ export function useAttacks(o: AttacksOptions): Attacks {
         if (met) void repo.saveEnemies(cur).catch(() => {});
 
         setReports(state.reports);
+        for (const a of state.incoming) {
+          if (a.remote) notifyBattle(a.id, "sent");
+        }
         refresh();
       } catch {
         // Сеть может кратко пропасть — следующий опрос повторит попытку.

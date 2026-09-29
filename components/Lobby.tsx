@@ -30,13 +30,7 @@ import {
   CELL_COST,
   STARTER_SIDE,
   DRONE_UNIT_COST,
-  INSURANCE_CELL,
-  MAX_INSURANCE_LEVEL,
-  LOAN_HOURS,
-  LOAN_MAX,
   LOAN_MIN,
-  LOAN_RATE,
-  LOAN_STEP,
   SALE_MULTIPLIER,
   SHIFT_HOURS,
   SCRAP_REWARD,
@@ -44,14 +38,12 @@ import {
   loanDebt,
   goodsValue,
   insurance,
-  insuranceShare,
   GUN_COST,
   SPRAY_COST,
   TRAP_COST,
   MIN_BASE_CELLS,
   REPAIR_COST,
   maxLevel,
-  UPGRADE_KINDS,
   upgradeCost,
   type UpgradeKind,
   fmt,
@@ -102,6 +94,8 @@ import AttackReportDialog from "./lobby/AttackReportDialog";
 import BaseName from "./lobby/BaseName";
 import { TEST_RAID_MAX } from "./lobby/limits";
 import { useAttacks } from "./lobby/useAttacks";
+import { InsuranceDialog, LoanDialog, UpgradeDialog } from "./lobby/MoneyDialogs";
+import RaidsPanel, { StatsPanel } from "./lobby/RaidsPanel";
 import {
   drawDraft,
   drawDropTarget,
@@ -140,8 +134,6 @@ import AccountMenu, { SettingsList } from "./AccountMenu";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 import {
-  Play,
-  Trash2,
 } from "lucide-react";
 import {
   decodeRle,
@@ -159,11 +151,9 @@ import {
   NameDialog,
   Modal,
   Panel,
-  Row,
   SectionTitle,
   MESSAGE_MS,
   Sheet,
-  StatRow,
   ToolButton,
 } from "./ui";
 
@@ -1629,187 +1619,8 @@ export default function Lobby({
     </>
   );
 
-  const upgradeBody = (
-    <>
-      <div className="space-y-2">
-        {UPGRADE_KINDS.map((kind) => {
-          const level = p.levels[kind];
-          const maxed = level >= maxLevel(kind);
-          const cost = upgradeCost(level);
-          return (
-            <div key={kind} className="flex items-center justify-between gap-3">
-              <span className="min-w-0 truncate text-neutral-200">
-                {t(`upgrade.${kind}` as Key)}
-                <span className="ml-2 font-mono text-xs text-amber-300">
-                  {t("upgrade.level", { level })}
-                </span>
-              </span>
-              <Button
-                variant="build"
-                size="sm"
-                disabled={maxed || p.credits < cost}
-                onClick={() => doUpgrade(kind)}
-              >
-                {maxed ? t("upgrade.max") : t("upgrade.buy", { cost: fmt(cost) })}
-              </Button>
-            </div>
-          );
-        })}
-      </div>
-    </>
-  );
-
-  const insuranceFooter = (
-    <div className="flex gap-2">
-      {p.levels.insurance < MAX_INSURANCE_LEVEL && (
-        <Button
-          variant="build"
-          className="flex-1"
-          disabled={p.credits < upgradeCost(p.levels.insurance)}
-          onClick={() => doUpgrade("insurance")}
-        >
-          {t("upgrade.buy", { cost: fmt(upgradeCost(p.levels.insurance)) })}
-        </Button>
-      )}
-      <Button
-        className={p.levels.insurance < MAX_INSURANCE_LEVEL ? "" : "flex-1"}
-        onClick={() => setModal(null)}
-      >
-        {t("common.ok")}
-      </Button>
-    </div>
-  );
-
-  const insuranceBody = (
-    <>
-      <div className="space-y-2 text-sm text-neutral-300">
-        <p>{t("insurance.cells", { cost: INSURANCE_CELL })}</p>
-        <p>
-          {p.levels.insurance > 1
-            ? t("insurance.covers", {
-                share: Math.round(insuranceShare(p.levels.insurance) * 100),
-              })
-            : t("insurance.basic")}
-        </p>
-        <p className="text-neutral-500">
-          {p.levels.insurance >= MAX_INSURANCE_LEVEL
-            ? t("insurance.full")
-            : t("insurance.next", {
-                share: Math.round(insuranceShare(p.levels.insurance + 1) * 100),
-                cost: fmt(upgradeCost(p.levels.insurance)),
-              })}
-        </p>
-      </div>
-    </>
-  );
-
   const activeTool = TOOLS.find((item) => item.id === tool) ?? TOOLS[0];
 
-  /** Сколько осталось до возврата — часами и минутами. */
-  const loanLeft = p.loanDue ? p.loanDue - now : 0;
-  const hoursLeft = () => {
-    const total = Math.max(0, Math.ceil(loanLeft / 60000));
-    return t("loan.left", {
-      h: Math.floor(total / 60),
-      m: String(total % 60).padStart(2, "0"),
-    });
-  };
-
-  const loanFooter = p.loan > 0 ? (
-    <div className="flex gap-2">
-      <Button
-        variant="build"
-        className="flex-1"
-        disabled={p.credits < p.loan}
-        onClick={repayLoan}
-      >
-        {t("loan.repay", { debt: fmt(p.loan) })}
-      </Button>
-      <Button onClick={() => setModal(null)}>{t("common.ok")}</Button>
-    </div>
-  ) : (
-    <div className="flex gap-2">
-      <Button variant="build" className="flex-1" onClick={takeLoan}>
-        {t("loan.take", { amount: fmt(loanAmount) })}
-      </Button>
-      <Button onClick={() => setModal(null)}>{t("common.cancel")}</Button>
-    </div>
-  );
-
-  const loanBody =
-    p.loan > 0 ? (
-      <div className="space-y-2 text-sm text-neutral-300">
-        <p>{t("loan.owed", { debt: fmt(p.loan) })}</p>
-        <p className="font-mono text-neutral-400">{hoursLeft()}</p>
-        <p className="text-neutral-500">{t("loan.overdue", { rate: LOAN_RATE })}</p>
-      </div>
-    ) : (
-      <div className="space-y-3 text-sm text-neutral-300">
-        <p className="text-neutral-400">
-          {t("loan.explain", { hours: LOAN_HOURS, rate: LOAN_RATE })}
-        </p>
-        <input
-          type="range"
-          min={LOAN_MIN}
-          max={LOAN_MAX}
-          step={LOAN_STEP}
-          value={loanAmount}
-          onChange={(e) => setLoanAmount(Number(e.target.value))}
-          className="h-8 w-full cursor-pointer accent-emerald-500"
-          aria-label={t("loan.amount")}
-        />
-        <dl className="space-y-1 font-mono">
-          <Row label={t("loan.amount")} value={fmt(loanAmount)} />
-          <Row label={t("loan.debt")} value={fmt(loanDebt(loanAmount))} />
-        </dl>
-      </div>
-    );
-
-  const incomingRows = (
-    <>
-      {p.incoming.map((a, i) => {
-        const first = i === 0;
-        const edge = a.pattern === "lines" ? ` ${t(`edge.${a.direction}` as Key)}` : "";
-        return (
-          <li
-            key={a.id}
-            className={`flex items-center justify-between gap-2 ${first ? "" : "opacity-60"}`}
-          >
-            <div className="min-w-0">
-              <div className="truncate text-neutral-200">
-                <span className="text-red-300">{t("replays.incoming")}</span> {a.from}
-              </div>
-              <div className="font-mono text-[11px] text-neutral-500">
-                {t("attacks.dronesPattern", {
-                  drones: a.drones,
-                  pattern: t(`pattern.${a.pattern}` as Key).toLowerCase(),
-                })}
-                {edge}
-                {" · "}
-                {first ? t("attacks.ready") : t("attacks.queued", { position: i + 1 })}
-              </div>
-            </div>
-            <Button
-              variant="danger"
-              size="sm"
-              className="shrink-0"
-              disabled={!first || intact === 0}
-              title={first ? undefined : t("attacks.defendFirst")}
-              onClick={() => void defend(a)}
-            >
-              {t("attacks.defend")}
-            </Button>
-          </li>
-        );
-      })}
-    </>
-  );
-
-  /**
-   * Пойти отбиваться. Сперва досохраняем склад: итог настоящего боя считает
-   * сервер по своей копии, и если она отстала от нашей, он посчитает не тот
-   * бой, который увидит игрок, — а верным окажется его счёт, не наш.
-   */
   const defend = async (order: AttackOrder) => {
     setSheet(null);
     await flushPersist();
@@ -1832,6 +1643,16 @@ export default function Lobby({
     }
     setBattle(order);
   };
+
+  // Журнал собираем один раз: он идёт и в боковую колонку, и в шторку.
+  const raidsBody = (
+    <RaidsPanel
+      incoming={p.incoming}
+      raids={raids}
+      onWatch={(r) => void openReplay(r)}
+      onHide={(id) => void hideRaid(id)}
+    />
+  );
 
   const summonButton = (
     <Button size="sm" onClick={() => setTestRaid(true)}>
@@ -1864,79 +1685,13 @@ export default function Lobby({
     />
   );
 
-  const raidsBody =
-    raids.length === 0 && p.incoming.length === 0 ? (
-      <p className="text-neutral-500">{t("replays.empty")}</p>
-    ) : (
-      // Показываем три боя, остальное — прокруткой: журнал не должен
-      // выдавливать список врагов за край экрана.
-      <ul className="max-h-[10.5rem] space-y-2 overflow-y-auto overscroll-contain pr-1">
-        {incomingRows}
-        {raids.map((r) => (
-          <li key={r.id} className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <div className={`truncate ${r.pending ? "text-neutral-400" : "text-neutral-200"}`}>
-                <span className={r.side === "attack" ? "text-red-300" : "text-sky-300"}>
-                  {t(r.side === "attack" ? "replays.attack" : "replays.defence")}
-                </span>{" "}
-                {r.foe}
-              </div>
-              <div className="font-mono text-[11px] text-neutral-500">
-                {r.pending
-                  ? t("replays.pending", { drones: r.drones })
-                  : t("replays.line", { drones: r.drones, burned: fmt(r.burned) })}
-                {!r.pending && r.side === "attack" && r.loot > 0
-                  ? ` · +${fmt(r.loot)} ${t("battle.creditsSuffix")}`
-                  : ""}
-              </div>
-            </div>
-            {/* пока налёт в пути, смотреть и убирать нечего */}
-            {!r.pending && (
-              <div className="flex shrink-0 gap-1">
-                {r.hasReplay && (
-                  <IconButton
-                    label={t("replay.watch")}
-                    title={t("replay.watch")}
-                    className="h-8 w-8"
-                    onClick={() => void openReplay(r)}
-                  >
-                    <Play className="h-4 w-4" />
-                  </IconButton>
-                )}
-                <IconButton
-                  label={t("replays.hide")}
-                  title={t("replays.hide")}
-                  className="h-8 w-8"
-                  onClick={() => void hideRaid(r.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </IconButton>
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
-    );
-
-  const statsBody = (
-    <div className="space-y-1 font-mono text-xs text-neutral-400">
-      <StatRow label={t("stats.battles")} value={p.stats.battles} />
-      <StatRow label={t("stats.dronesKilled")} value={p.stats.dronesKilled} />
-      <StatRow label={t("stats.cellsBurned")} value={p.stats.cellsBurned} />
-      <StatRow label={t("stats.cellsRepaired")} value={p.stats.cellsRepaired} />
-      <StatRow label={t("stats.wipes")} value={p.stats.wipes} />
-      <StatRow label={t("stats.raids")} value={p.stats.raids} />
-      <StatRow label={t("stats.looted")} value={p.stats.looted} />
-    </div>
-  );
-
   const SIDE_PANELS: Record<
     string,
     { title: Key; action?: ReactNode; body: ReactNode }
   > = {
     enemies: { title: "panel.enemies", body: enemiesBody },
     replays: { title: "panel.replays", action: summonButton, body: raidsBody },
-    stats: { title: "panel.stats", body: statsBody },
+    stats: { title: "panel.stats", body: <StatsPanel stats={p.stats} /> },
   };
 
   const baseNameBody = (
@@ -2363,35 +2118,21 @@ export default function Lobby({
         </Modal>
       )}
       {modal === "loan" && (
-        <Modal
-          title={t("loan.title")}
-          footer={loanFooter}
+        <LoanDialog
+          player={p}
+          now={now}
+          amount={loanAmount}
+          onAmount={setLoanAmount}
+          onTake={takeLoan}
+          onRepay={repayLoan}
           onClose={() => setModal(null)}
-        >
-          {loanBody}
-        </Modal>
+        />
       )}
       {modal === "insurance" && (
-        <Modal
-          title={`${t("tool.insurance")} · ${t("upgrade.level", { level: p.levels.insurance })}`}
-          footer={insuranceFooter}
-          onClose={() => setModal(null)}
-        >
-          {insuranceBody}
-        </Modal>
+        <InsuranceDialog player={p} onUpgrade={doUpgrade} onClose={() => setModal(null)} />
       )}
       {modal === "upgrade" && (
-        <Modal
-          title={t("tool.upgrade")}
-          onClose={() => setModal(null)}
-          footer={
-            <Button variant="neutral" block onClick={() => setModal(null)}>
-              {t("common.ok")}
-            </Button>
-          }
-        >
-          {p.founded ? upgradeBody : <p className="text-neutral-500">{t("base.foundFirst")}</p>}
-        </Modal>
+        <UpgradeDialog player={p} onUpgrade={doUpgrade} onClose={() => setModal(null)} />
       )}
 
       <Sheet open={sheet === "attacks"} title={t("panel.replays")} onClose={() => setSheet(null)}>
@@ -2415,7 +2156,7 @@ export default function Lobby({
             <div className="mb-2">
               <SectionTitle>{t("panel.stats")}</SectionTitle>
             </div>
-            {statsBody}
+            <StatsPanel stats={p.stats} />
           </div>
           <div>
             <div className="mb-2">

@@ -19,9 +19,11 @@ type AttackRow = {
   attacker_id: string;
   defender_id: string;
   status: string;
+  drones: number;
   result: unknown;
   loot: number | null;
   destroyed: boolean;
+  sent_notified_at: string | null;
   resolved_notified_at: string | null;
 };
 
@@ -38,6 +40,58 @@ async function send(chatId: number, text: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
   });
+}
+
+/** Текст защитнику: на склад летит новый налёт. */
+export function sentRaidMessage(attackerName: string, drones: number): string {
+  return (
+    `На твой склад летит налёт от «${attackerName}» — ${drones} дронов. ` +
+    `Отбивай, когда готов: очередь не пропускается. ${SITE}`
+  );
+}
+
+/**
+ * Атомарно занимает sent_notified_at и шлёт защитнику, если привязан Telegram.
+ * Без tg_chat_id слот не трогаем — после привязки можно повторить.
+ */
+export async function notifySentRaid(
+  db: SupabaseClient,
+  attackId: string
+): Promise<{ sent: boolean; error?: string }> {
+  const { data: attack, error: loadError } = await db
+    .from("attacks")
+    .select("id, attacker_id, defender_id, drones, status, sent_notified_at")
+    .eq("id", attackId)
+    .maybeSingle<AttackRow>();
+  if (loadError) return { sent: false, error: loadError.message };
+  if (!attack || attack.status !== "pending") return { sent: false };
+  if (attack.sent_notified_at) return { sent: false };
+
+  const { data: people } = await db
+    .from("profiles")
+    .select("id, base_name, display_name, email, tg_chat_id")
+    .in("id", [attack.defender_id, attack.attacker_id]);
+  const defender = people?.find((p) => p.id === attack.defender_id) as ProfileRow | undefined;
+  const attacker = people?.find((p) => p.id === attack.attacker_id) as ProfileRow | undefined;
+  if (!defender?.tg_chat_id || !attacker) return { sent: false };
+
+  const stamp = new Date().toISOString();
+  const { data: claimed, error: claimError } = await db
+    .from("attacks")
+    .update({ sent_notified_at: stamp })
+    .eq("id", attackId)
+    .eq("status", "pending")
+    .is("sent_notified_at", null)
+    .select("id")
+    .maybeSingle();
+  if (claimError) return { sent: false, error: claimError.message };
+  if (!claimed) return { sent: false };
+
+  await send(
+    Number(defender.tg_chat_id),
+    sentRaidMessage(nameOf(attacker), attack.drones)
+  );
+  return { sent: true };
 }
 
 /** Текст для нападающего: исход с его точки зрения. */
