@@ -129,12 +129,33 @@ language sql immutable as $$
 $$;
 
 -- Сколько в контейнерах лежит именно этого вида. Вид не указан — считается
--- обычным: так читаются ящики, заведённые до появления «Дронов+».
+-- обычным. kind=scout — наследие: считаем его basic, иначе клиентская
+-- нормализация «scout → basic» выглядит как покупка дронов и save_base
+-- отвечает 400 на любой перенос пушки/ловушки.
 create or replace function depot_sum_kind(d jsonb, want text) returns int
 language sql immutable as $$
   select coalesce(sum((e->>'n')::int), 0)::int
     from jsonb_array_elements(coalesce(d, '[]'::jsonb)) e
-   where coalesce(e->>'kind', 'basic') = want;
+   where case
+           when want = 'basic' then coalesce(e->>'kind', 'basic') in ('basic', 'scout')
+           when want = 'scout' then false
+           else coalesce(e->>'kind', 'basic') = want
+         end;
+$$;
+
+-- Убираем kind=scout у контейнеров: разведка теперь тратит обычные дроны.
+create or replace function normalize_depots(d jsonb) returns jsonb
+language sql immutable as $$
+  select coalesce(
+    (
+      select jsonb_agg(
+               case when coalesce(e->>'kind', 'basic') = 'scout' then e - 'kind' else e end
+               order by ord
+             )
+        from jsonb_array_elements(coalesce(d, '[]'::jsonb)) with ordinality as t(e, ord)
+    ),
+    '[]'::jsonb
+  );
 $$;
 
 -- Никакой вид не должен меняться, кроме одного разрешённого: иначе покупкой
@@ -250,7 +271,14 @@ create or replace function battle_depots_valid(
             from jsonb_array_elements(coalesce(before, '[]'::jsonb)) b
            where (b->>'cx')::int = (a->>'cx')::int
              and (b->>'cy')::int = (a->>'cy')::int
-             and coalesce(b->>'kind', 'basic') = coalesce(a->>'kind', 'basic')
+             and case
+                   when coalesce(b->>'kind', 'basic') in ('basic', 'scout') then 'basic'
+                   else coalesce(b->>'kind', 'basic')
+                 end
+               = case
+                   when coalesce(a->>'kind', 'basic') in ('basic', 'scout') then 'basic'
+                   else coalesce(a->>'kind', 'basic')
+                 end
              and (b->>'n')::int >= (a->>'n')::int
         )
      );
@@ -461,6 +489,16 @@ update bases
      from jsonb_array_elements(drone_cells) e
    )
  where drone_cells @> '[{"kind":"plus"}]'::jsonb;
+
+-- Разведчики больше не отдельный склад: оставшиеся kind=scout → обычные дроны.
+-- Без этого save_base падает на depots_only_changed после клиентской нормализации.
+update bases
+   set drone_cells = normalize_depots(drone_cells)
+ where exists (
+   select 1
+     from jsonb_array_elements(drone_cells) e
+    where e->>'kind' = 'scout'
+ );
 alter table profiles add column if not exists enemies jsonb not null default '[]'::jsonb;
 
 alter table profiles alter column stats set default
@@ -970,8 +1008,8 @@ begin
   -- Цену берём с учётом уровня, ту же, по какой товар и покупался: иначе
   -- прокачка съедала бы маржу — на десятом уровне дрон обходился в 47, а
   -- уходил за те же 50.
-  drones_out := depot_sum_kind(cur_depots, 'basic')
-              + depot_sum_kind(cur_depots, 'scout');
+  -- scout уже входит в basic (см. depot_sum_kind); отдельно не суммируем
+  drones_out := depot_sum_kind(cur_depots, 'basic');
   scouts_out := 0;
   sale := drones_out * price_at(price('drone'), coalesce((prof.levels->>'drones')::int, 1))
          * price('sale');
@@ -1029,6 +1067,11 @@ begin
   select b.cells, b.guns, b.drone_cells into cur, cur_guns, cur_depots
     from bases b where b.user_id = uid for update;
   if cur is null then raise exception 'no base'; end if;
+
+  -- kind=scout больше не принимаем: и снимок, и присланное приводим к basic,
+  -- иначе перенос пушки/ловушки выглядит как смена состава склада.
+  cur_depots := normalize_depots(cur_depots);
+  new_depots := normalize_depots(new_depots);
 
   -- Пока сервер считает настоящий налёт по снимку, склад нельзя менять:
   -- иначе итог боя наложится на уже купленное или разъедется со слепком.
@@ -1192,6 +1235,9 @@ begin
     from bases b where b.user_id = uid for update;
   if cur is null then raise exception 'no base'; end if;
 
+  cur_depots := normalize_depots(cur_depots);
+  new_depots := normalize_depots(new_depots);
+
   if exists (
     select 1 from attacks a
      where a.defender_id = uid
@@ -1258,6 +1304,9 @@ begin
   select b.cells, b.guns, b.drone_cells into cur, cur_guns, cur_depots
     from bases b where b.user_id = uid for update;
   if cur is null then raise exception 'no base'; end if;
+
+  cur_depots := normalize_depots(cur_depots);
+  new_depots := normalize_depots(new_depots);
 
   for i in 0..9999 loop
     old_v := get_byte(cur, i);

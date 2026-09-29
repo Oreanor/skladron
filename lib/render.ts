@@ -4,6 +4,7 @@ import {
   G_BURNT,
   G_FIRE,
   G_SCORCH,
+  gunKind,
   type Gun,
 } from "./base";
 import {
@@ -118,10 +119,11 @@ export function drawStatic(
 
   for (const g of s.guns) {
     const angle = Math.atan2(g.cy + 0.5 - GRID / 2, g.cx + 0.5 - GRID / 2);
+    const kind = gunKind(g as Gun);
     // Ствол смотрит наружу от середины склада, пока не начался бой: в бою
     // поверх этого слоя рисуется живая башня со своим углом.
-    if (g.kind === "spray") drawSpray(ctx, g.cx, g.cy, cell, angle, 0, g.alive !== false);
-    else if (g.kind === "trap") drawTrap(ctx, g.cx, g.cy, cell, g.alive !== false);
+    if (kind === "spray") drawSpray(ctx, g.cx, g.cy, cell, angle, 0, g.alive !== false);
+    else if (kind === "trap") drawTrap(ctx, g.cx, g.cy, cell, g.alive !== false);
     else drawTurret(ctx, g.cx, g.cy, cell, angle, g.alive !== false);
   }
 }

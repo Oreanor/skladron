@@ -54,6 +54,18 @@ export function normalizeDepots(depots: Depot[]): Depot[] {
   });
 }
 
+/**
+ * Пушки/огнетушители/ловушки для save_base: только cx/cy/kind.
+ * Лишние поля (alive, trap, spray и т.п.) сервер в guns_valid отвергает —
+ * тогда save_base падает, reloadBase откатывает перенос.
+ */
+export function sanitizeGuns(guns: Gun[]): Gun[] {
+  return guns.map((g) => {
+    const kind = gunKind(g);
+    return kind === "gun" ? { cx: g.cx, cy: g.cy } : { cx: g.cx, cy: g.cy, kind };
+  });
+}
+
 /** Клетки, куда можно поставить контейнер: целые, без пушки и без склада. */
 export function freeCells(cells: Uint8Array, guns: Gun[], depots: Depot[]) {
   const taken = new Set<number>();

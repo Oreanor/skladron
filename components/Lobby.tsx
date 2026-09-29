@@ -13,6 +13,7 @@ import {
   countFreeCells,
   countKind,
   gunKind,
+  sanitizeGuns,
   type GunKind,
   isWhole,
   scrapRect,
@@ -85,7 +86,15 @@ import {
 } from "@/lib/enemy";
 import type { Account } from "./AuthGate";
 import Enemies from "./Enemies";
-import { drawCoverage, drawDepots, type CoverageKind, type View } from "@/lib/render";
+import {
+  drawCoverage,
+  drawDepots,
+  drawSpray,
+  drawTrap,
+  drawTurret,
+  type CoverageKind,
+  type View,
+} from "@/lib/render";
 import { gunRange, sprayRange, trapRange } from "@/lib/engine";
 import Battle, { type BattleOutcome } from "./Battle";
 import TestRaidDialog from "./lobby/TestRaidDialog";
@@ -239,7 +248,7 @@ export default function Lobby({
   const paintingRef = useRef(false);
   // раскладка контейнеров
   const dragDepotRef = useRef<{ cx: number; cy: number } | null>(null);
-  const dragGunRef = useRef<{ cx: number; cy: number } | null>(null);
+  const dragGunRef = useRef<{ cx: number; cy: number; kind: GunKind } | null>(null);
 
   /** Пишем склад с задержкой: на сервере это одна проверяемая операция. */
   /**
@@ -498,8 +507,15 @@ export default function Lobby({
   // Сцена собирается на каждом React-обновлении. Это важно для ремонта и
   // drag-and-drop: там массив клеток/контейнеров заменяется целиком, чтобы
   // canvas гарантированно получил новое состояние, а не старую ссылку.
+  const dragGun = dragGunRef.current;
   const scene = p
-    ? { cells: p.cells, guns: p.guns, depots: p.depots }
+    ? {
+        cells: p.cells,
+        guns: dragGun
+          ? p.guns.filter((g) => g.cx !== dragGun.cx || g.cy !== dragGun.cy)
+          : p.guns,
+        depots: p.depots,
+      }
     : { cells: new Uint8Array(0), guns: [], depots: [] };
 
   if (!ready || !p) {
@@ -883,7 +899,7 @@ export default function Lobby({
   };
 
   /** Перетаскивание пушки на другую целую клетку. Деньги при этом не трогаем. */
-  const moveGun = (from: { cx: number; cy: number }, x: number, y: number) => {
+  const moveGun = (from: { cx: number; cy: number; kind: GunKind }, x: number, y: number) => {
     if (x < 0 || y < 0 || x >= GRID || y >= GRID) return;
     if (p.cells[idx(x, y)] !== G_BASE) {
       setMessage(t("gun.onlyIntact"));
@@ -897,9 +913,13 @@ export default function Lobby({
       setMessage(t("gun.cellBusy"));
       return;
     }
-    const at = p.guns.findIndex((g) => g.cx === from.cx && g.cy === from.cy);
+    const at = p.guns.findIndex(
+      (g) => g.cx === from.cx && g.cy === from.cy && gunKind(g) === from.kind
+    );
     if (at < 0) return;
-    p.guns = p.guns.map((g, i) => (i === at ? { ...g, cx: x, cy: y } : g));
+    p.guns = sanitizeGuns(
+      p.guns.map((g, i) => (i === at ? { ...g, cx: x, cy: y } : g))
+    );
     touch();
   };
 
@@ -1127,7 +1147,7 @@ export default function Lobby({
     }
     const gun = p.guns.find((q) => q.cx === c.x && q.cy === c.y);
     if (gun) {
-      dragGunRef.current = { cx: gun.cx, cy: gun.cy };
+      dragGunRef.current = { cx: gun.cx, cy: gun.cy, kind: gunKind(gun) };
       forceRender((v) => v + 1);
       return;
     }
@@ -1366,6 +1386,21 @@ export default function Lobby({
           (item) => item.cx === draggedDepot.cx && item.cy === draggedDepot.cy
         );
         if (source) drawDepots(ctx, [{ ...source, cx: hx, cy: hy }], cell, !ok);
+      }
+      if (dragGunRef.current) {
+        const from = dragGunRef.current;
+        const source = p.guns.find(
+          (g) => g.cx === from.cx && g.cy === from.cy && gunKind(g) === from.kind
+        );
+        if (source) {
+          const kind = gunKind(source);
+          const px = onMap(hx, hy) ? hx : from.cx;
+          const py = onMap(hx, hy) ? hy : from.cy;
+          const angle = Math.atan2(py + 0.5 - GRID / 2, px + 0.5 - GRID / 2);
+          if (kind === "spray") drawSpray(ctx, px, py, cell, angle, 0, ok);
+          else if (kind === "trap") drawTrap(ctx, px, py, cell, ok);
+          else drawTurret(ctx, px, py, cell, angle, ok);
+        }
       }
       drawDropTarget(ctx, cell, hx, hy, ok, dragGunRef.current ? "#8ecae6" : "#f5c56f");
     }

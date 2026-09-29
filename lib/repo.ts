@@ -9,6 +9,7 @@ import {
   decodePgBytea,
   encodeRle,
   normalizeDepots,
+  sanitizeGuns,
 } from "./base";
 
 import { LOAN_HOURS, MAX_LEVEL, loanDebt, upgradeCost } from "./economy";
@@ -137,6 +138,8 @@ class LocalRepo implements Repo {
   }
 
   async saveBase(p: Player) {
+    p.depots = normalizeDepots(p.depots);
+    p.guns = sanitizeGuns(p.guns);
     localSave(p);
     return {};
   }
@@ -353,7 +356,7 @@ class CloudRepo implements Repo {
       loan: row.loan ?? 0,
       loanDue: row.loan_due ? Date.parse(row.loan_due) : null,
       cells: decodePgBytea(b.cells),
-      guns: b.guns ?? [],
+      guns: sanitizeGuns(b.guns ?? []),
       depots: normalizeDepots(b.drone_cells ?? []),
       incoming: attacks.incoming,
       enemies: row.enemies ?? [],
@@ -458,6 +461,10 @@ class CloudRepo implements Repo {
   async saveBase(p: Player) {
     // Список врагов сюда не подмешиваем: он меняется втрое реже карты, а
     // писался вторым запросом на каждую поставленную клетку.
+    // depots/guns чистим до RPC: leftover kind=scout и лишние поля иначе
+    // валят guns_valid / depots_only_changed → 400 на любой перенос.
+    p.depots = normalizeDepots(p.depots);
+    p.guns = sanitizeGuns(p.guns);
     const { data, error } = await this.db().rpc("save_base", {
       new_cells: encodeRle(p.cells),
       new_guns: p.guns,
@@ -556,8 +563,8 @@ class CloudRepo implements Repo {
     if (e2) throw e2;
     const b = base as BaseRow;
     p.cells = decodePgBytea(b.cells);
-    p.guns = b.guns ?? [];
-    p.depots = b.drone_cells ?? [];
+    p.guns = sanitizeGuns(b.guns ?? []);
+    p.depots = normalizeDepots(b.drone_cells ?? []);
     const row = prof as { credits: number; levels: Partial<Player["levels"]> | null } | null;
     if (row) {
       p.credits = row.credits;
@@ -568,6 +575,7 @@ class CloudRepo implements Repo {
 
 
   async buyDrones(p: Player, amount: number) {
+    p.depots = normalizeDepots(p.depots);
     const { data, error } = await this.db().rpc("buy_drones", {
       // Имя SQL-параметра оставлено для совместимости со старой функцией,
       // но теперь это точное количество дронов, а не число пачек.
@@ -695,8 +703,8 @@ class CloudRepo implements Repo {
     // сожжённое ровно покрывает ремонт, так что жечь себя незачем.
     const { data, error } = await this.db().rpc("apply_battle", {
       new_cells: encodeRle(p.cells),
-      new_guns: p.guns,
-      new_depots: p.depots,
+      new_guns: sanitizeGuns(p.guns),
+      new_depots: normalizeDepots(p.depots),
       result,
     });
     if (error) throw error;

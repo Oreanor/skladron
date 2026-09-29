@@ -24,7 +24,7 @@ update profiles
        drones = 0,
        founded = true,
        last_income_at = now(),
-       levels = '{"drones":1,"guns":1,"mg":1,"water":1}'::jsonb,
+       levels = '{"drones":1,"guns":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb,
        stats = '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,
                  "wipes":0,"raids":0,"looted":0}'::jsonb;
 
