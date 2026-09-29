@@ -74,7 +74,7 @@ const fr: Dict = {
   "insurance.next": "Niveau suivant : {share} % de couverture pour {cost} cr.",
   "insurance.full": "Couverture totale — la police paie tout ce qui brûle.",
   "menu.rules": "Comment jouer",
-  "income.sold": " · expédié : {drones} drones pour {dronesValue} cr, {scouts} avions pour {scoutsValue} cr",
+  "income.sold": " · expédié : {drones} drones pour {dronesValue} cr",
   "replay.watch": "Voir le raid",
   "replay.again": "Rejouer",
   "replay.of": "raid sur",

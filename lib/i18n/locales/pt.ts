@@ -74,7 +74,7 @@ const pt: Dict = {
   "insurance.next": "Próximo nível: {share}% de cobertura por {cost} cr.",
   "insurance.full": "Cobertura total — a apólice paga tudo o que arder.",
   "menu.rules": "Como se joga",
-  "income.sold": " · expedido: {drones} drones por {dronesValue} cr, {scouts} aviões por {scoutsValue} cr",
+  "income.sold": " · expedido: {drones} drones por {dronesValue} cr",
   "replay.watch": "Ver o ataque",
   "replay.again": "Outra vez",
   "replay.of": "ataque a",

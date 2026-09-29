@@ -95,7 +95,8 @@ import {
   type CoverageKind,
   type View,
 } from "@/lib/render";
-import { gunRange, rocketRange, sprayRange, trapRange } from "@/lib/engine";
+import { gunRange, rocketRange, rocketTempo, sprayRange, trapRange } from "@/lib/engine";
+import { ROCKET } from "@/lib/tuning";
 import Battle, { type BattleOutcome } from "./Battle";
 import TestRaidDialog from "./lobby/TestRaidDialog";
 import AttackReportDialog from "./lobby/AttackReportDialog";
@@ -534,6 +535,9 @@ export default function Lobby({
   const droneCost = priceAt(DRONE_UNIT_COST, p.levels.drones);
   // то же самое, но под ключи кнопок: у каждой в углу своё число
   /** Во что обойдётся то, что ставит этот инструмент, с учётом прокачки. */
+  /** Секунды показываем с одним знаком и без хвостового нуля. */
+  const round1 = (v: number) => Math.round(v * 10) / 10;
+
   const toolPrice = (item: (typeof TOOLS)[number]) => {
     if (item.id === "gun") return priceAt(GUN_COST, p.levels.guns);
     if (item.id === "rocket") return priceAt(ROCKET_COST, p.levels.rockets);
@@ -546,7 +550,13 @@ export default function Lobby({
   /** Числа для подсказки: что прокачано, то показываем по уровню. */
   const toolVars = (item: (typeof TOOLS)[number]) => {
     if (item.id === "rocket")
-      return { ...item.vars, range: Math.round(rocketRange({ rocketLevel: p.levels.rockets })) };
+      return {
+        ...item.vars,
+        range: Math.round(rocketRange({ rocketLevel: p.levels.rockets })),
+        // Перезарядку показываем прокачанную, как и дальность: одна цифра
+        // по уровню, другая по первому — это читалось бы как опечатка.
+        reload: round1(ROCKET.cooldown / rocketTempo({ rocketLevel: p.levels.rockets })),
+      };
     if (item.id === "spray")
       return { ...item.vars, range: Math.round(sprayRange({ sprayLevel: p.levels.sprays })) };
     if (item.id === "trap")
@@ -1797,7 +1807,9 @@ export default function Lobby({
   const draftOpen = drafting && draftRect && draftRect.w > 0 && draftRect.h > 0;
   let barTone = "border-neutral-800 bg-neutral-900/40 text-neutral-500";
   let barBody: ReactNode = (
-    <span className="min-w-0 truncate">{t(activeTool.hint, activeTool.vars)}</span>
+    // Те же числа, что и на самой кнопке: сырые vars не знают ни цены по
+    // уровню, ни прокачанной дальности, и в строке оставались «{cost}».
+    <span className="min-w-0 truncate">{t(activeTool.hint, toolVars(activeTool))}</span>
   );
 
   if (draftOpen && draftRect) {

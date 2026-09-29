@@ -4,7 +4,7 @@
 
 import {
   type Depot,
-  type DroneKind,
+  type DepotKind,
   GRID,
   G_BASE,
   type Gun,
@@ -158,15 +158,17 @@ export function makeEnemy(
   };
 }
 
-/** Снимает дронов с контейнеров, начиная с последних. Возвращает, сколько взял. */
-export function takeDrones(depots: Depot[], count: number, kind?: DroneKind) {
+/**
+ * Снимает из контейнеров, начиная с последних. Возвращает, сколько взял.
+ *
+ * Вид обязателен по умолчанию, а не «если передали»: без него вылет
+ * съедал бы и шары заграждения, лежащие в тех же контейнерах.
+ */
+export function takeDrones(depots: Depot[], count: number, kind: DepotKind = "basic") {
   let left = count;
   for (let i = depots.length - 1; i >= 0 && left > 0; i--) {
-    if (kind) {
-      const k = depots[i].kind ?? "basic";
-      const same = k === kind || (kind === "basic" && k === "scout");
-      if (!same) continue;
-    }
+    const k = depots[i].kind ?? "basic";
+    if (!(k === kind || (kind === "basic" && k === "scout"))) continue;
     const take = Math.min(depots[i].n, left);
     depots[i].n -= take;
     left -= take;
