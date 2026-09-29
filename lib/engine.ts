@@ -261,6 +261,17 @@ export const trapRange = (s: { trapLevel: number }) =>
 export const rocketRange = (s: { rocketLevel: number }) =>
   ROCKET.range * levelBonus(s.rocketLevel, ROCKET.perLevel);
 
+/**
+ * Темп установки с учётом уровня: во столько раз быстрее она перезаряжается
+ * и водит стволом. Один множитель на оба дела — «прокачанная пушка резвее»
+ * читается именно так, а не двумя отдельными цифрами.
+ */
+export const gunTempo = (s: { gunLevel: number }) =>
+  levelBonus(s.gunLevel, GUN.reloadPerLevel);
+
+export const rocketTempo = (s: { rocketLevel: number }) =>
+  levelBonus(s.rocketLevel, ROCKET.reloadPerLevel);
+
 /** Уровни, с которыми идёт бой. Чего нет — то первого уровня. */
 export interface BattleLevels {
   drones?: number;
@@ -1276,7 +1287,8 @@ function stepGuns(s: GameState, dt: number) {
     g.jammed = Math.max(0, g.jammed - dt);
 
     // Башня доворачивает к последней цели — по ней видно, куда пушка смотрит.
-    turnTurret(g, GUN.turretTurn, dt);
+    const tempo = gunTempo(s);
+    turnTurret(g, GUN.turretTurn * tempo, dt);
 
     g.cd -= dt;
     if (g.cd > 0 || g.jammed > 0) continue;
@@ -1298,7 +1310,7 @@ function stepGuns(s: GameState, dt: number) {
         target: best.id,
         life: MISSILE.life,
       });
-      g.cd = GUN.cooldown;
+      g.cd = GUN.cooldown / tempo;
     }
   }
 }
@@ -1367,10 +1379,11 @@ function stepRockets(s: GameState, dt: number) {
   const busy = new Set<number>();
   for (const r of s.rockets) busy.add(r.from);
 
+  const tempo = rocketTempo(s);
   for (const g of s.guns) {
     if (!g.alive || !g.rocket) continue;
     g.jammed = Math.max(0, g.jammed - dt);
-    turnTurret(g, ROCKET.turretTurn, dt);
+    turnTurret(g, ROCKET.turretTurn * tempo, dt);
 
     g.cd -= dt;
     if (g.cd > 0 || g.jammed > 0 || busy.has(g.id)) continue;
@@ -1394,7 +1407,7 @@ function stepRockets(s: GameState, dt: number) {
       smokeT: 0,
     });
     busy.add(g.id);
-    g.cd = ROCKET.cooldown;
+    g.cd = ROCKET.cooldown / tempo;
   }
 
   const speed = ROCKET.speed * levelBonus(s.rocketLevel, ROCKET.perLevel);
