@@ -356,7 +356,7 @@ const pt: Dict = {
   "payload.plain": "Vazia",
   "payload.plainHint": "sem carga nenhuma: o drone chega a uma célula e ateia-lhe fogo",
   "payload.heavy": "Explosivo",
-  "payload.heavyHint": "leva todo o quadrado à volta da célula — duas células em cada direcção — mas voa um quarto mais devagar",
+  "payload.heavyHint": "ateia fogo não a uma célula mas a cinco de uma vez — o alvo e as quatro vizinhas — mas voa um quarto mais devagar",
   "payload.jammer": "Inibidor de canhões",
   "payload.jammerHint": "não explode: cala canhões no seu raio já em voo. Com canhão — ~30 s em órbita caótica; sem ele — ~30 s sobre o armazém e cai a incendiar uma célula. Só a metralhadora o abate.",
   "payload.foamer": "Inibidor de extintores",

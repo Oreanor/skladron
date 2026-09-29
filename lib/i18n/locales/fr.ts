@@ -356,7 +356,7 @@ const fr: Dict = {
   "payload.plain": "Vide",
   "payload.plainHint": "aucune charge : le drone atteint une case et y met le feu",
   "payload.heavy": "Explosif",
-  "payload.heavyHint": "emporte tout le carré autour de la case — deux cases dans chaque direction — mais vole un quart moins vite",
+  "payload.heavyHint": "enflamme non pas une case mais cinq d’un coup — la cible et ses quatre voisines — mais vole un quart moins vite",
   "payload.jammer": "Brouilleur de canons",
   "payload.jammerHint": "n’explose pas : fait taire les canons dans son rayon dès le vol. Avec un canon — ~30 s d’orbite chaotique ; sans — ~30 s au-dessus de l’entrepôt puis chute et incendie. Seule la mitrailleuse l’abat.",
   "payload.foamer": "Brouilleur d’extincteurs",

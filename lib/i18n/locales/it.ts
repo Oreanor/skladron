@@ -356,7 +356,7 @@ const it: Dict = {
   "payload.plain": "Vuota",
   "payload.plainHint": "nessuna carica: il drone raggiunge una cella e le dà fuoco",
   "payload.heavy": "Esplosivo",
-  "payload.heavyHint": "porta via tutto il quadrato attorno alla cella — due celle per ogni lato — ma vola un quarto più lento",
+  "payload.heavyHint": "incendia non una cella ma cinque in un colpo — il bersaglio e le quattro vicine — ma vola un quarto più lento",
   "payload.jammer": "Disturbatore di cannoni",
   "payload.jammerHint": "non esplode: zittisce i cannoni nel raggio già in volo. Con cannone — ~30 s di orbita caotica; senza — ~30 s sopra il magazzino e cade incendiano una cella. Solo la mitragliatrice lo abbatte.",
   "payload.foamer": "Disturbatore di estintori",

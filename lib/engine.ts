@@ -802,13 +802,16 @@ function arrive(s: GameState, d: Drone): boolean {
 
   ignite(s, d.ti);
   s.booms.push({ x: d.tx, y: d.ty, t: 0, r: 2.5 });
-  // Взрывчатка забирает не одну клетку, а квадрат вокруг неё.
+  // Взрывчатка забирает не одну клетку, а крест вокруг неё: радиус меряем
+  // по кратчайшему пути, а не по квадрату, — при единице это цель и четыре
+  // прилегающие, ровно пять.
   const ring = PAYLOAD[d.payload].ring;
   if (ring > 0) {
     const cx = d.ti % GRID;
     const cy = (d.ti / GRID) | 0;
     for (let y = cy - ring; y <= cy + ring; y++) {
       for (let x = cx - ring; x <= cx + ring; x++) {
+        if (Math.abs(x - cx) + Math.abs(y - cy) > ring) continue;
         if (x < 0 || y < 0 || x >= GRID || y >= GRID) continue;
         ignite(s, idx(x, y));
       }

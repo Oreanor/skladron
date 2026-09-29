@@ -356,7 +356,7 @@ const en = {
   "payload.plain": "Empty",
   "payload.plainHint": "no warhead at all: the drone reaches a cell and sets it alight",
   "payload.heavy": "Explosive",
-  "payload.heavyHint": "takes out the whole square around the cell — two cells in every direction — but flies a quarter slower",
+  "payload.heavyHint": "sets alight not one cell but five at once — the target and its four neighbours — yet flies a quarter slower",
   "payload.jammer": "Gun jammer",
   "payload.jammerHint": "does not blow up: jams guns in its radius while flying. With a gun — ~30s chaotic orbit around it; with none — ~30s over the warehouse, then falls and burns a cell. Only the machine gun can bring it down.",
   "payload.foamer": "Sprinkler jammer",

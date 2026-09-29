@@ -356,7 +356,7 @@ const de: Dict = {
   "payload.plain": "Leer",
   "payload.plainHint": "gar kein Sprengkopf: die Drohne erreicht ein Feld und steckt es in Brand",
   "payload.heavy": "Sprengstoff",
-  "payload.heavyHint": "nimmt das ganze Quadrat um das Feld mit — zwei Felder in jede Richtung — fliegt dafür ein Viertel langsamer",
+  "payload.heavyHint": "setzt nicht ein Feld in Brand, sondern fünf auf einmal — das Ziel und seine vier Nachbarn — fliegt dafür ein Viertel langsamer",
   "payload.jammer": "Geschützstörer",
   "payload.jammerHint": "explodiert nicht: legt Geschütze schon im Flug lahm. Mit Geschütz — ~30 s chaotische Bahn darum; ohne — ~30 s über dem Lager, dann Absturz und Brand. Nur das MG holt ihn runter.",
   "payload.foamer": "Sprinklerstörer",

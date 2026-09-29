@@ -356,7 +356,7 @@ const es: Dict = {
   "payload.plain": "Vacía",
   "payload.plainHint": "sin carga alguna: el dron llega a una celda y le prende fuego",
   "payload.heavy": "Explosivo",
-  "payload.heavyHint": "se lleva todo el cuadrado alrededor de la celda — dos celdas en cada dirección — pero vuela un cuarto más lento",
+  "payload.heavyHint": "prende no una celda sino cinco a la vez — la celda y sus cuatro vecinas — pero vuela un cuarto más lento",
   "payload.jammer": "Inhibidor de cañones",
   "payload.jammerHint": "no estalla: silencia cañones en su radio ya en vuelo. Con cañón — ~30 s en órbita caótica; sin él — ~30 s sobre el almacén y cae quemando una celda. Solo la ametralladora lo derriba.",
   "payload.foamer": "Inhibidor de extintores",
