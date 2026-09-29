@@ -664,6 +664,7 @@ const BLOCK = 8;
 const BLOCKS = Math.ceil(GRID / BLOCK);
 const blockKey = (x: number, y: number) => ((y / BLOCK) | 0) * BLOCKS + ((x / BLOCK) | 0);
 
+
 /**
  * Границы блоков, которые задевает круг радиуса r вокруг точки. Отдаём
  * четыре числа, а не список: обход идёт в горячих циклах по сотням раз за
@@ -1261,19 +1262,11 @@ function stepSprays(s: GameState, dt: number) {
   const r2 = reach * reach;
   const douse = dt / SPRAY.soak;
 
-  // Очаги раскладываем по блокам один раз за кадр. Раньше каждая установка
-  // обходила весь пожар целиком, и на большом складе это был квадрат:
-  // четыре сотни установок на пять сотен горящих клеток.
-  const fireBlocks = new Map<number, number[]>();
-  if (s.fire.size) {
-    for (const i of s.fire.keys()) {
-      const k = blockKey(i % GRID, (i / GRID) | 0);
-      const cell = fireBlocks.get(k);
-      if (cell) cell.push(i);
-      else fireBlocks.set(k, [i]);
-    }
-  }
-
+  // Очаг ищем простым перебором, хотя это и произведение установок на
+  // пожар. Сетку блоков сюда заводили и убрали: замер показал, что она
+  // делает хуже. Перебор почти всегда обрывается на первом же очаге —
+  // горит рядом с тем, кто тушит, — а раскладка пожара по блокам платится
+  // каждый кадр целиком и независимо от того, пригодилась ли.
   for (const g of s.guns) {
     if (!g.alive || !g.spray) continue;
     // заглушённая пеной установка не льёт, но бак у неё не течёт
@@ -1283,22 +1276,12 @@ function stepSprays(s: GameState, dt: number) {
     const gy = g.cy + 0.5;
 
     let fireNear = false;
-    if (fireBlocks.size) {
-      const bx1 = hi(gx, reach);
-      const by1 = hi(gy, reach);
-      for (let by = lo(gy, reach); by <= by1 && !fireNear; by++) {
-        for (let bx = lo(gx, reach); bx <= bx1 && !fireNear; bx++) {
-          const here = fireBlocks.get(by * BLOCKS + bx);
-          if (!here) continue;
-          for (const i of here) {
-            const dx = (i % GRID) + 0.5 - gx;
-            const dy = ((i / GRID) | 0) + 0.5 - gy;
-            if (dx * dx + dy * dy <= r2) {
-              fireNear = true;
-              break;
-            }
-          }
-        }
+    for (const i of s.fire.keys()) {
+      const dx = (i % GRID) + 0.5 - gx;
+      const dy = ((i / GRID) | 0) + 0.5 - gy;
+      if (dx * dx + dy * dy <= r2) {
+        fireNear = true;
+        break;
       }
     }
     if (fireNear && g.tank > 0) g.wet = SPRAY.hold;
