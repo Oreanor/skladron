@@ -235,6 +235,7 @@ function EnemyProfile({
     <Modal
       title={enemy.name}
       subtitle={enemy.email}
+      wide={Boolean(enemy.scout)}
       onClose={onClose}
       footer={
         <>
@@ -251,29 +252,36 @@ function EnemyProfile({
         </>
       }
     >
-      <div className="flex flex-col items-center gap-3">
-        <Avatar
-          avatar={enemy.avatar ?? null}
-          name={enemy.name}
-          email={enemy.email}
-          size="lg"
-        />
-        {/*
-          Разведанный склад показываем тут же: цифры вражды без картинки
-          мало что говорят, а ради картинки открывать отдельное окно —
-          лишний шаг. Кнопка полного просмотра остаётся внизу.
-        */}
+      {/*
+        Есть снимок — на десктопе слева лицо и цифры, справа карта;
+        без снимка остаётся одна узкая колонка.
+      */}
+      <div
+        className={
+          enemy.scout
+            ? "flex flex-col items-center gap-3 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] sm:items-start sm:gap-4"
+            : "flex flex-col items-center gap-3"
+        }
+      >
+        <div className="flex justify-center sm:col-start-1 sm:row-start-1">
+          <Avatar
+            avatar={enemy.avatar ?? null}
+            name={enemy.name}
+            email={enemy.email}
+            size="lg"
+          />
+        </div>
         {enemy.scout && (
           <button
             type="button"
             onClick={onShowMap}
             title={t("scout.map")}
-            className="w-full cursor-pointer overflow-hidden rounded-md border border-neutral-700 transition hover:border-neutral-500"
+            className="w-full cursor-pointer overflow-hidden rounded-md border border-neutral-700 transition hover:border-neutral-500 sm:col-start-2 sm:row-span-2 sm:row-start-1"
           >
             <ScoutThumb snapshot={enemy.scout} />
           </button>
         )}
-        <dl className="w-full space-y-1.5 font-mono text-sm">
+        <dl className="w-full space-y-1.5 font-mono text-sm sm:col-start-1 sm:row-start-2">
           <div className="flex justify-between gap-3">
             <dt className="text-neutral-500">{t("enemies.burnedByMe")}</dt>
             <dd className="text-neutral-200">{enemy.burnedByMe}</dd>

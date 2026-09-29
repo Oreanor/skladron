@@ -188,10 +188,10 @@ export default function Battle({
   const payout = insurePay + bountyPay;
 
   return (
-    // На десктопе слева счёт, справа карта. На узком окне колонка со
-    // счётом жмётся вместе с окном — поле боя важнее ровной ширины цифр.
-    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[clamp(12rem,20vw,18rem)_minmax(0,1fr)] lg:gap-4">
-      <div className="relative flex min-h-0 flex-1 flex-col gap-2 lg:col-start-2">
+    // Колонка со счётом жмётся вместе с окном: на узком десктопе поле боя
+    // важнее, чем ровная ширина цифр.
+    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(12rem,20vw,18rem)] lg:gap-4">
+      <div className="relative flex min-h-0 flex-1 flex-col gap-2">
         <MapCanvas
           className="min-h-0 flex-1"
           scene={scene}
@@ -336,7 +336,7 @@ export default function Battle({
         )}
       </div>
 
-      <aside className="hidden min-h-0 space-y-4 overflow-y-auto text-sm lg:col-start-1 lg:row-start-1 lg:block [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <aside className="hidden min-h-0 space-y-4 overflow-y-auto text-sm lg:block [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Panel title={t("panel.raid")}>
           <p className="mb-3 text-neutral-300">
             {t("battle.header", {

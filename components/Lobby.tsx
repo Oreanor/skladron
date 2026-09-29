@@ -1902,12 +1902,12 @@ export default function Lobby({
       </div>
 
       {/*
-        Слева данные, справа карта. Узкая колонка сжимается вместе с окном:
-        на восьмистах точках прежние 24rem не оставляли карте ничего.
+        Правая колонка не фиксированная, а сжимается вместе с окном: на
+        восьмистах точках прежние 24rem не оставляли карте ничего.
       */}
-      <div className="order-2 flex min-h-0 flex-1 flex-col gap-2 lg:order-3 lg:grid lg:grid-cols-[clamp(14rem,26vw,24rem)_minmax(0,1fr)] lg:gap-4">
-        {/* Карта забирает всю свободную высоту; на десктопе — правая колонка. */}
-        <div className="flex min-h-0 flex-1 flex-col gap-2 lg:col-start-2 lg:min-h-0 lg:gap-3">
+      <div className="order-2 flex min-h-0 flex-1 flex-col gap-2 lg:order-3 lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(14rem,26vw,24rem)] lg:gap-4">
+        {/* Левая колонка: карта забирает всю свободную высоту. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
 
           {/*
             Одна полоса на все разговоры игры: и подтверждение рамки, и
@@ -1939,8 +1939,8 @@ export default function Lobby({
 
         </div>
 
-        {/* боковая колонка десктопа — слева от карты */}
-        <aside className="hidden min-h-0 space-y-4 overflow-y-auto text-sm lg:col-start-1 lg:row-start-1 lg:block [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* боковая колонка десктопа */}
+        <aside className="hidden min-h-0 space-y-4 overflow-y-auto text-sm lg:block [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {!p.founded ? (
             <Panel title={t("panel.layout")}>{foundBody}</Panel>
           ) : (
