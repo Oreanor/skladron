@@ -1,7 +1,11 @@
 // Разговор о бою: короткие заметки под повтором. Живут отдельно от Repo —
 // их читает и публичная страница по ссылке, где никакого игрока ещё нет.
 
+import { notifyComment } from "./notify";
 import { supabase } from "./supabase";
+
+/** Максимальная длина реплики — как в базе. */
+export const RAID_COMMENT_MAX = 500;
 
 export interface BattleComment {
   id: string;
@@ -62,4 +66,13 @@ export async function deleteComment(id: string): Promise<void> {
   if (!db) return;
   const { error } = await db.rpc("delete_battle_comment", { comment_id: id });
   if (error) throw error;
+}
+
+/** Сохранить реплику и известить второго участника (если привязан Telegram). */
+export async function postRaidComment(attackId: string, message: string): Promise<BattleComment> {
+  const body = message.trim().slice(0, RAID_COMMENT_MAX);
+  if (!body) throw new Error("empty comment");
+  const fresh = await addComment(attackId, body);
+  notifyComment(attackId, fresh.id);
+  return fresh;
 }

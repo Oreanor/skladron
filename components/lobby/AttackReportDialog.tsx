@@ -2,10 +2,12 @@
 
 /* Чем кончился наш налёт: сводка и кнопка посмотреть запись боя. */
 
+import { useState } from "react";
 import type { AttackReport } from "@/lib/attack";
+import { postRaidComment, RAID_COMMENT_MAX } from "@/lib/comments";
 import { fmt } from "@/lib/economy";
-import { Button, Modal, Row } from "../ui";
 import { useT } from "@/lib/i18n";
+import { Button, Modal, Row, inputClass } from "../ui";
 
 export default function AttackReportDialog({
   report,
@@ -19,6 +21,25 @@ export default function AttackReportDialog({
 }) {
   const t = useT();
   const result = report.result;
+  const [comment, setComment] = useState("");
+  const [commentBusy, setCommentBusy] = useState(false);
+  const [commentSent, setCommentSent] = useState(false);
+
+  const sendComment = async () => {
+    const body = comment.trim();
+    if (!body || commentBusy || commentSent) return;
+    setCommentBusy(true);
+    try {
+      await postRaidComment(report.id, body);
+      setCommentSent(true);
+      setComment("");
+    } catch {
+      // отчёт можно закрыть и без реплики
+    } finally {
+      setCommentBusy(false);
+    }
+  };
+
   return (
     <Modal
       title={
@@ -54,6 +75,27 @@ export default function AttackReportDialog({
           value={`+${fmt(report.loot)} ${t("battle.creditsSuffix")}`}
         />
       </dl>
+      <label className="mb-1 block text-xs uppercase tracking-wider text-neutral-400">
+        {t("raidComment.reportField")}
+      </label>
+      <div className="flex gap-2">
+        <input
+          value={comment}
+          onChange={(e) => setComment(e.target.value.slice(0, RAID_COMMENT_MAX))}
+          placeholder={t("raidComment.afterPlaceholder")}
+          className={inputClass}
+          maxLength={RAID_COMMENT_MAX}
+          disabled={commentBusy || commentSent}
+        />
+        <Button
+          size="sm"
+          variant="build"
+          disabled={commentBusy || commentSent || !comment.trim()}
+          onClick={() => void sendComment()}
+        >
+          {commentSent ? t("raidComment.sent") : t("raidComment.send")}
+        </Button>
+      </div>
     </Modal>
   );
 }

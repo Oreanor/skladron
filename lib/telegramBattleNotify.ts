@@ -106,3 +106,57 @@ export async function notifyResolvedRaid(
   await send(Number(attacker.tg_chat_id), resolvedRaidMessage(nameOf(defender), attack));
   return { sent: true };
 }
+
+/** Короткое извещение о новой реплике по налёту. */
+export function raidCommentMessage(
+  authorName: string,
+  body: string,
+  attackId: string
+): string {
+  const replay = `${SITE}/replay/${attackId}`;
+  const text = body.length > 120 ? `${body.slice(0, 117)}…` : body;
+  return `«${authorName}» написал по налёту: «${text}» ${replay}`;
+}
+
+/**
+ * Шлёт второму участнику боя, если у него привязан Telegram.
+ * Вызывается после insert комментария — без dedup, каждая реплика отдельно.
+ */
+export async function notifyRaidComment(
+  db: SupabaseClient,
+  attackId: string,
+  commentId: string
+): Promise<{ sent: boolean; error?: string }> {
+  const { data: comment, error: cErr } = await db
+    .from("battle_comments")
+    .select("id, attack_id, author_id, body")
+    .eq("id", commentId)
+    .maybeSingle();
+  if (cErr) return { sent: false, error: cErr.message };
+  if (!comment || comment.attack_id !== attackId) return { sent: false };
+
+  const { data: attack, error: aErr } = await db
+    .from("attacks")
+    .select("id, attacker_id, defender_id")
+    .eq("id", attackId)
+    .maybeSingle();
+  if (aErr) return { sent: false, error: aErr.message };
+  if (!attack) return { sent: false };
+
+  const recipient =
+    comment.author_id === attack.attacker_id ? attack.defender_id : attack.attacker_id;
+
+  const { data: people } = await db
+    .from("profiles")
+    .select("id, base_name, display_name, email, tg_chat_id")
+    .in("id", [comment.author_id, recipient]);
+  const author = people?.find((p) => p.id === comment.author_id) as ProfileRow | undefined;
+  const to = people?.find((p) => p.id === recipient) as ProfileRow | undefined;
+  if (!author || !to?.tg_chat_id) return { sent: false };
+
+  await send(
+    Number(to.tg_chat_id),
+    raidCommentMessage(nameOf(author), comment.body, attackId)
+  );
+  return { sent: true };
+}

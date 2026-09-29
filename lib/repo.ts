@@ -95,7 +95,8 @@ export interface Repo {
     p: Player,
     targetEmail: string,
     waves: WavePlan[],
-    seed: number
+    seed: number,
+    opener?: string
   ): Promise<string | null>;
   /** Код привязки телеграма и то, привязан ли он уже. */
   telegram(): Promise<{ code: string; linked: boolean } | null>;
@@ -295,6 +296,7 @@ interface IncomingAttackRow {
   drone_level: number | null;
   simulation_version: number | null;
   from_email: string | null;
+  opener: string | null;
 }
 
 interface AttackReportRow {
@@ -415,6 +417,7 @@ class CloudRepo implements Repo {
       droneLevel: row.drone_level ?? 1,
       simulationVersion: row.simulation_version ?? 1,
       fromEmail: row.from_email ?? undefined,
+      opener: row.opener ?? undefined,
       remote: true,
     }));
     const reports = ((reportResult.data ?? []) as AttackReportRow[]).map((row) => ({
@@ -587,11 +590,19 @@ class CloudRepo implements Repo {
     return row ? { credits: row.credits } : {};
   }
 
-  async sendAttack(p: Player, targetEmail: string, waves: WavePlan[], seed: number) {
+  async sendAttack(
+    p: Player,
+    targetEmail: string,
+    waves: WavePlan[],
+    seed: number,
+    opener?: string
+  ) {
+    const note = opener?.trim().slice(0, 500);
     const { data, error } = await this.db().rpc("send_attack", {
       target_email: targetEmail,
       attack_waves: waves,
       attack_seed: seed,
+      opener: note && note.length > 0 ? note : undefined,
     });
     if (error) throw error;
     const row = (data as { id: string; depots: Depot[]; credits: number }[] | null)?.[0];

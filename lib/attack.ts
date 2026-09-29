@@ -133,6 +133,8 @@ export interface AttackOrder {
   simulationVersion?: number;
   /** Почта нападавшего: по ней он попадает в список соперников. */
   fromEmail?: string;
+  /** Короткая записка нападающего при отправке — показывается перед отбиванием. */
+  opener?: string | null;
   remote?: boolean; // настоящий налёт из серверной очереди, а не локальный бот
 }
 

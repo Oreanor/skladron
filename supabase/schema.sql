@@ -656,11 +656,13 @@ $$;
 -- Старая подпись уходит целиком: PostgREST не выбирает между перегрузками,
 -- а аргументы сменились.
 drop function if exists send_attack(text, int, text, int, int);
+drop function if exists send_attack(text, jsonb, int);
 
 create or replace function send_attack(
   target_email text,
   attack_waves jsonb,
-  attack_seed int
+  attack_seed int,
+  opener text default null
 ) returns table (id uuid, depots jsonb, credits int)
 language plpgsql security definer set search_path = public as $$
 declare
@@ -674,6 +676,7 @@ declare
   drone_count int;
   surcharge int;
   head jsonb;
+  note text;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   perform check_waves(attack_waves);
@@ -738,6 +741,11 @@ begin
           (select coalesce((p.levels->>'drones')::int, 1) from profiles p where p.id = uid),
           3)
   returning attacks.id into order_id;
+  note := left(btrim(coalesce(opener, '')), 500);
+  if note <> '' then
+    insert into battle_comments (attack_id, author_id, body)
+    values (order_id, uid, note);
+  end if;
   id := order_id;
   depots := next_depots;
   return next;
@@ -840,7 +848,8 @@ returns table (
   id uuid, from_name text, created_at timestamptz, activated_at timestamptz,
   drones int, pattern text, direction int, seed int, waves jsonb, drone_level int,
   simulation_version int,
-  from_email text
+  from_email text,
+  opener text
 )
 language plpgsql security definer set search_path = public as $$
 declare
@@ -867,7 +876,12 @@ begin
     select a.id,
            coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
            a.created_at, a.activated_at, a.drones, a.pattern, a.direction, a.seed,
-           a.waves, a.drone_level, a.simulation_version, p.email
+           a.waves, a.drone_level, a.simulation_version, p.email,
+           (select c.body
+              from battle_comments c
+             where c.attack_id = a.id and c.author_id = a.attacker_id
+             order by c.created_at
+             limit 1)
       from attacks a
       join profiles p on p.id = a.attacker_id
      where a.defender_id = uid and a.status = 'pending'
@@ -1768,8 +1782,11 @@ declare
   fresh battle_comments;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
-  if not exists (select 1 from attacks a where a.id = target) then
-    raise exception 'no such battle';
+  if not exists (
+    select 1 from attacks a
+     where a.id = target and (a.attacker_id = uid or a.defender_id = uid)
+  ) then
+    raise exception 'not a participant';
   end if;
 
   insert into battle_comments (attack_id, author_id, body)

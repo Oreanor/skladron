@@ -16,9 +16,9 @@ import { useT } from "@/lib/i18n";
 import MapCanvas, { CELL } from "./MapCanvas";
 import { Button, Chip, ChipBar, inputClass } from "./ui";
 import {
-  addComment,
   deleteComment,
   loadComments,
+  postRaidComment,
   signedIn,
   type BattleComment,
 } from "@/lib/comments";
@@ -61,7 +61,7 @@ function Talk({ battleId }: { battleId: string }) {
     setBusy(true);
     setError(null);
     try {
-      const fresh = await addComment(battleId, body);
+      const fresh = await postRaidComment(battleId, body);
       setItems((cur) => [...cur, fresh]);
       setDraft("");
     } catch (e) {

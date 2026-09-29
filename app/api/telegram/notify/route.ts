@@ -2,7 +2,7 @@
 // именно писать, решает сервер: у клиента нет ни токена бота, ни чужих чатов.
 
 import { createClient } from "@supabase/supabase-js";
-import { nameOf, notifyResolvedRaid } from "@/lib/telegramBattleNotify";
+import { nameOf, notifyRaidComment, notifyResolvedRaid } from "@/lib/telegramBattleNotify";
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -10,7 +10,7 @@ const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://skladron.vercel.app";
 
-type Event = "sent" | "resolved" | "test";
+type Event = "sent" | "resolved" | "test" | "comment";
 
 async function send(chatId: number, text: string) {
   if (!TOKEN) return;
@@ -40,9 +40,10 @@ export async function POST(request: Request) {
     attackId?: string;
     event?: Event;
     drones?: number;
+    commentId?: string;
   };
   const event = body.event;
-  if (event !== "sent" && event !== "resolved" && event !== "test") {
+  if (event !== "sent" && event !== "resolved" && event !== "test" && event !== "comment") {
     return new Response("bad request", { status: 400 });
   }
 
@@ -74,6 +75,37 @@ export async function POST(request: Request) {
   // обмениваются. Значит одного id мало — проверяем, что просит участник.
   const attackId = body.attackId;
   if (!attackId) return new Response("bad request", { status: 400 });
+
+  if (event === "comment") {
+    let commentId = body.commentId;
+    if (!commentId) {
+      const { data: latest } = await db
+        .from("battle_comments")
+        .select("id")
+        .eq("attack_id", attackId)
+        .eq("author_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      commentId = latest?.id;
+    }
+    if (!commentId) return Response.json({ ok: true, sent: false });
+
+    const { data: comment } = await db
+      .from("battle_comments")
+      .select("id, author_id, attack_id")
+      .eq("id", commentId)
+      .maybeSingle();
+    if (!comment || comment.attack_id !== attackId) {
+      return new Response("no such comment", { status: 404 });
+    }
+    if (comment.author_id !== uid) {
+      return new Response("not your comment", { status: 403 });
+    }
+    const { sent, error: notifyError } = await notifyRaidComment(db, attackId, commentId);
+    if (notifyError) return Response.json({ ok: false, reason: notifyError });
+    return Response.json({ ok: true, sent });
+  }
 
   const { data: attack } = await db
     .from("attacks")

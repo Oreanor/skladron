@@ -129,7 +129,9 @@ import Scout, { type ScoutOutcome } from "./Scout";
 import ScoutMap from "./ScoutMap";
 import Replay, { type ReplayData } from "./Replay";
 import Rules from "./Rules";
-import { notifyBattle, notifyTestRaid } from "@/lib/notify";
+import { postRaidComment } from "@/lib/comments";
+import { notifyBattle, notifyComment, notifyTestRaid } from "@/lib/notify";
+import { PostRaidCommentModal, RaidOpenerModal } from "./lobby/RaidCommentModals";
 
 /** Имя бота из настроек сборки: без него привязывать некуда. */
 const TG_BOT = process.env.NEXT_PUBLIC_TELEGRAM_BOT;
@@ -190,6 +192,10 @@ export default function Lobby({
   toolRef.current = tool;
   const [message, setMessage] = useState<string | null>(null);
   const [battle, setBattle] = useState<AttackOrder | null>(null);
+  /** Налёт с запиской нападающего — сначала показываем её, потом бой. */
+  const [openerGate, setOpenerGate] = useState<AttackOrder | null>(null);
+  /** После отбитого удалённого налёта — необязательная реплика. */
+  const [postCommentRaid, setPostCommentRaid] = useState<string | null>(null);
   /** Открыт ли планировщик пробного налёта на себя. */
   const [testRaidOpen, setTestRaid] = useState(false);
   const [ready, setReady] = useState(false);
@@ -619,7 +625,10 @@ export default function Lobby({
               battle.remote ? battle.id : undefined,
               o.trace
             );
-            if (battle.remote) notifyBattle(battle.id, "resolved");
+            if (battle.remote) {
+              notifyBattle(battle.id, "resolved");
+              setPostCommentRaid(battle.id);
+            }
             if (patch.credits !== undefined) p.credits = patch.credits;
             forceRender((v) => v + 1);
           } catch (e) {
@@ -1017,7 +1026,11 @@ export default function Lobby({
     }
   };
 
-  const doRaid = async (enemy: Enemy, waves: WavePlan[]): Promise<string | null> => {
+  const doRaid = async (
+    enemy: Enemy,
+    waves: WavePlan[],
+    comment?: string
+  ): Promise<string | null> => {
     const n = raidTotal(waves);
     if (drones < n) return t("raid.notEnough");
     if (payloadCost(droneCost, waves) > p.credits) return t("raid.noCredits");
@@ -1027,8 +1040,11 @@ export default function Lobby({
       // со своей копии, и обратно присылает уже новый склад. Надбавку за
       // начинку тоже считает и списывает он.
       await flushPersist();
-      const id = await repo.sendAttack(p, enemy.email, waves, seed);
-      if (id) notifyBattle(id, "sent");
+      const id = await repo.sendAttack(p, enemy.email, waves, seed, comment);
+      if (id) {
+        notifyBattle(id, "sent");
+        if (comment?.trim()) notifyComment(id);
+      }
       // счётчик налётов поднимает сам send_attack — второй раз здесь не нужно
       setMessage(t("raid.sent", { email: enemy.email }));
       loadRaids();
@@ -1797,6 +1813,23 @@ export default function Lobby({
   const defend = async (order: AttackOrder) => {
     setSheet(null);
     await flushPersist();
+    const note = order.opener?.trim();
+    if (order.remote && note) {
+      setOpenerGate(order);
+      return;
+    }
+    setBattle(order);
+  };
+
+  const enterBattleAfterOpener = async (order: AttackOrder, reply: string) => {
+    setOpenerGate(null);
+    if (reply && order.remote) {
+      try {
+        await postRaidComment(order.id, reply);
+      } catch {
+        // реплика — мелочь, бой важнее
+      }
+    }
     setBattle(order);
   };
 
@@ -2228,6 +2261,24 @@ export default function Lobby({
             />
           </div>
         </div>
+      )}
+
+      {openerGate && (
+        <RaidOpenerModal
+          order={openerGate}
+          onDone={(reply) => void enterBattleAfterOpener(openerGate, reply)}
+        />
+      )}
+
+      {postCommentRaid && (
+        <PostRaidCommentModal
+          attackId={postCommentRaid}
+          onDone={(body) => {
+            const id = postCommentRaid;
+            setPostCommentRaid(null);
+            if (body && id) void postRaidComment(id, body).catch(() => {});
+          }}
+        />
       )}
 
       {reports[0] && !watching && (

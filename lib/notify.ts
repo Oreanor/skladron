@@ -6,7 +6,7 @@
 
 import { supabase } from "./supabase";
 
-type BattleEvent = "sent" | "resolved";
+type BattleEvent = "sent" | "resolved" | "comment";
 
 async function post(body: Record<string, unknown>) {
   const db = supabase();
@@ -34,6 +34,13 @@ function quiet(run: () => Promise<void>) {
 
 export function notifyBattle(attackId: string, event: BattleEvent) {
   quiet(() => post({ attackId, event }));
+}
+
+/** Новая реплика по налёту — второму игроку уйдёт телеграм. */
+export function notifyComment(attackId: string, commentId?: string) {
+  quiet(() =>
+    post({ attackId, event: "comment", ...(commentId ? { commentId } : {}) })
+  );
 }
 
 /** Пробный налёт на себя: в таблице атак его нет, пишем прямо себе. */

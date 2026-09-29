@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { RAID_COMMENT_MAX } from "@/lib/comments";
 import { payloadCost, raidTotal, type WavePlan } from "@/lib/attack";
 import { MAX_ATTACK_DRONES, type Enemy } from "@/lib/enemy";
 import { SCOUT } from "@/lib/tuning";
@@ -16,7 +17,7 @@ interface Props {
   credits: number;
   droneCost: number;
   onAdd: (email: string) => Promise<string | null>; // текст ошибки или null
-  onRaid: (enemy: Enemy, waves: WavePlan[]) => Promise<string | null>;
+  onRaid: (enemy: Enemy, waves: WavePlan[], comment?: string) => Promise<string | null>;
   /** Разведка: сколько самолётов послать. Вернёт текст ошибки или null. */
   onScout: (enemy: Enemy, planes: number) => Promise<string | null>;
   /** Показать снятую карту врага. */
@@ -144,8 +145,8 @@ export default function Enemies({
           credits={credits}
           droneCost={droneCost}
           onCancel={() => setTarget(null)}
-          onSend={async (waves) => {
-            const error = await onRaid(target, waves);
+          onSend={async (waves, comment) => {
+            const error = await onRaid(target, waves, comment);
             if (!error) {
               setTarget(null);
               onChanged();
@@ -236,11 +237,12 @@ function RaidDialog({
   credits: number;
   droneCost: number;
   onCancel: () => void;
-  onSend: (waves: WavePlan[]) => Promise<string | null>;
+  onSend: (waves: WavePlan[], comment?: string) => Promise<string | null>;
 }) {
   const t = useT();
   const max = Math.min(drones, MAX_ATTACK_DRONES);
   const [waves, setWaves] = useState<WavePlan[]>(() => [newWave(Math.min(50, Math.max(1, max)))]);
+  const [comment, setComment] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
 
@@ -261,7 +263,7 @@ function RaidDialog({
     if (sending || problem) return;
     setSending(true);
     setSendError(null);
-    const error = await onSend(waves);
+    const error = await onSend(waves, comment.trim() || undefined);
     setSending(false);
     setSendError(error);
   };
@@ -292,6 +294,16 @@ function RaidDialog({
         max={MAX_ATTACK_DRONES}
         unitCost={droneCost}
         credits={credits}
+      />
+      <label className="mb-1 mt-3 block text-xs uppercase tracking-wider text-neutral-400">
+        {t("raidComment.openerField")}
+      </label>
+      <input
+        value={comment}
+        onChange={(e) => setComment(e.target.value.slice(0, RAID_COMMENT_MAX))}
+        placeholder={t("raidComment.openerFieldPlaceholder")}
+        className={inputClass}
+        maxLength={RAID_COMMENT_MAX}
       />
       {problem && <p className="mt-2 text-xs text-red-400">{problem}</p>}
       {sendError && <p className="mt-2 text-xs text-red-400">{sendError}</p>}
