@@ -130,7 +130,6 @@ const pt: Dict = {
   "report.title": "Ataque a {target}: resultado",
   "report.subtitle": "O defensor jogou o ataque — o resultado já é definitivo.",
   "report.leakReward": "Prémio pelos danos",
-  "arsenal.max": "máx. {count}",
   "arsenal.buyFailed": "A compra não passou: {error}",
   "depot.onlyIntact": "O contentor só assenta numa célula intacta",
   "depot.gunThere": "A célula está ocupada por um canhão",
@@ -291,7 +290,6 @@ const pt: Dict = {
   "raid.title": "Ataque a {name}",
   "raid.subtitle":
     "Os drones são gastos já. O resultado só chega depois de o rival jogar a defesa.",
-  "raid.dronesOf": "Drones: {n} de {max}",
   "raid.wave": "Vaga {n}",
   "raid.waveDrones": "{n} drones",
   "raid.waveDelay": "Atraso",

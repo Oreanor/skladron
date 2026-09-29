@@ -2,6 +2,7 @@
 // именно писать, решает сервер: у клиента нет ни токена бота, ни чужих чатов.
 
 import { createClient } from "@supabase/supabase-js";
+import { nameOf, notifyResolvedRaid } from "@/lib/telegramBattleNotify";
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -19,9 +20,6 @@ async function send(chatId: number, text: string) {
     body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
   });
 }
-
-const nameOf = (p: { base_name: string | null; display_name: string | null; email: string | null }) =>
-  p.base_name ?? p.display_name ?? p.email?.split("@")[0] ?? "склад";
 
 /** Кто просит. Токен проверяем у Supabase, на слово клиенту не верим. */
 async function caller(request: Request) {
@@ -80,7 +78,7 @@ export async function POST(request: Request) {
   const { data: attack } = await db
     .from("attacks")
     .select(
-      "id, attacker_id, defender_id, drones, status, result, loot, sent_notified_at, resolved_notified_at"
+      "id, attacker_id, defender_id, drones, status, sent_notified_at, resolved_notified_at"
     )
     .eq("id", attackId)
     .maybeSingle();
@@ -91,47 +89,41 @@ export async function POST(request: Request) {
   // дёргать ручку сколько угодно раз и заваливать вторую сообщениями.
   const author = event === "sent" ? attack.attacker_id : attack.defender_id;
   if (uid !== author) return new Response("not your side of this battle", { status: 403 });
-  // и только пока бой в подходящем состоянии: отгремевший не «вылетает» заново
-  const expected = event === "sent" ? "pending" : "resolved";
-  if (attack.status !== expected) return Response.json({ ok: true, sent: false });
 
-  // Одно уведомление на событие: атомарно занимаем слот, повторный запрос
-  // уже ничего не шлёт.
+  if (event === "resolved") {
+    if (attack.status !== "resolved") return Response.json({ ok: true, sent: false });
+    const { sent, error: notifyError } = await notifyResolvedRaid(db, attackId);
+    if (notifyError) return Response.json({ ok: false, reason: notifyError });
+    return Response.json({ ok: true, sent });
+  }
+
+  // sent
+  if (attack.status !== "pending") return Response.json({ ok: true, sent: false });
+  if (attack.sent_notified_at) return Response.json({ ok: true, sent: false });
+
   const stamp = new Date().toISOString();
-  const notifiedCol = event === "sent" ? "sent_notified_at" : "resolved_notified_at";
-  if (attack[notifiedCol]) return Response.json({ ok: true, sent: false });
-
   const { data: claimed, error: claimError } = await db
     .from("attacks")
-    .update({ [notifiedCol]: stamp })
+    .update({ sent_notified_at: stamp })
     .eq("id", attackId)
-    .eq("status", expected)
-    .is(notifiedCol, null)
+    .eq("status", "pending")
+    .is("sent_notified_at", null)
     .select("id")
     .maybeSingle();
   if (claimError) return Response.json({ ok: false, reason: claimError.message });
   if (!claimed) return Response.json({ ok: true, sent: false });
 
-  // Пишем всегда второй стороне: о новом налёте — защитнику, об исходе —
-  // нападавшему.
-  const toId = event === "sent" ? attack.defender_id : attack.attacker_id;
-  const fromId = author;
-
   const { data: people } = await db
     .from("profiles")
     .select("id, base_name, display_name, email, tg_chat_id")
-    .in("id", [toId, fromId]);
-  const to = people?.find((p) => p.id === toId);
-  const from = people?.find((p) => p.id === fromId);
+    .in("id", [attack.defender_id, attack.attacker_id]);
+  const to = people?.find((p) => p.id === attack.defender_id);
+  const from = people?.find((p) => p.id === attack.attacker_id);
   if (!to?.tg_chat_id || !from) return Response.json({ ok: true, sent: false });
 
-  const burned = (attack.result as { burned?: number } | null)?.burned ?? 0;
   const text =
-    event === "sent"
-      ? `На твой склад летит налёт от «${nameOf(from)}» — ${attack.drones} дронов. ` +
-        `Отбивай, когда готов: очередь не пропускается. ${SITE}`
-      : `«${nameOf(from)}» отбил твой налёт. Сгорело клеток: ${burned}, премия ${attack.loot} кр. ` +
-        `Повтор боя: ${SITE}/replay/${attack.id}`;
+    `На твой склад летит налёт от «${nameOf(from)}» — ${attack.drones} дронов. ` +
+    `Отбивай, когда готов: очередь не пропускается. ${SITE}`;
 
   await send(Number(to.tg_chat_id), text);
   return Response.json({ ok: true, sent: true });

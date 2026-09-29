@@ -131,7 +131,6 @@ const en = {
   "report.title": "Raid on {target}: result",
   "report.subtitle": "The defender played the attack — the result is final now.",
   "report.leakReward": "Bonus for the damage",
-  "arsenal.max": "max {count}",
   "arsenal.buyFailed": "Purchase failed: {error}",
   "depot.onlyIntact": "A container goes only on an intact warehouse cell",
   "depot.gunThere": "The cell is taken by a gun",
@@ -291,7 +290,6 @@ const en = {
 
   "raid.title": "Raid on {name}",
   "raid.subtitle": "Drones are spent at once. The result arrives only after your rival plays the defence.",
-  "raid.dronesOf": "Drones: {n} of {max}",
   "raid.wave": "Wave {n}",
   "raid.waveDrones": "{n} drones",
   "raid.waveDelay": "Delay",

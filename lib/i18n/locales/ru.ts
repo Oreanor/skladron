@@ -130,7 +130,6 @@ const ru: Dict = {
   "report.title": "Итог налёта на {target}",
   "report.subtitle": "Защитник отыграл атаку — теперь результат окончательный.",
   "report.leakReward": "Премия за ущерб",
-  "arsenal.max": "макс. {count}",
   "arsenal.buyFailed": "Закупка не прошла: {error}",
   "depot.onlyIntact": "Контейнер ставится только на целую клетку склада",
   "depot.gunThere": "Клетка занята пушкой",
@@ -291,7 +290,6 @@ const ru: Dict = {
   "raid.title": "Налёт на {name}",
   "raid.subtitle":
     "Дроны спишутся сразу. Итог придёт только после того, как враг отыграет защиту.",
-  "raid.dronesOf": "Дронов: {n} из {max}",
   "raid.wave": "Волна {n}",
   "raid.waveDrones": "{n} дронов",
   "raid.waveDelay": "Задержка",

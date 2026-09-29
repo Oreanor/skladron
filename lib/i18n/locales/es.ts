@@ -130,7 +130,6 @@ const es: Dict = {
   "report.title": "Incursión sobre {target}: resultado",
   "report.subtitle": "El defensor jugó el ataque: el resultado ya es definitivo.",
   "report.leakReward": "Prima por los daños",
-  "arsenal.max": "máx. {count}",
   "arsenal.buyFailed": "La compra no se completó: {error}",
   "depot.onlyIntact": "El contenedor solo va en una celda intacta",
   "depot.gunThere": "La celda está ocupada por un cañón",
@@ -291,7 +290,6 @@ const es: Dict = {
   "raid.title": "Incursión sobre {name}",
   "raid.subtitle":
     "Los drones se gastan al momento. El resultado llega solo cuando el rival juegue la defensa.",
-  "raid.dronesOf": "Drones: {n} de {max}",
   "raid.wave": "Oleada {n}",
   "raid.waveDrones": "{n} drones",
   "raid.waveDelay": "Retraso",

@@ -15,6 +15,7 @@ import { createClient } from "@supabase/supabase-js";
 import { decodeCells, type Depot, type Gun } from "@/lib/base";
 import type { AttackOrder, Pattern, WavePlan } from "@/lib/attack";
 import { resolveBattle } from "@/lib/resolve";
+import { notifyResolvedRaid } from "@/lib/telegramBattleNotify";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -162,6 +163,12 @@ export async function POST(request: Request) {
   // resolve_attack сверяет снимок и отказывается. Заявку снимаем, чтобы
   // защитник мог отбиться заново, а не ждал две минуты.
   if (error) return giveUp(error.message, 400);
+
+  try {
+    await notifyResolvedRaid(db, attackId);
+  } catch {
+    // Telegram — приятная мелочь; исход боя уже записан.
+  }
 
   const row = (data as { credits: number; intact: number }[] | null)?.[0];
   return Response.json({
