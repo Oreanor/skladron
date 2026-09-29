@@ -12,7 +12,7 @@ import { Play, Trash2 } from "lucide-react";
 import { fmt } from "@/lib/economy";
 import type { AttackOrder, RaidLog } from "@/lib/attack";
 import type { PlayerStats } from "@/lib/player";
-import { IconButton } from "../ui";
+import { Button, IconButton } from "../ui";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 
@@ -39,12 +39,14 @@ export function StatsPanel({ stats }: { stats: PlayerStats }) {
 export default function RaidsPanel({
   incoming,
   raids,
+  onDefend,
   onWatch,
   onHide,
 }: {
   /** Что к нам летит. Первый в списке и есть тот, кого отбивают. */
   incoming: AttackOrder[];
   raids: RaidLog[];
+  onDefend: (order: AttackOrder) => void;
   onWatch: (raid: RaidLog) => void;
   onHide: (id: string) => void;
 }) {
@@ -77,6 +79,20 @@ export default function RaidsPanel({
                 {first ? t("attacks.ready") : t("attacks.queued", { position: i + 1 })}
               </div>
             </div>
+            {first ? (
+              <Button
+                variant="danger"
+                size="sm"
+                className="shrink-0"
+                onClick={() => onDefend(a)}
+              >
+                {t("attacks.defend")}
+              </Button>
+            ) : (
+              <span className="shrink-0 text-[11px] text-neutral-600">
+                {t("attacks.defendFirst")}
+              </span>
+            )}
           </li>
         );
       })}

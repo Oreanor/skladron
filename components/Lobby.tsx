@@ -1708,6 +1708,7 @@ export default function Lobby({
     <RaidsPanel
       incoming={p.incoming}
       raids={raids}
+      onDefend={(order) => void defend(order)}
       onWatch={(r) => void openReplay(r)}
       onHide={(id) => void hideRaid(id)}
     />
@@ -1870,9 +1871,7 @@ export default function Lobby({
           variant="danger"
           size="sm"
           className="ml-auto"
-          onClick={() =>
-            window.innerWidth < 1024 ? setSheet("attacks") : void defend(p.incoming[0])
-          }
+          onClick={() => void defend(p.incoming[0])}
           disabled={intact === 0}
         >
           {p.incoming.length > 1
