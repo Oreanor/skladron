@@ -226,24 +226,28 @@ function EnemyProfile({
       subtitle={enemy.email}
       onClose={onClose}
       footer={
-        <div className="flex w-full flex-wrap gap-2">
-          <Button
-            variant="danger"
-            className="flex-1"
-            disabled={drones < 10}
-            onClick={onAttack}
-          >
-            {t("enemies.attack")}
-          </Button>
-          <Button className="flex-1" onClick={onScout}>
-            {t("scout.button")}
-          </Button>
-          {onShowMap && (
-            <Button className="flex-1" onClick={onShowMap}>
-              {t("scout.map")}
+        <div className="flex w-full flex-col gap-2">
+          <div className="flex w-full flex-wrap gap-2">
+            <Button
+              variant="danger"
+              className="flex-1"
+              disabled={drones < 10}
+              onClick={onAttack}
+            >
+              {t("enemies.attack")}
             </Button>
-          )}
-          <Button onClick={onClose}>{t("common.close")}</Button>
+            <Button className="flex-1" onClick={onScout}>
+              {t("scout.button")}
+            </Button>
+            {onShowMap && (
+              <Button className="flex-1" onClick={onShowMap}>
+                {t("scout.map")}
+              </Button>
+            )}
+          </div>
+          <div className="flex justify-center">
+            <Button onClick={onClose}>{t("common.ok")}</Button>
+          </div>
         </div>
       }
     >
