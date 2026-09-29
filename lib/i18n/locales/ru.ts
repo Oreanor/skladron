@@ -193,6 +193,7 @@ const ru: Dict = {
   "tool.trap": "Ловушка",
   "tool.rocket": "Ракетница",
   "tool.drones": "Дроны",
+  "tool.balloons": "Шары",
   "tool.price": "{cost} кр",
   "tool.areaHint": "{cost} кр за новую клетку",
   "tool.repairHint": "{cost} кр за клетку",
@@ -201,6 +202,7 @@ const ru: Dict = {
   "tool.trapHint": "{cost} кр за ловушку: удерживает до {cap} дронов в радиусе {range} клеток.",
   "tool.rocketHint": "{cost} кр за ракетницу: бьёт на {range} клеток — вдвое дальше пушки, — но пускает неточно и перезаряжается {reload} с. Ракета сама доворачивает на ближайшего.",
   "tool.dronesHint": "Контейнер на {perCell} дронов за {cost} кр. Ткни в свободную клетку склада; ящики можно перетаскивать.",
+  "tool.balloonsHint": "Контейнер на {perCell} аэростатов за {cost} кр. Налёт выпускает разом все, что лежат на складе: они медленно плывут над полем, и влетевший дрон гибнет вместе с шаром — без пожара и без вреда складу. Но и снаряд зенитки лопнет шар, если тот на линии. Прокачки у шаров нет, и налёт их расходует.",
 
 
   "panel.base": "Склад",
@@ -273,6 +275,7 @@ const ru: Dict = {
   "battle.incomingLeft": "На подходе",
   "battle.killedByGuns": "Сбито ракетами",
   "battle.killedByMg": "Сбито очередью",
+  "battle.killedByBalloons": "Разбилось о шары",
   "battle.fires": "Очагов огня",
   "battle.gunsAlive": "Пушек живо",
   "battle.integrity": "Целостность",

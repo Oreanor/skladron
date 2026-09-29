@@ -193,6 +193,7 @@ const es: Dict = {
   "tool.trap": "Trampa",
   "tool.rocket": "Lanzadera",
   "tool.drones": "Drones",
+  "tool.balloons": "Globos",
   "tool.price": "{cost} cr",
   "tool.areaHint": "{cost} cr por celda nueva",
   "tool.repairHint": "{cost} cr por celda",
@@ -201,6 +202,7 @@ const es: Dict = {
   "tool.trapHint": "{cost} cr por trampa: retiene hasta {cap} drones a {range} celdas.",
   "tool.rocketHint": "{cost} cr por lanzadera: alcanza {range} celdas — el doble que un cañón — pero dispara con desvío y recarga {reload} s. El misil se dirige solo al dron más cercano.",
   "tool.dronesHint": "Un contenedor de {perCell} drones por {cost} cr. Pulsa una celda libre del almacén; los contenedores se arrastran.",
+  "tool.balloonsHint": "Un contenedor de {perCell} globos de barrera por {cost} cr. El ataque suelta de golpe todos los que tengas: flotan despacio sobre el campo y el dron que choca con uno muere con él, sin fuego ni daño al almacén. Pero un proyectil del cañón también revienta el globo que se le cruce. Los globos no se mejoran y el ataque los consume.",
 
 
   "panel.base": "Almacén",
@@ -273,6 +275,7 @@ const es: Dict = {
   "battle.incomingLeft": "En camino",
   "battle.killedByGuns": "Derribados por misiles",
   "battle.killedByMg": "Derribados a ráfagas",
+  "battle.killedByBalloons": "Estrellados en globos",
   "battle.fires": "Focos de fuego",
   "battle.gunsAlive": "Cañones vivos",
   "battle.integrity": "Integridad",

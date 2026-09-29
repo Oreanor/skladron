@@ -287,6 +287,10 @@ export default function Battle({
                 <Row label={t("battle.killedByGuns")} value={String(done.result.killedByGuns)} />
                 <Row label={t("battle.killedByMg")} value={String(done.result.killedByMg)} />
                 <Row
+                  label={t("battle.killedByBalloons")}
+                  value={String(done.result.killedByBalloons)}
+                />
+                <Row
                   label={t("battle.insurance")}
                   value={`+${fmt(
                     insurance(

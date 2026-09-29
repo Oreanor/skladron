@@ -6,7 +6,11 @@ import {
   G_BASE,
   G_BURNT,
   G_GROUND,
+  BALLOONS_PER_CELL,
   DRONES_PER_CELL,
+  balloonCount,
+  depotKind,
+  type DepotKind,
   type Rect,
   applyRect,
   droneCount,
@@ -29,6 +33,7 @@ import {
 import {
   CELL_COST,
   STARTER_SIDE,
+  BALLOON_UNIT_COST,
   DRONE_UNIT_COST,
   LOAN_MIN,
   SALE_MULTIPLIER,
@@ -557,6 +562,7 @@ export default function Lobby({
     sprays: countKind(p.guns, "spray"),
     traps: countKind(p.guns, "trap"),
     drones,
+    balloons: balloonCount(p.depots),
     // у кредита в углу висит долг, а если долгов нет — ничего
     loan: p.loan || undefined,
   };
@@ -591,7 +597,8 @@ export default function Lobby({
           // только что отбитый рой успевал вернуться в список.
           attacks.markResolved(battle.id);
           p.stats.battles++;
-          const killed = o.result.killedByGuns + o.result.killedByMg;
+          const killed =
+            o.result.killedByGuns + o.result.killedByMg + o.result.killedByBalloons;
           p.stats.dronesKilled += killed;
           p.stats.cellsBurned += o.result.burned;
           p.credits +=
@@ -851,7 +858,7 @@ export default function Lobby({
    * Контейнер покупается прямо на карте, как пушка: ткнул в свободную клетку —
    * появился ящик на десять дронов, деньги списались. Никаких окошек.
    */
-  const buyDepotAt = async (x: number, y: number) => {
+  const buyDepotAt = async (x: number, y: number, kind: DepotKind = "basic") => {
     if (x < 0 || y < 0 || x >= GRID || y >= GRID) return;
     if (p.cells[idx(x, y)] !== G_BASE) {
       setMessage(t("depot.onlyIntact"));
@@ -862,20 +869,33 @@ export default function Lobby({
       return;
     }
     if (p.depots.some((d) => d.cx === x && d.cy === y)) return;
-    const cost = priceAt(DRONE_UNIT_COST, p.levels.drones) * DRONES_PER_CELL;
+    // У шаров прокачки нет: цена одна на всю игру.
+    const balloons = kind === "balloon";
+    const cost = balloons
+      ? BALLOON_UNIT_COST * BALLOONS_PER_CELL
+      : priceAt(DRONE_UNIT_COST, p.levels.drones) * DRONES_PER_CELL;
     if (p.credits < cost) {
       setMessage(t("depot.noCredits", { cost: fmt(cost) }));
       return;
     }
     const previousDepots = p.depots;
     const previousCredits = p.credits;
-    p.depots = [...p.depots, { cx: x, cy: y, n: DRONES_PER_CELL }];
+    p.depots = [
+      ...p.depots,
+      balloons
+        ? { cx: x, cy: y, n: BALLOONS_PER_CELL, kind: "balloon" as const }
+        : { cx: x, cy: y, n: DRONES_PER_CELL },
+    ];
     p.credits -= cost;
     showPrice(x, y, -cost);
     setVersion((v) => v + 1);
     forceRender((v) => v + 1);
     try {
-      const patch = await repo.buyDrones(p, DRONES_PER_CELL);
+      const patch = await repo.buyDepot(
+        p,
+        balloons ? BALLOONS_PER_CELL : DRONES_PER_CELL,
+        kind
+      );
       if (patch.credits !== undefined) p.credits = patch.credits;
       forceRender((v) => v + 1);
     } catch (e) {
@@ -1179,8 +1199,8 @@ export default function Lobby({
       return;
     }
 
-    if (tool === "drones") {
-      void buyDepotAt(c.x, c.y);
+    if (tool === "drones" || tool === "balloons") {
+      void buyDepotAt(c.x, c.y, tool === "balloons" ? "balloon" : "basic");
       return;
     }
     if (isBuildKind(tool)) {
@@ -1340,8 +1360,9 @@ export default function Lobby({
     if (isBuildKind(tool)) {
       return p.guns.filter((g) => gunKind(g) === tool);
     }
-    if (tool === "drones") {
-      return p.depots;
+    if (tool === "drones" || tool === "balloons") {
+      const want = tool === "balloons" ? "balloon" : "basic";
+      return p.depots.filter((d) => depotKind(d) === want);
     }
     return [];
   };
@@ -1397,7 +1418,7 @@ export default function Lobby({
     // Установки и контейнеры переставляются одинаково: тянем и роняем. Видно
     // и куда можно, и куда нельзя.
     const placing = isBuildKind(tool) || dragGunRef.current;
-    const stacking = tool === "drones" || draggedDepot;
+    const stacking = tool === "drones" || tool === "balloons" || draggedDepot;
     if (placing || stacking) {
       drawFreeCells(
         ctx,

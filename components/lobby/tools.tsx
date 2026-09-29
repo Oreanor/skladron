@@ -26,6 +26,7 @@ import {
   LOAN_RATE,
   REPAIR_COST,
   SCRAP_REWARD,
+  BALLOON_UNIT_COST,
   ROCKET_COST,
   SPRAY_COST,
   TRAP_COST,
@@ -33,12 +34,12 @@ import {
   CELL_COST,
   type UpgradeKind,
 } from "@/lib/economy";
-import { DRONES_PER_CELL, type GunKind } from "@/lib/base";
+import { BALLOONS_PER_CELL, DRONES_PER_CELL, type GunKind } from "@/lib/base";
 import { ROCKET, SPRAY, TRAP } from "@/lib/tuning";
 import type { AttackOrder } from "@/lib/attack";
 import type { Player } from "@/lib/player";
 import type { Key } from "@/lib/i18n/dict";
-import { IconDrone } from "../ui";
+import { IconBalloon, IconDrone } from "../ui";
 
 export type Tool =
   | "area"
@@ -48,7 +49,8 @@ export type Tool =
   | "rocket"
   | "spray"
   | "trap"
-  | "drones";
+  | "drones"
+  | "balloons";
 /**
  * Инструменты, которые ставят на клетку предмет: у них общий путь — цена
  * по уровню, круг покрытия, подсветка уже стоящего, перетаскивание.
@@ -87,6 +89,7 @@ export const TOOLS: {
     | "sprays"
     | "traps"
     | "drones"
+    | "balloons"
     | "loan";
 }[] = [
   {
@@ -141,6 +144,15 @@ export const TOOLS: {
     icon: <IconDrone />,
     levelKind: "drones",
     countKind: "drones",
+  },
+  {
+    id: "balloons",
+    label: "tool.balloons",
+    hint: "tool.balloonsHint",
+    vars: { perCell: BALLOONS_PER_CELL, cost: BALLOON_UNIT_COST * BALLOONS_PER_CELL },
+    priceKey: "tool.priceBox",
+    icon: <IconBalloon />,
+    countKind: "balloons",
   },
   {
     id: "spray",

@@ -10,7 +10,7 @@ import { fmt } from "@/lib/economy";
 
 // Иконки живут отдельными .svg в components/icons — правятся редактором,
 // а не руками в JSX. Реэкспортируем, чтобы места вызова не менялись.
-export { IconDrone, IconMenu, IconTarget, IconUsers } from "./icons";
+export { IconBalloon, IconDrone, IconMenu, IconTarget, IconUsers } from "./icons";
 import { useT } from "@/lib/i18n";
 
 /*

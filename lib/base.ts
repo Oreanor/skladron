@@ -42,7 +42,13 @@ export const gunKind = (g: {
 export const countKind = (guns: Gun[], kind: GunKind) =>
   guns.reduce((n, g) => (gunKind(g) === kind ? n + 1 : n), 0);
 
-/** Контейнер с дронами: занимает клетку склада, вмещает DRONES_PER_CELL штук. */
+/**
+ * Что лежит в контейнере. Шары занимают клетку так же, как дроны, и
+ * покупаются тем же движением — разница только в цене и в том, что налёт
+ * их расходует.
+ */
+export type DepotKind = "basic" | "balloon";
+/** Прежнее имя: контейнер с дронами. */
 export type DroneKind = "basic";
 
 export interface Depot {
@@ -50,13 +56,22 @@ export interface Depot {
   cy: number;
   n: number;
   /** Раньше бывал kind=scout; при загрузке приводим к обычным дронам. */
-  kind?: DroneKind | "scout";
+  kind?: DepotKind | "scout";
 }
 
 export const DRONES_PER_CELL = 10;
+/** Шаров в контейнере столько же, сколько дронов: десяток. */
+export const BALLOONS_PER_CELL = 10;
+
+/** Вид не указан — обычный контейнер: так читаются склады, стоявшие раньше. */
+export const depotKind = (d: Depot): DepotKind =>
+  d.kind === "balloon" ? "balloon" : "basic";
 
 export const droneCount = (depots: Depot[]) =>
-  depots.reduce((sum, d) => sum + d.n, 0);
+  depots.reduce((sum, d) => (depotKind(d) === "basic" ? sum + d.n : sum), 0);
+
+export const balloonCount = (depots: Depot[]) =>
+  depots.reduce((sum, d) => (depotKind(d) === "balloon" ? sum + d.n : sum), 0);
 
 /** Старые контейнеры разведчиков превращаем в обычные — один склад дронов. */
 export function normalizeDepots(depots: Depot[]): Depot[] {

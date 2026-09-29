@@ -193,6 +193,7 @@ const fr: Dict = {
   "tool.trap": "Piège",
   "tool.rocket": "Lance-roquettes",
   "tool.drones": "Drones",
+  "tool.balloons": "Ballons",
   "tool.price": "{cost} cr",
   "tool.areaHint": "{cost} cr par nouvelle case",
   "tool.repairHint": "{cost} cr par case",
@@ -201,6 +202,7 @@ const fr: Dict = {
   "tool.trapHint": "{cost} cr le piège : retient jusqu’à {cap} drones dans un rayon de {range} cases.",
   "tool.rocketHint": "{cost} cr le lance-roquettes : il porte à {range} cases — deux fois plus qu’un canon — mais tire large et recharge en {reload} s. Le missile se rabat tout seul sur le drone le plus proche.",
   "tool.dronesHint": "Un conteneur de {perCell} drones pour {cost} cr. Clique une case libre de l’entrepôt ; les conteneurs se déplacent à la souris.",
+  "tool.balloonsHint": "Un conteneur de {perCell} ballons de barrage pour {cost} cr. Le raid lâche d’un coup tous ceux que tu as : ils dérivent lentement au-dessus du terrain, et le drone qui en percute un meurt avec lui, sans incendie ni dégât pour l’entrepôt. Mais un obus de canon crève tout aussi bien le ballon qui se trouve sur sa trajectoire. Les ballons ne se améliorent pas, et un raid les consomme.",
 
 
   "panel.base": "Entrepôt",
@@ -273,6 +275,7 @@ const fr: Dict = {
   "battle.incomingLeft": "En approche",
   "battle.killedByGuns": "Abattus par missiles",
   "battle.killedByMg": "Abattus en rafale",
+  "battle.killedByBalloons": "Écrasés sur les ballons",
   "battle.fires": "Foyers d’incendie",
   "battle.gunsAlive": "Canons en vie",
   "battle.integrity": "Intégrité",

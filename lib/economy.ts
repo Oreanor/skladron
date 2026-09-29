@@ -11,6 +11,12 @@ export const SPRAY_COST = 150;
 export const ROCKET_COST = 200;
 export const TRAP_COST = 200;
 export const DRONE_UNIT_COST = 25; // ударный дрон дороже разведчика
+/**
+ * Шар стоит кредит: контейнер на десяток — десятка. Прокачки у шаров нет
+ * и не будет — они не стреляют и не наводятся, вся их польза в том, что
+ * они просто висят.
+ */
+export const BALLOON_UNIT_COST = 1;
 /** Сколько платят за сданные во вторсырьё остатки сгоревшей клетки. */
 export const SCRAP_REWARD = 5;
 
@@ -79,8 +85,11 @@ export const insuranceShare = (level: number) =>
   Math.min(1, Math.max(0, level - 1) * INSURANCE_PER_LEVEL);
 
 /** Во что обошлось то, что лежит в контейнерах. */
-export const goodsValue = (depots: { n: number }[]) =>
-  depots.reduce((sum, d) => sum + d.n * DRONE_UNIT_COST, 0);
+export const goodsValue = (depots: { n: number; kind?: string }[]) =>
+  depots.reduce(
+    (sum, d) => sum + d.n * (d.kind === "balloon" ? BALLOON_UNIT_COST : DRONE_UNIT_COST),
+    0
+  );
 
 /** Страховая выплата: расчистка клеток плюс доля стоимости потерянного. */
 export const insurance = (

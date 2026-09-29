@@ -160,7 +160,8 @@ for (const [label, waves] of RAIDS) {
     cells: base(), guns: DEFENCE, depots: [], order: ord, levels: LEVELS, trace: "",
   });
   const total = A.raidTotal(waves);
-  const acc = v.result.killedByGuns + v.result.killedByMg + v.result.leaked;
+  const acc =
+    v.result.killedByGuns + v.result.killedByMg + v.result.killedByBalloons + v.result.leaked;
   check(`${label}: сбитые и прорвавшиеся равны высланным`, acc === total,
     `учтено ${acc}/${total}`);
 }
@@ -238,7 +239,7 @@ console.log("\n— начинке не по кому работать: целе�
     }
     E.settle(s);
     const r = s.result;
-    const acc = r.killedByGuns + r.killedByMg + r.leaked;
+    const acc = r.killedByGuns + r.killedByMg + r.killedByBalloons + r.leaked;
     check(`${label}: бой кончается`, s.phase !== "playing",
       `фаза ${s.phase} за ${(steps * T.SIM.step).toFixed(1)} c`);
     check(`${label}: никто не пропал мимо счёта`, acc === total, `учтено ${acc}/${total}`);
@@ -402,6 +403,76 @@ console.log("\n— премия нападавшему растёт с доле�
     M.attackLoot(40, 40) === 40 * M.CELL_LOOT_REWARD * 3,
     `сорок из сорока — ${M.attackLoot(40, 40)}`);
   check("целого склада не было — премии нет", M.attackLoot(0, 0) === 0);
+}
+
+console.log("\n— шары заграждения —");
+{
+  const ord = (waves) => order(waves, { seed: 313 });
+  const packs = (n) => {
+    const out = [];
+    const o = ((GRID - 30) / 2) | 0;
+    for (let k = 0; k < n; k++) {
+      out.push({ cx: o + 1 + (k % 8) * 3, cy: o + 1 + ((k / 8) | 0) * 3, n: 10, kind: "balloon" });
+    }
+    return out;
+  };
+  const raid = [wave("swarm", [g("plain", 60)])];
+
+  // Пять контейнеров — полсотни шаров в воздухе с первой секунды.
+  {
+    const s = E.createBattle(base(), [], packs(5), A.buildPlan(ord(raid)), { seed: 313 });
+    check("контейнеры вскрываются разом", s.balloons.length === 50,
+      `в воздухе ${s.balloons.length}`);
+    check("контейнеры с шарами на складе не остаются", s.depots.length === 0,
+      `осталось ${s.depots.length}`);
+  }
+
+  // Дроны об них бьются, склад при этом цел.
+  {
+    const s = E.createBattle(base(), [], packs(8), A.buildPlan(ord(raid)), { seed: 313 });
+    const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);
+    let steps = 0;
+    while (steps < cap && s.phase === "playing") { E.update(s, T.SIM.step); steps++; }
+    E.settle(s);
+    check("дроны бьются о шары", s.result.killedByBalloons > 0,
+      `разбилось ${s.result.killedByBalloons} из ${A.raidTotal(raid)}`);
+    check("шары не жгут склад", s.result.killedByBalloons <= 80 - s.balloons.length,
+      `лопнуло ${80 - s.balloons.length}, сбито ${s.result.killedByBalloons}`);
+    const acc =
+      s.result.killedByGuns + s.result.killedByMg + s.result.killedByBalloons + s.result.leaked;
+    check("счёт сходится и с шарами", acc === A.raidTotal(raid),
+      `учтено ${acc}/${A.raidTotal(raid)}`);
+  }
+
+  // Своим же снарядам шары мешают: под сплошным заграждением зенитки
+  // снимают меньше, чем в чистом небе.
+  {
+    const guns = spread(30, 7);
+    const kills = (depots) => {
+      const s = E.createBattle(base(), guns, depots, A.buildPlan(ord(raid)), {
+        seed: 313, guns: 2,
+      });
+      const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);
+      let steps = 0;
+      while (steps < cap && s.phase === "playing") { E.update(s, T.SIM.step); steps++; }
+      return s.result.killedByGuns;
+    };
+    const clear = kills([]);
+    const walled = kills(packs(8));
+    check("сплошное заграждение мешает и своим пушкам", walled < clear,
+      `в чистом небе ${clear}, под шарами ${walled}`);
+  }
+
+  // Бой не должен подвиснуть из-за того, что шары висят вечно.
+  {
+    const s = E.createBattle(base(), spread(30, 7), packs(6),
+      A.buildPlan(ord([wave("rings", [g("plain", 40)])])), { seed: 313, guns: 2 });
+    const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);
+    let steps = 0;
+    while (steps < cap && s.phase === "playing") { E.update(s, T.SIM.step); steps++; }
+    check("шары не держат бой открытым", s.phase !== "playing",
+      `фаза ${s.phase} за ${(steps * T.SIM.step).toFixed(1)} c, шаров осталось ${s.balloons.length}`);
+  }
 }
 
 console.log("\n— бой прежней версии движка не играется —");

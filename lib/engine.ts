@@ -15,6 +15,7 @@ import {
 } from "./base";
 import { mulberry32, type Payload, type SpawnTicket } from "./attack";
 import {
+  BALLOON,
   DRONE,
   FIRE,
   FX,
@@ -28,7 +29,7 @@ import {
   TRAP,
   WAVE,
 } from "./tuning";
-import { gunKind } from "./base";
+import { depotKind, gunKind } from "./base";
 
 export { GRID, G_BASE, G_FIRE, G_GROUND, G_SCORCH, idx, isBuilding };
 export { G_BURNT } from "./base";
@@ -133,6 +134,22 @@ export interface Rocket {
   smokeT: number;
 }
 
+/**
+ * Аэростат заграждения. Весь его смысл — занимать место: он ползёт над
+ * полем, и всё, что в него влетает, кончается вместе с ним. Своих он не
+ * различает, так что и снаряд зенитки лопнет шар, если тот оказался на
+ * линии.
+ */
+export interface Balloon {
+  id: number;
+  x: number;
+  y: number;
+  /** Куда ползёт и когда надумает ползти иначе. */
+  ang: number;
+  want: number;
+  next: number;
+}
+
 export interface Boom {
   x: number;
   y: number;
@@ -180,6 +197,8 @@ export interface BattleResult {
   trapsLost: number;
   /** Сколько ракетниц сгорело: они дороже зениток, и страховка это знает. */
   rocketsLost: number;
+  /** Сколько дронов разбилось о шары: ни пушки, ни руки тут ни при чём. */
+  killedByBalloons: number;
   dronesLost: number; // сгорело в контейнерах на складе
   depotsLost: number; // сколько контейнеров сгорело вместе с клетками
 }
@@ -194,6 +213,7 @@ export interface GameState {
   drones: Drone[];
   missiles: Missile[];
   rockets: Rocket[];
+  balloons: Balloon[];
   booms: Boom[];
   shots: Shot[];
   puffs: Puff[];
@@ -272,7 +292,7 @@ export function createBattle(
   let nextId = 1;
   const ok = baseCells.filter((i) => map[i] === G_BASE).length;
 
-  return {
+  const s: GameState = {
     phase: "playing",
     cells: map,
     baseCells,
@@ -293,10 +313,13 @@ export function createBattle(
       tank: SPRAY.tank,
       jammed: 0,
     })),
-    depots: depots.map((d) => ({ ...d })),
+    // Шары налёт расходует целиком: контейнеры вскрываются на первой же
+    // секунде, и на склад после боя они не возвращаются.
+    depots: depots.filter((d) => depotKind(d) !== "balloon").map((d) => ({ ...d })),
     drones: [],
     missiles: [],
     rockets: [],
+    balloons: [],
     booms: [],
     shots: [],
     puffs: [],
@@ -330,12 +353,56 @@ export function createBattle(
       spraysLost: 0,
       trapsLost: 0,
       rocketsLost: 0,
+      killedByBalloons: 0,
       dronesLost: 0,
       depotsLost: 0,
     },
     nextId,
     dirty: true,
   };
+
+  releaseBalloons(s, depots, baseCells);
+  return s;
+}
+
+/**
+ * Выпускает шары из контейнеров — все разом, на первой же секунде боя.
+ * Разносит их не по всей карте, а над складом и вокруг него с запасом:
+ * заграждение имеет смысл там, куда рой идёт, а не у края поля.
+ */
+function releaseBalloons(s: GameState, depots: Depot[], baseCells: number[]) {
+  let n = 0;
+  for (const d of depots) if (depotKind(d) === "balloon") n += d.n;
+  if (!n || !baseCells.length) return;
+
+  let x0 = GRID;
+  let y0 = GRID;
+  let x1 = 0;
+  let y1 = 0;
+  for (const i of baseCells) {
+    const x = i % GRID;
+    const y = (i / GRID) | 0;
+    if (x < x0) x0 = x;
+    if (x > x1) x1 = x;
+    if (y < y0) y0 = y;
+    if (y > y1) y1 = y;
+  }
+  x0 = Math.max(0, x0 - BALLOON.margin);
+  y0 = Math.max(0, y0 - BALLOON.margin);
+  x1 = Math.min(GRID, x1 + 1 + BALLOON.margin);
+  y1 = Math.min(GRID, y1 + 1 + BALLOON.margin);
+
+  for (let k = 0; k < n; k++) {
+    const ang = s.rnd() * Math.PI * 2;
+    s.balloons.push({
+      id: s.nextId++,
+      x: x0 + s.rnd() * (x1 - x0),
+      y: y0 + s.rnd() * (y1 - y0),
+      ang,
+      want: ang,
+      next: s.rnd() * BALLOON.rethink,
+    });
+  }
 }
 
 export function gunAt(s: GameState, x: number, y: number) {
@@ -1390,6 +1457,107 @@ function stepRockets(s: GameState, dt: number) {
   }
 }
 
+/**
+ * Шары: ползут, лопаются и роняют всё, что в них влетело.
+ *
+ * Проверки идут через сетку по клеткам, а не перебором: шаров бывает
+ * несколько сотен, дронов — до пятисот, и квадрат из них складывается в
+ * четверть миллиона сравнений за кадр.
+ */
+function stepBalloons(s: GameState, dt: number) {
+  if (!s.balloons.length) return;
+
+  for (const b of s.balloons) {
+    b.next -= dt;
+    if (b.next <= 0) {
+      b.next = BALLOON.rethink * (0.5 + s.rnd());
+      b.want = s.rnd() * Math.PI * 2;
+    }
+    let da = b.want - b.ang;
+    while (da > Math.PI) da -= Math.PI * 2;
+    while (da < -Math.PI) da += Math.PI * 2;
+    const turn = BALLOON.turn * dt;
+    b.ang += Math.max(-turn, Math.min(turn, da));
+    b.x += Math.cos(b.ang) * BALLOON.speed * dt;
+    b.y += Math.sin(b.ang) * BALLOON.speed * dt;
+    // У края разворачиваем: улетевший за карту шар просто пропал бы даром.
+    if (b.x < 0 || b.x > GRID || b.y < 0 || b.y > GRID) {
+      b.x = Math.max(0, Math.min(GRID, b.x));
+      b.y = Math.max(0, Math.min(GRID, b.y));
+      b.ang += Math.PI;
+      b.want = b.ang;
+      b.next = BALLOON.rethink;
+    }
+  }
+
+  // Сетка по клеткам: шар размером с клетку, так что достаточно заглянуть
+  // в свою клетку и восемь соседних.
+  const at = new Map<number, Balloon[]>();
+  for (const b of s.balloons) {
+    const key = ((b.y | 0) << 8) | (b.x | 0);
+    const cellList = at.get(key);
+    if (cellList) cellList.push(b);
+    else at.set(key, [b]);
+  }
+  const r2 = BALLOON.radius * BALLOON.radius;
+  const popped = new Set<number>();
+
+  /** Первый шар, накрывающий эту точку. Лопнувшие в этом кадре не в счёт. */
+  const hitAt = (x: number, y: number) => {
+    const cx = x | 0;
+    const cy = y | 0;
+    for (let oy = -1; oy <= 1; oy++) {
+      for (let ox = -1; ox <= 1; ox++) {
+        const list = at.get(((cy + oy) << 8) | (cx + ox));
+        if (!list) continue;
+        for (const b of list) {
+          if (popped.has(b.id)) continue;
+          const dx = b.x - x;
+          const dy = b.y - y;
+          if (dx * dx + dy * dy <= r2) return b;
+        }
+      }
+    }
+    return null;
+  };
+
+  // Дрон в шаре гибнет вместе с ним. Ни пожара, ни выбоины: склад под
+  // этим местом не страдает вовсе — в том и вся прелесть заграждения.
+  for (let i = s.drones.length - 1; i >= 0; i--) {
+    const d = s.drones[i];
+    if (d.hit || d.heldBy) continue;
+    const b = hitAt(d.x, d.y);
+    if (!b) continue;
+    popped.add(b.id);
+    s.booms.push({ x: d.x, y: d.y, t: 0, r: 1.2 });
+    s.drones.splice(i, 1);
+    s.result.killedByBalloons++;
+  }
+
+  // Снаряд зенитки и ракета шара не различают: подвернулся — лопнул, а
+  // дрон за ним уцелел. Поэтому сплошное заграждение вредит и хозяину.
+  for (let i = s.missiles.length - 1; i >= 0; i--) {
+    const m = s.missiles[i];
+    const b = hitAt(m.x, m.y);
+    if (!b) continue;
+    popped.add(b.id);
+    s.booms.push({ x: m.x, y: m.y, t: 0, r: 1 });
+    s.missiles.splice(i, 1);
+  }
+  for (let i = s.rockets.length - 1; i >= 0; i--) {
+    const m = s.rockets[i];
+    const b = hitAt(m.x, m.y);
+    if (!b) continue;
+    popped.add(b.id);
+    s.booms.push({ x: m.x, y: m.y, t: 0, r: 1 });
+    s.rockets.splice(i, 1);
+  }
+
+  if (popped.size) {
+    s.balloons = s.balloons.filter((b) => !popped.has(b.id));
+  }
+}
+
 /** Пожар: перекидывается на соседей, а без топлива догорает. */
 function stepFire(s: GameState, dt: number) {
   if (s.fire.size) {
@@ -1462,6 +1630,7 @@ export function update(s: GameState, dt: number) {
   stepGuns(s, dt);
   stepMissiles(s, dt);
   stepRockets(s, dt);
+  stepBalloons(s, dt);
   stepFire(s, dt);
   stepEffects(s, dt);
 

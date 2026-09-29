@@ -19,6 +19,7 @@ import {
 import { FX, GUN, ROCKET, SPRAY, SUPPRESS, TRAP } from "./tuning";
 import { COLORS } from "./render/colors";
 import {
+  drawBalloons,
   drawDepots,
   drawRocket,
   drawSpray,
@@ -29,6 +30,7 @@ import {
 // Палитра и сами предметы живут в render/: их правят отдельно от кадра боя.
 export { COLORS } from "./render/colors";
 export {
+  drawBalloons,
   drawDepots,
   drawRocket,
   drawScoutPlane,
@@ -276,6 +278,8 @@ export function drawFrame(
         break;
     }
   }
+
+  drawBalloons(ctx, s.balloons, cell);
 
   // прицел красим тем же правилом, по которому игра и стреляет: захваченный
   // дрон делает его стрелковым даже над складом

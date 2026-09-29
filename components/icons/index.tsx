@@ -4,6 +4,7 @@
  * берёт currentColor, так что иконка красится тем же, чем и текст рядом.
  */
 
+import Balloon from "./balloon.svg";
 import Drone from "./drone.svg";
 import Menu from "./menu.svg";
 import Target from "./target.svg";
@@ -15,3 +16,4 @@ export const IconTarget = () => <Target className={SIZE} />;
 export const IconUsers = () => <Users className={SIZE} />;
 export const IconMenu = () => <Menu className={SIZE} />;
 export const IconDrone = () => <Drone className={SIZE} />;
+export const IconBalloon = () => <Balloon className={SIZE} />;

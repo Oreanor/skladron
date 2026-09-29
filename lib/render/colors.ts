@@ -69,6 +69,13 @@ export const COLORS = {
       crossed: "rgba(163, 230, 53, 0.95)",
     },
   } as Record<string, { line: string; fill: string; faint: string; crossed: string }>,
+  /**
+   * Шары. Светлые и полупрозрачные: они висят над складом весь бой, и
+   * плотный цвет закрыл бы собой карту. Оттенки разные — иначе поле
+   * выглядит как сыпь одинаковых кружков.
+   */
+  balloon: ["#f2a0b5", "#a0c8f2", "#f2dfa0", "#b5f2a0", "#d5a0f2"],
+  balloonLine: "rgba(255, 255, 255, 0.55)",
   missile: "#ffd166",
   water: "#79c7ff",
   flash: "#ffe9a8",

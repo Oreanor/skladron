@@ -194,6 +194,7 @@ const en = {
   "tool.trap": "Trap",
   "tool.rocket": "Launcher",
   "tool.drones": "Drones",
+  "tool.balloons": "Balloons",
   "tool.price": "{cost} cr",
   "tool.areaHint": "{cost} cr per new cell",
   "tool.repairHint": "{cost} cr per cell",
@@ -202,6 +203,7 @@ const en = {
   "tool.trapHint": "{cost} cr per trap: holds up to {cap} drones within {range} cells.",
   "tool.rocketHint": "{cost} cr per launcher: reaches {range} cells — twice a gun — but fires wide and reloads for {reload} s. The missile steers onto the nearest drone by itself.",
   "tool.dronesHint": "A container of {perCell} drones for {cost} cr. Click a free cell of the warehouse; drag containers to move them.",
+  "tool.balloonsHint": "A container of {perCell} barrage balloons for {cost} cr. A raid releases every one you have at once: they drift slowly over the field, and a drone that flies into one dies with it — no fire, no damage to the warehouse. But a gun shell will pop a balloon in its way just the same. Balloons have no upgrades, and a raid spends them.",
 
 
   "panel.base": "Warehouse",
@@ -274,6 +276,7 @@ const en = {
   "battle.incomingLeft": "Still coming",
   "battle.killedByGuns": "Missile kills",
   "battle.killedByMg": "Machine-gun kills",
+  "battle.killedByBalloons": "Lost on balloons",
   "battle.fires": "Fires",
   "battle.gunsAlive": "Guns alive",
   "battle.integrity": "Integrity",

@@ -193,6 +193,7 @@ const pt: Dict = {
   "tool.trap": "Armadilha",
   "tool.rocket": "Lançador",
   "tool.drones": "Drones",
+  "tool.balloons": "Balões",
   "tool.price": "{cost} cr",
   "tool.areaHint": "{cost} cr por célula nova",
   "tool.repairHint": "{cost} cr por célula",
@@ -201,6 +202,7 @@ const pt: Dict = {
   "tool.trapHint": "{cost} cr por armadilha: retém até {cap} drones a {range} células.",
   "tool.rocketHint": "{cost} cr por lançador: alcança {range} células — o dobro de um canhão — mas dispara torto e recarrega {reload} s. O míssil vira sozinho para o dron mais próximo.",
   "tool.dronesHint": "Um contentor de {perCell} drones por {cost} cr. Toca numa célula livre do armazém; os contentores arrastam-se.",
+  "tool.balloonsHint": "Um contentor de {perCell} balões de barragem por {cost} cr. O ataque solta todos de uma vez: flutuam devagar sobre o campo e o drone que bate num morre com ele, sem fogo nem dano ao armazém. Mas um projéctil do canhão também rebenta o balão que lhe apareça à frente. Os balões não se melhoram e o ataque gasta-os.",
 
 
   "panel.base": "Armazém",
@@ -273,6 +275,7 @@ const pt: Dict = {
   "battle.incomingLeft": "A caminho",
   "battle.killedByGuns": "Abatidos por mísseis",
   "battle.killedByMg": "Abatidos à rajada",
+  "battle.killedByBalloons": "Despenhados em balões",
   "battle.fires": "Focos de incêndio",
   "battle.gunsAlive": "Canhões vivos",
   "battle.integrity": "Integridade",

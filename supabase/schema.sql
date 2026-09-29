@@ -8,7 +8,7 @@
 -- Версия боевого движка. Должна совпадать с SIMULATION_VERSION в
 -- lib/tuning.ts: по ней отсекаются бои, посчитанные прежней геометрией волн.
 create or replace function sim_version() returns int
-language sql immutable as $$ select 6 $$;
+language sql immutable as $$ select 7 $$;
 
 -- держим в одном месте, чтобы клиент и сервер не разъезжались
 create or replace function price(kind text) returns int
@@ -24,6 +24,8 @@ language sql immutable as $$
     when 'refund' then 50
     when 'drones' then 1000
     when 'drone'  then 25
+    -- Шар стоит кредит: контейнер на десяток — десятка. Прокачки нет.
+    when 'balloon' then 1
     when 'income' then 10  -- кредитов в сутки с каждой целой клетки
     when 'sale'   then 2   -- отгрузка идёт вдвое дороже закупки
     when 'loot'   then 50   -- нападавшему за каждую сожжённую клетку склада
@@ -126,12 +128,14 @@ language sql immutable as $$
   from generate_series(0, 9999) as cells(n);
 $$;
 
--- Во сколько обходится товар на складе: по нему считается суточный доход.
+-- Во сколько обходится товар на складе: по нему считается суточный доход и
+-- страховая выплата за сгоревшее. Шары считаются по своей цене.
 create or replace function depot_value(d jsonb) returns int
 language sql immutable as $$
   select coalesce(sum(
     (e->>'n')::int
-    * price('drone')
+    * case when coalesce(e->>'kind', 'basic') = 'balloon'
+             then price('balloon') else price('drone') end
   ), 0)::int
   from jsonb_array_elements(coalesce(d, '[]'::jsonb)) e;
 $$;
@@ -175,7 +179,7 @@ create or replace function depots_only_changed(
     depot_sum_kind(after, k) =
       depot_sum_kind(before, k) + case when k = kind then delta else 0 end
   )
-  from unnest(array['basic']) as k;
+  from unnest(array['basic', 'balloon']) as k;
 $$;
 
 -- контейнеры обязаны стоять на целых клетках, по одному на клетку, не поверх пушек
@@ -199,7 +203,9 @@ begin
        where key not in ('cx', 'cy', 'n', 'kind')
     ) then return false; end if;
     if e->>'cx' is null or e->>'cy' is null or e->>'n' is null then return false; end if;
-    if coalesce(e->>'kind', 'basic') not in ('basic', 'scout') then return false; end if;
+    if coalesce(e->>'kind', 'basic') not in ('basic', 'scout', 'balloon') then
+      return false;
+    end if;
     -- scout — legacy: клиент при сохранении переводит в basic; новые не принимаем
     if coalesce(e->>'kind', 'basic') = 'scout' then return false; end if;
     begin
@@ -531,6 +537,8 @@ update profiles
 
 drop function if exists buy_drones(int, jsonb);
 drop function if exists buy_drones(int, jsonb, text);
+-- Закупка стала общей для дронов и шаров и переехала в buy_depot.
+drop function if exists buy_depot(int, jsonb);
 drop function if exists buy_scouts(int);
 drop function if exists spend_scouts(int);
 -- claim/resolve настоящего налёта: добавился token, старые формы мешают PostgREST
@@ -746,7 +754,7 @@ begin
 
   update bases set drone_cells = next_depots, updated_at = now() where user_id = uid;
   update profiles
-     set drones = depot_sum(next_depots),
+     set drones = depot_sum_kind(next_depots, 'basic'),
          credits = profiles.credits - surcharge,
          stats = jsonb_set(stats, '{raids}', to_jsonb((stats->>'raids')::int + 1))
    where profiles.id = uid and profiles.credits >= surcharge
@@ -819,7 +827,7 @@ begin
   next_depots := take_from_depots(cur_depots, n, 'basic');
 
   update bases set drone_cells = next_depots, updated_at = now() where user_id = uid;
-  scouts := depot_sum(next_depots);
+  scouts := depot_sum_kind(next_depots, 'basic');
   depots := next_depots;
   select encode(b.cells, 'base64'), b.guns,
          coalesce((p.levels->>'guns')::int, 1)
@@ -1052,8 +1060,16 @@ begin
   sale := drones_out * price_at(price('drone'), coalesce((prof.levels->>'drones')::int, 1))
          * price('sale');
 
+  -- Уходят только дроны. Шары остаются на складе: они не товар, а
+  -- заграждение, и отгружать их некуда.
   update bases
-     set drone_cells = '[]'::jsonb, updated_at = now()
+     set drone_cells = coalesce((
+           select jsonb_agg(e order by ord)
+             from jsonb_array_elements(coalesce(drone_cells, '[]'::jsonb))
+                  with ordinality as t(e, ord)
+            where coalesce(e->>'kind', 'basic') = 'balloon'
+         ), '[]'::jsonb),
+         updated_at = now()
    where user_id = uid and jsonb_array_length(drone_cells) > 0;
 
   update profiles
@@ -1200,7 +1216,7 @@ begin
 
   update profiles
      set credits = profiles.credits - cost,
-         drones = depot_sum(new_depots),
+         drones = depot_sum_kind(new_depots, 'basic'),
          founded = profiles.founded or intact_now >= price('found'),
          stats = jsonb_set(profiles.stats, '{cellsRepaired}',
                  to_jsonb((profiles.stats->>'cellsRepaired')::int + repaired))
@@ -1250,11 +1266,14 @@ begin
 end;
 $$;
 
--- ---------- закупка дронов ----------
+-- ---------- закупка в контейнеры ----------
 
--- Параметр packs сохранён по имени для бесшовного обновления старой RPC,
--- но его значение теперь означает точное количество дронов.
-create or replace function buy_drones(packs int, new_depots jsonb)
+-- Дроны и шары кладутся на склад одним и тем же движением, так что и
+-- функция одна. Параметр packs сохранён по имени от старой RPC, но его
+-- значение означает точное количество штук, а не число пачек.
+create or replace function buy_depot(
+  packs int, new_depots jsonb, depot_kind text default 'basic'
+)
 returns table (credits int, drones int)
 language plpgsql security definer set search_path = public as $$
 declare
@@ -1268,10 +1287,17 @@ begin
   if packs is null or packs < 1 or packs > 100000 then
     raise exception 'bad drone amount';
   end if;
-  select packs * price_at(
-           price('drone'),
-           coalesce((p.levels->>'drones')::int, 1)
-         )
+  if depot_kind not in ('basic', 'balloon') then
+    raise exception 'bad depot kind';
+  end if;
+  -- Шары не качаются: их цена одна на всю игру, дроны дорожают с уровнем.
+  select case when depot_kind = 'balloon'
+              then packs * price('balloon')
+              else packs * price_at(
+                     price('drone'),
+                     coalesce((p.levels->>'drones')::int, 1)
+                   )
+         end
     into cost
     from profiles p where p.id = uid;
 
@@ -1293,8 +1319,8 @@ begin
   end if;
 
   -- купленное обязано лечь на склад: ровно запрошенное число новых дронов
-  if not depots_only_changed(cur_depots, new_depots, 'basic', packs) then
-    raise exception 'depots must hold exactly the purchased drones';
+  if not depots_only_changed(cur_depots, new_depots, depot_kind, packs) then
+    raise exception 'depots must hold exactly the purchased items';
   end if;
   if not depots_valid(new_depots, cur, cur_guns) then
     raise exception 'not enough free cells for containers';
@@ -1304,7 +1330,7 @@ begin
 
   update profiles
      set credits = profiles.credits - cost,
-         drones = depot_sum(new_depots)
+         drones = depot_sum_kind(new_depots, 'basic')
    where profiles.id = uid and profiles.credits >= cost
    returning profiles.credits, profiles.drones into credits, drones;
 
@@ -1381,7 +1407,8 @@ begin
   end if;
 
   killed := coalesce((result->>'killedByGuns')::int, 0)
-          + coalesce((result->>'killedByMg')::int, 0);
+          + coalesce((result->>'killedByMg')::int, 0)
+          + coalesce((result->>'killedByBalloons')::int, 0);
   -- Здесь про размер роя ничего не известно: бой мог быть и с ботом, и с
   -- атакой, отправленной при прежнем потолке. Точную сверку с числом
   -- высланных дронов делает resolve_attack; тут — только защита от чуши.
@@ -1432,7 +1459,7 @@ begin
   -- За сбитых не платят: деньги приносит товар, а не стрельба. Зато
   -- погорельцу выплачивается страховка и премия за отбой.
   update profiles
-     set drones = depot_sum(new_depots),
+     set drones = depot_sum_kind(new_depots, 'basic'),
          credits = profiles.credits + payout,
          stats = profiles.stats
        || jsonb_build_object(
@@ -2078,7 +2105,7 @@ end
 $perm$;
 
 grant execute on function ensure_player, collect_income, save_base,
-  buy_drones, apply_battle, wipe_base, rename_base, save_enemies,
+  buy_depot, apply_battle, wipe_base, rename_base, save_enemies,
   base_names, stale_patches, launch_scout, upgrade, add_rival,
   take_loan, repay_loan, raid_log, hide_raid,
   send_attack, pending_attacks, attack_reports, ack_attack_report, restart_game to authenticated;

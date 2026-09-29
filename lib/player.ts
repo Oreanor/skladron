@@ -17,6 +17,7 @@ import {
   G_BASE,
   G_BURNT,
   type Gun,
+  depotKind,
   droneCount,
   normalizeDepots,
   sanitizeGuns,
@@ -257,8 +258,9 @@ export function collectIncome(p: Player, now = Date.now()) {
   const { credits, days, nextAt } = accrue(intactCells(p), p.lastIncomeAt, now);
   if (days <= 0) return { credits: 0, days: 0, sold: null };
   // Отгрузка идёт разом, а не за каждые сутки: продаётся то, что лежит сейчас.
+  // Шары остаются: они не товар, а заграждение, и покупателя на них нет.
   const sale = saleOf(p);
-  p.depots = [];
+  p.depots = p.depots.filter((d) => depotKind(d) === "balloon");
   p.lastIncomeAt = nextAt;
   p.credits += credits + sale.dronesValue;
   return { credits: credits + sale.dronesValue, days, sold: sale };

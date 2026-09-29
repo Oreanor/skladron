@@ -193,6 +193,7 @@ const de: Dict = {
   "tool.trap": "Falle",
   "tool.rocket": "Raketenwerfer",
   "tool.drones": "Drohnen",
+  "tool.balloons": "Ballons",
   "tool.price": "{cost} Cr",
   "tool.areaHint": "{cost} Cr pro neuem Feld",
   "tool.repairHint": "{cost} Cr pro Feld",
@@ -201,6 +202,7 @@ const de: Dict = {
   "tool.trapHint": "{cost} Cr je Falle: hält bis zu {cap} Drohnen im Umkreis von {range} Feldern.",
   "tool.rocketHint": "{cost} cr pro Werfer: reicht {range} Felder — doppelt so weit wie eine Kanone — schießt aber ungenau und lädt {reload} s nach. Die Rakete dreht selbst auf die nächste Drohne ein.",
   "tool.dronesHint": "Ein Container mit {perCell} Drohnen für {cost} Cr. Auf ein freies Lagerfeld klicken; Container lassen sich ziehen.",
+  "tool.balloonsHint": "Ein Behälter mit {perCell} Sperrballons für {cost} Cr. Ein Angriff lässt alle auf einmal steigen: sie treiben langsam über das Feld, und eine Drohne, die hineinfliegt, stirbt mit dem Ballon — ohne Feuer und ohne Schaden am Lager. Aber auch ein Geschützgeschoss zerplatzt den Ballon, der ihm im Weg hängt. Ballons kennen keine Stufen, und ein Angriff verbraucht sie.",
 
 
   "panel.base": "Lager",
@@ -273,6 +275,7 @@ const de: Dict = {
   "battle.incomingLeft": "Im Anflug",
   "battle.killedByGuns": "Von Raketen getroffen",
   "battle.killedByMg": "Vom MG getroffen",
+  "battle.killedByBalloons": "An Ballons zerschellt",
   "battle.fires": "Brandherde",
   "battle.gunsAlive": "Geschütze intakt",
   "battle.integrity": "Zustand",

@@ -13,28 +13,41 @@ import { COLORS } from "./colors";
 
 /** Контейнеры с дронами — их видит только хозяин склада. */
 /**
- * Контейнеры на складе. На крышке рисуем то, что внутри: винты квадрокоптера
- * винты квадрокоптера на крышке.
+ * Контейнеры на складе. На крышке рисуем то, что внутри: винты у дронов,
+ * кружок с верёвкой у шаров. Клетка всего семь точек, так что это не
+ * рисунок, а узнаваемое пятно.
  */
 export function drawDepots(
   ctx: CanvasRenderingContext2D,
-  depots: { cx: number; cy: number; n: number }[],
+  depots: { cx: number; cy: number; n: number; kind?: string }[],
   cell: number,
   dim = false
 ) {
   for (const d of depots) {
     const x = d.cx * cell;
     const y = d.cy * cell;
-    const fill = "122, 90, 46";
-    const line = "214, 168, 92";
+    const balloons = d.kind === "balloon";
+    const fill = balloons ? "70, 96, 120" : "122, 90, 46";
+    const line = balloons ? "160, 200, 242" : "214, 168, 92";
     ctx.fillStyle = `rgba(${fill}, ${dim ? 0.5 : 1})`;
     ctx.fillRect(x, y, cell, cell);
     ctx.strokeStyle = `rgba(${line}, ${dim ? 0.5 : 1})`;
     ctx.lineWidth = 1;
     ctx.strokeRect(x + 0.5, y + 0.5, cell - 1, cell - 1);
 
-    // винты по углам и корпус между ними — клетка всего 7 px, так что это
-    // не рисунок, а узнаваемое пятно
+    if (balloons) {
+      // Шар с верёвкой: кружок повыше середины и хвостик вниз.
+      ctx.beginPath();
+      ctx.arc(x + cell * 0.5, y + cell * 0.42, cell * 0.26, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x + cell * 0.5, y + cell * 0.68);
+      ctx.lineTo(x + cell * 0.5, y + cell * 0.86);
+      ctx.stroke();
+      continue;
+    }
+
+    // винты по углам и корпус между ними
     const r = cell * 0.13;
     const off = cell * 0.28;
     const rotors: [number, number][] = [
@@ -50,6 +63,40 @@ export function drawDepots(
     }
     ctx.stroke();
     ctx.fillRect(x + cell * 0.4, y + cell * 0.4, cell * 0.2, cell * 0.2);
+  }
+}
+
+/**
+ * Шары в воздухе. Рисуем после дронов и перед прицелом: они висят выше
+ * всего, что на земле, но заслонять перекрестье им незачем.
+ */
+export function drawBalloons(
+  ctx: CanvasRenderingContext2D,
+  balloons: { id: number; x: number; y: number }[],
+  cell: number
+) {
+  for (const b of balloons) {
+    const x = b.x * cell;
+    const y = b.y * cell;
+    const r = cell * 0.5;
+    const tint = COLORS.balloon[b.id % COLORS.balloon.length];
+
+    ctx.globalAlpha = 0.45;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = tint;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    ctx.strokeStyle = COLORS.balloonLine;
+    ctx.lineWidth = Math.max(1, cell * 0.12);
+    ctx.stroke();
+
+    // Блик — по нему шар читается шаром, а не просто кружком.
+    ctx.beginPath();
+    ctx.arc(x - r * 0.3, y - r * 0.35, r * 0.22, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+    ctx.fill();
   }
 }
 

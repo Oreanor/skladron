@@ -9,6 +9,7 @@ import {
   decodePgBytea,
   encodeRle,
   normalizeDepots,
+  type DepotKind,
   sanitizeGuns,
 } from "./base";
 
@@ -96,7 +97,8 @@ export interface Repo {
    * наша копия разъехалась с его, и правда — на сервере.
    */
   reloadBase(p: Player): Promise<void>;
-  buyDrones(p: Player, amount: number): Promise<Partial<Player>>;
+  /** Докупка в контейнеры: дроны или шары, счёт в штуках. */
+  buyDepot(p: Player, amount: number, kind: DepotKind): Promise<Partial<Player>>;
   /**
    * Налёт волнами. Дронов снимает сервер со своей копии склада, надбавку за
    * начинку списывает кредитами, обратно приходит id и новый склад.
@@ -216,7 +218,7 @@ class LocalRepo implements Repo {
     return { credits: p.credits, levels: p.levels };
   }
 
-  async buyDrones(p: Player, _amount: number) {
+  async buyDepot(p: Player, _amount: number, _kind: DepotKind) {
     localSave(p);
     return {};
   }
@@ -608,12 +610,13 @@ class CloudRepo implements Repo {
 
 
 
-  async buyDrones(p: Player, amount: number) {
+  async buyDepot(p: Player, amount: number, kind: DepotKind) {
     p.depots = normalizeDepots(p.depots);
-    const { data, error } = await this.db().rpc("buy_drones", {
-      // Имя SQL-параметра оставлено для совместимости со старой функцией,
-      // но теперь это точное количество дронов, а не число пачек.
+    const { data, error } = await this.db().rpc("buy_depot", {
+      // Имя SQL-параметра оставлено от старой функции, но это точное
+      // количество штук, а не число пачек.
       packs: amount,
+      depot_kind: kind,
       new_depots: p.depots,
     });
     if (error) throw error;

@@ -193,6 +193,7 @@ const it: Dict = {
   "tool.trap": "Trappola",
   "tool.rocket": "Lanciarazzi",
   "tool.drones": "Droni",
+  "tool.balloons": "Palloni",
   "tool.price": "{cost} cr",
   "tool.areaHint": "{cost} cr per cella nuova",
   "tool.repairHint": "{cost} cr per cella",
@@ -201,6 +202,7 @@ const it: Dict = {
   "tool.trapHint": "{cost} cr per trappola: trattiene fino a {cap} droni entro {range} celle.",
   "tool.rocketHint": "{cost} cr per lanciarazzi: arriva a {range} celle — il doppio di un cannone — ma spara largo e ricarica in {reload} s. Il missile vira da solo sul drone più vicino.",
   "tool.dronesHint": "Un container da {perCell} droni per {cost} cr. Tocca una cella libera del magazzino; i container si trascinano.",
+  "tool.balloonsHint": "Un contenitore da {perCell} palloni di sbarramento per {cost} cr. L’attacco li libera tutti insieme: vanno alla deriva lenti sopra il campo, e il drone che ne colpisce uno muore con lui, senza incendio né danni al magazzino. Ma anche una granata del cannone fa scoppiare il pallone che le capita davanti. I palloni non si potenziano, e un attacco li consuma.",
 
 
   "panel.base": "Magazzino",
@@ -273,6 +275,7 @@ const it: Dict = {
   "battle.incomingLeft": "In arrivo",
   "battle.killedByGuns": "Abbattuti dai missili",
   "battle.killedByMg": "Abbattuti a raffica",
+  "battle.killedByBalloons": "Schiantati sui palloni",
   "battle.fires": "Focolai",
   "battle.gunsAlive": "Cannoni vivi",
   "battle.integrity": "Integrità",
