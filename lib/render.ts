@@ -10,15 +10,17 @@ import {
 import {
   aimMode,
   gunRange,
+  rocketRange,
   sprayRange,
   suppressRange,
   trapRange,
   type GameState,
 } from "./engine";
-import { FX, GUN, SPRAY, SUPPRESS, TRAP } from "./tuning";
+import { FX, GUN, ROCKET, SPRAY, SUPPRESS, TRAP } from "./tuning";
 import { COLORS } from "./render/colors";
 import {
   drawDepots,
+  drawRocket,
   drawSpray,
   drawTrap,
   drawTurret,
@@ -26,7 +28,14 @@ import {
 
 // Палитра и сами предметы живут в render/: их правят отдельно от кадра боя.
 export { COLORS } from "./render/colors";
-export { drawDepots, drawScoutPlane, drawSpray, drawTrap, drawTurret } from "./render/pieces";
+export {
+  drawDepots,
+  drawRocket,
+  drawScoutPlane,
+  drawSpray,
+  drawTrap,
+  drawTurret,
+} from "./render/pieces";
 
 /** Всё, что нужно для отрисовки карты — и бою, и редактору. */
 export interface Scene {
@@ -124,12 +133,13 @@ export function drawStatic(
     // поверх этого слоя рисуется живая башня со своим углом.
     if (kind === "spray") drawSpray(ctx, g.cx, g.cy, cell, angle, 0, g.alive !== false);
     else if (kind === "trap") drawTrap(ctx, g.cx, g.cy, cell, g.alive !== false);
+    else if (kind === "rocket") drawRocket(ctx, g.cx, g.cy, cell, angle, g.alive !== false);
     else drawTurret(ctx, g.cx, g.cy, cell, angle, g.alive !== false);
   }
 }
 
-/** Чьи круги покрытия показывать: зениток, огнетушителей, ловушек. */
-export type CoverageKind = "gun" | "spray" | "trap";
+/** Чьи круги покрытия показывать: зениток, ракетниц, огнетушителей, ловушек. */
+export type CoverageKind = "gun" | "rocket" | "spray" | "trap";
 
 export function drawCoverage(
   ctx: CanvasRenderingContext2D,
@@ -147,24 +157,37 @@ export function drawCoverage(
   range: number = GUN.range,
   spraysRange: number = SPRAY.range,
   trapsRange: number = TRAP.range,
+  rocketsRange: number = ROCKET.range,
   /**
    * Чьи круги рисовать. Пусто — ничьи: три набора кругов разом закрывают
    * склад так, что на нём уже ничего не разглядеть, поэтому в лобби видны
    * только круги того, что сейчас ставят.
    */
-  show: readonly CoverageKind[] = ["gun", "spray", "trap"]
+  show: readonly CoverageKind[] = ["gun", "rocket", "spray", "trap"]
 ) {
   if (!show.length) return;
   const live = guns.filter((g) => (g as { alive?: boolean }).alive !== false);
   if (!live.length) return;
-  const kindOf = (g: { kind?: string; spray?: boolean; trap?: boolean }) =>
+  const kindOf = (g: {
+    kind?: string;
+    spray?: boolean;
+    trap?: boolean;
+    rocket?: boolean;
+  }): CoverageKind =>
     g.kind === "trap" || g.trap === true
       ? "trap"
       : g.kind === "spray" || g.spray === true
         ? "spray"
-        : "gun";
+        : g.kind === "rocket" || g.rocket === true
+          ? "rocket"
+          : "gun";
   const styles = {
     gun: { r: range, fill: COLORS.range, stroke: COLORS.rangeLine },
+    rocket: {
+      r: rocketsRange,
+      fill: COLORS.rocketRange,
+      stroke: COLORS.rocketRangeLine,
+    },
     spray: {
       r: spraysRange,
       fill: "rgba(214, 64, 56, 0.12)",
@@ -217,10 +240,16 @@ export function drawFrame(
 
   const reach = sprayRange(s);
   const trapsReach = trapRange(s);
-  drawCoverage(ctx, s.guns, cell, gunRange(s), reach, trapsReach);
+  drawCoverage(ctx, s.guns, cell, gunRange(s), reach, trapsReach, rocketRange(s));
+  // Ракета в воздухе — значит направляющая пуста: по ней видно, кто сейчас
+  // перезаряжается, а кто готов пустить.
+  const launched = new Set<number>();
+  for (const r of s.rockets) launched.add(r.from);
   for (const g of s.guns) {
     if (g.spray)
       drawSpray(ctx, g.cx, g.cy, cell, g.angle, g.wet, g.alive, reach, g.tank / SPRAY.tank);
+    else if (g.rocket)
+      drawRocket(ctx, g.cx, g.cy, cell, g.angle, g.alive, !launched.has(g.id));
     else if (g.trap) {
       let held = 0;
       if (g.alive) {
@@ -273,7 +302,7 @@ export function drawFrame(
     ctx.fill();
   }
 
-  // ракеты
+  // снаряды зениток — короткие трассеры
   ctx.strokeStyle = COLORS.missile;
   ctx.lineWidth = Math.max(1, cell * 0.25);
   ctx.beginPath();
@@ -282,6 +311,46 @@ export function drawFrame(
     ctx.lineTo(m.x * cell, m.y * cell);
   }
   ctx.stroke();
+
+  // Ракеты ракетниц. Их мало и живут они долго, так что рисуем как предмет:
+  // корпус, красная головка и факел из сопла. Дымный след за ними сыплется
+  // в общую кучу клубов и нарисован выше.
+  for (const m of s.rockets) {
+    const len = cell * 0.55;
+    // Факел пульсирует — по мигающему хвосту ракета видна и на пёстром фоне.
+    const f = 0.6 + 0.4 * Math.sin(now / 40 + m.id);
+    ctx.save();
+    ctx.translate(m.x * cell, m.y * cell);
+    ctx.rotate(Math.atan2(m.dy, m.dx));
+
+    ctx.beginPath();
+    ctx.moveTo(-len * 0.35, -cell * 0.12);
+    ctx.lineTo(-len * (0.9 + f * 0.8), 0);
+    ctx.lineTo(-len * 0.35, cell * 0.12);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(255, 168, 56, 0.85)";
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(-len * 0.3, -cell * 0.06);
+    ctx.lineTo(-len * (0.5 + f * 0.5), 0);
+    ctx.lineTo(-len * 0.3, cell * 0.06);
+    ctx.closePath();
+    ctx.fillStyle = "#fff3c4";
+    ctx.fill();
+
+    ctx.fillStyle = "#dfe7ef";
+    ctx.fillRect(-len * 0.35, -cell * 0.09, len, cell * 0.18);
+    ctx.beginPath();
+    ctx.moveTo(len * 0.65, -cell * 0.09);
+    ctx.lineTo(len * 0.95, 0);
+    ctx.lineTo(len * 0.65, cell * 0.09);
+    ctx.closePath();
+    ctx.fillStyle = COLORS.droneAccent;
+    ctx.fill();
+
+    ctx.restore();
+  }
 
   // Круг подавления. Рисуем у всех подавителей, а не только у севших на
   // круг: глушат они с первой секунды полёта, и по кругу видно, до каких

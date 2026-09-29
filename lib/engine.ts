@@ -14,7 +14,20 @@ import {
   isBuilding,
 } from "./base";
 import { mulberry32, type Payload, type SpawnTicket } from "./attack";
-import { DRONE, FIRE, FX, GUN, HANDS, MISSILE, PAYLOAD, SPRAY, SUPPRESS, TRAP, WAVE } from "./tuning";
+import {
+  DRONE,
+  FIRE,
+  FX,
+  GUN,
+  HANDS,
+  MISSILE,
+  PAYLOAD,
+  ROCKET,
+  SPRAY,
+  SUPPRESS,
+  TRAP,
+  WAVE,
+} from "./tuning";
 import { gunKind } from "./base";
 
 export { GRID, G_BASE, G_FIRE, G_GROUND, G_SCORCH, idx, isBuilding };
@@ -35,6 +48,11 @@ export interface Gun {
   spray: boolean;
   /** Ловушка: держит дронов магнитом, не стреляет и не тушит. */
   trap: boolean;
+  /**
+   * Ракетница: та же зенитка, только достаёт вдвое дальше, пускает неточно
+   * и держит в воздухе одну ракету за раз.
+   */
+  rocket: boolean;
   /** Сколько ещё секунд крутиться и лить. */
   wet: number;
   /** Сколько секунд воды осталось в баке. */
@@ -97,6 +115,24 @@ export interface Missile {
   life: number;
 }
 
+/**
+ * Ракета ракетницы. От снаряда зенитки отличается тем, что цель у неё не
+ * закреплена: каждый кадр она сверяется, кто из роя теперь ближе, и
+ * доворачивает туда. Отсюда и дуги в следе.
+ */
+export interface Rocket {
+  id: number;
+  /** Чья: пока её ракета в воздухе, ракетница не пускает вторую. */
+  from: number;
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  life: number;
+  /** Сколько секунд до следующего клуба дыма. */
+  smokeT: number;
+}
+
 export interface Boom {
   x: number;
   y: number;
@@ -137,6 +173,8 @@ export interface BattleResult {
   spraysLost: number;
   /** Сколько ловушек сгорело: страховка платит по цене ловушки. */
   trapsLost: number;
+  /** Сколько ракетниц сгорело: они дороже зениток, и страховка это знает. */
+  rocketsLost: number;
   dronesLost: number; // сгорело в контейнерах на складе
   depotsLost: number; // сколько контейнеров сгорело вместе с клетками
 }
@@ -150,6 +188,7 @@ export interface GameState {
   depots: Depot[];
   drones: Drone[];
   missiles: Missile[];
+  rockets: Rocket[];
   booms: Boom[];
   shots: Shot[];
   puffs: Puff[];
@@ -174,6 +213,7 @@ export interface GameState {
   gunLevel: number;
   sprayLevel: number;
   trapLevel: number;
+  rocketLevel: number;
   mgLevel: number;
   waterLevel: number;
   dirty: boolean;
@@ -192,12 +232,17 @@ export const sprayRange = (s: { sprayLevel: number }) =>
 export const trapRange = (s: { trapLevel: number }) =>
   TRAP.range * levelBonus(s.trapLevel, TRAP.perLevel);
 
+/** Дальность ракетницы с учётом уровня: вдвое против зенитки. */
+export const rocketRange = (s: { rocketLevel: number }) =>
+  ROCKET.range * levelBonus(s.rocketLevel, ROCKET.perLevel);
+
 /** Уровни, с которыми идёт бой. Чего нет — то первого уровня. */
 export interface BattleLevels {
   drones?: number;
   guns?: number;
   sprays?: number;
   traps?: number;
+  rockets?: number;
   mg?: number;
   water?: number;
   /**
@@ -238,6 +283,7 @@ export function createBattle(
       aim: Math.atan2(g.cy + 0.5 - GRID / 2, g.cx + 0.5 - GRID / 2),
       spray: gunKind(g) === "spray",
       trap: gunKind(g) === "trap",
+      rocket: gunKind(g) === "rocket",
       wet: 0,
       tank: SPRAY.tank,
       jammed: 0,
@@ -245,6 +291,7 @@ export function createBattle(
     depots: depots.map((d) => ({ ...d })),
     drones: [],
     missiles: [],
+    rockets: [],
     booms: [],
     shots: [],
     puffs: [],
@@ -257,6 +304,7 @@ export function createBattle(
     gunLevel: levels.guns ?? 1,
     sprayLevel: levels.sprays ?? 1,
     trapLevel: levels.traps ?? 1,
+    rocketLevel: levels.rockets ?? 1,
     mgLevel: levels.mg ?? 1,
     waterLevel: levels.water ?? 1,
     planAt: 0,
@@ -276,6 +324,7 @@ export function createBattle(
       gunsLost: 0,
       spraysLost: 0,
       trapsLost: 0,
+      rocketsLost: 0,
       dronesLost: 0,
       depotsLost: 0,
     },
@@ -352,6 +401,7 @@ function killGun(s: GameState, g: Gun) {
     s.result.trapsLost++;
     releaseHeld(s, g.id);
   } else if (g.spray) s.result.spraysLost++;
+  else if (g.rocket) s.result.rocketsLost++;
   else s.result.gunsLost++;
 }
 
@@ -1043,41 +1093,58 @@ function stepSprays(s: GameState, dt: number) {
 }
 
 /** Зенитки: доворачивают башню и пускают ракеты. */
+/**
+ * Ближайший ещё летящий дрон к точке, не дальше reach. Этим поиском живёт
+ * вся автоматика склада — и зенитки, и ракетницы, — а значит здесь же
+ * отваливается невидимка: её ни одна из них не видит.
+ *
+ * Сбитый пулемётом дрон ещё планирует к земле, но он уже посчитан — по
+ * нему не стреляют, иначе один дрон уходил бы в счёт дважды.
+ */
+function nearestDrone(s: GameState, x: number, y: number, reach: number) {
+  let best: Drone | null = null;
+  let bestD = reach * reach;
+  for (const d of s.drones) {
+    if (d.hit || d.payload === "stealth") continue;
+    const dx = d.x - x;
+    const dy = d.y - y;
+    const dd = dx * dx + dy * dy;
+    if (dd < bestD) {
+      bestD = dd;
+      best = d;
+    }
+  }
+  return best;
+}
+
+/** Доворот башни к цели за такт. Одинаков у зенитки и у ракетницы. */
+function turnTurret(g: Gun, rate: number, dt: number) {
+  let da = g.aim - g.angle;
+  while (da > Math.PI) da -= Math.PI * 2;
+  while (da < -Math.PI) da += Math.PI * 2;
+  const turn = rate * dt;
+  g.angle += Math.max(-turn, Math.min(turn, da));
+}
+
 function stepGuns(s: GameState, dt: number) {
   for (const g of s.guns) {
-    if (!g.alive || g.spray || g.trap) continue;
+    if (!g.alive || g.spray || g.trap || g.rocket) continue;
 
     // Заглушённая зенитка не стреляет. Башню всё равно доворачиваем — по
     // шевелящемуся стволу видно, что пушка жива, просто её глушат.
     g.jammed = Math.max(0, g.jammed - dt);
 
     // Башня доворачивает к последней цели — по ней видно, куда пушка смотрит.
-    let da = g.aim - g.angle;
-    while (da > Math.PI) da -= Math.PI * 2;
-    while (da < -Math.PI) da += Math.PI * 2;
-    const turn = GUN.turretTurn * dt;
-    g.angle += Math.max(-turn, Math.min(turn, da));
+    turnTurret(g, GUN.turretTurn, dt);
 
     g.cd -= dt;
     if (g.cd > 0 || g.jammed > 0) continue;
     const gx = g.cx + 0.5;
     const gy = g.cy + 0.5;
-    let best: Drone | null = null;
-    const reach = gunRange(s) + 0.5;
-    let bestD = reach * reach;
-    for (const d of s.drones) {
-      // Подавителя зенитка берёт на общих основаниях. Не даёт ей выстрелить
-      // не запрет, а его собственный радиус: заглушённая пушка до проверки
-      // цели уже не доходит.
-      if (d.hit) continue;
-      const ddx = d.x - gx;
-      const ddy = d.y - gy;
-      const dd = ddx * ddx + ddy * ddy;
-      if (dd < bestD) {
-        bestD = dd;
-        best = d;
-      }
-    }
+    // Подавителя зенитка берёт на общих основаниях. Не даёт ей выстрелить
+    // не запрет, а его собственный радиус: заглушённая пушка до проверки
+    // цели уже не доходит.
+    const best = nearestDrone(s, gx, gy, gunRange(s) + 0.5);
     if (best) {
       const a = Math.atan2(best.y - gy, best.x - gx);
       g.aim = a;
@@ -1138,6 +1205,102 @@ function stepMissiles(s: GameState, dt: number) {
     }
     if (m.x < -6 || m.y < -6 || m.x > GRID + 6 || m.y > GRID + 6) {
       s.missiles.splice(i, 1);
+    }
+  }
+}
+
+/**
+ * Ракетницы и их ракеты. Ракетница берёт дальностью, а не темпом: пуск
+ * неточный, перезарядка втрое дольше зенитной, и вторую ракету она не
+ * выпустит, пока первая в воздухе. Промах ей прощается — ракета сама
+ * доворачивает, причём не на ту цель, в которую целились, а на ту, что
+ * ближе всего к ней самой прямо сейчас.
+ */
+function stepRockets(s: GameState, dt: number) {
+  // Кто уже держит ракету в воздухе. Считаем разом: перебирать ракеты
+  // заново для каждой установки незачем, их там единицы.
+  const busy = new Set<number>();
+  for (const r of s.rockets) busy.add(r.from);
+
+  for (const g of s.guns) {
+    if (!g.alive || !g.rocket) continue;
+    g.jammed = Math.max(0, g.jammed - dt);
+    turnTurret(g, ROCKET.turretTurn, dt);
+
+    g.cd -= dt;
+    if (g.cd > 0 || g.jammed > 0 || busy.has(g.id)) continue;
+    const gx = g.cx + 0.5;
+    const gy = g.cy + 0.5;
+    const best = nearestDrone(s, gx, gy, rocketRange(s) + 0.5);
+    if (!best) continue;
+
+    const a = Math.atan2(best.y - gy, best.x - gx);
+    g.aim = a;
+    // Уходит мимо: точность ракетнице заменяет самонаведение.
+    const off = (s.rnd() * 2 - 1) * ROCKET.spread;
+    s.rockets.push({
+      id: s.nextId++,
+      from: g.id,
+      x: gx,
+      y: gy,
+      dx: Math.cos(a + off),
+      dy: Math.sin(a + off),
+      life: ROCKET.life,
+      smokeT: 0,
+    });
+    busy.add(g.id);
+    g.cd = ROCKET.cooldown;
+  }
+
+  const speed = ROCKET.speed * levelBonus(s.rocketLevel, ROCKET.perLevel);
+  const hit = ROCKET.hitRadius * ROCKET.hitRadius;
+  for (let i = s.rockets.length - 1; i >= 0; i--) {
+    const m = s.rockets[i];
+    m.life -= dt;
+    if (m.life <= 0) {
+      s.rockets.splice(i, 1);
+      continue;
+    }
+
+    // Цель не закреплена: кто ближе к самой ракете, на того и доворот.
+    const t = nearestDrone(s, m.x, m.y, Infinity);
+    if (t) {
+      const a = Math.atan2(t.y - m.y, t.x - m.x);
+      const ca = Math.atan2(m.dy, m.dx);
+      let da = a - ca;
+      while (da > Math.PI) da -= Math.PI * 2;
+      while (da < -Math.PI) da += Math.PI * 2;
+      const turn = Math.max(-ROCKET.turn * dt, Math.min(ROCKET.turn * dt, da));
+      m.dx = Math.cos(ca + turn);
+      m.dy = Math.sin(ca + turn);
+    }
+
+    m.x += m.dx * speed * dt;
+    m.y += m.dy * speed * dt;
+
+    // След: клубы сыплются из сопла и тают в общей куче дыма. Шаг подобран
+    // так, чтобы за время жизни клуба их набиралось около семи.
+    m.smokeT -= dt;
+    if (m.smokeT <= 0) {
+      m.smokeT = ROCKET.smokeEvery;
+      s.puffs.push({
+        x: m.x - m.dx * 0.4,
+        y: m.y - m.dy * 0.4,
+        t: 0,
+        r: ROCKET.smokeSize,
+      });
+    }
+
+    if (t && (t.x - m.x) * (t.x - m.x) + (t.y - m.y) * (t.y - m.y) < hit) {
+      s.booms.push({ x: t.x, y: t.y, t: 0, r: 2 });
+      const at = s.drones.indexOf(t);
+      if (at >= 0) s.drones.splice(at, 1);
+      s.rockets.splice(i, 1);
+      s.result.killedByGuns++;
+      continue;
+    }
+    if (m.x < -6 || m.y < -6 || m.x > GRID + 6 || m.y > GRID + 6) {
+      s.rockets.splice(i, 1);
     }
   }
 }
@@ -1212,6 +1375,7 @@ export function update(s: GameState, dt: number) {
   stepSprays(s, dt);
   stepGuns(s, dt);
   stepMissiles(s, dt);
+  stepRockets(s, dt);
   stepFire(s, dt);
   stepEffects(s, dt);
 

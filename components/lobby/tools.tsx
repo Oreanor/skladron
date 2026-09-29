@@ -11,6 +11,7 @@ import {
   Banknote,
   ChevronsUp,
   CircleDotDashed,
+  Crosshair,
   Hammer,
   LayoutGrid,
   Magnet,
@@ -25,6 +26,7 @@ import {
   LOAN_RATE,
   REPAIR_COST,
   SCRAP_REWARD,
+  ROCKET_COST,
   SPRAY_COST,
   TRAP_COST,
   UPGRADE_STEP,
@@ -32,13 +34,21 @@ import {
   type UpgradeKind,
 } from "@/lib/economy";
 import { DRONES_PER_CELL } from "@/lib/base";
-import { SPRAY, TRAP } from "@/lib/tuning";
+import { ROCKET, SPRAY, TRAP } from "@/lib/tuning";
 import type { AttackOrder } from "@/lib/attack";
 import type { Player } from "@/lib/player";
 import type { Key } from "@/lib/i18n/dict";
 import { IconDrone } from "../ui";
 
-export type Tool = "area" | "repair" | "scrap" | "gun" | "spray" | "trap" | "drones";
+export type Tool =
+  | "area"
+  | "repair"
+  | "scrap"
+  | "gun"
+  | "rocket"
+  | "spray"
+  | "trap"
+  | "drones";
 /** Кнопка «Апгрейд» карты не касается: она только открывает модалку. */
 export type ToolId = Tool | "upgrade" | "insurance" | "loan";
 /** Панели, которые на телефоне открываются шторкой снизу. */
@@ -60,7 +70,15 @@ export const TOOLS: {
   /** Какой класс он показывает уровнем. */
   levelKind?: UpgradeKind;
   /** Что считать в уголке кнопки: этого добра столько-то на складе. */
-  countKind?: "intact" | "burnt" | "guns" | "sprays" | "traps" | "drones" | "loan";
+  countKind?:
+    | "intact"
+    | "burnt"
+    | "guns"
+    | "rockets"
+    | "sprays"
+    | "traps"
+    | "drones"
+    | "loan";
 }[] = [
   {
     id: "area",
@@ -92,9 +110,18 @@ export const TOOLS: {
     label: "tool.gun",
     hint: "tool.gunHint",
     vars: { cost: GUN_COST },
-    icon: <Rocket className={ICON} />,
+    icon: <Crosshair className={ICON} />,
     levelKind: "guns",
     countKind: "guns",
+  },
+  {
+    id: "rocket",
+    label: "tool.rocket",
+    hint: "tool.rocketHint",
+    vars: { cost: ROCKET_COST, range: ROCKET.range, reload: ROCKET.cooldown },
+    icon: <Rocket className={ICON} />,
+    levelKind: "rockets",
+    countKind: "rockets",
   },
   {
     id: "drones",

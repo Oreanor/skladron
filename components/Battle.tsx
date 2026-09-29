@@ -363,6 +363,7 @@ const PAYLOAD_KEYS: Record<Payload, Key> = {
   heavy: "payload.heavy",
   jammer: "payload.jammer",
   foamer: "payload.foamer",
+  stealth: "payload.stealth",
 };
 
 function PayloadLegend({ t }: { t: (key: Key, vars?: Record<string, string | number>) => string }) {

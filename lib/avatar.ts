@@ -21,6 +21,23 @@ export const UPLOAD_MAX_BYTES = 120 * 1024;
 
 export type Avatar = string | null;
 
+/** Единственный объект в bucket avatars для своей картинки. */
+export function userAvatarStoragePath(userId: string): string {
+  return `${userId}.webp`;
+}
+
+/** Своя загрузка в профиле — http(s), не номер пресета. */
+export function isUploadedAvatarUrl(avatar: Avatar): avatar is string {
+  return !!avatar && avatar.startsWith("http");
+}
+
+/** В профиле храним постоянный URL без ?v= для сброса кэша в UI. */
+export function normalizeAvatarForStorage(avatar: Avatar): Avatar {
+  if (!avatar || !isUploadedAvatarUrl(avatar)) return avatar;
+  const q = avatar.indexOf("?");
+  return q >= 0 ? avatar.slice(0, q) : avatar;
+}
+
 /** Адрес картинки, или null — значит рисуем инициалы. */
 export function avatarUrl(avatar: Avatar): string | null {
   if (!avatar) return null;
@@ -68,4 +85,37 @@ export async function shrinkAvatar(file: File): Promise<Blob> {
   );
   if (!blob) throw new Error("encode failed");
   return blob;
+}
+
+type StorageLike = {
+  storage: {
+    from: (bucket: string) => {
+      list: (
+        path: string,
+        opts: { search?: string; limit?: number }
+      ) => Promise<{ data: { name: string | null }[] | null; error: Error | null }>;
+      remove: (paths: string[]) => Promise<{ error: Error | null }>;
+    };
+  };
+};
+
+/** Удаляет все объекты пользователя в avatars, кроме одного {uid}.webp. */
+export async function removeExtraUserAvatarFiles(
+  db: StorageLike,
+  userId: string
+): Promise<void> {
+  const canonical = userAvatarStoragePath(userId);
+  const { data, error } = await db.storage.from("avatars").list("", {
+    search: userId,
+    limit: 100,
+  });
+  if (error || !data?.length) return;
+  const extra = data.map((f) => f.name).filter((name): name is string => !!name && name !== canonical);
+  if (extra.length) await db.storage.from("avatars").remove(extra);
+}
+
+/** Снять свою картинку из хранилища (инициалы или пресет). */
+export async function removeUserAvatarUpload(db: StorageLike, userId: string): Promise<void> {
+  await removeExtraUserAvatarFiles(db, userId);
+  await db.storage.from("avatars").remove([userAvatarStoragePath(userId)]);
 }

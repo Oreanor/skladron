@@ -139,6 +139,7 @@ export async function POST(request: Request) {
       order,
       levels: {
         guns: levels.guns ?? 1,
+        rockets: levels.rockets ?? 1,
         sprays: levels.sprays ?? 1,
         traps: levels.traps ?? 1,
         mg: levels.mg ?? 1,

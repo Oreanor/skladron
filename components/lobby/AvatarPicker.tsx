@@ -20,7 +20,12 @@ import {
   PRESETS,
   UPLOAD_MAX_BYTES,
   avatarUrl,
+  isUploadedAvatarUrl,
+  normalizeAvatarForStorage,
+  removeExtraUserAvatarFiles,
+  removeUserAvatarUpload,
   shrinkAvatar,
+  userAvatarStoragePath,
   type Avatar as AvatarValue,
 } from "@/lib/avatar";
 import { supabase } from "@/lib/supabase";
@@ -31,6 +36,14 @@ import { useT } from "@/lib/i18n";
 const PRESET_LIST = Array.from({ length: PRESETS }, (_, i) => String(i + 1));
 /** Сторона мелкого лица в ленте, px. */
 const THUMB = 56;
+
+/** В ленте — одна своя картинка максимум, без накопления старых URL. */
+function stripFaces(avatar: AvatarValue): string[] {
+  if (avatar && isUploadedAvatarUrl(avatar)) {
+    return [normalizeAvatarForStorage(avatar)!, ...PRESET_LIST];
+  }
+  return PRESET_LIST;
+}
 
 export default function AvatarPicker({
   avatar,
@@ -51,11 +64,9 @@ export default function AvatarPicker({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Своя картинка идёт первой, дальше готовые лица.
-  const [faces, setFaces] = useState<string[]>(() =>
-    avatar && avatar.startsWith("http") ? [avatar, ...PRESET_LIST] : PRESET_LIST
-  );
-  const [picked, setPicked] = useState<AvatarValue>(avatar);
+  const [faces, setFaces] = useState<string[]>(() => stripFaces(avatar));
+  const [picked, setPicked] = useState<AvatarValue>(() => normalizeAvatarForStorage(avatar));
+  const [uploadVersion, setUploadVersion] = useState(0);
 
   /** Лента шире окна: стрелки прокручивают её почти на экран. */
   const slide = (by: number) =>
@@ -76,23 +87,43 @@ export default function AvatarPicker({
       const small = await shrinkAvatar(file);
       if (small.size > UPLOAD_MAX_BYTES) throw new Error(t("avatar.tooBig"));
 
-      const path = `${uid}.webp`;
+      await removeExtraUserAvatarFiles(db, uid);
+
+      const path = userAvatarStoragePath(uid);
       const up = await db.storage
         .from("avatars")
         .upload(path, small, { contentType: "image/webp", upsert: true });
       if (up.error) throw up.error;
 
-      // Адрес постоянный, а картинка меняется — без метки браузер покажет старую.
       const { data: pub } = db.storage.from("avatars").getPublicUrl(path);
-      const url = `${pub.publicUrl}?v=${Date.now()}`;
-      setFaces([url, ...PRESET_LIST]);
-      setPicked(url);
+      const stored = normalizeAvatarForStorage(pub.publicUrl)!;
+      setUploadVersion(Date.now());
+      setFaces(stripFaces(stored));
+      setPicked(stored);
       stripRef.current?.scrollTo({ left: 0, behavior: "smooth" });
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setBusy(false);
     }
+  };
+
+  const applyPick = async (value: AvatarValue) => {
+    const db = supabase();
+    const { data } = (await db?.auth.getUser()) ?? { data: { user: null } };
+    const uid = data.user?.id;
+    const next = normalizeAvatarForStorage(value);
+    const prev = normalizeAvatarForStorage(avatar);
+    if (db && uid && prev && isUploadedAvatarUrl(prev) && next !== prev) {
+      await removeUserAvatarUpload(db, uid);
+    }
+    await onPick(next);
+  };
+
+  const faceSrc = (face: string) => {
+    const url = avatarUrl(face);
+    if (!url || !isUploadedAvatarUrl(face)) return url;
+    return uploadVersion ? `${url}?v=${uploadVersion}` : url;
   };
 
   const arrow =
@@ -106,35 +137,53 @@ export default function AvatarPicker({
       subtitle={t("avatar.hint")}
       onClose={onClose}
       footer={
-        <div className="flex gap-2">
+        // Загрузка и инициалы — рядом одной строкой, «ОК» под ними во всю
+        // ширину: он закрывает окно, а те двое только меняют, что в кружке.
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <Button
+              className="flex-1 whitespace-nowrap"
+              disabled={busy}
+              onClick={() => fileRef.current?.click()}
+            >
+              {busy ? t("avatar.uploading") : t("avatar.upload")}
+            </Button>
+            <Button
+              className="flex-1 whitespace-nowrap"
+              disabled={busy}
+              onClick={() => {
+                void applyPick(null);
+                onClose();
+              }}
+            >
+              {t("avatar.clear")}
+            </Button>
+          </div>
           <Button
             variant="build"
-            className="flex-1"
+            className="w-full"
             disabled={busy}
             onClick={() => {
-              void onPick(picked);
+              void applyPick(picked);
               onClose();
             }}
           >
             {t("common.ok")}
           </Button>
-          <Button disabled={busy} onClick={() => fileRef.current?.click()}>
-            {busy ? t("avatar.uploading") : t("avatar.upload")}
-          </Button>
-          <Button
-            disabled={busy}
-            onClick={() => {
-              void onPick(null);
-              onClose();
-            }}
-          >
-            {t("avatar.clear")}
-          </Button>
         </div>
       }
     >
       <div className="mb-4 flex justify-center">
-        <AvatarView avatar={picked} name={name} email={email} size="xl" />
+        <AvatarView
+          avatar={
+            picked && isUploadedAvatarUrl(picked) && uploadVersion
+              ? `${avatarUrl(picked)}?v=${uploadVersion}`
+              : picked
+          }
+          name={name}
+          email={email}
+          size="xl"
+        />
       </div>
 
       <div className="flex items-center gap-2">
@@ -167,7 +216,7 @@ export default function AvatarPicker({
               }`}
             >
               <Image
-                src={avatarUrl(face) ?? ""}
+                src={faceSrc(face) ?? ""}
                 alt=""
                 width={THUMB * 2}
                 height={THUMB * 2}

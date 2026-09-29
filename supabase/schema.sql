@@ -1841,20 +1841,18 @@ drop policy if exists "avatars readable" on storage.objects;
 create policy "avatars readable" on storage.objects for select
   using (bucket_id = 'avatars');
 
--- Имя файла начинается с id владельца: своё перезаписать можно, чужое нет.
+-- Ровно один файл на игрока: {uuid}.webp — иначе копились uuid.123.webp и т.п.
 drop policy if exists "own avatar write" on storage.objects;
 create policy "own avatar write" on storage.objects for insert to authenticated
-  with check (
-    bucket_id = 'avatars' and split_part(name, '.', 1) = auth.uid()::text
-  );
+  with check (bucket_id = 'avatars' and name = auth.uid()::text || '.webp');
 
 drop policy if exists "own avatar replace" on storage.objects;
 create policy "own avatar replace" on storage.objects for update to authenticated
-  using (bucket_id = 'avatars' and split_part(name, '.', 1) = auth.uid()::text);
+  using (bucket_id = 'avatars' and name = auth.uid()::text || '.webp');
 
 drop policy if exists "own avatar remove" on storage.objects;
 create policy "own avatar remove" on storage.objects for delete to authenticated
-  using (bucket_id = 'avatars' and split_part(name, '.', 1) = auth.uid()::text);
+  using (bucket_id = 'avatars' and name = auth.uid()::text || '.webp');
 
 -- ---------- лицо игрока ----------
 -- Своё меняет только сам игрок. Готовое — это номер, своя картинка — адрес
@@ -1870,6 +1868,9 @@ begin
      and value !~ '^([1-9]|1[0-6])$'
      and value not like 'https://%/storage/v1/object/public/avatars/%' then
     raise exception 'bad avatar';
+  end if;
+  if value is not null and strpos(value, '?') > 0 then
+    value := split_part(value, '?', 1);
   end if;
   update profiles set avatar = value where id = uid;
 end;

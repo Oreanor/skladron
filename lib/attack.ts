@@ -12,8 +12,8 @@ import { DRONE, GUN, PAYLOAD, RAID, SIMULATION_VERSION, WAVE } from "./tuning";
  * не взрываются вовсе — кружат над обороной и глушат её, пока не кончится
  * топливо. Цифры у всех в PAYLOAD.
  */
-export type Payload = "plain" | "heavy" | "jammer" | "foamer";
-export const PAYLOADS: Payload[] = ["plain", "heavy", "jammer", "foamer"];
+export type Payload = "plain" | "heavy" | "jammer" | "foamer" | "stealth";
+export const PAYLOADS: Payload[] = ["plain", "heavy", "jammer", "foamer", "stealth"];
 
 /** Группа внутри волны: сколько дронов и с какой начинкой. */
 export interface DroneGroup {
@@ -173,9 +173,22 @@ export interface AttackReport {
     cells: string;
     guns: { cx: number; cy: number }[];
     depots: { cx: number; cy: number; n: number; kind?: string }[];
-    levels: { guns?: number; sprays?: number; traps?: number; mg?: number; water?: number };
+    levels: SnapLevels;
     trace: string;
   };
+}
+
+/**
+ * Уровни защитника, снятые на момент налёта. Тот же набор, что в профиле,
+ * но каждый необязателен: снимок мог быть сделан до того, как класс завели.
+ */
+export interface SnapLevels {
+  guns?: number;
+  rockets?: number;
+  sprays?: number;
+  traps?: number;
+  mg?: number;
+  water?: number;
 }
 
 /**

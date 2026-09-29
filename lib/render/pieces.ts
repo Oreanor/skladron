@@ -296,27 +296,18 @@ export function drawTrap(
   ctx.fill();
 }
 
-/**
- * Зенитка сверху: площадка, башня со щитком, ствол с дульным кольцом.
- * На мелкой клетке силуэт всё ещё читается как «пушка смотрит сюда».
- */
-export function drawTurret(
+/** Площадка, на которой крутится башня: общая у зенитки и ракетницы. */
+function drawMount(
   ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
+  x: number,
+  y: number,
   cell: number,
-  angle: number,
-  alive = true
+  body: string,
+  plate: string,
+  accent: string,
+  alive: boolean
 ) {
-  const x = (cx + 0.5) * cell;
-  const y = (cy + 0.5) * cell;
   const r = cell * 0.46;
-  const body = alive ? COLORS.gun : "#3f3f3f";
-  const accent = alive ? COLORS.gunTop : "#555";
-  const shade = alive ? "#121c2c" : "#2a2a2a";
-  const plate = alive ? "#243652" : "#363636";
-
-  // Площадка и обод — база, на которой крутится башня.
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fillStyle = body;
@@ -347,53 +338,144 @@ export function drawTurret(
       ctx.fill();
     }
   }
+}
 
+/**
+ * Зенитка сверху: площадка, станина с коробами лент и спарка тонких
+ * длинных стволов с дульными тормозами. Спарка тут не украшение — по ней
+ * зенитка и отличается от ракетницы, у которой на том же лафете короб
+ * направляющих. На мелкой клетке от рисунка остаются два штриха наружу,
+ * и этого хватает, чтобы прочитать «ствол смотрит туда».
+ */
+export function drawTurret(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  cell: number,
+  angle: number,
+  alive = true
+) {
+  const x = (cx + 0.5) * cell;
+  const y = (cy + 0.5) * cell;
+  const body = alive ? COLORS.gun : "#3f3f3f";
+  const accent = alive ? COLORS.gunTop : "#555";
+  const shade = alive ? "#121c2c" : "#2a2a2a";
+  const plate = alive ? "#243652" : "#363636";
+
+  drawMount(ctx, x, y, cell, body, plate, accent, alive);
   if (!alive) return;
 
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(angle);
 
-  // Боковые уши-противовесы: башня шире ствола.
+  // Станина: клин, расширяющийся назад. На нём и держится вся спарка.
   ctx.fillStyle = shade;
   ctx.beginPath();
-  ctx.moveTo(-cell * 0.08, -cell * 0.34);
-  ctx.lineTo(cell * 0.22, -cell * 0.28);
-  ctx.lineTo(cell * 0.22, cell * 0.28);
-  ctx.lineTo(-cell * 0.08, cell * 0.34);
+  ctx.moveTo(-cell * 0.34, -cell * 0.3);
+  ctx.lineTo(cell * 0.06, -cell * 0.22);
+  ctx.lineTo(cell * 0.06, cell * 0.22);
+  ctx.lineTo(-cell * 0.34, cell * 0.3);
   ctx.closePath();
   ctx.fill();
 
-  // Щиток перед башней.
-  ctx.fillStyle = accent;
-  ctx.fillRect(cell * 0.08, -cell * 0.26, cell * 0.22, cell * 0.52);
-  ctx.fillStyle = shade;
-  ctx.fillRect(cell * 0.14, -cell * 0.16, cell * 0.1, cell * 0.32);
+  // Коробы с лентами по бокам — то, чем зенитка и живёт.
+  ctx.fillStyle = plate;
+  ctx.fillRect(-cell * 0.2, -cell * 0.38, cell * 0.24, cell * 0.14);
+  ctx.fillRect(-cell * 0.2, cell * 0.24, cell * 0.24, cell * 0.14);
 
-  // Ствол: тёмная труба + светлая казённая часть.
+  // Казённик: скоба, что держит оба ствола.
   ctx.fillStyle = accent;
-  ctx.fillRect(cell * 0.18, -cell * 0.11, cell * 0.28, cell * 0.22);
-  ctx.fillStyle = shade;
-  ctx.fillRect(cell * 0.42, -cell * 0.09, cell * 0.58, cell * 0.18);
-  // Тонкая щель по оси ствола — читается как канал.
-  ctx.fillStyle = alive ? "#6aa8c4" : "#666";
-  ctx.fillRect(cell * 0.48, -cell * 0.025, cell * 0.48, cell * 0.05);
+  ctx.fillRect(-cell * 0.02, -cell * 0.26, cell * 0.2, cell * 0.52);
 
-  // Дульное кольцо.
-  ctx.fillStyle = accent;
-  ctx.fillRect(cell * 0.92, -cell * 0.14, cell * 0.14, cell * 0.28);
-  ctx.fillStyle = shade;
-  ctx.fillRect(cell * 1.0, -cell * 0.08, cell * 0.08, cell * 0.16);
+  // Спарка: два тонких длинных ствола с дульными тормозами.
+  for (const side of [-1, 1]) {
+    const oy = side * cell * 0.14;
+    ctx.fillStyle = shade;
+    ctx.fillRect(cell * 0.1, oy - cell * 0.055, cell * 0.92, cell * 0.11);
+    ctx.fillStyle = accent;
+    ctx.fillRect(cell * 0.86, oy - cell * 0.1, cell * 0.16, cell * 0.2);
+    ctx.fillStyle = alive ? "#6aa8c4" : "#666";
+    ctx.fillRect(cell * 0.3, oy - cell * 0.018, cell * 0.52, cell * 0.036);
+  }
 
-  // Купол башни и «прицел».
+  // Колпак наводчика и блик прицела — центр, вокруг которого всё вертится.
   ctx.beginPath();
-  ctx.arc(0, 0, cell * 0.2, 0, Math.PI * 2);
+  ctx.arc(-cell * 0.08, 0, cell * 0.17, 0, Math.PI * 2);
   ctx.fillStyle = accent;
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cell * 0.02, -cell * 0.05, cell * 0.07, 0, Math.PI * 2);
+  ctx.arc(-cell * 0.06, -cell * 0.04, cell * 0.06, 0, Math.PI * 2);
   ctx.fillStyle = "#e8f6ff";
   ctx.fill();
+
+  ctx.restore();
+}
+
+/**
+ * Ракетница: тот же лафет, что у зенитки, но вместо спарки — короб
+ * направляющих с одной ракетой. Ракета в коробе видна, только пока
+ * установка заряжена: пустой короб на карте и значит «перезаряжается».
+ */
+export function drawRocket(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  cell: number,
+  angle: number,
+  alive = true,
+  loaded = true
+) {
+  const x = (cx + 0.5) * cell;
+  const y = (cy + 0.5) * cell;
+  const body = alive ? COLORS.rocket : "#3f3f3f";
+  const accent = alive ? COLORS.rocketTop : "#555";
+  const shade = alive ? "#0e211c" : "#2a2a2a";
+  const plate = alive ? "#1d4038" : "#363636";
+
+  drawMount(ctx, x, y, cell, body, plate, accent, alive);
+  if (!alive) return;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+
+  // Опорная рама и подъёмный механизм позади короба.
+  ctx.fillStyle = shade;
+  ctx.beginPath();
+  ctx.moveTo(-cell * 0.36, -cell * 0.24);
+  ctx.lineTo(-cell * 0.02, -cell * 0.3);
+  ctx.lineTo(-cell * 0.02, cell * 0.3);
+  ctx.lineTo(-cell * 0.36, cell * 0.24);
+  ctx.closePath();
+  ctx.fill();
+
+  // Короб направляющих: широкий, приподнятый, с рёбрами по бокам.
+  ctx.fillStyle = plate;
+  ctx.fillRect(-cell * 0.08, -cell * 0.3, cell * 0.78, cell * 0.6);
+  ctx.fillStyle = accent;
+  ctx.fillRect(-cell * 0.08, -cell * 0.3, cell * 0.78, cell * 0.07);
+  ctx.fillRect(-cell * 0.08, cell * 0.23, cell * 0.78, cell * 0.07);
+
+  // Сама направляющая — тёмный жёлоб по оси.
+  ctx.fillStyle = shade;
+  ctx.fillRect(-cell * 0.02, -cell * 0.13, cell * 0.8, cell * 0.26);
+
+  if (loaded) {
+    // Ракета в жёлобе: светлый корпус и красная головка наружу.
+    ctx.fillStyle = "#dfe7ef";
+    ctx.fillRect(cell * 0.04, -cell * 0.09, cell * 0.76, cell * 0.18);
+    ctx.beginPath();
+    ctx.moveTo(cell * 0.78, -cell * 0.09);
+    ctx.lineTo(cell * 1.02, 0);
+    ctx.lineTo(cell * 0.78, cell * 0.09);
+    ctx.closePath();
+    ctx.fillStyle = COLORS.droneAccent;
+    ctx.fill();
+    // Хвостовое оперение — по нему ракета читается ракетой, а не бруском.
+    ctx.fillStyle = accent;
+    ctx.fillRect(cell * 0.06, -cell * 0.2, cell * 0.1, cell * 0.4);
+  }
 
   ctx.restore();
 }

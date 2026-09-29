@@ -13,8 +13,15 @@ import {
 } from "./base";
 
 import { LOAN_HOURS, MAX_LEVEL, loanDebt, upgradeCost } from "./economy";
-import type { Avatar } from "./avatar";
-import type { AttackOrder, AttackReport, Pattern, RaidLog, WavePlan } from "./attack";
+import { normalizeAvatarForStorage, type Avatar } from "./avatar";
+import type {
+  AttackOrder,
+  AttackReport,
+  Pattern,
+  RaidLog,
+  SnapLevels,
+  WavePlan,
+} from "./attack";
 import type { ReplayData } from "@/components/Replay";
 import type { BattleResult } from "./engine";
 import type { UpgradeKind } from "./economy";
@@ -157,7 +164,7 @@ class LocalRepo implements Repo {
   }
 
   async setAvatar(p: Player, value: Avatar) {
-    p.avatar = value;
+    p.avatar = normalizeAvatarForStorage(value);
     localSave(p);
   }
 
@@ -323,7 +330,7 @@ interface AttackReportRow {
   snap_cells: string | null;
   snap_guns: Gun[] | null;
   snap_depots: Depot[] | null;
-  snap_levels: { guns?: number; sprays?: number; traps?: number; mg?: number; water?: number } | null;
+  snap_levels: SnapLevels | null;
   waves: WavePlan[] | null;
   trace: string | null;
   simulation_version: number | null;
@@ -514,9 +521,10 @@ class CloudRepo implements Repo {
   }
 
   async setAvatar(p: Player, value: Avatar) {
-    const { error } = await this.db().rpc("set_avatar", { value });
+    const stored = normalizeAvatarForStorage(value);
+    const { error } = await this.db().rpc("set_avatar", { value: stored });
     if (error) throw error;
-    p.avatar = value;
+    p.avatar = stored;
   }
   async launchScout(p: Player, email: string, n: number) {
     const { data, error } = await this.db().rpc("launch_scout", {
@@ -695,7 +703,7 @@ class CloudRepo implements Repo {
       snap_cells: string;
       snap_guns: Gun[] | null;
       snap_depots: Depot[] | null;
-      snap_levels: { guns?: number; sprays?: number; traps?: number; mg?: number; water?: number } | null;
+      snap_levels: SnapLevels | null;
       trace: string | null;
       resolved_at: string;
     }[] | null)?.[0];

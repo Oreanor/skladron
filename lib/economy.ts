@@ -7,6 +7,8 @@ export const GUN_COST = 100;
 /** Огнетушитель дороже зенитки: он и площадь бережёт, и товар. */
 export const SPRAY_COST = 150;
 /** Ловушка дороже огнетушителя: держит рой в радиусе зенитки. */
+/** Ракетница вдвое дороже зенитки: и достаёт вдвое дальше. */
+export const ROCKET_COST = 200;
 export const TRAP_COST = 200;
 export const DRONE_UNIT_COST = 25; // ударный дрон дороже разведчика
 /** Сколько платят за сданные во вторсырьё остатки сгоревшей клетки. */
@@ -59,13 +61,15 @@ export const insurance = (
   gunsLost: number,
   level = 1,
   spraysLost = 0,
-  trapsLost = 0
+  trapsLost = 0,
+  rocketsLost = 0
 ) =>
   burned * INSURANCE_CELL +
   Math.floor(
     (goodsLost +
       gunsLost * GUN_COST +
       spraysLost * SPRAY_COST +
+      rocketsLost * ROCKET_COST +
       trapsLost * TRAP_COST) *
       insuranceShare(level)
   );
@@ -83,6 +87,7 @@ export const upgradeCost = (_level: number) => UPGRADE_STEP;
 export type UpgradeKind =
   | "drones"
   | "guns"
+  | "rockets"
   | "sprays"
   | "traps"
   | "mg"
@@ -91,6 +96,7 @@ export type UpgradeKind =
 export const UPGRADE_KINDS: UpgradeKind[] = [
   "drones",
   "guns",
+  "rockets",
   "sprays",
   "traps",
   "mg",

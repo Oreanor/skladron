@@ -39,6 +39,7 @@ import {
   goodsValue,
   insurance,
   GUN_COST,
+  ROCKET_COST,
   SPRAY_COST,
   TRAP_COST,
   MIN_BASE_CELLS,
@@ -87,7 +88,7 @@ import {
   type CoverageKind,
   type View,
 } from "@/lib/render";
-import { gunRange, sprayRange, trapRange } from "@/lib/engine";
+import { gunRange, rocketRange, sprayRange, trapRange } from "@/lib/engine";
 import Battle, { type BattleOutcome } from "./Battle";
 import TestRaidDialog from "./lobby/TestRaidDialog";
 import AttackReportDialog from "./lobby/AttackReportDialog";
@@ -526,6 +527,7 @@ export default function Lobby({
   /** Во что обойдётся то, что ставит этот инструмент, с учётом прокачки. */
   const toolPrice = (item: (typeof TOOLS)[number]) => {
     if (item.id === "gun") return priceAt(GUN_COST, p.levels.guns);
+    if (item.id === "rocket") return priceAt(ROCKET_COST, p.levels.rockets);
     if (item.id === "spray") return priceAt(SPRAY_COST, p.levels.sprays);
     if (item.id === "trap") return priceAt(TRAP_COST, p.levels.traps);
     if (item.id === "drones") return priceAt(DRONE_UNIT_COST, p.levels.drones) * DRONES_PER_CELL;
@@ -534,6 +536,8 @@ export default function Lobby({
 
   /** Числа для подсказки: что прокачано, то показываем по уровню. */
   const toolVars = (item: (typeof TOOLS)[number]) => {
+    if (item.id === "rocket")
+      return { ...item.vars, range: Math.round(rocketRange({ rocketLevel: p.levels.rockets })) };
     if (item.id === "spray")
       return { ...item.vars, range: Math.round(sprayRange({ sprayLevel: p.levels.sprays })) };
     if (item.id === "trap")
@@ -546,6 +550,7 @@ export default function Lobby({
     intact,
     burnt,
     guns: countKind(p.guns, "gun"),
+    rockets: countKind(p.guns, "rocket"),
     sprays: countKind(p.guns, "spray"),
     traps: countKind(p.guns, "trap"),
     drones,
@@ -565,6 +570,7 @@ export default function Lobby({
         order={battle}
         levels={{
           guns: p.levels.guns,
+          rockets: p.levels.rockets,
           sprays: p.levels.sprays,
           traps: p.levels.traps,
           mg: p.levels.mg,
@@ -591,7 +597,8 @@ export default function Lobby({
             o.result.gunsLost,
             p.levels.insurance,
             o.result.spraysLost,
-            o.result.trapsLost
+            o.result.trapsLost,
+            o.result.rocketsLost
           );
           // Счёт вражды: записываем, сколько он у нас сжёг. Ищем по почте —
           // имя склада не уникально и меняется переименованием.
@@ -819,7 +826,9 @@ export default function Lobby({
         ? priceAt(SPRAY_COST, p.levels.sprays)
         : kind === "trap"
           ? priceAt(TRAP_COST, p.levels.traps)
-          : priceAt(GUN_COST, p.levels.guns);
+          : kind === "rocket"
+            ? priceAt(ROCKET_COST, p.levels.rockets)
+            : priceAt(GUN_COST, p.levels.guns);
     if (p.credits < cost) {
       setMessage(t("gun.noCredits"));
       return;
@@ -1077,6 +1086,9 @@ export default function Lobby({
       TEST_RAID_MAX,
       raidSize(
         countKind(p.guns, "gun") +
+          // Ракетница достаёт вдвое дальше зенитки — и в прикидке силы
+          // склада весит вдвое: иначе пробный рой выходил бы смешным.
+          countKind(p.guns, "rocket") * 2 +
           countKind(p.guns, "spray") / 2 +
           countKind(p.guns, "trap"),
         intact,
@@ -1312,7 +1324,7 @@ export default function Lobby({
    * по клеткам, а не по объектам.
    */
   const pickedSpots = (): { cx: number; cy: number }[] => {
-    if (tool === "gun" || tool === "spray" || tool === "trap") {
+    if (tool === "gun" || tool === "rocket" || tool === "spray" || tool === "trap") {
       return p.guns.filter((g) => gunKind(g) === tool);
     }
     if (tool === "drones") {
@@ -1322,7 +1334,8 @@ export default function Lobby({
   };
 
   const coverageFor = (): CoverageKind[] => {
-    if (tool === "gun" || tool === "spray" || tool === "trap") return [tool];
+    if (tool === "gun" || tool === "rocket" || tool === "spray" || tool === "trap")
+      return [tool];
     const from = dragGunRef.current;
     if (!from) return [];
     const g = p.guns.find((item) => item.cx === from.cx && item.cy === from.cy);
@@ -1341,6 +1354,7 @@ export default function Lobby({
       gunRange({ gunLevel: p.levels.guns }),
       sprayRange({ sprayLevel: p.levels.sprays }),
       trapRange({ trapLevel: p.levels.traps }),
+      rocketRange({ rocketLevel: p.levels.rockets }),
       coverageFor()
     );
 
@@ -1906,7 +1920,7 @@ export default function Lobby({
         ))}
       </div>
 
-      <div className="order-2 flex min-h-0 flex-1 flex-col gap-2 lg:order-3 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-4">
+      <div className="order-2 flex min-h-0 flex-1 flex-col gap-2 lg:order-3 lg:grid lg:grid-cols-[minmax(0,1fr)_28rem] lg:gap-4">
         {/* Левая колонка: карта забирает всю свободную высоту. */}
         <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
 

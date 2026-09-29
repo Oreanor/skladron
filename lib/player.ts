@@ -52,6 +52,8 @@ export function normName(raw: string) {
 export interface Levels {
   drones: number;
   guns: number;
+  /** Ракетницы: дальность и скорость ракеты. */
+  rockets: number;
   /** Огнетушители: радиус тушения. */
   sprays: number;
   /** Ловушки: радиус захвата. */
@@ -67,6 +69,7 @@ export interface Levels {
 export const startLevels = (): Levels => ({
   drones: 1,
   guns: 1,
+  rockets: 1,
   sprays: 1,
   traps: 1,
   mg: 1,
