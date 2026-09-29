@@ -14,7 +14,7 @@
 
 import { useEffect, useRef } from "react";
 import { GRID, G_BASE, G_BURNT, G_FIRE, decodeRle, gunKind } from "@/lib/base";
-import { installColors } from "@/lib/render";
+import { COLORS, installColors } from "@/lib/render";
 import type { ScoutSnapshot } from "@/lib/enemy";
 
 /** Сколько клеток оставляем вокруг снятого: с полем читается лучше. */
