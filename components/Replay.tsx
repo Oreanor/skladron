@@ -174,7 +174,8 @@ export default function Replay({
   if (!state.current) state.current = makeState();
   const s = state.current;
 
-  const scene = useMemo(() => ({ cells: s.cells, guns: s.guns, depots: s.depots }), [s, run]);
+  // Пушки крутит накладка кадра — на статике они иначе дают бледный призрак.
+  const scene = useMemo(() => ({ cells: s.cells, guns: [], depots: s.depots }), [s, run]);
 
   useEffect(() => {
     let raf = 0;

@@ -91,7 +91,9 @@ export default function Battle({
   }
   const s = stateRef.current;
 
-  const scene = useMemo(() => ({ cells: s.cells, guns: s.guns, depots: s.depots }), [s]);
+  // Пушки на накладке: на статичном слое их стволы смотрели бы наружу
+  // и просвечивали бледным «призраком» под живым углом.
+  const scene = useMemo(() => ({ cells: s.cells, guns: [], depots: s.depots }), [s]);
   const [version, setVersion] = useState(0);
 
   useEffect(() => {
@@ -384,6 +386,7 @@ const PAYLOAD_KEYS: Record<Payload, Key> = {
   demag: "payload.demag",
   stealth: "payload.stealth",
   blower: "payload.blower",
+  turbo: "payload.turbo",
 };
 
 function PayloadLegend({ t }: { t: (key: Key, vars?: Record<string, string | number>) => string }) {

@@ -374,6 +374,8 @@ const es: Dict = {
   "payload.stealthHint": "estalla como el simple, pero los cañones y las lanzaderas no lo ven: ni apuntan ni guían el misil. Solo quedan tus manos y las trampas.",
   "payload.blower": "Soplador de globos",
   "payload.blowerHint": "estalla como el simple, pero en vuelo empuja los globos de barrera: el globo que entra en su zona se aparta varias celdas del dron. No los revienta, solo despeja el camino, y el enjambre deja un corredor tras de sí.",
+  "payload.turbo": "Turbo",
+  "payload.turboHint": "estalla como el simple, pero vuela una vez y media más rápido — menos tiempo bajo fuego",
   "raid.pattern": "Patrón de oleadas",
   "raid.from": "Desde dónde",
   "raid.send": "Enviar {n} drones",

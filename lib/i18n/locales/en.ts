@@ -374,6 +374,8 @@ const en = {
   "payload.stealthHint": "blows up like a plain one, but guns and launchers cannot see it at all — no aiming, no missile lock. Only your own hands and the traps are left.",
   "payload.blower": "Balloon blower",
   "payload.blowerHint": "blows up like a plain one, but shoves barrage balloons aside in flight: a balloon caught in its zone drifts several cells away from the drone. It does not pop them — it just clears the way, and the swarm leaves a corridor behind it.",
+  "payload.turbo": "Turbo",
+  "payload.turboHint": "blows up like a plain one, but flies half again as fast — less time under fire",
   "raid.pattern": "Wave pattern",
   "raid.from": "From where",
   "raid.send": "Send {n} drones",

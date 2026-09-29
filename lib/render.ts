@@ -131,8 +131,8 @@ export function drawStatic(
   for (const g of s.guns) {
     const angle = Math.atan2(g.cy + 0.5 - GRID / 2, g.cx + 0.5 - GRID / 2);
     const kind = gunKind(g as Gun);
-    // Ствол смотрит наружу от середины склада, пока не начался бой: в бою
-    // поверх этого слоя рисуется живая башня со своим углом.
+    // В бою и повторе пушек тут нет — их рисует живой кадр со своим углом.
+    // В лобби ствол смотрит наружу от середины склада.
     switch (kind) {
       case "spray":
         drawSpray(ctx, g.cx, g.cy, cell, angle, 0, g.alive !== false);

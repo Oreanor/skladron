@@ -8,7 +8,7 @@
 -- Версия боевого движка. Должна совпадать с SIMULATION_VERSION в
 -- lib/tuning.ts: по ней отсекаются бои, посчитанные прежней геометрией волн.
 create or replace function sim_version() returns int
-language sql immutable as $$ select 14 $$;
+language sql immutable as $$ select 15 $$;
 
 -- держим в одном месте, чтобы клиент и сервер не разъезжались
 create or replace function price(kind text) returns int
@@ -58,6 +58,7 @@ language sql immutable as $$
     when 'pay_demag'  then 35
     when 'pay_blower' then 25
     when 'pay_stealth' then 60  -- невидимка снимает всю автоматику склада, оттого и дороже всех
+    when 'pay_turbo'  then 40   -- турбо: +50% к скорости, взрыв как у простой
   end;
 $$;
 
@@ -687,7 +688,7 @@ begin
     end if;
     for g in select * from jsonb_array_elements(wave->'groups') loop
       if coalesce(g->>'payload', '') not in
-         ('plain', 'heavy', 'jammer', 'foamer', 'demag', 'stealth', 'blower') then
+         ('plain', 'heavy', 'jammer', 'foamer', 'demag', 'stealth', 'blower', 'turbo') then
         raise exception 'bad drone payload';
       end if;
       if coalesce((g->>'n')::int, -1) < 0 then raise exception 'bad group size'; end if;

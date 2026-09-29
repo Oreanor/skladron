@@ -374,6 +374,8 @@ const pt: Dict = {
   "payload.stealthHint": "explode como o simples, mas canhões e lançadores não o veem: não apontam nem guiam o míssil. Restam as tuas mãos e as armadilhas.",
   "payload.blower": "Soprador de balões",
   "payload.blowerHint": "explode como o simples, mas em voo empurra os balões de barragem: o balão que entra na sua zona afasta-se várias células do drone. Não os rebenta, apenas abre caminho, e o enxame deixa um corredor atrás de si.",
+  "payload.turbo": "Turbo",
+  "payload.turboHint": "explode como o simples, mas voa uma vez e meia mais depressa — menos tempo sob fogo",
   "raid.pattern": "Padrão das vagas",
   "raid.from": "De onde",
   "raid.send": "Enviar {n} drones",

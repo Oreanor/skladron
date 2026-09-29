@@ -18,7 +18,7 @@ import {
   type Payload,
   type WavePlan,
 } from "@/lib/attack";
-import { DRONE, PAYLOAD, WAVE } from "@/lib/tuning";
+import { DRONE, PAYLOAD } from "@/lib/tuning";
 import { MAX_LEVEL, fmt, levelBonus } from "@/lib/economy";
 import { Plus, X } from "lucide-react";
 import { Button, SectionTitle } from "./ui";
@@ -121,7 +121,30 @@ export default function RaidPlanner({
         {waves.map((wave, wi) => (
           <div key={wi} className="rounded-md border border-neutral-700 bg-neutral-950/50 p-3">
             <div className="mb-2 flex items-center justify-between gap-2">
-              <SectionTitle>{t("raid.wave", { n: wi + 1 })}</SectionTitle>
+              <div className="flex min-w-0 items-center gap-1">
+                <span className="font-mono text-xs text-neutral-400">+</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={300}
+                  step={1}
+                  value={wave.delay ?? 0}
+                  aria-label={t("raid.waveDelay")}
+                  title={t("raid.waveDelayHint")}
+                  onChange={(e) =>
+                    patch(wi, {
+                      delay: Math.max(0, Math.min(300, Number(e.target.value) || 0)),
+                    })
+                  }
+                  className={
+                    "w-10 shrink-0 rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 " +
+                    "text-center font-mono text-xs text-neutral-200 " +
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500"
+                  }
+                />
+                <span className="shrink-0 text-xs text-neutral-400">{t("battle.seconds")}</span>
+                <SectionTitle>{t("raid.wave", { n: wi + 1 })}</SectionTitle>
+              </div>
               <div className="flex items-center gap-2">
                 <span className="font-mono text-xs text-neutral-500">
                   {t("raid.waveDrones", { n: waveSize(wave) })}
@@ -140,31 +163,12 @@ export default function RaidPlanner({
               </div>
             </div>
 
-            <div className="mb-3 flex flex-wrap gap-2">
-              <label className="flex items-center gap-2 text-xs text-neutral-400">
-                <span className="shrink-0">{t("raid.waveDelay")}</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={300}
-                  step={1}
-                  value={wave.delay ?? 0}
-                  aria-label={t("raid.waveDelay")}
-                  title={t("raid.waveDelayHint")}
-                  onChange={(e) =>
-                    patch(wi, {
-                      delay: Math.max(0, Math.min(300, Number(e.target.value) || 0)),
-                    })
-                  }
-                  className={numberClass}
-                />
-                <span className="shrink-0 text-neutral-500">{t("battle.seconds")}</span>
-              </label>
+            <div className="mb-3 space-y-2">
               <select
                 value={wave.pattern}
                 aria-label={t("raid.pattern")}
                 onChange={(e) => patch(wi, { pattern: e.target.value as Pattern })}
-                className={`${selectClass} flex-1`}
+                className={`${selectClass} w-full`}
               >
                 {PATTERNS.map((id) => (
                   <option key={id} value={id}>
@@ -178,7 +182,7 @@ export default function RaidPlanner({
                   value={wave.direction}
                   aria-label={t("raid.from")}
                   onChange={(e) => patch(wi, { direction: Number(e.target.value) })}
-                  className={selectClass}
+                  className={`${selectClass} w-full`}
                 >
                   {EDGES.map((i) => (
                     <option key={i} value={i}>
@@ -273,10 +277,10 @@ export default function RaidPlanner({
         block
         className="mt-3"
         onClick={() => {
-          const lastDelay = waves.reduce((m, w) => Math.max(m, w.delay ?? 0), 0);
+          const prev = waves[waves.length - 1]?.delay ?? 0;
           onChange([
             ...waves,
-            newWave(Math.max(1, Math.min(20, max - total)), lastDelay + WAVE.betweenWaves),
+            newWave(Math.max(1, Math.min(20, max - total)), prev + 1),
           ]);
         }}
       >

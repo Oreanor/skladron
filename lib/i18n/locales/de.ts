@@ -374,6 +374,8 @@ const de: Dict = {
   "payload.stealthHint": "explodiert wie die einfache, doch Kanonen und Werfer sehen sie gar nicht: kein Zielen, kein Lenken. Bleiben deine Hände und die Fallen.",
   "payload.blower": "Ballonbläser",
   "payload.blowerHint": "explodiert wie die einfache, schiebt aber im Flug Sperrballons beiseite: ein Ballon in seiner Zone treibt mehrere Felder von der Drohne weg. Er zerplatzt ihn nicht, er räumt nur den Weg, und der Schwarm lässt einen Korridor zurück.",
+  "payload.turbo": "Turbo",
+  "payload.turboHint": "explodiert wie die einfache, fliegt aber anderthalbmal so schnell — weniger Zeit unter Beschuss",
   "raid.pattern": "Wellenmuster",
   "raid.from": "Von wo",
   "raid.send": "{n} Drohnen schicken",

@@ -374,6 +374,8 @@ const fr: Dict = {
   "payload.stealthHint": "explose comme un simple, mais canons et lance-roquettes ne le voient pas du tout : ni visée, ni guidage. Il ne reste que tes mains et les pièges.",
   "payload.blower": "Souffleur de ballons",
   "payload.blowerHint": "explose comme une charge simple, mais écarte les ballons de barrage en vol : le ballon pris dans sa zone dérive de plusieurs cases loin du drone. Il ne les crève pas, il dégage le passage, et l’essaim laisse un couloir derrière lui.",
+  "payload.turbo": "Turbo",
+  "payload.turboHint": "explose comme une charge simple, mais vole une fois et demie plus vite — moins de temps sous le feu",
   "raid.pattern": "Motif des vagues",
   "raid.from": "D’où",
   "raid.send": "Envoyer {n} drones",
