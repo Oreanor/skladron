@@ -157,7 +157,9 @@ export default function Replay({
   speedRef.current = speed;
 
   const frames = useMemo(() => decodeTrace(replay.trace), [replay.trace]);
-  const totalSteps = Math.max(1, frames.length + SIM.tailFrames);
+  /** Шкала бара — длина записи. Хвост tailFrames в знаменатель не кладём:
+   *  бой обычно кончается около конца записи, и бар прыгал с ~35% в 100%. */
+  const progressSteps = Math.max(1, frames.length);
 
   const makeState = () =>
     createBattle(
@@ -221,13 +223,15 @@ export default function Replay({
           inAir: cur.drones.length,
           burned: cur.result.burned,
           done,
-          progress: done ? 1 : Math.min(1, step / totalSteps),
+          // Ускорение 2×/4× только крутит шаги быстрее — процент от длины
+          // записи, а не от стенных часов, иначе бар врал бы на разных скоростях.
+          progress: done ? 1 : Math.min(1, step / progressSteps),
         });
       }
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [run, frames, totalSteps]);
+  }, [run, frames, progressSteps]);
 
   const restart = () => {
     state.current = makeState();
