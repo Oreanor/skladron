@@ -272,6 +272,7 @@ const de: Dict = {
 
 
   "attacks.summon": "+ Angriff",
+  "attacks.test": "+ Test",
   "attacks.defend": "Abwehren",
   "attacks.dronesPattern": "{drones} Drohnen · {pattern}",
   "attacks.ready": "wartet auf Abwehr",
@@ -390,8 +391,7 @@ const de: Dict = {
 
   "competition.title": "Wettkampf Nr. {n}",
   "competition.subtitle": "Fester Schwarm nach Nummer. Kostet nichts; Sieg öffnet den nächsten.",
-  "competition.start": "Starten",
-  "competition.targetSelf": "Selbst — Wettkampf Nr. {n}",
+  "competition.add": "Hinzufügen",
   "competition.drones": "Drohnen",
   "competition.droneLevel": "Drohnenstufe",
   "competition.waves": "Wellen",

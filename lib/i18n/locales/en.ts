@@ -273,6 +273,7 @@ const en = {
 
 
   "attacks.summon": "+ raid",
+  "attacks.test": "+ test",
   "attacks.defend": "Defend",
   "attacks.dronesPattern": "{drones} drones · {pattern}",
   "attacks.ready": "awaiting defence",
@@ -390,8 +391,7 @@ const en = {
 
   "competition.title": "Competition #{n}",
   "competition.subtitle": "Fixed swarm for this stage. Costs nothing; win to unlock the next.",
-  "competition.start": "Start",
-  "competition.targetSelf": "Yourself — competition #{n}",
+  "competition.add": "Add",
   "competition.drones": "Drones",
   "competition.droneLevel": "Drone level",
   "competition.waves": "Waves",

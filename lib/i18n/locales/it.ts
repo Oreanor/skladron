@@ -272,6 +272,7 @@ const it: Dict = {
 
 
   "attacks.summon": "+ incursione",
+  "attacks.test": "+ test",
   "attacks.defend": "Difendi",
   "attacks.dronesPattern": "{drones} droni · {pattern}",
   "attacks.ready": "in attesa di difesa",
@@ -390,8 +391,7 @@ const it: Dict = {
 
   "competition.title": "Gara n. {n}",
   "competition.subtitle": "Sciame fisso in base al numero. Non costa nulla; vinci per sbloccare il successivo.",
-  "competition.start": "Inizia",
-  "competition.targetSelf": "Te stesso — gara n. {n}",
+  "competition.add": "Aggiungi",
   "competition.drones": "Droni",
   "competition.droneLevel": "Livello dei droni",
   "competition.waves": "Ondate",

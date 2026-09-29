@@ -272,6 +272,7 @@ const ru: Dict = {
 
 
   "attacks.summon": "+ налёт",
+  "attacks.test": "+ тест",
   "attacks.defend": "Отбить",
   "attacks.dronesPattern": "{drones} дронов · {pattern}",
   "attacks.ready": "ждёт ответа",
@@ -390,8 +391,7 @@ const ru: Dict = {
 
   "competition.title": "Состязание №{n}",
   "competition.subtitle": "Фиксированный рой по номеру. Ничего не стоит; победа открывает следующий.",
-  "competition.start": "Начать",
-  "competition.targetSelf": "Себе — состязание №{n}",
+  "competition.add": "Добавить",
   "competition.drones": "Дронов",
   "competition.droneLevel": "Уровень дронов",
   "competition.waves": "Волн",

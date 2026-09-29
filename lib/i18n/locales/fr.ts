@@ -272,6 +272,7 @@ const fr: Dict = {
 
 
   "attacks.summon": "+ raid",
+  "attacks.test": "+ test",
   "attacks.defend": "Défendre",
   "attacks.dronesPattern": "{drones} drones · {pattern}",
   "attacks.ready": "en attente de défense",
@@ -390,8 +391,7 @@ const fr: Dict = {
 
   "competition.title": "Épreuve n°{n}",
   "competition.subtitle": "Essaim fixe selon le numéro. Ne coûte rien ; gagne pour débloquer le suivant.",
-  "competition.start": "Lancer",
-  "competition.targetSelf": "Toi-même — épreuve n°{n}",
+  "competition.add": "Ajouter",
   "competition.drones": "Drones",
   "competition.droneLevel": "Niveau des drones",
   "competition.waves": "Vagues",

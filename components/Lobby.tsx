@@ -106,6 +106,7 @@ import {
 } from "@/lib/build";
 import Battle, { type BattleOutcome } from "./Battle";
 import TestRaidDialog from "./lobby/TestRaidDialog";
+import SummonRaidDialog from "./lobby/SummonRaidDialog";
 import AttackReportDialog from "./lobby/AttackReportDialog";
 import MessageDialog from "./lobby/MessageDialog";
 import BaseName from "./lobby/BaseName";
@@ -213,6 +214,7 @@ export default function Lobby({
   const [postCommentRaid, setPostCommentRaid] = useState<string | null>(null);
   /** Открыт ли планировщик пробного налёта на себя. */
   const [testRaidOpen, setTestRaid] = useState(false);
+  const [summonRaidOpen, setSummonRaid] = useState(false);
   const [ready, setReady] = useState(false);
   const [version, setVersion] = useState(0);
   const [sheet, setSheet] = useState<SheetId | null>(null);
@@ -1641,9 +1643,14 @@ export default function Lobby({
   );
 
   const summonButton = (
-    <Button size="sm" onClick={() => setTestRaid(true)}>
-      {t("attacks.summon")}
-    </Button>
+    <div className="flex flex-wrap justify-end gap-2">
+      <Button size="sm" onClick={() => setSummonRaid(true)}>
+        {t("attacks.summon")}
+      </Button>
+      <Button size="sm" onClick={() => setTestRaid(true)}>
+        {t("attacks.test")}
+      </Button>
+    </div>
   );
 
   const enemiesBody = (
@@ -2012,21 +2019,27 @@ export default function Lobby({
         />
       )}
 
-      {testRaidOpen && (
-        <TestRaidDialog
+      {summonRaidOpen && (
+        <SummonRaidDialog
           initial={suggestedRaid()}
-          competitionAt={p.competitionAt ?? 1}
           enemies={p.enemies}
           drones={drones}
           credits={p.credits}
           droneCost={droneCost}
-          onCancel={() => setTestRaid(false)}
-          onSendSelf={testRaid}
-          onSendEnemy={async (enemy, waves, comment) => {
+          onCancel={() => setSummonRaid(false)}
+          onSend={async (enemy, waves, comment) => {
             const err = await doRaid(enemy, waves, comment);
-            if (!err) setTestRaid(false);
+            if (!err) setSummonRaid(false);
             return err;
           }}
+        />
+      )}
+
+      {testRaidOpen && (
+        <TestRaidDialog
+          competitionAt={p.competitionAt ?? 1}
+          onCancel={() => setTestRaid(false)}
+          onAdd={testRaid}
         />
       )}
 
@@ -2193,7 +2206,7 @@ export default function Lobby({
       )}
 
       <Sheet open={sheet === "attacks"} title={t("panel.replays")} onClose={() => setSheet(null)}>
-        <div className="mb-3 flex justify-end">{summonButton}</div>
+        <div className="mb-3">{summonButton}</div>
         {raidsBody}
       </Sheet>
       <Sheet open={sheet === "enemies"} title={t("panel.enemies")} onClose={() => setSheet(null)}>
