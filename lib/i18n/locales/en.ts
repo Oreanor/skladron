@@ -77,6 +77,7 @@ const en = {
   "menu.rules": "How to play",
   "income.sold": " · shipped out: {drones} drones for {dronesValue} cr",
   "replay.watch": "Watch the raid",
+  "replay.again": "Replay",
   "replay.of": "raid on",
   "scout.map": "Map",
   "battle.insurance": "insurance",

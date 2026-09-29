@@ -76,6 +76,7 @@ const fr: Dict = {
   "menu.rules": "Comment jouer",
   "income.sold": " · expédié : {drones} drones pour {dronesValue} cr, {scouts} avions pour {scoutsValue} cr",
   "replay.watch": "Voir le raid",
+  "replay.again": "Rejouer",
   "replay.of": "raid sur",
   "scout.map": "Carte",
   "battle.insurance": "assurance",

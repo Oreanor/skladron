@@ -149,6 +149,8 @@ export default function Replay({
   const t = useT();
   const [shared, setShared] = useState(false);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(2);
+  /** Счётчик прогонов: по нему эффект крутит бой с нуля в том же окне. */
+  const [run, setRun] = useState(0);
   const [version, setVersion] = useState(0);
   const [hud, setHud] = useState({ time: 0, inAir: 0, burned: 0, done: false });
   const speedRef = useRef(speed);
@@ -156,19 +158,20 @@ export default function Replay({
 
   const frames = useMemo(() => decodeTrace(replay.trace), [replay.trace]);
 
-  const state = useRef<GameState | null>(null);
-  if (!state.current) {
-    state.current = createBattle(
+  const makeState = () =>
+    createBattle(
       decodeCells(replay.cells),
       replay.guns as Gun[],
       replay.depots as Depot[],
       buildPlan(replay.order),
       { ...replay.levels, drones: replay.order.droneLevel ?? 1, seed: replay.order.seed }
     );
-  }
+
+  const state = useRef<GameState | null>(null);
+  if (!state.current) state.current = makeState();
   const s = state.current;
 
-  const scene = useMemo(() => ({ cells: s.cells, guns: s.guns, depots: s.depots }), [s]);
+  const scene = useMemo(() => ({ cells: s.cells, guns: s.guns, depots: s.depots }), [s, run]);
 
   useEffect(() => {
     let raf = 0;
@@ -177,6 +180,7 @@ export default function Replay({
     let step = 0;
     let hudAt = 0;
     let mapAt = 0;
+    const cur = state.current!;
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
       const dt = Math.min(0.05, (now - last) / 1000);
@@ -184,43 +188,50 @@ export default function Replay({
       carry += dt * speedRef.current;
 
       let guard = 0;
-      while (carry >= SIM.step && guard++ < 32 && s.phase === "playing") {
+      while (carry >= SIM.step && guard++ < 32 && cur.phase === "playing") {
         // Запись кончилась — доигрываем хвост без рук защитника и на этом
         // всё: дожигать склад, которого он не терял, повтор не должен.
         if (frames.length && step >= frames.length + SIM.tailFrames) {
           // что горело к этому мгновению — то и осталось пепелищем
-          for (const i of s.fire.keys()) s.cells[i] = G_BURNT;
-          s.fire.clear();
-          s.phase = s.baseOk > 0 ? "won" : "lost";
+          for (const i of cur.fire.keys()) cur.cells[i] = G_BURNT;
+          cur.fire.clear();
+          cur.phase = cur.baseOk > 0 ? "won" : "lost";
           setVersion((v) => v + 1);
           break;
         }
         carry -= SIM.step;
         // руки защитника: что он делал на этом шаге, то и повторяем
         const f = frames[step++] ?? null;
-        setAim(s, f ? { x: f.x + 0.5, y: f.y + 0.5 } : null);
-        setFiring(s, Boolean(f?.firing));
-        update(s, SIM.step);
+        setAim(cur, f ? { x: f.x + 0.5, y: f.y + 0.5 } : null);
+        setFiring(cur, Boolean(f?.firing));
+        update(cur, SIM.step);
       }
 
-      if (s.dirty && now - mapAt > 100) {
-        s.dirty = false;
+      if (cur.dirty && now - mapAt > 100) {
+        cur.dirty = false;
         mapAt = now;
         setVersion((v) => v + 1);
       }
       if (now - hudAt > 100) {
         hudAt = now;
         setHud({
-          time: s.time,
-          inAir: s.drones.length,
-          burned: s.result.burned,
-          done: s.phase !== "playing",
+          time: cur.time,
+          inAir: cur.drones.length,
+          burned: cur.result.burned,
+          done: cur.phase !== "playing",
         });
       }
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [s, frames]);
+  }, [run, frames]);
+
+  const restart = () => {
+    state.current = makeState();
+    setHud({ time: 0, inAir: 0, burned: 0, done: false });
+    setVersion((v) => v + 1);
+    setRun((n) => n + 1);
+  };
 
   const overlay = (ctx: CanvasRenderingContext2D, now: number) => {
     drawFrame(ctx, s, CELL, null, now);
@@ -235,13 +246,22 @@ export default function Replay({
         <Chip label={t("battle.burned")} value={fmt(hud.burned)} tone="text-orange-300" />
       </ChipBar>
 
-      <MapCanvas
-        className="min-h-0 flex-1"
-        scene={scene}
-        sceneVersion={version}
-        overlay={overlay}
-        cursor="default"
-      />
+      <div className="relative min-h-0 flex-1">
+        <MapCanvas
+          className="h-full min-h-0"
+          scene={scene}
+          sceneVersion={version}
+          overlay={overlay}
+          cursor="default"
+        />
+        {hud.done && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-neutral-950/70">
+            <Button variant="build" onClick={restart}>
+              {t("replay.again")}
+            </Button>
+          </div>
+        )}
+      </div>
 
       {shareId && <Talk battleId={shareId} />}
 

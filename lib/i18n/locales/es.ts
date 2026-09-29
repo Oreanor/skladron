@@ -76,6 +76,7 @@ const es: Dict = {
   "menu.rules": "Cómo se juega",
   "income.sold": " · expedido: {drones} drones por {dronesValue} cr, {scouts} aviones por {scoutsValue} cr",
   "replay.watch": "Ver el ataque",
+  "replay.again": "Otra vez",
   "replay.of": "ataque a",
   "scout.map": "Mapa",
   "battle.insurance": "seguro",

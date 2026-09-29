@@ -76,6 +76,7 @@ const ru: Dict = {
   "menu.rules": "Как играть",
   "income.sold": " · отгружено: {drones} дронов на {dronesValue} кр",
   "replay.watch": "Смотреть налёт",
+  "replay.again": "Ещё раз",
   "replay.of": "налёт на",
   "scout.map": "Карта",
   "battle.insurance": "страховка",
