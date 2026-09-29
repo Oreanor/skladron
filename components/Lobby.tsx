@@ -5,35 +5,23 @@ import {
   GRID,
   G_BASE,
   G_BURNT,
-  G_GROUND,
-  BALLOONS_PER_CELL,
-  DRONES_PER_CELL,
   balloonCount,
   depotKind,
   type DepotKind,
   type Rect,
-  applyRect,
   droneCount,
   countFreeCells,
   countKind,
   gunKind,
-  sanitizeGuns,
   type GunKind,
-  isWhole,
-  scrapRect,
   idx,
   isBuilding,
-  burntCellsIn,
-  newCellsIn,
   normRect,
-  rectConnects,
-  repairRect,
   touchesBuilding,
 } from "@/lib/base";
 import {
   CELL_COST,
   STARTER_SIDE,
-  BALLOON_UNIT_COST,
   DRONE_UNIT_COST,
   LOAN_MIN,
   SALE_MULTIPLIER,
@@ -44,10 +32,6 @@ import {
   goodsValue,
   insurance,
   defenseBounty,
-  GUN_COST,
-  ROCKET_COST,
-  SPRAY_COST,
-  TRAP_COST,
   MIN_BASE_CELLS,
   REPAIR_COST,
   maxLevel,
@@ -97,6 +81,21 @@ import {
 } from "@/lib/render";
 import { gunRange, rocketRange, rocketTempo, sprayRange, trapRange } from "@/lib/engine";
 import { ROCKET } from "@/lib/tuning";
+import {
+  applyDraft,
+  buildOne as buildCell,
+  depotCost,
+  depotSize,
+  draftPlan,
+  gunCost,
+  moveDepot as shiftDepot,
+  moveGun as shiftGun,
+  placeDepot,
+  placeGun,
+  repairAt as repairCell,
+  scrapAt as scrapCell,
+  type BuildResult,
+} from "@/lib/build";
 import Battle, { type BattleOutcome } from "./Battle";
 import TestRaidDialog from "./lobby/TestRaidDialog";
 import AttackReportDialog from "./lobby/AttackReportDialog";
@@ -538,12 +537,15 @@ export default function Lobby({
   /** Секунды показываем с одним знаком и без хвостового нуля. */
   const round1 = (v: number) => Math.round(v * 10) / 10;
 
+  /**
+   * Цену спрашиваем у стройки — у той самой, что потом и спишет. Раньше
+   * тут стоял свой такой же перебор по видам, и ценник на кнопке мог
+   * разойтись с тем, что снимут с кошелька.
+   */
   const toolPrice = (item: (typeof TOOLS)[number]) => {
-    if (item.id === "gun") return priceAt(GUN_COST, p.levels.guns);
-    if (item.id === "rocket") return priceAt(ROCKET_COST, p.levels.rockets);
-    if (item.id === "spray") return priceAt(SPRAY_COST, p.levels.sprays);
-    if (item.id === "trap") return priceAt(TRAP_COST, p.levels.traps);
-    if (item.id === "drones") return priceAt(DRONE_UNIT_COST, p.levels.drones) * DRONES_PER_CELL;
+    if (isBuildKind(item.id)) return gunCost(p.levels, item.id);
+    if (item.id === "drones") return depotCost(p.levels, "basic");
+    if (item.id === "balloons") return depotCost(p.levels, "balloon");
     return item.vars.cost;
   };
 
@@ -718,195 +720,84 @@ export default function Lobby({
   const drafting = tool === "area" || tool === "repair" || tool === "scrap";
   const draft = draftRef.current;
   const draftRect = draft ? normRect(draft) : null;
-  const draftCells = draftRect
-    ? tool === "repair" || tool === "scrap"
-      ? burntCellsIn(p.cells, draftRect)
-      : newCellsIn(p.cells, draftRect)
-    : 0;
-  const draftCost =
-    draftCells * (tool === "scrap" ? -SCRAP_REWARD : tool === "repair" ? REPAIR_COST : CELL_COST);
-  // Снос не должен разваливать склад надвое: примеряем результат заранее.
-  const scrapWhole =
-    tool !== "scrap" || !draftRect || draftCells === 0
-      ? true
-      : (() => {
-          const next = p.cells.slice();
-          scrapRect(next, draftRect);
-          return isWhole(next);
-        })();
-  // ремонт ничего не пристраивает, поэтому разрывов создать не может;
-  // у сноса своя проверка — он их как раз создаёт
-  const draftConnects =
-    tool === "repair"
-      ? true
-      : tool === "scrap"
-      ? scrapWhole
-      : draftRect
-      ? rectConnects(p.cells, draftRect, hasBuilding)
-      : false;
+  // Сколько клеток, почём и можно ли — считает стройка; лобби только
+  // рисует по этому ценник и решает, красить ли рамку красным.
+  const plan = draftPlan(p, drafting ? tool : "area", draftRect, hasBuilding);
+  const draftCells = plan.cells;
+  const draftCost = plan.cost;
+  const draftConnects = plan.connects;
   const draftAfford = draftCost <= p.credits;
+
+  /**
+   * Делает то, что сказала стройка: отказ показывает словами, согласие
+   * сохраняет. Дальше в лобби остаётся только то, чего стройка не знает, —
+   * всплывающий ценник над клеткой да перерисовка.
+   */
+  const act = (r: BuildResult, at?: { x: number; y: number }) => {
+    if (!r.ok) {
+      setMessage(t(r.why, r.vars));
+      return false;
+    }
+    if (r.spent === 0) return true;
+    if (at) showPrice(at.x, at.y, -r.spent);
+    touch();
+    return true;
+  };
 
   const commitDraft = () => {
     if (!draftRect || draftRect.w <= 0 || draftRect.h <= 0) return;
-    if (!draftConnects) {
-      setMessage(t("draft.mustBeSolid"));
+    const before = draftCells;
+    const r = applyDraft(p, drafting ? tool : "area", draftRect, hasBuilding);
+    if (!r.ok) {
+      setMessage(t(r.why, r.vars ? { cost: fmt(Number(r.vars.cost)) } : undefined));
       return;
     }
-    if (!draftAfford) {
-      setMessage(t("draft.needCredits", { cost: fmt(draftCost) }));
-      return;
+    if (before > 0) {
+      setMessage(
+        tool === "scrap"
+          ? t("scrap.done", { cells: before, gain: fmt(before * SCRAP_REWARD) })
+          : tool === "repair"
+            ? t("repair.done", { cells: before, cost: fmt(r.spent) })
+            : t("draft.built", { cells: before, cost: fmt(r.spent) })
+      );
     }
-    if (draftCells === 0) {
-      draftRef.current = null;
-      dragRef.current = null;
-      forceRender((v) => v + 1);
-      return;
-    }
-
-    const cells = p.cells.slice();
-    switch (tool) {
-      case "scrap":
-        scrapRect(cells, draftRect);
-        setMessage(t("scrap.done", { cells: draftCells, gain: fmt(draftCells * SCRAP_REWARD) }));
-        break;
-      case "repair":
-        repairRect(cells, draftRect);
-        p.stats.cellsRepaired += draftCells;
-        setMessage(t("repair.done", { cells: draftCells, cost: fmt(draftCost) }));
-        break;
-      default:
-        applyRect(cells, draftRect);
-        setMessage(t("draft.built", { cells: draftCells, cost: fmt(draftCost) }));
-        break;
-    }
-    p.cells = cells;
-    p.credits -= draftCost;
     draftRef.current = null;
     dragRef.current = null;
-    touch();
+    if (before > 0) touch();
+    else forceRender((v) => v + 1);
   };
 
   const buildOne = (x: number, y: number) => {
-    if (x < 0 || y < 0 || x >= GRID || y >= GRID) return;
-    const i = idx(x, y);
-    if (isBuilding(p.cells[i])) return;
-    if (hasBuilding && !touchesBuilding(p.cells, x, y)) {
-      setMessage(t("draft.mustBeSolid"));
-      return;
-    }
-    const cost = CELL_COST;
-    if (p.credits < cost) {
-      setMessage(t("draft.noCredits"));
-      return;
-    }
-    p.cells[i] = G_BASE;
-    p.credits -= cost;
-    touch();
+    act(buildCell(p, x, y, hasBuilding));
   };
 
-  /** Снос одной клетки. Если она держит склад вместе — не даём. */
   const scrapAt = (x: number, y: number) => {
-    if (x < 0 || y < 0 || x >= GRID || y >= GRID) return;
-    const i = idx(x, y);
-    if (p.cells[i] !== G_BURNT) return;
-    const cells = p.cells.slice();
-    cells[i] = G_GROUND;
-    if (!isWhole(cells)) {
-      setMessage(t("scrap.splits"));
-      return;
-    }
-    p.cells = cells;
-    p.credits += SCRAP_REWARD;
-    showPrice(x, y, SCRAP_REWARD);
-    touch();
+    act(scrapCell(p, x, y), { x, y });
   };
 
   const repairAt = (x: number, y: number) => {
-    if (x < 0 || y < 0 || x >= GRID || y >= GRID) return;
-    const i = idx(x, y);
-    if (p.cells[i] !== G_BURNT) return;
-    if (p.credits < REPAIR_COST) {
-      setMessage(t("repair.noCredits"));
-      return;
-    }
-    const cells = p.cells.slice();
-    cells[i] = G_BASE;
-    p.cells = cells;
-    p.credits -= REPAIR_COST;
-    p.stats.cellsRepaired++;
-    touch();
+    act(repairCell(p, x, y));
   };
 
   const gunAt = (x: number, y: number, kind: GunKind = "gun") => {
-    if (x < 0 || y < 0 || x >= GRID || y >= GRID) return;
-    if (p.cells[idx(x, y)] !== G_BASE) {
-      setMessage(t("gun.onlyIntact"));
-      return;
-    }
-    if (p.depots.some((d) => d.cx === x && d.cy === y)) {
-      setMessage(t("gun.cellBusy"));
-      return;
-    }
-    const cost =
-      kind === "spray"
-        ? priceAt(SPRAY_COST, p.levels.sprays)
-        : kind === "trap"
-          ? priceAt(TRAP_COST, p.levels.traps)
-          : kind === "rocket"
-            ? priceAt(ROCKET_COST, p.levels.rockets)
-            : priceAt(GUN_COST, p.levels.guns);
-    if (p.credits < cost) {
-      setMessage(t("gun.noCredits"));
-      return;
-    }
-    p.guns.push(kind === "gun" ? { cx: x, cy: y } : { cx: x, cy: y, kind });
-    p.credits -= cost;
-    showPrice(x, y, -cost);
-    touch();
+    act(placeGun(p, x, y, kind), { x, y });
   };
 
   /**
    * Контейнер покупается прямо на карте, как пушка: ткнул в свободную клетку —
-   * появился ящик на десять дронов, деньги списались. Никаких окошек.
+   * появился ящик, деньги списались. Ставим сразу, не дожидаясь сервера, а
+   * откажет — возвращаем как было.
    */
   const buyDepotAt = async (x: number, y: number, kind: DepotKind = "basic") => {
-    if (x < 0 || y < 0 || x >= GRID || y >= GRID) return;
-    if (p.cells[idx(x, y)] !== G_BASE) {
-      setMessage(t("depot.onlyIntact"));
-      return;
-    }
-    if (p.guns.some((g) => g.cx === x && g.cy === y)) {
-      setMessage(t("depot.gunThere"));
-      return;
-    }
-    if (p.depots.some((d) => d.cx === x && d.cy === y)) return;
-    // У шаров прокачки нет: цена одна на всю игру.
-    const balloons = kind === "balloon";
-    const cost = balloons
-      ? BALLOON_UNIT_COST * BALLOONS_PER_CELL
-      : priceAt(DRONE_UNIT_COST, p.levels.drones) * DRONES_PER_CELL;
-    if (p.credits < cost) {
-      setMessage(t("depot.noCredits", { cost: fmt(cost) }));
-      return;
-    }
     const previousDepots = p.depots;
     const previousCredits = p.credits;
-    p.depots = [
-      ...p.depots,
-      balloons
-        ? { cx: x, cy: y, n: BALLOONS_PER_CELL, kind: "balloon" as const }
-        : { cx: x, cy: y, n: DRONES_PER_CELL },
-    ];
-    p.credits -= cost;
-    showPrice(x, y, -cost);
+    if (!act(placeDepot(p, x, y, kind), { x, y })) return;
+    if (p.depots === previousDepots) return; // клетка уже занята своим же ящиком
+
     setVersion((v) => v + 1);
     forceRender((v) => v + 1);
     try {
-      const patch = await repo.buyDepot(
-        p,
-        balloons ? BALLOONS_PER_CELL : DRONES_PER_CELL,
-        kind
-      );
+      const patch = await repo.buyDepot(p, depotSize(kind), kind);
       if (patch.credits !== undefined) p.credits = patch.credits;
       forceRender((v) => v + 1);
     } catch (e) {
@@ -918,57 +809,14 @@ export default function Lobby({
     }
   };
 
-  /** Перетаскивание контейнера на свободную клетку. */
+  /** Перетаскивание контейнера на свободную клетку. Ничего не стоит. */
   const moveDepot = (from: { cx: number; cy: number }, x: number, y: number) => {
-    if (x < 0 || y < 0 || x >= GRID || y >= GRID) return;
-    if (p.cells[idx(x, y)] !== G_BASE) {
-      setMessage(t("depot.onlyIntact"));
-      return;
-    }
-    if (p.guns.some((g) => g.cx === x && g.cy === y)) {
-      setMessage(t("depot.gunThere"));
-      return;
-    }
-    if (
-      p.depots.some(
-        (d) =>
-          (d.cx !== from.cx || d.cy !== from.cy) && d.cx === x && d.cy === y
-      )
-    ) {
-      setMessage(t("depot.taken"));
-      return;
-    }
-    const depotIndex = p.depots.findIndex((q) => q.cx === from.cx && q.cy === from.cy);
-    if (depotIndex < 0) return;
-    p.depots = p.depots.map((depot, index) =>
-      index === depotIndex ? { ...depot, cx: x, cy: y } : depot
-    );
-    touch();
+    if (act(shiftDepot(p, from, x, y))) touch();
   };
 
-  /** Перетаскивание пушки на другую целую клетку. Деньги при этом не трогаем. */
+  /** Перетаскивание установки на другую целую клетку. Тоже даром. */
   const moveGun = (from: { cx: number; cy: number; kind: GunKind }, x: number, y: number) => {
-    if (x < 0 || y < 0 || x >= GRID || y >= GRID) return;
-    if (p.cells[idx(x, y)] !== G_BASE) {
-      setMessage(t("gun.onlyIntact"));
-      return;
-    }
-    if (p.guns.some((g) => (g.cx !== from.cx || g.cy !== from.cy) && g.cx === x && g.cy === y)) {
-      setMessage(t("gun.gunThere"));
-      return;
-    }
-    if (p.depots.some((d) => d.cx === x && d.cy === y)) {
-      setMessage(t("gun.cellBusy"));
-      return;
-    }
-    const at = p.guns.findIndex(
-      (g) => g.cx === from.cx && g.cy === from.cy && gunKind(g) === from.kind
-    );
-    if (at < 0) return;
-    p.guns = sanitizeGuns(
-      p.guns.map((g, i) => (i === at ? { ...g, cx: x, cy: y } : g))
-    );
-    touch();
+    if (act(shiftGun(p, from, x, y))) touch();
   };
 
   /** Основание идёт следом за именем: безымянных складов не заводим. */
@@ -1416,7 +1264,9 @@ export default function Lobby({
       drawDraft(ctx, cell, d, {
         cells: p.cells,
         burntOnly: tool === "repair" || tool === "scrap" ? tool : undefined,
-        scrapWhole,
+        // У сноса «соединяет» и значит «не разорвёт склад» — одна и та же
+        // проверка, второй флаг ей не нужен.
+        scrapWhole: tool !== "scrap" || draftConnects,
         afford: draftAfford,
         connects: draftConnects,
       });

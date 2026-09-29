@@ -7,8 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "check": "node scripts/check-battle.cjs && node scripts/check-model.cjs",
-    "check:model": "node scripts/check-model.cjs"
+    "check": "node scripts/check-battle.cjs && node scripts/check-build.cjs && node scripts/check-model.cjs",
+    "check:model": "node scripts/check-model.cjs",
+    "check:build": "node scripts/check-build.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",
