@@ -228,7 +228,7 @@ export default function AvatarPicker({
           }
           name={name}
           email={email}
-          size="xl"
+          size="lg"
         />
       </div>
 

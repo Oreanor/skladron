@@ -199,7 +199,7 @@ export default function AccountMenu({
         aria-expanded={open}
         className="cursor-pointer rounded-full transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400"
       >
-        <AvatarView avatar={avatar ?? null} name={name} email={email} size="chip" />
+        <AvatarView avatar={avatar ?? null} name={name} email={email} size="sm" />
       </button>
 
       {open && (
