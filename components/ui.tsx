@@ -362,7 +362,7 @@ export function Modal({
       */}
       <div
         className={`flex max-h-[92dvh] w-full flex-col rounded-t-2xl border border-neutral-700 bg-neutral-900 shadow-2xl sm:rounded-md ${
-          wide ? "max-w-2xl" : "max-w-sm"
+          wide ? "max-w-3xl" : "max-w-sm"
         }`}
       >
         <div className="flex shrink-0 items-start gap-2 px-5 pb-2 pt-5">

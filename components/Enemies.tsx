@@ -161,16 +161,7 @@ export default function Enemies({
       {profile && (
         <EnemyProfile
           enemy={profile}
-          drones={drones}
           onClose={() => setProfile(null)}
-          onAttack={() => {
-            setProfile(null);
-            setTarget(profile);
-          }}
-          onScout={() => {
-            setProfile(null);
-            setScoutTarget(profile);
-          }}
           onShowMap={
             profile.scout
               ? () => {
@@ -218,17 +209,12 @@ export default function Enemies({
 
 function EnemyProfile({
   enemy,
-  drones,
   onClose,
-  onAttack,
-  onScout,
   onShowMap,
 }: {
   enemy: Enemy;
-  drones: number;
   onClose: () => void;
-  onAttack: () => void;
-  onScout: () => void;
+  /** Открыть полную карту разведки — по клику на снимок. */
   onShowMap?: () => void;
 }) {
   const t = useT();
@@ -250,85 +236,77 @@ function EnemyProfile({
       wide={Boolean(enemy.scout)}
       onClose={onClose}
       footer={
-        <>
-          <div className="flex flex-wrap justify-center gap-2">
-            <Button variant="danger" disabled={drones < 10} onClick={onAttack}>
-              {t("enemies.attack")}
-            </Button>
-            <Button onClick={onScout}>{t("scout.button")}</Button>
-            {onShowMap && <Button onClick={onShowMap}>{t("scout.map")}</Button>}
-          </div>
-          <Button variant="build" onClick={onClose}>
-            {t("common.ok")}
-          </Button>
-        </>
+        <Button variant="build" onClick={onClose}>
+          {t("common.ok")}
+        </Button>
       }
     >
-      {/*
-        Есть снимок — на десктопе слева лицо и цифры, справа карта;
-        без снимка остаётся одна узкая колонка.
-      */}
-      <div
-        className={
-          enemy.scout
-            ? "flex flex-col items-center gap-3 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] sm:items-start sm:gap-4"
-            : "flex flex-col items-center gap-3"
-        }
-      >
-        <div className="flex justify-center sm:col-start-1 sm:row-start-1">
+      <div className="space-y-4">
+        <div className="flex items-start gap-4">
           <Avatar
             avatar={enemy.avatar ?? null}
             name={enemy.name}
             email={enemy.email}
             size="lg"
           />
-        </div>
-        {enemy.scout && (
-          <button
-            type="button"
-            onClick={onShowMap}
-            title={t("scout.map")}
-            className="w-full cursor-pointer overflow-hidden rounded-md border border-neutral-700 transition hover:border-neutral-500 sm:col-start-2 sm:row-span-2 sm:row-start-1"
-          >
-            <ScoutThumb snapshot={enemy.scout} />
-          </button>
-        )}
-        <dl className="w-full space-y-1.5 font-mono text-sm sm:col-start-1 sm:row-start-2">
-          <div className="flex justify-between gap-3">
-            <dt className="text-neutral-500">{t("enemies.burnedByMe")}</dt>
-            <dd className="text-neutral-200">{enemy.burnedByMe}</dd>
-          </div>
-          <div className="flex justify-between gap-3">
-            <dt className="text-neutral-500">{t("enemies.burnedByThem")}</dt>
-            <dd className="text-neutral-200">{enemy.burnedByThem}</dd>
-          </div>
-          <div className="flex justify-between gap-3">
-            <dt className="text-neutral-500">{t("enemies.lastRaid")}</dt>
-            <dd className="text-neutral-200">
-              {last ?? t("enemies.noRaidYet")}
-            </dd>
-          </div>
-          {counts ? (
-            SCOUT_KINDS.map((kind) => (
-              <div key={kind} className="flex items-center justify-between gap-3">
-                <dt className="flex items-center gap-2 text-neutral-500">
-                  <span
-                    className="h-2 w-2 shrink-0 rounded-sm ring-1 ring-black/40"
-                    style={{ background: installColors(kind).top }}
-                    aria-hidden
-                  />
-                  {t(SCOUT_KIND_LABEL[kind])}
-                </dt>
-                <dd className="text-neutral-200">{counts[kind]}</dd>
-              </div>
-            ))
-          ) : (
+          <dl className="min-w-0 flex-1 space-y-1.5 font-mono text-sm">
             <div className="flex justify-between gap-3">
-              <dt className="text-neutral-500">{t("enemies.scoutStatus")}</dt>
-              <dd className="text-neutral-200">{t("enemies.scoutNone")}</dd>
+              <dt className="text-neutral-500">{t("enemies.burnedByMe")}</dt>
+              <dd className="text-neutral-200">{enemy.burnedByMe}</dd>
             </div>
-          )}
-        </dl>
+            <div className="flex justify-between gap-3">
+              <dt className="text-neutral-500">{t("enemies.burnedByThem")}</dt>
+              <dd className="text-neutral-200">{enemy.burnedByThem}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-neutral-500">{t("enemies.lastRaid")}</dt>
+              <dd className="text-neutral-200">
+                {last ?? t("enemies.noRaidYet")}
+              </dd>
+            </div>
+            {!enemy.scout && (
+              <div className="flex justify-between gap-3">
+                <dt className="text-neutral-500">{t("enemies.scoutStatus")}</dt>
+                <dd className="text-neutral-200">{t("enemies.scoutNone")}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+
+        {enemy.scout && counts && (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+            {/*
+              Снимок крупно: атака и разведка живут в списке соперников,
+              здесь только смотреть. Клик — полная карта с советами.
+            */}
+            <button
+              type="button"
+              onClick={onShowMap}
+              title={t("scout.map")}
+              className="min-w-0 flex-1 cursor-pointer overflow-hidden rounded-md border border-neutral-700 transition hover:border-neutral-500"
+            >
+              <ScoutThumb snapshot={enemy.scout} />
+            </button>
+            <ul className="shrink-0 space-y-2 font-mono text-sm sm:w-40">
+              <li className="text-xs uppercase tracking-widest text-neutral-500">
+                {t("scout.analysis")}
+              </li>
+              {SCOUT_KINDS.map((kind) => (
+                <li key={kind} className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-neutral-400">
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-sm ring-1 ring-black/40"
+                      style={{ background: installColors(kind).top }}
+                      aria-hidden
+                    />
+                    {t(SCOUT_KIND_LABEL[kind])}
+                  </span>
+                  <span className="text-neutral-100">{counts[kind]}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </Modal>
   );
