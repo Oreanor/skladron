@@ -2272,7 +2272,6 @@ export default function Lobby({
 
       {postCommentRaid && (
         <PostRaidCommentModal
-          attackId={postCommentRaid}
           onDone={(body) => {
             const id = postCommentRaid;
             setPostCommentRaid(null);

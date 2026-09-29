@@ -45,10 +45,8 @@ export function RaidOpenerModal({
 
 /** После отбитого удалённого налёта — короткая реплика или пропуск. */
 export function PostRaidCommentModal({
-  attackId,
   onDone,
 }: {
-  attackId: string;
   onDone: (body: string | null) => void;
 }) {
   const t = useT();
