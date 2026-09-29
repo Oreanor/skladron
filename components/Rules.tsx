@@ -6,6 +6,7 @@
 import {
   CELL_COST,
   CELL_LOOT_REWARD,
+  attackLoot,
   CREDITS_START,
   DEFENSE_BURN_PENALTY,
   DEFENSE_CLEAN_PER_DRONE,
@@ -65,6 +66,8 @@ const values: Record<string, string> = {
   spread: String(FIRE.spread),
   maxRaid: String(RAID.max),
   loot: String(CELL_LOOT_REWARD),
+  // Потолок премии: столько дают за клетку, когда сожжён весь склад.
+  lootMax: String(attackLoot(1, 1)),
   defendClean: String(DEFENSE_CLEAN_PER_DRONE),
   defendDirty: String(DEFENSE_DIRTY_PER_DRONE),
   defendBurn: String(DEFENSE_BURN_PENALTY),

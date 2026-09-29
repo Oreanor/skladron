@@ -27,6 +27,9 @@ language sql immutable as $$
     when 'income' then 10  -- кредитов в сутки с каждой целой клетки
     when 'sale'   then 2   -- отгрузка идёт вдвое дороже закупки
     when 'loot'   then 50   -- нападавшему за каждую сожжённую клетку склада
+    -- Надбавка за близкий к полному разгром, процентов при стопроцентном.
+    -- Растёт кубом от доли сожжённого; то же число в LOOT_CURVE на клиенте.
+    when 'loot_curve' then 200
     when 'insure_cell'  then 5   -- страховка погорельцу: ровно на ремонт клетки
     when 'insure_step'  then 25  -- покрытие товара и пушек: столько процентов за уровень полиса
     when 'free'   then 25   -- стартовая площадь 5×5 достаётся даром
@@ -1561,6 +1564,9 @@ declare
   order_row attacks;
   defender_credits int;
   defender_intact int;
+  burned_now int;
+  intact_before int;
+  share_pct int;
   earned int;
   base_at timestamptz;
 begin
@@ -1592,7 +1598,22 @@ begin
     into defender_credits, defender_intact
     from apply_battle_for(order_row.defender_id, new_cells, new_guns, new_depots, result) applied;
 
-  earned := coalesce((result->>'burned')::int, 0) * price('loot');
+  -- Премия растёт не по клеткам, а по доле склада: половина даёт +25%,
+  -- четыре пятых — вдвое, весь склад — втрое. Добить выгоднее, чем
+  -- пощипать по краю у десятерых.
+  --
+  -- Сколько целых клеток было до налёта, считаем обратным ходом: вне боя
+  -- склад не чинится, значит целых было ровно столько, сколько осталось,
+  -- плюс сожжённые. Арифметика целая и слово в слово повторяет attackLoot
+  -- на клиенте — правила и отчёт обязаны показывать то же число.
+  burned_now := coalesce((result->>'burned')::int, 0);
+  intact_before := defender_intact + burned_now;
+  share_pct := case when intact_before > 0
+                    then least(100, (burned_now * 100) / intact_before)
+                    else 0 end;
+  earned := (burned_now * price('loot')
+             * (100 + (price('loot_curve') * share_pct * share_pct * share_pct) / 1000000))
+            / 100;
 
   update profiles
      set credits = profiles.credits + earned,

@@ -375,6 +375,35 @@ console.log("\n— ракетницы, невидимка и размагнич�
   }
 }
 
+console.log("\n— премия нападавшему растёт с долей разгрома —");
+{
+  const M = require(path.resolve(OUT, "economy.js"));
+  // Числа те же, что в resolve_attack: если правишь одну сторону, вторая
+  // должна поехать следом, а тест — упасть.
+  const table = [
+    [10, 500],
+    [25, 1287],
+    [50, 3125],
+    [80, 8080],
+    [100, 15000],
+  ];
+  let ok = true;
+  const seen = [];
+  for (const [pct, want] of table) {
+    const got = M.attackLoot(pct, 100);
+    seen.push(`${pct}% → ${got}`);
+    if (got !== want) ok = false;
+  }
+  check("кривая премии на месте", ok, seen.join(", "));
+  check("плоская ставка сохраняется на малом уроне",
+    M.attackLoot(5, 100) === 5 * M.CELL_LOOT_REWARD,
+    `за пять клеток из ста ${M.attackLoot(5, 100)}`);
+  check("полный разгром платит втрое",
+    M.attackLoot(40, 40) === 40 * M.CELL_LOOT_REWARD * 3,
+    `сорок из сорока — ${M.attackLoot(40, 40)}`);
+  check("целого склада не было — премии нет", M.attackLoot(0, 0) === 0);
+}
+
 console.log("\n— бой прежней версии движка не играется —");
 {
   let threw = false;
