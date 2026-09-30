@@ -380,7 +380,8 @@ export const FIRE = { spread: 5 } as const;
 export const FX = {
   smokeLife: 1.2,
   shotLife: 0.12,
-  boomLife: 0.5,
+  /** Взрыв рисуется столько: вспышка, огненный шар, искры и клуб дыма в конце. */
+  boomLife: 0.8,
   /** Потолки колец: дальше старое вытесняется, чтобы не копить кадрами. */
   maxHoles: 2500,
   maxShots: 60,
