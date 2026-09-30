@@ -395,8 +395,8 @@ const en = {
   "raid.notEnough": "Could not gather that many drones",
 
   "competition.title": "Competition #{n}",
-  "competition.record": "Competition #{n}: {score} — new record",
-  "competition.result": "Competition #{n}: {score}",
+  "competition.record": "Competition #{n}: {score}% — new record",
+  "competition.result": "Competition #{n}: {score}%",
 
   "stats.battles": "Battles",
   "stats.dronesKilled": "Drones downed",

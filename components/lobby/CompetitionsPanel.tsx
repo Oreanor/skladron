@@ -48,9 +48,9 @@ export default function CompetitionsPanel({
               <div className="truncate text-neutral-200">
                 {t("competition.title", { n })}
                 <span
-                  className={`ml-2 font-mono ${done ? "text-emerald-300" : "text-neutral-500"}`}
+                  className={`ml-3 font-mono font-bold ${done ? "text-emerald-300" : "text-neutral-500"}`}
                 >
-                  {b?.score ?? 0}
+                  {b?.score ?? 0}%
                 </span>
               </div>
               <div className="font-mono text-[11px] text-neutral-500">

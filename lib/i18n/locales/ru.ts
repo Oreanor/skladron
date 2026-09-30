@@ -395,8 +395,8 @@ const ru: Dict = {
   "raid.notEnough": "Не удалось собрать нужное количество дронов",
 
   "competition.title": "Состязание №{n}",
-  "competition.record": "Состязание №{n}: {score} — новый рекорд",
-  "competition.result": "Состязание №{n}: {score}",
+  "competition.record": "Состязание №{n}: {score}% — новый рекорд",
+  "competition.result": "Состязание №{n}: {score}%",
 
   "stats.battles": "Боёв",
   "stats.dronesKilled": "Дронов сбито",
