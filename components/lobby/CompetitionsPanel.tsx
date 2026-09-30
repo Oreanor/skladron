@@ -39,7 +39,7 @@ export default function CompetitionsPanel({
   const stages = Array.from({ length: competitionAt }, (_, i) => competitionAt - i);
 
   return (
-    <ul className={`${VISIBLE} -mx-3 space-y-0.5 overflow-y-auto overscroll-contain pr-1.5`}>
+    <ul className={`${VISIBLE} -mr-3 space-y-0.5 overflow-y-auto overscroll-contain pr-1.5`}>
       {stages.map((n) => {
         const done = n < competitionAt || allDone;
         const b = done ? best[n] : undefined;

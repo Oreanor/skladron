@@ -83,7 +83,7 @@ export default function RaidsPanel({
   }
 
   return (
-    <ul className={`${VISIBLE} -mx-3 space-y-0.5 overflow-y-auto overscroll-contain pr-1.5`}>
+    <ul className={`${VISIBLE} -mr-3 space-y-0.5 overflow-y-auto overscroll-contain pr-1.5`}>
       {incoming.map((a, i) => {
         const first = i === 0;
         const edge = a.pattern === "lines" ? ` ${t(`edge.${a.direction}` as Key)}` : "";
