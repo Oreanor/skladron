@@ -600,17 +600,27 @@ function aimTick(s: GameState) {
   s.result.killedByMg++;
 }
 
-/** Подбитый дрон упал: склад — пожар, земля — выжженное пятно. */
+/**
+ * Подбитый дрон упал: склад — пожар, земля — выжженное пятно. Взрывчатка
+ * рвётся и при падении — тем же крестом, что и на цели, и разрыв крупнее.
+ */
 function crash(s: GameState, d: Drone) {
   const cx = Math.max(0, Math.min(GRID - 1, Math.floor(d.x)));
   const cy = Math.max(0, Math.min(GRID - 1, Math.floor(d.y)));
-  const i = idx(cx, cy);
-  if (s.cells[i] === G_BASE) ignite(s, i);
-  else if (s.cells[i] === G_GROUND) {
-    s.cells[i] = G_SCORCH;
-    s.dirty = true;
+  const ring = PAYLOAD[d.payload].ring;
+  for (let y = cy - ring; y <= cy + ring; y++) {
+    for (let x = cx - ring; x <= cx + ring; x++) {
+      if (Math.abs(x - cx) + Math.abs(y - cy) > ring) continue;
+      if (x < 0 || y < 0 || x >= GRID || y >= GRID) continue;
+      const i = idx(x, y);
+      if (s.cells[i] === G_BASE) ignite(s, i);
+      else if (s.cells[i] === G_GROUND) {
+        s.cells[i] = G_SCORCH;
+        s.dirty = true;
+      }
+    }
   }
-  s.booms.push({ x: cx + 0.5, y: cy + 0.5, t: 0, r: 2.5 });
+  s.booms.push({ x: cx + 0.5, y: cy + 0.5, t: 0, r: 2.5 * PAYLOAD[d.payload].blast });
 }
 
 /**
@@ -952,10 +962,10 @@ function loiterTick(
   }
 
   const host = gunsById.get(d.over);
+  // Жертвы не стало или кончилось топливо — падает, как и на свободном
+  // облёте. Раньше он просто исчезал с карты посреди боя.
   if (!host || !host.alive || d.fuel <= 0) {
-    const at = s.drones.indexOf(d);
-    if (at >= 0) s.drones.splice(at, 1);
-    s.result.leaked++;
+    suppressFall(s, d);
     return;
   }
 
@@ -1156,9 +1166,9 @@ function stepDrones(s: GameState, dt: number, gunsById: Map<number, Gun>) {
 
     if (s.cells[d.ti] !== G_BASE) {
       const ti = randomTarget(s);
+      // Целого не осталось — падает на пепелище, а не тает в воздухе.
       if (ti < 0) {
-        s.drones.splice(i, 1);
-        s.result.leaked++;
+        suppressFall(s, d);
         continue;
       }
       d.ti = ti;
@@ -1199,7 +1209,7 @@ function stepDrones(s: GameState, dt: number, gunsById: Map<number, Gun>) {
         d.form = false;
         const ti = rayTarget(s, Math.atan2(ry, rx));
         if (ti < 0) {
-          s.drones.splice(i, 1);
+          suppressFall(s, d);
           continue;
         }
         d.ti = ti;
@@ -1417,7 +1427,7 @@ function stepMissiles(s: GameState, dt: number, byId: Map<number, Drone>) {
     m.y += m.dy * missileSpeed * dt;
     const hit = MISSILE.hitRadius * MISSILE.hitRadius;
     if (t && (t.x - m.x) * (t.x - m.x) + (t.y - m.y) * (t.y - m.y) < hit) {
-      s.booms.push({ x: t.x, y: t.y, t: 0, r: 2 });
+      s.booms.push({ x: t.x, y: t.y, t: 0, r: 2 * PAYLOAD[t.payload].blast });
       const at = s.drones.indexOf(t);
       if (at >= 0) s.drones.splice(at, 1);
       byId.delete(t.id);
@@ -1522,7 +1532,7 @@ function stepRockets(s: GameState, dt: number) {
     }
 
     if (t && (t.x - m.x) * (t.x - m.x) + (t.y - m.y) * (t.y - m.y) < hit) {
-      s.booms.push({ x: t.x, y: t.y, t: 0, r: 2 });
+      s.booms.push({ x: t.x, y: t.y, t: 0, r: 2 * PAYLOAD[t.payload].blast });
       const at = s.drones.indexOf(t);
       if (at >= 0) s.drones.splice(at, 1);
       s.rockets.splice(i, 1);
@@ -1638,7 +1648,7 @@ function stepBalloons(s: GameState, dt: number) {
     const b = hitAt(d.x, d.y, BALLOON.droneRadius);
     if (!b) continue;
     popped.add(b.id);
-    s.booms.push({ x: d.x, y: d.y, t: 0, r: 1.2 });
+    s.booms.push({ x: d.x, y: d.y, t: 0, r: 1.2 * PAYLOAD[d.payload].blast });
     s.drones.splice(i, 1);
     s.result.killedByBalloons++;
   }
