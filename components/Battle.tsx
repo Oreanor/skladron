@@ -251,9 +251,9 @@ export default function Battle({
           <Chip label={t("battle.hudTime")} value={seconds} />
         </ChipBar>
 
-        {/* подсказка по управлению: на телефоне разворачивается по кнопке */}
+        {/* типы дронов: на телефоне колонки нет, легенда разворачивается по кнопке */}
         <IconButton
-          label={t("panel.controls")}
+          label={t("panel.payloads")}
           round
           onClick={() => setHints((v) => !v)}
           className="absolute right-2 top-12 z-10 h-8 w-8 bg-neutral-900/80 lg:hidden"
@@ -262,14 +262,7 @@ export default function Battle({
         </IconButton>
         {hints && (
           <div className="absolute inset-x-2 top-12 z-10 rounded-md border border-neutral-700 bg-neutral-950/95 p-3 text-xs leading-relaxed text-neutral-400 lg:hidden">
-            <p className="mb-2 font-semibold text-neutral-300">{t("panel.controls")}</p>
-            <ul className="list-disc space-y-1 pl-4">
-              <li>{t("controls.mgHold")}</li>
-              <li>{t("controls.waterHold")}</li>
-              <li>{t("controls.fallingDrone")}</li>
-              <li>{t("controls.zoomTouch")}</li>
-            </ul>
-            <p className="mb-2 mt-3 font-semibold text-neutral-300">{t("panel.payloads")}</p>
+            <p className="mb-2 font-semibold text-neutral-300">{t("panel.payloads")}</p>
             <PayloadLegend t={t} counts={hud?.byPayload} />
           </div>
         )}
@@ -372,14 +365,6 @@ export default function Battle({
           <PayloadLegend t={t} counts={hud?.byPayload} />
         </Panel>
 
-        <Panel title={t("panel.controls")}>
-          <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-neutral-400">
-            <li>{t("controls.mgHold")}</li>
-            <li>{t("controls.waterHold")}</li>
-            <li>{t("controls.fallingDrone")}</li>
-            <li>{t("controls.zoomDesktop")}</li>
-          </ul>
-        </Panel>
       </aside>
     </div>
   );

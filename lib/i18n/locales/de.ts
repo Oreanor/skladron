@@ -323,9 +323,6 @@ const de: Dict = {
   "battle.hudTime": "Zeit",
   "battle.hudInsurance": "Versicherung",
 
-  "controls.mgHold": "Über dem Boden halten — MG-Feuerstoß.",
-  "controls.waterHold": "Über dem Gebäude halten — Wasserstrahl, löscht das Feld.",
-  "controls.fallingDrone": "Eine getroffene Drohne fällt drei Felder weiter — schieß sie nicht überm Lager ab.",
   "map.zoomIn": "Heranzoomen",
   "map.zoomOut": "Herauszoomen",
   "controls.zoomDesktop": "Rad zoomt; mittlere oder rechte Taste zieht die Karte; +/−-Tasten zoomen auch.",

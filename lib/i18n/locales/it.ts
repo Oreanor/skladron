@@ -323,9 +323,6 @@ const it: Dict = {
   "battle.hudTime": "tempo",
   "battle.hudInsurance": "assicurazione",
 
-  "controls.mgHold": "Tieni premuto sul terreno: raffica di mitragliatrice.",
-  "controls.waterHold": "Tieni premuto sull’edificio: getto d’acqua, spegne la cella.",
-  "controls.fallingDrone": "Un drone colpito cade tre celle più in là: non abbatterlo sopra il magazzino.",
   "map.zoomIn": "Ingrandisci",
   "map.zoomOut": "Riduci",
   "controls.zoomDesktop": "La rotella ingrandisce; il tasto centrale o destro trascina la mappa; ci sono anche +/−.",

@@ -323,9 +323,6 @@ const es: Dict = {
   "battle.hudTime": "tiempo",
   "battle.hudInsurance": "seguro",
 
-  "controls.mgHold": "Mantén sobre el suelo: ráfaga de ametralladora.",
-  "controls.waterHold": "Mantén sobre el edificio: chorro de agua, apaga la celda.",
-  "controls.fallingDrone": "Un dron tocado cae tres celdas más allá: no lo derribes sobre el almacén.",
   "map.zoomIn": "Acercar",
   "map.zoomOut": "Alejar",
   "controls.zoomDesktop": "La rueda hace zoom; el botón central o derecho arrastra el mapa; también hay botones +/−.",

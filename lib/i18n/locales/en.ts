@@ -324,9 +324,6 @@ const en = {
   "battle.hudTime": "time",
   "battle.hudInsurance": "insurance",
 
-  "controls.mgHold": "Hold — machine-gun burst (also over the warehouse if a drone is near the crosshair).",
-  "controls.waterHold": "Hold over the building with no drone nearby — water jet.",
-  "controls.fallingDrone": "A hit drone falls three cells on — do not shoot it over your warehouse.",
   "map.zoomIn": "Zoom in",
   "map.zoomOut": "Zoom out",
   "controls.zoomDesktop": "Wheel zooms; middle or right button drags the map; +/− buttons zoom too.",

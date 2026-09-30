@@ -323,9 +323,6 @@ const fr: Dict = {
   "battle.hudTime": "temps",
   "battle.hudInsurance": "assurance",
 
-  "controls.mgHold": "Maintiens au-dessus du sol — rafale de mitrailleuse.",
-  "controls.waterHold": "Maintiens au-dessus du bâtiment — jet d’eau, éteint la case.",
-  "controls.fallingDrone": "Un drone touché tombe trois cases plus loin — ne l’abats pas au-dessus de l’entrepôt.",
   "map.zoomIn": "Zoom avant",
   "map.zoomOut": "Zoom arrière",
   "controls.zoomDesktop": "La molette zoome ; le bouton du milieu ou droit déplace la carte ; boutons +/− aussi.",
