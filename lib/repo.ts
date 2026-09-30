@@ -838,6 +838,7 @@ class CloudRepo implements Repo {
       burned: number;
       has_replay: boolean;
       competition_stage: number | null;
+      competition_score: number | null;
     }[]).map((row) => ({
       id: row.id,
       side: row.side,
@@ -850,6 +851,7 @@ class CloudRepo implements Repo {
       destroyed: row.destroyed,
       hasReplay: row.has_replay,
       competitionStage: row.competition_stage ?? undefined,
+      competitionScore: row.competition_score ?? undefined,
     }));
   }
 

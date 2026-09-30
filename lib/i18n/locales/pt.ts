@@ -45,6 +45,7 @@ const pt: Dict = {
   "panel.competitions": "Competições",
   "replays.empty": "Ainda não houve combates. Envia um ataque ou espera por um.",
   "competitions.empty": "Ainda não houve competições. Adiciona a primeira.",
+  "competitions.line": "{drones} drones",
   "replays.attack": "ataque a",
   "replays.defence": "defesa contra",
   "replays.line": "{drones} drones · células queimadas: {burned}",

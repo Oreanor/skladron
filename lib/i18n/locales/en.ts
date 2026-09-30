@@ -46,6 +46,7 @@ const en = {
   "panel.competitions": "Competitions",
   "replays.empty": "No battles yet. Send a raid or wait for one.",
   "competitions.empty": "No competitions yet. Add the first one.",
+  "competitions.line": "{drones} drones",
   "replays.attack": "raid on",
   "replays.defence": "defence against",
   "replays.line": "{drones} drones · {burned} cells burnt",

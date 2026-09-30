@@ -45,6 +45,7 @@ const de: Dict = {
   "panel.competitions": "Wettkämpfe",
   "replays.empty": "Noch keine Gefechte. Schick einen Angriff oder warte auf einen.",
   "competitions.empty": "Noch keine Wettkämpfe. Füge den ersten hinzu.",
+  "competitions.line": "{drones} Drohnen",
   "replays.attack": "Angriff auf",
   "replays.defence": "Abwehr gegen",
   "replays.line": "{drones} Drohnen · abgebrannte Felder: {burned}",

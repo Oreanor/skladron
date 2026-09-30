@@ -45,6 +45,7 @@ const fr: Dict = {
   "panel.competitions": "Épreuves",
   "replays.empty": "Pas encore de combats. Lance un raid ou attends-en un.",
   "competitions.empty": "Pas encore d’épreuve. Ajoute la première.",
+  "competitions.line": "{drones} drones",
   "replays.attack": "raid sur",
   "replays.defence": "défense contre",
   "replays.line": "{drones} drones · cases brûlées : {burned}",

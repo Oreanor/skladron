@@ -45,6 +45,7 @@ const es: Dict = {
   "panel.competitions": "Competiciones",
   "replays.empty": "Todavía no hay combates. Envía un ataque o espera uno.",
   "competitions.empty": "Aún no hay competiciones. Añade la primera.",
+  "competitions.line": "{drones} drones",
   "replays.attack": "ataque a",
   "replays.defence": "defensa contra",
   "replays.line": "{drones} drones · celdas quemadas: {burned}",

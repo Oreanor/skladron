@@ -121,11 +121,17 @@ export default function RaidsPanel({
                 </span>
               )}
               {r.foe}
+              {/* счёт попытки состязания — сразу за номером */}
+              {r.competitionScore !== undefined && (
+                <span className="ml-2 font-mono text-emerald-300">{r.competitionScore}</span>
+              )}
             </div>
             <div className="font-mono text-[11px] text-neutral-500">
               {r.pending
                 ? t("replays.pending", { drones: r.drones })
-                : t("replays.line", { drones: r.drones, burned: fmt(r.burned) })}
+                : r.competitionStage
+                  ? t("competitions.line", { drones: r.drones })
+                  : t("replays.line", { drones: r.drones, burned: fmt(r.burned) })}
               {!r.pending && r.side === "attack" && r.loot > 0
                 ? ` · +${fmt(r.loot)} ${t("battle.creditsSuffix")}`
                 : ""}

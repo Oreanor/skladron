@@ -45,6 +45,7 @@ const ru: Dict = {
   "panel.competitions": "Журнал состязаний",
   "replays.empty": "Боёв пока не было. Пошли налёт или дождись чужого.",
   "competitions.empty": "Состязаний пока не было. Добавь первое.",
+  "competitions.line": "{drones} дронов",
   "replays.attack": "налёт на",
   "replays.defence": "оборона от",
   "replays.line": "{drones} дронов · сгорело клеток: {burned}",
