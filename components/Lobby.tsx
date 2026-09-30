@@ -2226,19 +2226,6 @@ export default function Lobby({
           )}
           <div>
             <div className="mb-2">
-              <SectionTitle>{t("panel.controls")}</SectionTitle>
-            </div>
-            <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-neutral-400">
-              <li>{t("controls.tapCell")}</li>
-              <li>{t("controls.dragDraft")}</li>
-              <li>{t("gun.dragTip")}</li>
-              {/* Обе подсказки сразу: панель одна и на мышь, и на палец. */}
-              <li>{t("controls.zoomDesktop")}</li>
-              <li>{t("controls.zoomTouch")}</li>
-            </ul>
-          </div>
-          <div>
-            <div className="mb-2">
               <SectionTitle>{t("panel.account")}</SectionTitle>
             </div>
             {/*

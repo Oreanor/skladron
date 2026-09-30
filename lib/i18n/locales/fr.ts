@@ -144,7 +144,6 @@ const fr: Dict = {
   "scout.keep": "Garder la carte",
   "scout.analysis": "Défense",
   "gun.gunThere": "Il y a déjà un canon ici",
-  "gun.dragTip": "Choisis « Canon » et fais glisser les canons dans l’entrepôt vers les cases surlignées.",
   "repair.done": "{cells} cases réparées pour {cost} cr",
   "repair.summary": "{w}×{h} · cases brûlées : {cells} · {cost} cr",
   "repair.nothing": "aucune case brûlée à l’intérieur",
@@ -219,7 +218,6 @@ const fr: Dict = {
   "panel.layout": "Tracé de l’entrepôt",
   "panel.enemies": "Rivaux",
   "panel.stats": "Statistiques",
-  "panel.controls": "Commandes",
   "panel.payloads": "Types de drones",
   "avatar.title": "Avatar",
   "avatar.hint": "Choisis quelqu’un de l’équipe ou téléverse ta propre image.",
@@ -315,10 +313,6 @@ const fr: Dict = {
 
   "map.zoomIn": "Zoom avant",
   "map.zoomOut": "Zoom arrière",
-  "controls.zoomDesktop": "La molette zoome ; le bouton du milieu ou droit déplace la carte ; boutons +/− aussi.",
-  "controls.zoomTouch": "Deux doigts déplacent la carte, le pincement zoome ; il y a aussi les boutons +/− sur la carte.",
-  "controls.tapCell": "Touche une case voisine du bâtiment pour la construire.",
-  "controls.dragDraft": "Le glisser crée une ébauche de surface, à valider.",
 
   "enemies.placeholder": "e-mail du rival",
   "enemies.add": "Ajouter",

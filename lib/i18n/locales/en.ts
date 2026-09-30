@@ -145,7 +145,6 @@ const en = {
   "scout.keep": "Keep the map",
   "scout.analysis": "Defenses",
   "gun.gunThere": "There is already a gun here",
-  "gun.dragTip": "Pick «Gun» and drag guns across the warehouse onto the highlighted cells.",
   "repair.done": "Repaired {cells} cells for {cost} cr",
   "repair.summary": "{w}×{h} · {cells} burnt cells · {cost} cr",
   "repair.nothing": "no burnt cells inside",
@@ -220,7 +219,6 @@ const en = {
   "panel.layout": "Warehouse layout",
   "panel.enemies": "Rivals",
   "panel.stats": "Statistics",
-  "panel.controls": "Controls",
   "panel.payloads": "Drone types",
   "avatar.title": "Avatar",
   "avatar.hint": "Pick someone from the crew or upload your own picture.",
@@ -316,10 +314,6 @@ const en = {
 
   "map.zoomIn": "Zoom in",
   "map.zoomOut": "Zoom out",
-  "controls.zoomDesktop": "Wheel zooms; middle or right button drags the map; +/− buttons zoom too.",
-  "controls.zoomTouch": "Two fingers move the map, pinch zooms; the +/− buttons on the map zoom too.",
-  "controls.tapCell": "Tap a cell next to the building — build it.",
-  "controls.dragDraft": "Drag — an area draft, it has to be confirmed.",
 
   "enemies.placeholder": "rival e-mail",
   "enemies.add": "Add",

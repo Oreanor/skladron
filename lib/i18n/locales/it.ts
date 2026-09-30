@@ -144,7 +144,6 @@ const it: Dict = {
   "scout.keep": "Tieni la mappa",
   "scout.analysis": "Difesa",
   "gun.gunThere": "Qui c’è già un cannone",
-  "gun.dragTip": "Scegli «Cannone» e trascina i cannoni per il magazzino sulle celle evidenziate.",
   "repair.done": "Riparate {cells} celle per {cost} cr",
   "repair.summary": "{w}×{h} · celle bruciate: {cells} · {cost} cr",
   "repair.nothing": "dentro non ci sono celle bruciate",
@@ -219,7 +218,6 @@ const it: Dict = {
   "panel.layout": "Tracciato del magazzino",
   "panel.enemies": "Rivali",
   "panel.stats": "Statistiche",
-  "panel.controls": "Comandi",
   "panel.payloads": "Tipi di drone",
   "avatar.title": "Avatar",
   "avatar.hint": "Scegli qualcuno del turno o carica una tua immagine.",
@@ -315,10 +313,6 @@ const it: Dict = {
 
   "map.zoomIn": "Ingrandisci",
   "map.zoomOut": "Riduci",
-  "controls.zoomDesktop": "La rotella ingrandisce; il tasto centrale o destro trascina la mappa; ci sono anche +/−.",
-  "controls.zoomTouch": "Due dita muovono la mappa, il pizzico ingrandisce; sulla mappa ci sono anche i pulsanti +/−.",
-  "controls.tapCell": "Tocca una cella vicina all’edificio per costruirla.",
-  "controls.dragDraft": "Trascinando si crea una bozza d’area da confermare.",
 
   "enemies.placeholder": "e-mail del rivale",
   "enemies.add": "Aggiungi",

@@ -144,7 +144,6 @@ const ru: Dict = {
   "scout.keep": "Забрать карту",
   "scout.analysis": "Оборона",
   "gun.gunThere": "Здесь уже стоит пушка",
-  "gun.dragTip": "Выбери «Пушку» и перетаскивай пушки по складу на подсвеченные клетки.",
   "repair.done": "Починено {cells} клеток за {cost} кр",
   "repair.summary": "{w}×{h} · сгоревших клеток: {cells} · {cost} кр",
   "repair.nothing": "внутри нет сгоревших клеток",
@@ -219,7 +218,6 @@ const ru: Dict = {
   "panel.layout": "Разметка склада",
   "panel.enemies": "Враги",
   "panel.stats": "Статистика",
-  "panel.controls": "Управление",
   "panel.payloads": "Типы дронов",
   "avatar.title": "Аватар",
   "avatar.hint": "Выбери кого-то из смены или загрузи свою картинку.",
@@ -315,10 +313,6 @@ const ru: Dict = {
 
   "map.zoomIn": "Приблизить",
   "map.zoomOut": "Отдалить",
-  "controls.zoomDesktop": "Колесо — зум; средняя или правая кнопка — тащить карту; есть и кнопки +/−.",
-  "controls.zoomTouch": "Два пальца тащат карту, щипок приближает; на карте есть и кнопки +/−.",
-  "controls.tapCell": "Тап по клетке рядом со зданием — достроить её.",
-  "controls.dragDraft": "Протяжка — заготовка площади, её надо утвердить.",
 
   "enemies.placeholder": "почта врага",
   "enemies.add": "Добавить",

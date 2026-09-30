@@ -144,7 +144,6 @@ const de: Dict = {
   "scout.keep": "Karte behalten",
   "scout.analysis": "Verteidigung",
   "gun.gunThere": "Hier steht schon ein Geschütz",
-  "gun.dragTip": "Wähle «Geschütz» und zieh die Geschütze übers Lager auf die markierten Felder.",
   "repair.done": "{cells} Felder für {cost} Cr repariert",
   "repair.summary": "{w}×{h} · verbrannte Felder: {cells} · {cost} Cr",
   "repair.nothing": "keine verbrannten Felder darin",
@@ -219,7 +218,6 @@ const de: Dict = {
   "panel.layout": "Lagerplanung",
   "panel.enemies": "Gegner",
   "panel.stats": "Statistik",
-  "panel.controls": "Steuerung",
   "panel.payloads": "Drohnentypen",
   "avatar.title": "Avatar",
   "avatar.hint": "Wähl jemanden aus der Schicht oder lade ein eigenes Bild hoch.",
@@ -315,10 +313,6 @@ const de: Dict = {
 
   "map.zoomIn": "Heranzoomen",
   "map.zoomOut": "Herauszoomen",
-  "controls.zoomDesktop": "Rad zoomt; mittlere oder rechte Taste zieht die Karte; +/−-Tasten zoomen auch.",
-  "controls.zoomTouch": "Zwei Finger bewegen die Karte, Pinch zoomt; auf der Karte gibt es auch +/−-Tasten.",
-  "controls.tapCell": "Tippe ein Feld neben dem Gebäude an, um es zu bauen.",
-  "controls.dragDraft": "Ziehen erzeugt einen Flächenentwurf, der bestätigt werden muss.",
 
   "enemies.placeholder": "E-Mail des Gegners",
   "enemies.add": "Hinzufügen",

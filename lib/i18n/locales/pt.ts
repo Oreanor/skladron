@@ -144,7 +144,6 @@ const pt: Dict = {
   "scout.keep": "Ficar com o mapa",
   "scout.analysis": "Defesa",
   "gun.gunThere": "Já está aqui um canhão",
-  "gun.dragTip": "Escolhe «Canhão» e arrasta os canhões pelo armazém até às células realçadas.",
   "repair.done": "Reparadas {cells} células por {cost} cr",
   "repair.summary": "{w}×{h} · células queimadas: {cells} · {cost} cr",
   "repair.nothing": "não há células queimadas lá dentro",
@@ -219,7 +218,6 @@ const pt: Dict = {
   "panel.layout": "Traçado do armazém",
   "panel.enemies": "Rivais",
   "panel.stats": "Estatísticas",
-  "panel.controls": "Comandos",
   "panel.payloads": "Tipos de drone",
   "avatar.title": "Avatar",
   "avatar.hint": "Escolhe alguém do turno ou carrega a tua própria imagem.",
@@ -315,10 +313,6 @@ const pt: Dict = {
 
   "map.zoomIn": "Aproximar",
   "map.zoomOut": "Afastar",
-  "controls.zoomDesktop": "A roda aproxima; o botão do meio ou direito arrasta o mapa; há também botões +/−.",
-  "controls.zoomTouch": "Dois dedos movem o mapa, a pinça aproxima; há também botões +/− no mapa.",
-  "controls.tapCell": "Toca numa célula junto ao edifício para a construir.",
-  "controls.dragDraft": "Arrastar cria um rascunho de área que é preciso confirmar.",
 
   "enemies.placeholder": "e-mail do rival",
   "enemies.add": "Adicionar",
