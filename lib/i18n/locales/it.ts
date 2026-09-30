@@ -22,7 +22,7 @@ const it: Dict = {
   "chat.placeholder": "Scrivi al tuo rivale",
   "chat.send": "Invia",
   "chat.arrived": "{name} ti ha scritto: {body}",
-  "raidComment.openerField": "Messaggio (facoltativo)",
+  "raidComment.openerField": "Messaggio",
   "raidComment.openerFieldPlaceholder": "Una riga breve prima del combattimento…",
   "raidComment.openerTitle": "Messaggio da {from}",
   "raidComment.openerSubtitle": "Puoi rispondere in breve — o passare a difendere.",

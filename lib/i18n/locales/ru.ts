@@ -22,7 +22,7 @@ const ru: Dict = {
   "chat.placeholder": "Написать сопернику",
   "chat.send": "Отправить",
   "chat.arrived": "{name} тебе написал: {body}",
-  "raidComment.openerField": "Сообщение (необязат.)",
+  "raidComment.openerField": "Сообщение",
   "raidComment.openerFieldPlaceholder": "Короткая строка перед боем…",
   "raidComment.openerTitle": "Сообщение от «{from}»",
   "raidComment.openerSubtitle": "Можно ответить парой слов — или сразу отбивать.",

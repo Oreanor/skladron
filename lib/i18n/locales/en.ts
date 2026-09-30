@@ -23,7 +23,7 @@ const en = {
   "chat.placeholder": "Write to your rival",
   "chat.send": "Send",
   "chat.arrived": "{name} wrote to you: {body}",
-  "raidComment.openerField": "Message (optional)",
+  "raidComment.openerField": "Message",
   "raidComment.openerFieldPlaceholder": "A short line before the battle…",
   "raidComment.openerTitle": "Message from {from}",
   "raidComment.openerSubtitle": "You can reply briefly — or skip and defend.",
