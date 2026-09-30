@@ -68,7 +68,7 @@ const en: RuleSection[] = [
       "The swarm grows with every number: from 12 drones in one wave to nearly 500 in four, with levelled-up drones and every kind of warhead.",
       "A mission's score is the share of your warehouse that survived: save it all and you get 100. The best score for every number is kept.",
       "The next mission opens if any of the warehouse survives. Passed ones can be replayed — a number always brings the same swarm, so scores compare fairly.",
-      "What burns in a mission burns for real, but insurance and the defence bounty pay out just as in any battle.",
+      "A mission pays the defence bounty — {defendClean} cr per drone for a clean stop — so the further the number and the bigger the swarm, the bigger the reward. What burns in a mission burns for real, but insurance covers it as in any battle.",
     ],
   },
   {
@@ -151,7 +151,7 @@ const ru: RuleSection[] = [
       "Рой растёт с каждым номером: от 12 дронов в одной волне до почти 500 в четырёх, с прокачанными дронами и всеми видами начинки.",
       "Счёт миссии — сколько процентов склада уцелело: сберёг всё — 100. Лучший счёт по каждому номеру хранится.",
       "Следующая миссия открывается, если склад уцелел хоть сколько-то. Пройденные можно переиграть: у номера всегда один и тот же рой, так что счёт честно сравним.",
-      "Сгоревшее в миссии сгорает по-настоящему, но страховка и премия за отбой платятся как в любом бою.",
+      "Миссия платит премией за отбой — {defendClean} кр за каждого дрона при чистом отбое, так что чем дальше номер и больше рой, тем выше награда. Сгоревшее в миссии сгорает по-настоящему, но страховка его покрывает, как в любом бою.",
     ],
   },
   {
@@ -234,7 +234,7 @@ const es: RuleSection[] = [
       "El enjambre crece con cada número: de 12 drones en una oleada a casi 500 en cuatro, con drones mejorados y todo tipo de carga.",
       "La puntuación de una misión es el porcentaje del almacén que sobrevivió: si lo salvas todo, 100. Se guarda la mejor puntuación de cada número.",
       "La siguiente misión se abre si sobrevive algo del almacén. Las superadas se pueden repetir: cada número trae siempre el mismo enjambre, así que las puntuaciones se comparan con justicia.",
-      "Lo que arde en una misión arde de verdad, pero el seguro y la prima de defensa pagan como en cualquier combate.",
+      "Una misión paga la prima de defensa — {defendClean} cr por dron si no arde nada —, así que cuanto más alto el número y mayor el enjambre, mayor la recompensa. Lo que arde en una misión arde de verdad, pero el seguro lo cubre como en cualquier combate.",
     ],
   },
   {
@@ -317,7 +317,7 @@ const pt: RuleSection[] = [
       "O enxame cresce a cada número: de 12 drones numa vaga a quase 500 em quatro, com drones melhorados e todo o tipo de carga.",
       "A pontuação de uma missão é a percentagem do armazém que sobreviveu: salvas tudo, 100. Guarda-se a melhor pontuação de cada número.",
       "A missão seguinte abre se sobreviver algo do armazém. As passadas podem repetir-se: cada número traz sempre o mesmo enxame, por isso as pontuações comparam-se com justiça.",
-      "O que arde numa missão arde a sério, mas o seguro e o prémio de defesa pagam como em qualquer combate.",
+      "Uma missão paga o prémio de defesa — {defendClean} cr por drone se nada arder —, por isso quanto mais alto o número e maior o enxame, maior a recompensa. O que arde numa missão arde a sério, mas o seguro cobre-o como em qualquer combate.",
     ],
   },
   {
@@ -400,7 +400,7 @@ const fr: RuleSection[] = [
       "L’essaim grossit à chaque numéro : de 12 drones en une vague à près de 500 en quatre, avec des drones améliorés et toutes les charges.",
       "Le score d’une mission est la part de l’entrepôt qui a survécu : tout sauvé, 100. Le meilleur score de chaque numéro est gardé.",
       "La mission suivante s’ouvre si une partie de l’entrepôt survit. Celles déjà passées se rejouent : un numéro amène toujours le même essaim, les scores se comparent donc honnêtement.",
-      "Ce qui brûle en mission brûle pour de vrai, mais l’assurance et la prime de défense paient comme dans tout combat.",
+      "Une mission rapporte la prime de défense — {defendClean} cr par drone si rien ne brûle —, donc plus le numéro est haut et l’essaim gros, plus la récompense grimpe. Ce qui brûle en mission brûle pour de vrai, mais l’assurance le couvre comme dans tout combat.",
     ],
   },
   {
@@ -483,7 +483,7 @@ const de: RuleSection[] = [
       "Der Schwarm wächst mit jeder Nummer: von 12 Drohnen in einer Welle bis fast 500 in vier, mit aufgewerteten Drohnen und allen Ladungen.",
       "Die Punktzahl einer Mission ist der Anteil des Lagers, der übersteht: alles gerettet — 100. Die beste Punktzahl jeder Nummer bleibt gespeichert.",
       "Die nächste Mission öffnet sich, wenn etwas vom Lager übersteht. Geschaffte lassen sich wiederholen: eine Nummer bringt immer denselben Schwarm, die Punkte sind also fair vergleichbar.",
-      "Was in einer Mission brennt, brennt wirklich, aber Versicherung und Abwehrprämie zahlen wie in jedem Kampf.",
+      "Eine Mission zahlt die Abwehrprämie — {defendClean} Cr pro Drohne, wenn nichts brennt —, je höher also die Nummer und größer der Schwarm, desto höher die Belohnung. Was in einer Mission brennt, brennt wirklich, aber die Versicherung deckt es wie in jedem Kampf.",
     ],
   },
   {
@@ -566,7 +566,7 @@ const it: RuleSection[] = [
       "Lo sciame cresce a ogni numero: da 12 droni in un’ondata a quasi 500 in quattro, con droni potenziati e ogni tipo di carica.",
       "Il punteggio di una missione è la quota del magazzino sopravvissuta: salvi tutto, 100. Il miglior punteggio di ogni numero resta salvato.",
       "La missione successiva si apre se qualcosa del magazzino sopravvive. Quelle superate si possono rigiocare: un numero porta sempre lo stesso sciame, quindi i punteggi si confrontano onestamente.",
-      "Ciò che brucia in missione brucia davvero, ma l’assicurazione e il premio di difesa pagano come in ogni battaglia.",
+      "Una missione paga il premio di difesa — {defendClean} cr per drone se non brucia nulla —, quindi più alto è il numero e più grande lo sciame, più alta la ricompensa. Ciò che brucia in missione brucia davvero, ma l’assicurazione lo copre come in ogni battaglia.",
     ],
   },
   {
