@@ -83,14 +83,14 @@ export default function RaidsPanel({
   }
 
   return (
-    <ul className={`${VISIBLE} space-y-2 overflow-y-auto overscroll-contain pr-1`}>
+    <ul className={`${VISIBLE} -mx-2 space-y-0.5 overflow-y-auto overscroll-contain`}>
       {incoming.map((a, i) => {
         const first = i === 0;
         const edge = a.pattern === "lines" ? ` ${t(`edge.${a.direction}` as Key)}` : "";
         return (
           <li
             key={a.id}
-            className={`flex items-center justify-between gap-2 ${first ? "" : "opacity-60"}`}
+            className={`flex items-center justify-between gap-2 rounded-md px-2 py-1 transition-colors hover:bg-neutral-800/60 ${first ? "" : "opacity-60"}`}
           >
             <div className="min-w-0">
               <div className="truncate text-neutral-200">
@@ -128,7 +128,7 @@ export default function RaidsPanel({
       })}
 
       {raids.map((r) => (
-        <li key={r.id} className="flex items-center justify-between gap-2">
+        <li key={r.id} className="flex items-center justify-between gap-2 rounded-md px-2 py-1 transition-colors hover:bg-neutral-800/60">
           <div className="min-w-0">
             <div className={`truncate ${r.pending ? "text-neutral-400" : "text-neutral-200"}`}>
               <span className={r.side === "attack" ? "text-red-300" : "text-sky-300"}>
