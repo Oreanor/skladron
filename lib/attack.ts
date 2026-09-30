@@ -172,6 +172,8 @@ export interface RaidLog {
   pending: boolean;
   drones: number;
   burned: number;
+  /** Какая доля склада сгорела, %. Нет у боёв, от которых не осталось слепка. */
+  burnedPct?: number;
   loot: number;
   destroyed: boolean;
   hasReplay: boolean;

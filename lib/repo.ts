@@ -837,6 +837,7 @@ class CloudRepo implements Repo {
       loot: number;
       destroyed: boolean;
       burned: number;
+      burned_pct: number | null;
       has_replay: boolean;
     }[]).map((row) => ({
       id: row.id,
@@ -847,6 +848,7 @@ class CloudRepo implements Repo {
       pending: row.pending,
       drones: row.drones,
       burned: row.burned,
+      burnedPct: row.burned_pct ?? undefined,
       loot: row.loot,
       destroyed: row.destroyed,
       hasReplay: row.has_replay,

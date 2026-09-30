@@ -52,6 +52,7 @@ const de: Dict = {
   "replays.defence": "Abwehr gegen",
   "replays.hide": "Aus dem Buch entfernen",
   "replays.line": "{drones} Drohnen, abgebrannte Felder: {burned}",
+  "replays.linePct": "{drones} Drohnen, abgebrannt: {pct} %",
   "replay.failed": "Wiederholung ließ sich nicht öffnen: {error}",
   "tool.scrap": "Abriss",
   "tool.scrapHint": "Fläche räumen. Das Lager muss ein Stück bleiben.",

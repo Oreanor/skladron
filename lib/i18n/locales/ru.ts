@@ -52,6 +52,7 @@ const ru: Dict = {
   "replays.defence": "Оборона от",
   "replays.hide": "Убрать из журнала",
   "replays.line": "{drones} дронов, сгорело клеток: {burned}",
+  "replays.linePct": "{drones} дронов, сгорело: {pct}%",
   "replay.failed": "Не удалось открыть повтор: {error}",
   "tool.scrap": "Снос",
   "tool.scrapHint": "Очистить площадь. Разделять здание надвое нельзя.",

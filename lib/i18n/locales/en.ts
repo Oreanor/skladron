@@ -53,6 +53,7 @@ const en = {
   "replays.defence": "Defence against",
   "replays.hide": "Remove from the log",
   "replays.line": "{drones} drones, cells burnt: {burned}",
+  "replays.linePct": "{drones} drones, burnt: {pct}%",
   "replay.failed": "Could not load the replay: {error}",
   "tool.scrap": "Demolish",
   "tool.scrapHint": "Clear the ground. The warehouse must stay in one piece.",

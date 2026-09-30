@@ -52,6 +52,7 @@ const it: Dict = {
   "replays.defence": "Difesa da",
   "replays.hide": "Togli dal diario",
   "replays.line": "{drones} droni, celle bruciate: {burned}",
+  "replays.linePct": "{drones} droni, bruciato: {pct}%",
   "replay.failed": "Non è stato possibile aprire la replica: {error}",
   "tool.scrap": "Demolisci",
   "tool.scrapHint": "Sgombera l’area. Il magazzino deve restare tutto d’un pezzo.",

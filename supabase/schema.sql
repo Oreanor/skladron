@@ -393,6 +393,8 @@ create table if not exists attacks (
   result jsonb,
   loot int not null default 0,
   destroyed boolean not null default false,
+  -- сколько целых клеток было у защитника до боя: от них считается доля сгоревшего
+  intact_before int,
   -- кто убрал бой из своего журнала: строка одна на двоих, прячем по-своему
   hidden_by uuid[] not null default '{}',
   -- повтор налёта: слепок склада защитника до боя и запись его действий
@@ -1577,6 +1579,7 @@ begin
   update attacks
      set status = 'resolved', result = resolve_attack.result, loot = earned,
          destroyed = defender_intact = 0, resolved_at = now(),
+         intact_before = resolve_attack.intact_before,
          -- Слепок уже записан в claim_attack; здесь только исход и руки.
          trace = battle_trace,
          resolving_token = null,
@@ -2030,7 +2033,7 @@ grant execute on function set_avatar to authenticated;
 create or replace function raid_log()
 returns table (
   id uuid, side text, foe text, foe_email text, at timestamptz, pending boolean,
-  drones int, loot int, destroyed boolean, burned int, has_replay boolean
+  drones int, loot int, destroyed boolean, burned int, burned_pct int, has_replay boolean
 )
 language sql security definer set search_path = public stable as $$
   -- Свои налёты видны и до боя: защитник ещё не отбивался, показывать
@@ -2048,6 +2051,9 @@ language sql security definer set search_path = public stable as $$
          a.status = 'pending',
          a.drones, a.loot, a.destroyed,
          coalesce((a.result->>'burned')::int, 0),
+         -- какая доля склада сгорела: по ней видно, удачен ли налёт
+         case when a.intact_before > 0
+              then (coalesce((a.result->>'burned')::int, 0) * 100) / a.intact_before end,
          a.snap_cells is not null
     from attacks a
     join profiles t on t.id = a.attacker_id

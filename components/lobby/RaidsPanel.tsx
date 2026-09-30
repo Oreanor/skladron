@@ -139,7 +139,11 @@ export default function RaidsPanel({
             <div className="font-mono text-[11px] text-neutral-500">
               {r.pending
                 ? `${day(r.at)}, ${t("replays.pending", { drones: r.drones })}`
-                : `${day(r.at)}, ${t("replays.line", { drones: r.drones, burned: fmt(r.burned) })}`}
+                : `${day(r.at)}, ${
+                    r.burnedPct !== undefined
+                      ? t("replays.linePct", { drones: r.drones, pct: r.burnedPct })
+                      : t("replays.line", { drones: r.drones, burned: fmt(r.burned) })
+                  }`}
               {!r.pending && r.side === "attack" && r.loot > 0
                 ? `, +${fmt(r.loot)} ${t("battle.creditsSuffix")}`
                 : ""}

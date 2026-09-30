@@ -52,6 +52,7 @@ const pt: Dict = {
   "replays.defence": "Defesa contra",
   "replays.hide": "Remover do registo",
   "replays.line": "{drones} drones, células queimadas: {burned}",
+  "replays.linePct": "{drones} drones, queimado: {pct}%",
   "replay.failed": "Não foi possível abrir a repetição: {error}",
   "tool.scrap": "Demolir",
   "tool.scrapHint": "Limpar o terreno. O armazém tem de continuar inteiro.",

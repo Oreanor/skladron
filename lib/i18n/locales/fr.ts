@@ -52,6 +52,7 @@ const fr: Dict = {
   "replays.defence": "Défense contre",
   "replays.hide": "Retirer du journal",
   "replays.line": "{drones} drones, cases brûlées : {burned}",
+  "replays.linePct": "{drones} drones, brûlé : {pct} %",
   "replay.failed": "Impossible d’ouvrir le replay : {error}",
   "tool.scrap": "Démolir",
   "tool.scrapHint": "Dégager le terrain. L’entrepôt doit rester d’un seul tenant.",
