@@ -59,6 +59,8 @@ interface Hud {
   gunsAlive: number;
   gunsTotal: number;
   time: number;
+  /** Сколько дронов каждого груза ещё в воздухе и не сбито. */
+  byPayload: Partial<Record<Payload, number>>;
 }
 
 export default function Battle({
@@ -134,6 +136,10 @@ export default function Battle({
       }
       if (now - hudAt > 100) {
         hudAt = now;
+        const byPayload: Partial<Record<Payload, number>> = {};
+        for (const d of s.drones) {
+          if (!d.hit) byPayload[d.payload] = (byPayload[d.payload] ?? 0) + 1;
+        }
         setHud({
           phase: s.phase,
           inAir: s.drones.length,
@@ -148,6 +154,7 @@ export default function Battle({
           gunsAlive: s.guns.filter((g) => g.alive && !g.spray && !g.trap).length,
           gunsTotal: s.guns.filter((g) => !g.spray && !g.trap).length,
           time: s.time,
+          byPayload,
         });
       }
       if (s.phase !== "playing" && !finished.current) {
@@ -226,7 +233,7 @@ export default function Battle({
             tone="text-emerald-300"
           />
           <Chip
-            label={t("battle.insurance")}
+            label={t("battle.hudInsurance")}
             value={`+${fmt(payout)}`}
             tone={payout ? "text-emerald-300" : undefined}
           />
@@ -263,7 +270,7 @@ export default function Battle({
               <li>{t("controls.zoomTouch")}</li>
             </ul>
             <p className="mb-2 mt-3 font-semibold text-neutral-300">{t("panel.payloads")}</p>
-            <PayloadLegend t={t} />
+            <PayloadLegend t={t} counts={hud?.byPayload} />
           </div>
         )}
 
@@ -362,7 +369,7 @@ export default function Battle({
         </Panel>
 
         <Panel title={t("panel.payloads")}>
-          <PayloadLegend t={t} />
+          <PayloadLegend t={t} counts={hud?.byPayload} />
         </Panel>
 
         <Panel title={t("panel.controls")}>
@@ -389,7 +396,13 @@ const PAYLOAD_KEYS: Record<Payload, Key> = {
   turbo: "payload.turbo",
 };
 
-function PayloadLegend({ t }: { t: (key: Key, vars?: Record<string, string | number>) => string }) {
+function PayloadLegend({
+  t,
+  counts,
+}: {
+  t: (key: Key, vars?: Record<string, string | number>) => string;
+  counts?: Partial<Record<Payload, number>>;
+}) {
   return (
     <ul className="space-y-1.5 text-xs text-neutral-300">
       {PAYLOADS.map((kind) => (
@@ -399,7 +412,10 @@ function PayloadLegend({ t }: { t: (key: Key, vars?: Record<string, string | num
             style={{ background: COLORS.payload[kind] }}
             aria-hidden
           />
-          <span>{t(PAYLOAD_KEYS[kind])}</span>
+          <span>
+            {t(PAYLOAD_KEYS[kind])}
+            {counts?.[kind] ? <span className="text-neutral-500"> ({counts[kind]})</span> : null}
+          </span>
         </li>
       ))}
     </ul>

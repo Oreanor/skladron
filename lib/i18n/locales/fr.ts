@@ -85,8 +85,8 @@ const fr: Dict = {
   "replay.again": "Rejouer",
   "replay.of": "raid sur",
   "scout.map": "Carte",
-  "battle.insurance": "assurance",
-  "battle.defenseBounty": "prime de défense",
+  "battle.insurance": "Assurance",
+  "battle.defenseBounty": "Prime de défense",
   "restart.menu": "Tout recommencer",
   "restart.title": "Recommencer la partie ?",
   "restart.hint": "L’entrepôt, les crédits, les drones, les canons et les niveaux repartent de zéro. Le nom et la liste des rivaux restent. C’est irréversible.",
@@ -314,6 +314,7 @@ const fr: Dict = {
   "battle.hudGuns": "canons",
   "battle.hudIntegrity": "intégrité",
   "battle.hudTime": "temps",
+  "battle.hudInsurance": "assurance",
 
   "controls.mgHold": "Maintiens au-dessus du sol — rafale de mitrailleuse.",
   "controls.waterHold": "Maintiens au-dessus du bâtiment — jet d’eau, éteint la case.",

@@ -314,6 +314,7 @@ const de: Dict = {
   "battle.hudGuns": "Geschütze",
   "battle.hudIntegrity": "Zustand",
   "battle.hudTime": "Zeit",
+  "battle.hudInsurance": "Versicherung",
 
   "controls.mgHold": "Über dem Boden halten — MG-Feuerstoß.",
   "controls.waterHold": "Über dem Gebäude halten — Wasserstrahl, löscht das Feld.",

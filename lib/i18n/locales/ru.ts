@@ -85,8 +85,8 @@ const ru: Dict = {
   "replay.again": "Ещё раз",
   "replay.of": "налёт на",
   "scout.map": "Карта",
-  "battle.insurance": "страховка",
-  "battle.defenseBounty": "премия за отбой",
+  "battle.insurance": "Страховка",
+  "battle.defenseBounty": "Премия за отбой",
   "restart.menu": "Начать сначала",
   "restart.title": "Начать игру сначала?",
   "restart.hint": "Склад, кредиты, дроны, пушки и уровни вернутся к самому началу. Имя склада и список соперников останутся. Отменить это нельзя.",
@@ -314,6 +314,7 @@ const ru: Dict = {
   "battle.hudGuns": "пушки",
   "battle.hudIntegrity": "целость",
   "battle.hudTime": "время",
+  "battle.hudInsurance": "страховка",
 
   "controls.mgHold": "Держи — пулемётная очередь (и над складом, если дрон рядом с прицелом).",
   "controls.waterHold": "Держи над зданием без дрона рядом — струя воды.",

@@ -85,8 +85,8 @@ const it: Dict = {
   "replay.again": "Di nuovo",
   "replay.of": "attacco a",
   "scout.map": "Mappa",
-  "battle.insurance": "assicurazione",
-  "battle.defenseBounty": "premio di difesa",
+  "battle.insurance": "Assicurazione",
+  "battle.defenseBounty": "Premio di difesa",
   "restart.menu": "Ricomincia",
   "restart.title": "Ricominciare la partita?",
   "restart.hint": "Magazzino, crediti, droni, cannoni e livelli tornano all’inizio. Il nome e la lista dei rivali restano. Non si torna indietro.",
@@ -314,6 +314,7 @@ const it: Dict = {
   "battle.hudGuns": "cannoni",
   "battle.hudIntegrity": "integrità",
   "battle.hudTime": "tempo",
+  "battle.hudInsurance": "assicurazione",
 
   "controls.mgHold": "Tieni premuto sul terreno: raffica di mitragliatrice.",
   "controls.waterHold": "Tieni premuto sull’edificio: getto d’acqua, spegne la cella.",

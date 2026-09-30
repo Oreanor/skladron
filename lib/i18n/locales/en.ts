@@ -86,8 +86,8 @@ const en = {
   "replay.again": "Replay",
   "replay.of": "raid on",
   "scout.map": "Map",
-  "battle.insurance": "insurance",
-  "battle.defenseBounty": "defence bounty",
+  "battle.insurance": "Insurance",
+  "battle.defenseBounty": "Defence bounty",
   "restart.menu": "Start over",
   "restart.title": "Start the game over?",
   "restart.hint": "The warehouse, credits, drones, guns and levels go back to the very beginning. The name and the rival list stay. This cannot be undone.",
@@ -315,6 +315,7 @@ const en = {
   "battle.hudGuns": "guns",
   "battle.hudIntegrity": "integrity",
   "battle.hudTime": "time",
+  "battle.hudInsurance": "insurance",
 
   "controls.mgHold": "Hold — machine-gun burst (also over the warehouse if a drone is near the crosshair).",
   "controls.waterHold": "Hold over the building with no drone nearby — water jet.",
