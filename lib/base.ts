@@ -48,22 +48,19 @@ export const countKind = (guns: Gun[], kind: GunKind) =>
  * их расходует.
  */
 export type DepotKind = "basic" | "balloon";
-/** Прежнее имя: контейнер с дронами. */
-export type DroneKind = "basic";
 
 export interface Depot {
   cx: number;
   cy: number;
   n: number;
-  /** Раньше бывал kind=scout; при загрузке приводим к обычным дронам. */
-  kind?: DepotKind | "scout";
+  /** Без поля — обычный контейнер с дронами. */
+  kind?: DepotKind;
 }
 
 export const DRONES_PER_CELL = 10;
 /** Шаров в контейнере столько же, сколько дронов: десяток. */
 export const BALLOONS_PER_CELL = 10;
 
-/** Вид не указан — обычный контейнер: так читаются склады, стоявшие раньше. */
 export const depotKind = (d: Depot): DepotKind =>
   d.kind === "balloon" ? "balloon" : "basic";
 
@@ -72,17 +69,6 @@ export const droneCount = (depots: Depot[]) =>
 
 export const balloonCount = (depots: Depot[]) =>
   depots.reduce((sum, d) => (depotKind(d) === "balloon" ? sum + d.n : sum), 0);
-
-/** Старые контейнеры разведчиков превращаем в обычные — один склад дронов. */
-export function normalizeDepots(depots: Depot[]): Depot[] {
-  return depots.map((d) => {
-    if (d.kind === "scout") {
-      const { kind: _k, ...rest } = d;
-      return rest;
-    }
-    return d;
-  });
-}
 
 /**
  * Пушки/огнетушители/ловушки для save_base: только cx/cy/kind.
@@ -341,8 +327,6 @@ export function decodeCells(text: string): Uint8Array {
  */
 export function decodePgBytea(text: string): Uint8Array {
   const out = new Uint8Array(CELLS);
-  if (!text) return out;
-  if (!text.startsWith("\\x")) return regrowGround(decodeCells(text));
   const hex = text.slice(2);
   for (let i = 0; i < CELLS && i * 2 + 1 < hex.length; i++) {
     out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);

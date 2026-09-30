@@ -65,6 +65,8 @@ export async function notifySentRaid(
     .maybeSingle<AttackRow>();
   if (loadError) return { sent: false, error: loadError.message };
   if (!attack || attack.status !== "pending") return { sent: false };
+  // Состязание — налёт на самого себя: сообщать себе не о чем.
+  if (attack.attacker_id === attack.defender_id) return { sent: false };
   if (attack.sent_notified_at) return { sent: false };
 
   const { data: people } = await db
@@ -135,6 +137,7 @@ export async function notifyResolvedRaid(
     .maybeSingle<AttackRow>();
   if (loadError) return { sent: false, error: loadError.message };
   if (!attack || attack.status !== "resolved") return { sent: false };
+  if (attack.attacker_id === attack.defender_id) return { sent: false };
   if (attack.resolved_notified_at) return { sent: false };
 
   const stamp = new Date().toISOString();
@@ -196,6 +199,7 @@ export async function notifyRaidComment(
     .maybeSingle();
   if (aErr) return { sent: false, error: aErr.message };
   if (!attack) return { sent: false };
+  if (attack.attacker_id === attack.defender_id) return { sent: false };
 
   const recipient =
     comment.author_id === attack.attacker_id ? attack.defender_id : attack.attacker_id;

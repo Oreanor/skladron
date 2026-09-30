@@ -272,7 +272,7 @@ const es: Dict = {
 
 
   "attacks.summon": "+ incursión",
-  "attacks.test": "+ test",
+  "attacks.competition": "+ competición",
   "attacks.defend": "Defender",
   "attacks.dronesPattern": "{drones} drones · {pattern}",
   "attacks.ready": "esperando defensa",
@@ -397,6 +397,12 @@ const es: Dict = {
   "competition.waves": "Oleadas",
   "competition.wave": "Oleada {n}",
   "competition.queued": "Competición n.º {n} en cola · {size} drones",
+  "competition.record": "Competición n.º {n}: nuevo récord — {score} pts ({pct}% intacto)",
+  "competition.result": "Competición n.º {n}: {score} pts ({pct}% intacto)",
+  "competition.best": "Mejor",
+  "competition.bestValue": "{score} pts · {pct}% de {area}",
+  "competition.noBest": "sin jugar",
+  "competition.scoring": "Puntos = % del almacén salvado × √(área / 100): un almacén grande es más difícil de salvar. La siguiente se abre si el almacén sobrevive.",
 
   "stats.battles": "Combates",
   "stats.dronesKilled": "Drones derribados",

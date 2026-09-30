@@ -272,7 +272,7 @@ const it: Dict = {
 
 
   "attacks.summon": "+ incursione",
-  "attacks.test": "+ test",
+  "attacks.competition": "+ gara",
   "attacks.defend": "Difendi",
   "attacks.dronesPattern": "{drones} droni · {pattern}",
   "attacks.ready": "in attesa di difesa",
@@ -397,6 +397,12 @@ const it: Dict = {
   "competition.waves": "Ondate",
   "competition.wave": "Ondata {n}",
   "competition.queued": "Gara n. {n} in coda · {size} droni",
+  "competition.record": "Gara n. {n}: nuovo record — {score} pt ({pct}% intatto)",
+  "competition.result": "Gara n. {n}: {score} pt ({pct}% intatto)",
+  "competition.best": "Migliore",
+  "competition.bestValue": "{score} pt · {pct}% di {area}",
+  "competition.noBest": "non ancora giocata",
+  "competition.scoring": "Punti = % del magazzino salvato × √(area / 100): un magazzino grande è più difficile da salvare. La successiva si apre se il magazzino sopravvive.",
 
   "stats.battles": "Combattimenti",
   "stats.dronesKilled": "Droni abbattuti",

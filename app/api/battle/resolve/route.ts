@@ -43,14 +43,14 @@ interface ClaimRow {
   cells: string;
   guns: Gun[];
   depots: Depot[];
-  levels: Record<string, number> | null;
+  levels: Record<"guns" | "rockets" | "sprays" | "traps" | "mg" | "water", number>;
   drones: number;
   pattern: Pattern;
   direction: number;
   seed: number;
-  waves: WavePlan[] | null;
-  drone_level: number | null;
-  simulation_version: number | null;
+  waves: WavePlan[];
+  drone_level: number;
+  simulation_version: number;
 }
 
 export async function POST(request: Request) {
@@ -106,7 +106,6 @@ export async function POST(request: Request) {
   const snap = (claimed as ClaimRow[] | null)?.[0];
   if (!snap) return Response.json({ error: "claim failed" }, { status: 400 });
 
-  const levels = snap.levels ?? {};
   const order: AttackOrder = {
     id: attack.id,
     from: "",
@@ -115,9 +114,9 @@ export async function POST(request: Request) {
     pattern: snap.pattern,
     direction: snap.direction,
     seed: snap.seed,
-    waves: snap.waves ?? undefined,
-    droneLevel: snap.drone_level ?? 1,
-    simulationVersion: snap.simulation_version ?? 1,
+    waves: snap.waves,
+    droneLevel: snap.drone_level,
+    simulationVersion: snap.simulation_version,
   };
 
   /**
@@ -134,16 +133,16 @@ export async function POST(request: Request) {
   try {
     verdict = resolveBattle({
       cells: decodeCells(snap.cells),
-      guns: snap.guns ?? [],
-      depots: snap.depots ?? [],
+      guns: snap.guns,
+      depots: snap.depots,
       order,
       levels: {
-        guns: levels.guns ?? 1,
-        rockets: levels.rockets ?? 1,
-        sprays: levels.sprays ?? 1,
-        traps: levels.traps ?? 1,
-        mg: levels.mg ?? 1,
-        water: levels.water ?? 1,
+        guns: snap.levels.guns,
+        rockets: snap.levels.rockets,
+        sprays: snap.levels.sprays,
+        traps: snap.levels.traps,
+        mg: snap.levels.mg,
+        water: snap.levels.water,
       },
       trace,
     });

@@ -12,14 +12,12 @@ import {
   priceAt,
 } from "./economy";
 import {
-  CELLS,
   type Depot,
   G_BASE,
   G_BURNT,
   type Gun,
   depotKind,
   droneCount,
-  normalizeDepots,
   sanitizeGuns,
   countCells,
   decodeCells,
@@ -29,6 +27,7 @@ import {
 } from "./base";
 import type { AttackOrder } from "./attack";
 import type { Enemy } from "./enemy";
+import type { CompetitionBest } from "./competition";
 import { randomPresetAvatar, type Avatar } from "./avatar";
 
 export interface PlayerStats {
@@ -97,31 +96,19 @@ export interface Player {
   enemies: Enemy[];
   stats: PlayerStats;
   /**
-   * Какое состязание открыто следующим (1…). Растёт только после чистой
-   * победы в текущем; проигрыш номер не откатывает.
+   * Старший открытый номер состязания (1…100). Следующий открывается, когда
+   * на нынешнем склад уцелел; проигрыш номер не откатывает.
    */
   competitionAt: number;
+  /** Лучшая попытка по каждому пройденному номеру. */
+  competitionBest: Record<number, CompetitionBest>;
 }
 
-interface Stored {
-  v: 1;
-  name?: string;
-  avatar?: Avatar;
-  credits: number;
-  levels?: Partial<Levels>;
-  loan?: number;
-  loanDue?: number | null;
-  cells: string;
-  guns: Gun[];
-  depots: Depot[];
-  lastIncomeAt: number;
-  createdAt: number;
-  founded: boolean;
-  incoming: AttackOrder[];
-  enemies: Enemy[];
-  stats: PlayerStats;
-  competitionAt?: number;
-}
+/**
+ * Игрок в браузере — как есть, только карта строкой. Формат один: сохранение
+ * другой версии не чинится, а заменяется новым игроком.
+ */
+type Stored = Omit<Player, "cells"> & { v: 2; cells: string };
 
 const KEY = "wb.player.v1";
 
@@ -151,6 +138,7 @@ export function newPlayer(now = Date.now()): Player {
       looted: 0,
     },
     competitionAt: 1,
+    competitionBest: {},
   };
 }
 
@@ -168,6 +156,7 @@ export function wipe(p: Player, now = Date.now()): Player {
   fresh.stats = { ...p.stats, wipes: p.stats.wipes + 1 };
   fresh.enemies = p.enemies;
   fresh.competitionAt = p.competitionAt;
+  fresh.competitionBest = p.competitionBest;
   return fresh;
 }
 
@@ -208,27 +197,9 @@ export function load(): Player {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return newPlayer();
     const s = JSON.parse(raw) as Stored;
-    if (s.v !== 1) return newPlayer();
-    const cells = regrowGround(decodeCells(s.cells));
-    if (cells.length !== CELLS) return newPlayer();
-    return {
-      name: s.name ?? "",
-      avatar: s.avatar ?? null,
-      credits: s.credits,
-      levels: { ...startLevels(), ...(s.levels ?? {}) },
-      loan: s.loan ?? 0,
-      loanDue: s.loanDue ?? null,
-      cells,
-      guns: sanitizeGuns(s.guns ?? []),
-      depots: normalizeDepots(s.depots ?? []),
-      lastIncomeAt: s.lastIncomeAt,
-      createdAt: s.createdAt,
-      founded: s.founded,
-      incoming: s.incoming ?? [],
-      enemies: s.enemies ?? [],
-      stats: s.stats,
-      competitionAt: Math.max(1, s.competitionAt ?? 1),
-    };
+    if (s.v !== 2) return newPlayer();
+    const { v: _v, cells, ...rest } = s;
+    return { ...rest, cells: regrowGround(decodeCells(cells)) };
   } catch {
     return newPlayer();
   }
@@ -237,23 +208,10 @@ export function load(): Player {
 export function save(p: Player) {
   if (typeof window === "undefined") return;
   const s: Stored = {
-    v: 1,
-    name: p.name,
-    avatar: p.avatar,
-    credits: p.credits,
-    levels: p.levels,
-    loan: p.loan,
-    loanDue: p.loanDue,
+    ...p,
+    v: 2,
     cells: encodeCells(p.cells),
     guns: sanitizeGuns(p.guns),
-    depots: p.depots,
-    lastIncomeAt: p.lastIncomeAt,
-    createdAt: p.createdAt,
-    founded: p.founded,
-    incoming: p.incoming,
-    enemies: p.enemies,
-    stats: p.stats,
-    competitionAt: p.competitionAt,
   };
   try {
     window.localStorage.setItem(KEY, JSON.stringify(s));

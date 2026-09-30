@@ -19,6 +19,7 @@ import type { Player } from "@/lib/player";
 import type { Repo } from "@/lib/repo";
 import type { Key } from "@/lib/i18n/dict";
 import { notifyBattle } from "@/lib/notify";
+import { titleCompetitions } from "@/lib/competition";
 
 /** Как часто спрашиваем сервер, не летит ли к нам что-нибудь. */
 const POLL_MS = 10_000;
@@ -99,6 +100,7 @@ export function useAttacks(o: AttacksOptions): Attacks {
         // живут на клиенте, и раньше их сносил первый же опрос: список
         // подменялся серверным целиком. Теперь сливаем оба и сортируем по
         // времени — очередь остаётся одна и в правильном порядке.
+        titleCompetitions(state.incoming, opt.current.t.current);
         const bots = cur.incoming.filter((a) => !a.remote);
         cur.incoming = [
           ...state.incoming.filter((a) => !resolved.current.has(a.id)),
@@ -120,7 +122,7 @@ export function useAttacks(o: AttacksOptions): Attacks {
 
         setReports(state.reports);
         for (const a of state.incoming) {
-          if (a.remote) notifyBattle(a.id, "sent");
+          if (a.remote && !a.competitionStage) notifyBattle(a.id, "sent");
         }
         refresh();
       } catch {

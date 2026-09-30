@@ -137,7 +137,7 @@ export function resolveBattle(input: BattleInput): Verdict {
   const cells = typeof input.cells === "string" ? decodeCells(input.cells) : input.cells;
   const s = createBattle(cells, input.guns, input.depots, buildPlan(input.order), {
     ...input.levels,
-    drones: input.order.droneLevel ?? 1,
+    drones: input.order.droneLevel,
     seed: input.order.seed,
   });
 

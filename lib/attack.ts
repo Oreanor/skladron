@@ -46,9 +46,9 @@ export interface WavePlan {
   groups: DroneGroup[];
   /**
    * Задержка от начала боя, секунды. Две волны с нулём стартуют вместе;
-   * разные значения — подряд или с паузой. Без поля — как раньше по очереди.
+   * разные значения — подряд или с паузой.
    */
-  delay?: number;
+  delay: number;
 }
 
 export const waveSize = (w: WavePlan) =>
@@ -136,19 +136,16 @@ export interface AttackOrder {
   activatedAt?: number | null;
   /** Всего дронов в налёте — сумма по всем волнам. */
   drones: number;
-  /**
-   * Волны по порядку. Старые налёты писались одной формой на весь рой, у них
-   * этого поля нет — их читает orderWaves как одну волну простых дронов.
-   */
-  waves?: WavePlan[];
-  /** Форма и сторона первой волны. Оставлены ради старых записей и подписей. */
+  /** Волны по порядку. */
+  waves: WavePlan[];
+  /** Форма и сторона первой волны — для подписей в списке налётов. */
   pattern: Pattern;
   direction: number; // 0 верх, 1 низ, 2 слева, 3 справа — для lines
   seed: number;
   /** Уровень дронов нападающего на момент вылета. */
-  droneLevel?: number;
-  /** Версия правил симуляции: старые повторы нельзя молча считать новыми. */
-  simulationVersion?: number;
+  droneLevel: number;
+  /** Версия правил симуляции: повтор чужой версии нельзя молча считать нынешним. */
+  simulationVersion: number;
   /** Лицо нападавшего: показываем в окне перед боем. */
   avatar?: Avatar;
   /** Почта нападавшего: по ней он попадает в список соперников. */
@@ -156,7 +153,7 @@ export interface AttackOrder {
   /** Короткая записка нападающего при отправке — показывается перед отбиванием. */
   opener?: string | null;
   remote?: boolean; // настоящий налёт из серверной очереди, а не локальный бот
-  /** Номер состязания: локальный забег на себя, не серверный налёт. */
+  /** Номер состязания: налёт на самого себя. */
   competitionStage?: number;
 }
 
@@ -176,6 +173,8 @@ export interface RaidLog {
   loot: number;
   destroyed: boolean;
   hasReplay: boolean;
+  /** Номер состязания, если бой был на своём складе с самим собой. */
+  competitionStage?: number;
 }
 
 /** Итог исходящего налёта, который приходит только после боя защитника. */
@@ -277,28 +276,6 @@ export function mulberry32(a: number) {
 }
 
 /**
- * Волны заказа. Старые налёты писались одной формой на весь рой — читаем их
- * как одну волну простых дронов, иначе повторы тех боёв перестали бы играться.
- * Старые волны без delay шли строго по очереди с паузой betweenWaves — так же
- * и восстанавливаем, чтобы повторы не слиплись в один старт.
- */
-export function orderWaves(order: AttackOrder): WavePlan[] {
-  if (!order.waves?.length) {
-    return [
-      {
-        pattern: order.pattern,
-        direction: order.direction,
-        groups: [{ payload: "plain", n: order.drones }],
-        delay: 0,
-      },
-    ];
-  }
-  const anyDelay = order.waves.some((w) => w.delay != null);
-  if (anyDelay) return order.waves;
-  return order.waves.map((w, i) => ({ ...w, delay: i * WAVE.betweenWaves }));
-}
-
-/**
  * Раскладывает начинки по вылетам волны. Группы идут не подряд, а вперемешку
  * в своей пропорции: сложи их подряд — и на кольце подавители сбились бы в
  * одну дугу вместо того, чтобы заходить вместе со всеми.
@@ -392,20 +369,19 @@ const scaleCount = (
  * разом (launchTogether).
  */
 export function buildPlan(order: AttackOrder): SpawnTicket[] {
-  const version = order.simulationVersion ?? SIMULATION_VERSION;
-  if (version !== SIMULATION_VERSION) {
-    throw new Error(`unsupported simulation version: ${version}`);
+  if (order.simulationVersion !== SIMULATION_VERSION) {
+    throw new Error(`unsupported simulation version: ${order.simulationVersion}`);
   }
   const rnd = mulberry32(order.seed);
   const plan: SpawnTicket[] = [];
-  for (const wave of orderWaves(order)) {
+  for (const wave of order.waves) {
     const size = waveSize(wave);
     if (size <= 0) continue;
-    const at = WAVE.start + Math.max(0, wave.delay ?? 0);
+    const at = WAVE.start + Math.max(0, wave.delay);
     const tickets = waveTickets(wave.pattern, wave.direction, size, rnd, at);
     if (!tickets.length) continue;
     assignPayloads(tickets, wave.groups);
-    launchTogether(tickets, at, order.droneLevel ?? 1);
+    launchTogether(tickets, at, order.droneLevel);
     plan.push(...tickets);
   }
   return plan.sort((a, b) => a.at - b.at);
@@ -646,19 +622,23 @@ function waveTickets(
 }
 
 let counter = 0;
+/** Свой налёт без сервера: волны и уровень дронов — как у настоящего. */
 export function makeOrder(
   from: string,
-  drones: number,
-  pattern: Pattern,
-  direction = 0
+  waves: WavePlan[],
+  droneLevel = 1,
+  seed = (Math.random() * 1e9) | 0
 ): AttackOrder {
   return {
     id: `${Date.now().toString(36)}-${counter++}`,
     from,
     createdAt: Date.now(),
-    drones,
-    pattern,
-    direction,
-    seed: (Math.random() * 1e9) | 0,
+    drones: raidTotal(waves),
+    waves,
+    pattern: waves[0].pattern,
+    direction: waves[0].direction,
+    seed,
+    droneLevel,
+    simulationVersion: SIMULATION_VERSION,
   };
 }

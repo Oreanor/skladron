@@ -57,7 +57,7 @@ export function notifyMessage(email: string, messageId: string) {
   quiet(() => post({ event: "message", email, messageId }));
 }
 
-/** Состязание / локальный тест: в таблице атак его нет, пишем прямо себе. */
+/** Состязание или отладочный налёт с ?raid=: второй стороны нет, пишем самому себе. */
 export function notifyTestRaid(drones: number, stage?: number) {
   quiet(() =>
     post({

@@ -91,10 +91,6 @@ declare
   hex text := '';
 begin
   if src is null or src = '' then raise exception 'empty map'; end if;
-  -- порядок выкатки не важен: старый клиент слал карту целиком в base64
-  if position(':' in src) = 0 then
-    return decode(src, 'base64');
-  end if;
   foreach part in array string_to_array(src, ',') loop
     v := split_part(part, ':', 1)::int;
     n := split_part(part, ':', 2)::int;
@@ -142,38 +138,16 @@ language sql immutable as $$
   from jsonb_array_elements(coalesce(d, '[]'::jsonb)) e;
 $$;
 
--- Сколько в контейнерах лежит именно этого вида. Вид не указан — считается
--- обычным. kind=scout — наследие: считаем его basic, иначе клиентская
--- нормализация «scout → basic» выглядит как покупка дронов и save_base
--- отвечает 400 на любой перенос пушки/ловушки.
+-- Сколько в контейнерах лежит именно этого вида. Вид не указан — обычный.
 create or replace function depot_sum_kind(d jsonb, want text) returns int
 language sql immutable as $$
   select coalesce(sum((e->>'n')::int), 0)::int
     from jsonb_array_elements(coalesce(d, '[]'::jsonb)) e
-   where case
-           when want = 'basic' then coalesce(e->>'kind', 'basic') in ('basic', 'scout')
-           when want = 'scout' then false
-           else coalesce(e->>'kind', 'basic') = want
-         end;
-$$;
-
--- Убираем kind=scout у контейнеров: разведка теперь тратит обычные дроны.
-create or replace function normalize_depots(d jsonb) returns jsonb
-language sql immutable as $$
-  select coalesce(
-    (
-      select jsonb_agg(
-               case when coalesce(e->>'kind', 'basic') = 'scout' then e - 'kind' else e end
-               order by ord
-             )
-        from jsonb_array_elements(coalesce(d, '[]'::jsonb)) with ordinality as t(e, ord)
-    ),
-    '[]'::jsonb
-  );
+   where coalesce(e->>'kind', 'basic') = want;
 $$;
 
 -- Никакой вид не должен меняться, кроме одного разрешённого: иначе покупкой
--- дронов можно было бы завести себе разведчиков.
+-- дронов можно было бы завести себе шаров.
 create or replace function depots_only_changed(
   before jsonb, after jsonb, kind text, delta int
 ) returns boolean language sql immutable as $$
@@ -205,11 +179,9 @@ begin
        where key not in ('cx', 'cy', 'n', 'kind')
     ) then return false; end if;
     if e->>'cx' is null or e->>'cy' is null or e->>'n' is null then return false; end if;
-    if coalesce(e->>'kind', 'basic') not in ('basic', 'scout', 'balloon') then
+    if coalesce(e->>'kind', 'basic') not in ('basic', 'balloon') then
       return false;
     end if;
-    -- scout — legacy: клиент при сохранении переводит в basic; новые не принимаем
-    if coalesce(e->>'kind', 'basic') = 'scout' then return false; end if;
     begin
       cx := (e->>'cx')::int;
       cy := (e->>'cy')::int;
@@ -289,14 +261,7 @@ create or replace function battle_depots_valid(
             from jsonb_array_elements(coalesce(before, '[]'::jsonb)) b
            where (b->>'cx')::int = (a->>'cx')::int
              and (b->>'cy')::int = (a->>'cy')::int
-             and case
-                   when coalesce(b->>'kind', 'basic') in ('basic', 'scout') then 'basic'
-                   else coalesce(b->>'kind', 'basic')
-                 end
-               = case
-                   when coalesce(a->>'kind', 'basic') in ('basic', 'scout') then 'basic'
-                   else coalesce(a->>'kind', 'basic')
-                 end
+             and coalesce(b->>'kind', 'basic') = coalesce(a->>'kind', 'basic')
              and (b->>'n')::int >= (a->>'n')::int
         )
      );
@@ -346,10 +311,7 @@ begin
   if want is null or want < 1 then raise exception 'bad drone count'; end if;
   for i in reverse jsonb_array_length(arr) - 1 .. 0 loop
     e := arr -> i;
-    if need > 0 and (
-      coalesce(e->>'kind', 'basic') = want_kind
-      or (want_kind = 'basic' and coalesce(e->>'kind', 'basic') = 'scout')
-    ) then
+    if need > 0 and coalesce(e->>'kind', 'basic') = want_kind then
       n := coalesce((e->>'n')::int, 0);
       grab := least(n, need);
       need := need - grab;
@@ -371,6 +333,9 @@ create table if not exists profiles (
   email text,
   display_name text,
   base_name text,
+  -- Лицо игрока. Пусто — инициалы; «1»…«112» — готовое из public/avatars;
+  -- строка с http — своя картинка в хранилище.
+  avatar text,
   credits int not null default 10000,
   drones int not null default 0,
   founded boolean not null default false,
@@ -378,14 +343,29 @@ create table if not exists profiles (
   enemies jsonb not null default '[]'::jsonb,
   stats jsonb not null default
     '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,"wipes":0,"raids":0,"looted":0}'::jsonb,
+  -- уровни классов: с ними растут скорость дронов, дальнобойность пушек и обзор разведки
+  levels jsonb not null default
+    '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb,
+  -- заём: сколько отдать и когда
+  loan int not null default 0,
+  loan_due timestamptz,
+  -- телеграм: куда слать извещения и по какому коду привязывать
+  tg_chat_id bigint,
+  tg_code text,
+  -- Старший открытый номер состязания и лучшая попытка по каждому:
+  -- {"<номер>": {"score": очки, "pct": уцелело %, "area": клеток до боя}}.
+  competition_at int not null default 1,
+  competition_best jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
+
+create unique index if not exists profiles_tg_code on profiles (tg_code) where tg_code is not null;
 
 create table if not exists bases (
   user_id uuid primary key references profiles on delete cascade,
   cells bytea not null,              -- 10000 байт, по клетке на байт
   guns jsonb not null default '[]'::jsonb,
-  drone_cells jsonb not null default '[]'::jsonb,   -- контейнеры {cx,cy,n}, по 10 дронов
+  drone_cells jsonb not null default '[]'::jsonb,   -- контейнеры {cx,cy,n,kind?}, по 10 штук
   intact_cells int not null default 0,
   updated_at timestamptz not null default now()
 );
@@ -395,13 +375,41 @@ create table if not exists attacks (
   attacker_id uuid not null references profiles on delete cascade,
   defender_id uuid not null references profiles on delete cascade,
   drones int not null check (drones between 1 and 500),
+  -- форма и сторона первой волны — для подписей в списке налётов
   pattern text not null check (pattern in ('swarm', 'lines', 'random', 'drip', 'rings', 'spiral', 'flower', 'sweep')),
   direction int not null check (direction between 0 and 3),
+  -- волны: у каждой своя форма, сторона, задержка и состав по начинкам
+  waves jsonb not null,
   seed int not null,
+  -- уровень дронов запоминаем в самой атаке: у защитника они летят так,
+  -- как их прокачал нападающий, даже если тот потом апгрейднулся ещё
+  drone_level int not null default 1,
+  -- версия боевого движка: повтор чужой версии нынешним не проиграть
+  simulation_version int not null default sim_version(),
+  -- Состязание — налёт на самого себя: нападающий и защитник один человек,
+  -- а тут стоит номер. У настоящих налётов пусто.
+  competition_stage int,
   status text not null default 'pending' check (status in ('pending', 'resolved')),
   result jsonb,
   loot int not null default 0,
   destroyed boolean not null default false,
+  -- кто убрал бой из своего журнала: строка одна на двоих, прячем по-своему
+  hidden_by uuid[] not null default '{}',
+  -- повтор налёта: слепок склада защитника до боя и запись его действий
+  snap_cells text,
+  snap_guns jsonb,
+  snap_depots jsonb,
+  snap_levels jsonb,
+  snap_base_updated_at timestamptz,
+  trace text,
+  -- краткоживущий claim: два серверных расчёта не закроют один бой
+  resolving_token uuid,
+  resolving_at timestamptz,
+  -- очередь налётов: у первой атаки идут часы, остальные ждут
+  activated_at timestamptz,
+  -- уведомление каждого вида отправляется не больше одного раза
+  sent_notified_at timestamptz,
+  resolved_notified_at timestamptz,
   created_at timestamptz not null default now(),
   resolved_at timestamptz,
   reported_at timestamptz
@@ -424,170 +432,6 @@ create index if not exists attacks_defender_pending
   on attacks (defender_id, created_at) where status = 'pending';
 create index if not exists attacks_attacker_reports
   on attacks (attacker_id, resolved_at) where status = 'resolved' and reported_at is null;
-
--- Догоняем схему на уже заведённых профилях: create table if not exists
--- default существующей таблице не меняет, а клиент ждёт все семь счётчиков.
-alter table profiles add column if not exists base_name text;
-alter table profiles add column if not exists scouts int not null default 0;
--- уровни классов: с ними растут скорость дронов, дальнобойность пушек и обзор разведки
-alter table profiles add column if not exists levels jsonb not null
-  default '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb;
-alter table profiles alter column levels set default
-  '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb;
--- пулемёт, брандспойт, полис, огнетушители и ловушки добавились позже: у заведённых профилей их нет
-update profiles set levels =
-  '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb || levels;
--- кольца и спираль появились позже: у заведённой таблицы ограничение старое,
--- а create table if not exists его не трогает
-alter table attacks drop constraint if exists attacks_pattern_check;
-alter table attacks add constraint attacks_pattern_check
-  check (pattern in ('swarm', 'lines', 'random', 'drip', 'rings', 'spiral', 'flower', 'sweep'));
--- уровень дронов запоминаем в самой атаке: у защитника они летят так,
--- как их прокачал нападающий, даже если тот потом апгрейднулся ещё
-alter table attacks add column if not exists drone_level int not null default 1;
--- кто убрал бой из своего журнала: строка одна на двоих, прячем по-своему
-alter table attacks add column if not exists hidden_by uuid[] not null default '{}';
--- повтор налёта: слепок склада защитника до боя и запись его действий
-alter table attacks add column if not exists snap_cells text;
-alter table attacks add column if not exists snap_guns jsonb;
-alter table attacks add column if not exists snap_depots jsonb;
-alter table attacks add column if not exists snap_levels jsonb;
-alter table attacks add column if not exists trace text;
--- Версия движка и краткоживущий claim не дают двум серверным расчётам
--- одновременно закрывать один бой и не позволяют старому движку молча
--- проигрывать новый повтор.
---
--- Колонку заводим пустой, а не сразу с умолчанием: иначе все бои, что уже
--- лежат в базе, разом объявили бы себя нынешней версией, и старый повтор
--- проигрывался бы новой геометрией волн — молча и неверно. Пустые — это
--- ровно те, что писались до версий.
-alter table attacks add column if not exists simulation_version int;
-
--- Версия боя у налёта значит разное до и после того, как его отыграли.
---
--- Неотбитый налёт хранит только состав волн, зерно и сторону: расписание
--- вылетов по ним строится в тот миг, когда защитник входит в бой. Играть
--- его новыми правилами можно — он ещё не игран, и расходиться не с чем.
--- Такие просто перештамповываем, иначе очередь запирается наглухо: она
--- разбирается строго по порядку, и один неиграбельный налёт в голове
--- останавливает всё.
-update attacks
-   set simulation_version = sim_version()
- where status = 'pending'
-   and (simulation_version is null or simulation_version <> sim_version());
-
--- А вот отыгранный хранит ещё и запись рук защитника. Она снята под ту
--- геометрию волн и к новой не подходит: повтор разошёлся бы с боем молча
--- и неверно. Сам налёт с его добычей и разговором оставляем — пропадает
--- только возможность его пересмотреть.
-
-alter table attacks alter column simulation_version set default sim_version();
-alter table attacks alter column simulation_version set not null;
-alter table attacks add column if not exists resolving_token uuid;
-alter table attacks add column if not exists resolving_at timestamptz;
-alter table attacks add column if not exists snap_base_updated_at timestamptz;
--- Уведомление каждого вида отправляется не больше одного раза.
-alter table attacks add column if not exists sent_notified_at timestamptz;
-alter table attacks add column if not exists resolved_notified_at timestamptz;
--- телеграм: куда слать извещения и по какому коду привязывать
--- Налёт теперь идёт волнами: у каждой своя форма и свой состав по начинкам.
--- Колонка пустая у старых строк — их читают как одну волну простых дронов.
-alter table attacks add column if not exists waves jsonb;
-
--- Лицо игрока. Пусто — инициалы; «1»…«112» — готовое из public/avatars;
--- строка с http — своя картинка в хранилище. Новым и тем, у кого было
--- пусто, ставим случайный пресет (см. ensure_player / patch).
-alter table profiles add column if not exists avatar text;
-
-alter table profiles add column if not exists tg_chat_id bigint;
-alter table profiles add column if not exists tg_code text;
-create unique index if not exists profiles_tg_code on profiles (tg_code) where tg_code is not null;
--- заём: сколько отдать и когда
-alter table profiles add column if not exists loan int not null default 0;
-alter table profiles add column if not exists loan_due timestamptz;
--- потолок налёта подняли с 300 до 500: у существующей таблицы check
--- сам не поменяется, поэтому пересоздаём его явно
-alter table attacks drop constraint if exists attacks_drones_check;
-alter table attacks add constraint attacks_drones_check check (drones between 1 and 500);
--- очередь налётов: у первой атаки идут часы, остальные ждут
-alter table attacks add column if not exists activated_at timestamptz;
--- быстрые дроны убраны: вид остался только у разведчиков
-alter table attacks drop column if exists plus;
-
-update bases
-   set drone_cells = (
-     select coalesce(
-       jsonb_agg(case when e->>'kind' = 'plus' then e - 'kind' else e end),
-       '[]'::jsonb
-     )
-     from jsonb_array_elements(drone_cells) e
-   )
- where drone_cells @> '[{"kind":"plus"}]'::jsonb;
-
--- Разведчики больше не отдельный склад: оставшиеся kind=scout → обычные дроны.
--- Без этого save_base падает на depots_only_changed после клиентской нормализации.
-update bases
-   set drone_cells = normalize_depots(drone_cells)
- where exists (
-   select 1
-     from jsonb_array_elements(drone_cells) e
-    where e->>'kind' = 'scout'
- );
-alter table profiles add column if not exists enemies jsonb not null default '[]'::jsonb;
-
-alter table profiles alter column stats set default
-  '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,"wipes":0,"raids":0,"looted":0}'::jsonb;
-
-update profiles
-   set stats = '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,
-                 "wipes":0,"raids":0,"looted":0}'::jsonb || stats;
-
--- ---------- сносим устаревшие сигнатуры ----------
--- create or replace не заменяет функцию, у которой изменился список
--- аргументов или тип результата: он заводит вторую с тем же именем. Дальше
--- PostgREST не может выбрать, какую звать, а grant падает на «name is not
--- unique». Поэтому старые варианты убираем явно, до создания новых.
-
-drop function if exists buy_drones(int, jsonb);
-drop function if exists buy_drones(int, jsonb, text);
--- Закупка стала общей для дронов и шаров и переехала в buy_depot.
-drop function if exists buy_depot(int, jsonb);
-drop function if exists buy_scouts(int);
-drop function if exists spend_scouts(int);
--- claim/resolve настоящего налёта: добавился token, старые формы мешают PostgREST
-drop function if exists resolve_attack(uuid, text, jsonb, jsonb, jsonb, text);
-drop function if exists resolve_attack(uuid, text, jsonb, jsonb, jsonb, text, uuid);
-drop function if exists claim_attack(uuid);
-drop function if exists send_attack(text, int, text, int, int, jsonb);
-drop function if exists send_attack(text, int, text, int, int, jsonb, int);
--- у pending_attacks менялся не список аргументов, а состав колонок:
--- create or replace такого тоже не умеет
-drop function if exists pending_attacks();
--- дронов теперь списывает сервер: клиент больше не присылает свой склад
-drop function if exists spend_scouts(int, jsonb);
--- Итог настоящего налёта считает сервер (resolve_attack), клиент его больше
--- не присылает. Обе прежние подписи сносим: дублирующая ветка, которую никто
--- не зовёт, рано или поздно разъедется с рабочей.
-drop function if exists complete_attack(uuid, text, jsonb, jsonb, jsonb);
-drop function if exists complete_attack(uuid, text, jsonb, jsonb, jsonb, text);
--- attack_reports отдаёт ещё и повтор боя
-drop function if exists attack_reports();
--- collect_income отдаёт ещё и что было продано с отгрузкой
-drop function if exists collect_income();
--- enemy_base теперь отдаёт ещё и уровень чужих пушек
-drop function if exists enemy_base(text);
--- журнал переехал с my_raids на raid_log: старую убираем, чтобы не висела
-drop function if exists my_raids();
--- в журнал добавились ещё не отыгранные налёты: состав колонок другой
-drop function if exists raid_log();
--- base_names отдаёт ещё и лицо игрока
-drop function if exists base_names(text[]);
--- комментарии тоже: рядом с автором идёт его лицо
-drop function if exists battle_comments(uuid);
-drop function if exists add_battle_comment(uuid, text);
-
--- public_replay тоже отдаёт теперь волны: возвращаемый тип сменился
-drop function if exists public_replay(uuid);
 
 alter table profiles enable row level security;
 alter table bases enable row level security;
@@ -697,11 +541,6 @@ begin
 end;
 $$;
 
--- Старая подпись уходит целиком: PostgREST не выбирает между перегрузками,
--- а аргументы сменились.
-drop function if exists send_attack(text, int, text, int, int);
-drop function if exists send_attack(text, jsonb, int);
-
 create or replace function send_attack(
   target_email text,
   attack_waves jsonb,
@@ -796,6 +635,64 @@ begin
   id := order_id;
   depots := next_depots;
   return next;
+end;
+$$;
+
+-- Состязание на свой склад. Бесплатно и без дронов со склада: состав задан
+-- номером. Сервер его знает, чтобы бой шёл той же дорогой, что и живой, —
+-- с расчётом на сервере, повтором, ссылкой и журналом. Размер роя и уровень
+-- сверяем с формулами номера (competitionDrones и competitionDroneLevel на
+-- клиенте): премия за отбой растёт с числом дронов, и без сверки в себя
+-- можно было бы запускать сколько угодно. Зерно — тоже номера: переигрывая,
+-- выходишь против того же боя, и счёт сравним.
+create or replace function queue_competition(
+  stage int,
+  attack_waves jsonb,
+  attack_seed int,
+  attack_drone_level int
+) returns uuid
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  drone_count int;
+  head jsonb;
+  order_id uuid;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  if stage is null or stage < 1 or stage > 100 then
+    raise exception 'bad competition stage';
+  end if;
+  if not exists (select 1 from profiles p
+                  where p.id = uid and p.founded and stage <= p.competition_at) then
+    raise exception 'competition is not open';
+  end if;
+  perform check_waves(attack_waves);
+  drone_count := waves_drones(attack_waves);
+  if drone_count <> 12 + ((stage - 1) * 238) / 99 then
+    raise exception 'bad drone count';
+  end if;
+  if attack_drone_level is distinct from 1 + (stage - 1) / 20 then
+    raise exception 'bad drone level';
+  end if;
+  if attack_seed is distinct from stage * 9973 then
+    raise exception 'bad competition seed';
+  end if;
+  if (select count(*) from attacks a
+       where a.defender_id = uid and a.competition_stage is not null
+         and a.status = 'pending') >= price('queued') then
+    raise exception 'too many competitions already queued';
+  end if;
+
+  head := attack_waves -> 0;
+  insert into attacks (
+    attacker_id, defender_id, drones, pattern, direction, seed, waves,
+    drone_level, simulation_version, competition_stage
+  )
+  values (uid, uid, drone_count,
+          head->>'pattern', coalesce((head->>'direction')::int, 0),
+          attack_seed, attack_waves, attack_drone_level, sim_version(), stage)
+  returning attacks.id into order_id;
+  return order_id;
 end;
 $$;
 
@@ -898,7 +795,8 @@ returns table (
   simulation_version int,
   from_email text,
   avatar text,
-  opener text
+  opener text,
+  competition_stage int
 )
 language plpgsql security definer set search_path = public as $$
 declare
@@ -930,7 +828,8 @@ begin
               from battle_comments c
              where c.attack_id = a.id and c.author_id = a.attacker_id
              order by c.created_at
-             limit 1)
+             limit 1),
+           a.competition_stage
       from attacks a
       join profiles p on p.id = a.attacker_id
      where a.defender_id = uid and a.status = 'pending'
@@ -942,20 +841,24 @@ create or replace function attack_reports()
 returns table (
   id uuid, target_name text, resolved_at timestamptz,
   result jsonb, loot int, destroyed boolean,
-  drones int, pattern text, direction int, seed int, waves jsonb, simulation_version int,
+  drones int, pattern text, direction int, seed int, waves jsonb, drone_level int,
+  simulation_version int,
   snap_cells text, snap_guns jsonb, snap_depots jsonb, snap_levels jsonb, trace text
 )
 language sql security definer set search_path = public as $$
   select a.id,
          coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)) as target_name,
          a.resolved_at, a.result, a.loot, a.destroyed,
-         a.drones, a.pattern, a.direction, a.seed, a.waves, a.simulation_version,
+         a.drones, a.pattern, a.direction, a.seed, a.waves, a.drone_level,
+         a.simulation_version,
          a.snap_cells, a.snap_guns, a.snap_depots, a.snap_levels, a.trace
     from attacks a
     join profiles p on p.id = a.defender_id
    where a.attacker_id = auth.uid()
      and a.status = 'resolved'
      and a.reported_at is null
+     -- в состязании нападающий сам себе защитник: итог он уже видел
+     and a.competition_stage is null
    order by a.resolved_at;
 $$;
 
@@ -968,17 +871,6 @@ begin
   if not found then raise exception 'attack report not found'; end if;
 end;
 $$;
-
--- Старые аккаунты, которые ещё не основали и не начали строить склад,
--- тоже получают бесплатный центральный квадрат после обновления схемы.
-update bases b
-   set cells = starter_map(), intact_cells = price('free'), updated_at = now()
-  from profiles p
- where p.id = b.user_id
-   and not p.founded
-   and b.intact_cells = 0
-   and jsonb_array_length(b.guns) = 0
-   and jsonb_array_length(b.drone_cells) = 0;
 
 -- ---------- добавленные по e-mail соперники ----------
 
@@ -1031,7 +923,7 @@ $$;
 -- 10 кр за целую клетку за сутки, потолок накопления 14 суток
 
 create or replace function collect_income()
-returns table (credits_added int, days int, sold_drones int, sold_scouts int)
+returns table (credits_added int, days int, sold_drones int)
 language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
@@ -1042,7 +934,6 @@ declare
   gain int;
   cur_depots jsonb;
   drones_out int;
-  scouts_out int;
   sale int;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
@@ -1057,7 +948,7 @@ begin
   -- смена — двенадцать часов, отгрузка дважды в сутки
   passed := floor(extract(epoch from (now() - prof.last_income_at)) / 43200);
   if passed <= 0 then
-    return query select 0, 0, 0, 0;
+    return query select 0, 0, 0;
     return;
   end if;
 
@@ -1070,9 +961,7 @@ begin
   -- Цену берём с учётом уровня, ту же, по какой товар и покупался: иначе
   -- прокачка съедала бы маржу — на десятом уровне дрон обходился в 47, а
   -- уходил за те же 50.
-  -- scout уже входит в basic (см. depot_sum_kind); отдельно не суммируем
   drones_out := depot_sum_kind(cur_depots, 'basic');
-  scouts_out := 0;
   sale := drones_out * price_at(price('drone'), coalesce((prof.levels->>'drones')::int, 1))
          * price('sale');
 
@@ -1094,7 +983,7 @@ begin
          last_income_at = prof.last_income_at + (passed * 12 || ' hours')::interval
    where id = uid;
 
-  return query select gain + sale, paid, drones_out, scouts_out;
+  return query select gain + sale, paid, drones_out;
 end;
 $$;
 
@@ -1138,11 +1027,6 @@ begin
   select b.cells, b.guns, b.drone_cells into cur, cur_guns, cur_depots
     from bases b where b.user_id = uid for update;
   if cur is null then raise exception 'no base'; end if;
-
-  -- kind=scout больше не принимаем: и снимок, и присланное приводим к basic,
-  -- иначе перенос пушки/ловушки выглядит как смена состава склада.
-  cur_depots := normalize_depots(cur_depots);
-  new_depots := normalize_depots(new_depots);
 
   -- Пока сервер считает настоящий налёт по снимку, склад нельзя менять:
   -- иначе итог боя наложится на уже купленное или разъедется со слепком.
@@ -1285,10 +1169,9 @@ $$;
 -- ---------- закупка в контейнеры ----------
 
 -- Дроны и шары кладутся на склад одним и тем же движением, так что и
--- функция одна. Параметр packs сохранён по имени от старой RPC, но его
--- значение означает точное количество штук, а не число пачек.
+-- функция одна. amount — сколько штук докупить.
 create or replace function buy_depot(
-  packs int, new_depots jsonb, depot_kind text default 'basic'
+  amount int, new_depots jsonb, depot_kind text default 'basic'
 )
 returns table (credits int, drones int)
 language plpgsql security definer set search_path = public as $$
@@ -1300,7 +1183,7 @@ declare
   cur_depots jsonb;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
-  if packs is null or packs < 1 or packs > 100000 then
+  if amount is null or amount < 1 or amount > 100000 then
     raise exception 'bad drone amount';
   end if;
   if depot_kind not in ('basic', 'balloon') then
@@ -1308,8 +1191,8 @@ begin
   end if;
   -- Шары не качаются: их цена одна на всю игру, дроны дорожают с уровнем.
   select case when depot_kind = 'balloon'
-              then packs * price('balloon')
-              else packs * price_at(
+              then amount * price('balloon')
+              else amount * price_at(
                      price('drone'),
                      coalesce((p.levels->>'drones')::int, 1)
                    )
@@ -1320,9 +1203,6 @@ begin
   select b.cells, b.guns, b.drone_cells into cur, cur_guns, cur_depots
     from bases b where b.user_id = uid for update;
   if cur is null then raise exception 'no base'; end if;
-
-  cur_depots := normalize_depots(cur_depots);
-  new_depots := normalize_depots(new_depots);
 
   if exists (
     select 1 from attacks a
@@ -1335,7 +1215,7 @@ begin
   end if;
 
   -- купленное обязано лечь на склад: ровно запрошенное число новых дронов
-  if not depots_only_changed(cur_depots, new_depots, depot_kind, packs) then
+  if not depots_only_changed(cur_depots, new_depots, depot_kind, amount) then
     raise exception 'depots must hold exactly the purchased items';
   end if;
   if not depots_valid(new_depots, cur, cur_guns) then
@@ -1391,9 +1271,6 @@ begin
   select b.cells, b.guns, b.drone_cells into cur, cur_guns, cur_depots
     from bases b where b.user_id = uid for update;
   if cur is null then raise exception 'no base'; end if;
-
-  cur_depots := normalize_depots(cur_depots);
-  new_depots := normalize_depots(new_depots);
 
   for i in 0..9999 loop
     old_v := get_byte(cur, i);
@@ -1612,6 +1489,8 @@ declare
   share_pct int;
   earned int;
   base_at timestamptz;
+  comp_pct int;
+  comp_score int;
 begin
   select a.* into order_row from attacks a where a.id = attack_id for update;
   if not found then raise exception 'attack not found'; end if;
@@ -1657,6 +1536,32 @@ begin
   earned := (burned_now * price('loot')
              * (100 + (price('loot_curve') * share_pct * share_pct * share_pct) / 1000000))
             / 100;
+  -- Состязание: добычи нет — жечь самого себя ради неё нельзя. Вместо неё
+  -- счёт: уцелевший процент × √(площадь / 100), как competitionScore на
+  -- клиенте. Лучший по номеру храним; уцелел склад — открыт следующий.
+  if order_row.competition_stage is not null then
+    earned := 0;
+    if intact_before > 0 then
+      comp_pct := (defender_intact * 100) / intact_before;
+      comp_score := round((comp_pct * sqrt(intact_before / 100.0))::numeric)::int;
+      update profiles
+         set competition_best = case
+               when coalesce((competition_best -> order_row.competition_stage::text
+                              ->> 'score')::int, -1) < comp_score
+               then competition_best || jsonb_build_object(
+                      order_row.competition_stage::text,
+                      jsonb_build_object('score', comp_score, 'pct', comp_pct,
+                                         'area', intact_before))
+               else competition_best
+             end,
+             competition_at = case
+               when defender_intact > 0
+               then greatest(competition_at, least(100, order_row.competition_stage + 1))
+               else competition_at
+             end
+       where id = order_row.defender_id;
+    end if;
+  end if;
 
   update profiles
      set credits = profiles.credits + earned,
@@ -2123,13 +2028,16 @@ grant execute on function set_avatar to authenticated;
 create or replace function raid_log()
 returns table (
   id uuid, side text, foe text, at timestamptz, pending boolean,
-  drones int, loot int, destroyed boolean, burned int, has_replay boolean
+  drones int, loot int, destroyed boolean, burned int, has_replay boolean,
+  competition_stage int
 )
 language sql security definer set search_path = public stable as $$
   -- Свои налёты видны и до боя: защитник ещё не отбивался, показывать
-  -- нечего, но знать, что рой в пути, полезно.
+  -- нечего, но знать, что рой в пути, полезно. Состязание — это бой на
+  -- своём складе: в журнале оно оборона, а до боя стоит в очереди.
   select a.id,
-         case when a.attacker_id = auth.uid() then 'attack' else 'defence' end,
+         case when a.attacker_id = auth.uid() and a.competition_stage is null
+              then 'attack' else 'defence' end,
          case
            when a.attacker_id = auth.uid()
              then coalesce(d.base_name, d.display_name, split_part(d.email, '@', 1))
@@ -2139,13 +2047,15 @@ language sql security definer set search_path = public stable as $$
          a.status = 'pending',
          a.drones, a.loot, a.destroyed,
          coalesce((a.result->>'burned')::int, 0),
-         a.snap_cells is not null
+         a.snap_cells is not null,
+         a.competition_stage
     from attacks a
     join profiles t on t.id = a.attacker_id
     join profiles d on d.id = a.defender_id
    where not (auth.uid() = any (a.hidden_by))
      and (
-       (a.attacker_id = auth.uid() and a.status in ('pending', 'resolved'))
+       (a.attacker_id = auth.uid() and a.competition_stage is null
+        and a.status in ('pending', 'resolved'))
        or (a.defender_id = auth.uid() and a.status = 'resolved')
      )
    order by coalesce(a.resolved_at, a.created_at) desc
@@ -2176,7 +2086,7 @@ returns table (
   drones int, pattern text, direction int, seed int, waves jsonb, drone_level int,
   simulation_version int,
   snap_cells text, snap_guns jsonb, snap_depots jsonb, snap_levels jsonb,
-  trace text, result jsonb, resolved_at timestamptz
+  trace text, result jsonb, resolved_at timestamptz, competition_stage int
 )
 language sql security definer set search_path = public stable as $$
   select coalesce(att.base_name, att.display_name, split_part(att.email, '@', 1)),
@@ -2184,7 +2094,7 @@ language sql security definer set search_path = public stable as $$
          a.drones, a.pattern, a.direction, a.seed, a.waves, a.drone_level,
          a.simulation_version,
          a.snap_cells, a.snap_guns, a.snap_depots, a.snap_levels,
-         a.trace, a.result, a.resolved_at
+         a.trace, a.result, a.resolved_at, a.competition_stage
     from attacks a
     join profiles att on att.id = a.attacker_id
     join profiles def on def.id = a.defender_id
@@ -2265,7 +2175,7 @@ grant execute on function ensure_player, collect_income, save_base,
   base_names, stale_patches, launch_scout, upgrade, add_rival,
   send_message, message_thread, read_messages, unread_messages,
   take_loan, repay_loan, raid_log, hide_raid,
-  send_attack, pending_attacks, attack_reports, ack_attack_report, restart_game to authenticated;
+  send_attack, queue_competition, pending_attacks, attack_reports, ack_attack_report, restart_game to authenticated;
 
 -- PostgREST держит список функций в кэше. Supabase обычно перечитывает его сам,
 -- но после смены сигнатур надёжнее попросить явно — иначе клиент ещё какое-то

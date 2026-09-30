@@ -272,7 +272,7 @@ const fr: Dict = {
 
 
   "attacks.summon": "+ raid",
-  "attacks.test": "+ test",
+  "attacks.competition": "+ épreuve",
   "attacks.defend": "Défendre",
   "attacks.dronesPattern": "{drones} drones · {pattern}",
   "attacks.ready": "en attente de défense",
@@ -397,6 +397,12 @@ const fr: Dict = {
   "competition.waves": "Vagues",
   "competition.wave": "Vague {n}",
   "competition.queued": "Épreuve n°{n} en file · {size} drones",
+  "competition.record": "Épreuve n°{n} : nouveau record — {score} pts ({pct} % intact)",
+  "competition.result": "Épreuve n°{n} : {score} pts ({pct} % intact)",
+  "competition.best": "Meilleur",
+  "competition.bestValue": "{score} pts · {pct} % de {area}",
+  "competition.noBest": "pas encore jouée",
+  "competition.scoring": "Points = % de l’entrepôt sauvé × √(surface / 100) : un grand entrepôt est plus dur à sauver. La suivante s’ouvre si l’entrepôt survit.",
 
   "stats.battles": "Combats",
   "stats.dronesKilled": "Drones abattus",

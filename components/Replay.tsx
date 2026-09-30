@@ -32,7 +32,14 @@ export interface ReplayData {
   cells: string;
   guns: { cx: number; cy: number }[];
   depots: { cx: number; cy: number; n: number; kind?: string }[];
-  levels: { guns?: number; sprays?: number; traps?: number; mg?: number; water?: number };
+  levels: {
+    guns?: number;
+    rockets?: number;
+    sprays?: number;
+    traps?: number;
+    mg?: number;
+    water?: number;
+  };
   trace: string;
 }
 
@@ -167,7 +174,7 @@ export default function Replay({
       replay.guns as Gun[],
       replay.depots as Depot[],
       buildPlan(replay.order),
-      { ...replay.levels, drones: replay.order.droneLevel ?? 1, seed: replay.order.seed }
+      { ...replay.levels, drones: replay.order.droneLevel, seed: replay.order.seed }
     );
 
   const state = useRef<GameState | null>(null);

@@ -87,7 +87,7 @@ export default function Battle({
   if (!stateRef.current) {
     stateRef.current = createBattle(cells, guns, depots, buildPlan(order), {
       ...levels,
-      drones: order.droneLevel ?? 1,
+      drones: order.droneLevel,
       seed: order.seed,
     });
   }

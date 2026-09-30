@@ -7,24 +7,7 @@ import { use, useEffect, useState } from "react";
 import Replay, { type ReplayData } from "@/components/Replay";
 import { Button } from "@/components/ui";
 import { SettingsProvider, useT } from "@/lib/i18n";
-import { supabase } from "@/lib/supabase";
-import type { Pattern } from "@/lib/attack";
-
-interface Row {
-  attacker: string;
-  defender: string;
-  drones: number;
-  pattern: Pattern;
-  direction: number;
-  seed: number;
-  drone_level: number | null;
-  snap_cells: string;
-  snap_guns: { cx: number; cy: number }[] | null;
-  snap_depots: { cx: number; cy: number; n: number; kind?: string }[] | null;
-  snap_levels: { guns?: number; sprays?: number; traps?: number; mg?: number; water?: number } | null;
-  trace: string | null;
-  resolved_at: string;
-}
+import { publicReplay } from "@/lib/repo";
 
 function Screen({ id }: { id: string }) {
   const t = useT();
@@ -35,51 +18,30 @@ function Screen({ id }: { id: string }) {
   const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
-    const db = supabase();
-    if (!db) {
-      setState("gone");
-      return;
-    }
     let alive = true;
-    void db
-      .rpc("public_replay", { attack_id: id })
-      .then(({ data, error }) => {
+    publicReplay(id)
+      .then((found) => {
         if (!alive) return;
-        const row = (data as Row[] | null)?.[0];
-        if (error) {
-          setFailed(error.message);
+        if (!found) {
           setState("gone");
           return;
         }
-        if (!row) {
-          setState("gone");
-          return;
+        // у состязания нападающий — сам защитник: подписываем номером
+        const { replay } = found;
+        if (found.competitionStage) {
+          replay.order.from = t("competition.title", { n: found.competitionStage });
         }
-        setState({
-          name: row.defender,
-          replay: {
-            order: {
-              id,
-              from: row.attacker,
-              createdAt: Date.parse(row.resolved_at),
-              drones: row.drones,
-              pattern: row.pattern,
-              direction: row.direction,
-              seed: row.seed,
-              droneLevel: row.drone_level ?? 1,
-            },
-            cells: row.snap_cells,
-            guns: row.snap_guns ?? [],
-            depots: row.snap_depots ?? [],
-            levels: row.snap_levels ?? {},
-            trace: row.trace ?? "",
-          },
-        });
+        setState({ name: found.defender, replay });
+      })
+      .catch((e: Error) => {
+        if (!alive) return;
+        setFailed(e.message);
+        setState("gone");
       });
     return () => {
       alive = false;
     };
-  }, [id]);
+  }, [id, t]);
 
   if (state === "loading") {
     return <p className="p-6 text-sm text-neutral-500">{t("app.loading")}</p>;

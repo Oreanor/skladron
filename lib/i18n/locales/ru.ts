@@ -272,7 +272,7 @@ const ru: Dict = {
 
 
   "attacks.summon": "+ налёт",
-  "attacks.test": "+ тест",
+  "attacks.competition": "+ состязание",
   "attacks.defend": "Отбить",
   "attacks.dronesPattern": "{drones} дронов · {pattern}",
   "attacks.ready": "ждёт ответа",
@@ -397,6 +397,12 @@ const ru: Dict = {
   "competition.waves": "Волн",
   "competition.wave": "Волна {n}",
   "competition.queued": "Состязание №{n} в очереди · {size} дронов",
+  "competition.record": "Состязание №{n}: новый рекорд — {score} очк. (уцелело {pct}%)",
+  "competition.result": "Состязание №{n}: {score} очк. (уцелело {pct}%)",
+  "competition.best": "Лучший",
+  "competition.bestValue": "{score} очк. · {pct}% из {area}",
+  "competition.noBest": "ещё не пройдено",
+  "competition.scoring": "Очки — уцелевший % склада × √(площадь / 100): большой склад сберечь труднее. Номер открывается, если склад уцелел.",
 
   "stats.battles": "Боёв",
   "stats.dronesKilled": "Дронов сбито",

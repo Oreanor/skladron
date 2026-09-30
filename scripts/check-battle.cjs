@@ -64,13 +64,13 @@ const order = (waves, extra = {}) => ({
   id: "x", from: "a", createdAt: 0, seed: 20260928,
   drones: A.raidTotal(waves),
   pattern: waves[0].pattern, direction: waves[0].direction,
-  waves, simulationVersion: T.SIMULATION_VERSION, ...extra,
+  waves, droneLevel: 1, simulationVersion: T.SIMULATION_VERSION, ...extra,
 });
 
 /** Играет бой ровно так, как Battle.tsx: кадр пишется до шага симуляции. */
 function play(cells, guns, depots, ord, levels, hands) {
   const s = E.createBattle(cells, guns, depots, A.buildPlan(ord), {
-    ...levels, drones: ord.droneLevel ?? 1, seed: ord.seed,
+    ...levels, drones: ord.droneLevel, seed: ord.seed,
   });
   const frames = [];
   const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);

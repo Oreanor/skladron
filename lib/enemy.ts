@@ -12,6 +12,7 @@ import {
   applyRect,
   emptyCells,
   encodeCells,
+  depotKind,
   normRect,
 } from "./base";
 import { mulberry32 } from "./attack";
@@ -167,8 +168,7 @@ export function makeEnemy(
 export function takeDrones(depots: Depot[], count: number, kind: DepotKind = "basic") {
   let left = count;
   for (let i = depots.length - 1; i >= 0 && left > 0; i--) {
-    const k = depots[i].kind ?? "basic";
-    if (!(k === kind || (kind === "basic" && k === "scout"))) continue;
+    if (depotKind(depots[i]) !== kind) continue;
     const take = Math.min(depots[i].n, left);
     depots[i].n -= take;
     left -= take;

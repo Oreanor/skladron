@@ -68,7 +68,12 @@ import {
   normName,
   type Player,
 } from "@/lib/player";
-import { loadCompetitionAt, saveCompetitionAt } from "@/lib/competition";
+import {
+  buildCompetition,
+  COMPETITION_STAGES,
+  competitionScore,
+  titleCompetitions,
+} from "@/lib/competition";
 import { getRepo } from "@/lib/repo";
 import {
   type Enemy,
@@ -105,7 +110,7 @@ import {
   type BuildResult,
 } from "@/lib/build";
 import Battle, { type BattleOutcome } from "./Battle";
-import TestRaidDialog from "./lobby/TestRaidDialog";
+import CompetitionDialog from "./lobby/CompetitionDialog";
 import SummonRaidDialog from "./lobby/SummonRaidDialog";
 import AttackReportDialog from "./lobby/AttackReportDialog";
 import MessageDialog from "./lobby/MessageDialog";
@@ -213,7 +218,7 @@ export default function Lobby({
   /** После отбитого удалённого налёта — необязательная реплика. */
   const [postCommentRaid, setPostCommentRaid] = useState<string | null>(null);
   /** Открыт ли планировщик пробного налёта на себя. */
-  const [testRaidOpen, setTestRaid] = useState(false);
+  const [competitionOpen, setCompetitionOpen] = useState(false);
   const [summonRaidOpen, setSummonRaid] = useState(false);
   const [ready, setReady] = useState(false);
   const [version, setVersion] = useState(0);
@@ -331,7 +336,16 @@ export default function Lobby({
   const loadRaids = () => {
     void repo
       .raidLog()
-      .then((rows) => setRaids(rows))
+      .then((rows) =>
+        // у состязания вторая сторона — ты сам: в журнале оно под номером
+        setRaids(
+          rows.map((r) =>
+            r.competitionStage
+              ? { ...r, foe: t("competition.title", { n: r.competitionStage }) }
+              : r
+          )
+        )
+      )
       .catch(() => {
         // журнал — не игра, из-за него ломаться нечему
       });
@@ -406,8 +420,7 @@ export default function Lobby({
       .then(({ player, income, reports: loadedReports }) => {
         if (!alive) return;
         playerRef.current = player;
-        player.competitionAt = Math.max(player.competitionAt ?? 1, loadCompetitionAt());
-        saveCompetitionAt(player.competitionAt);
+        titleCompetitions(player.incoming, t);
         setReports(loadedReports);
         setReady(true);
         loadRaids();
@@ -463,12 +476,14 @@ export default function Lobby({
     const size = Math.min(TEST_RAID_MAX, Math.max(30, Number(q.get("n")) || 200));
     for (const pattern of list) {
       cur.incoming.push(
-        makeOrder(
-          t(`bot.${(Math.random() * BOT_COUNT) | 0}` as Key),
-          size,
-          pattern,
-          (Math.random() * 4) | 0
-        )
+        makeOrder(t(`bot.${(Math.random() * BOT_COUNT) | 0}` as Key), [
+          {
+            pattern,
+            direction: (Math.random() * 4) | 0,
+            delay: 0,
+            groups: [{ payload: "plain", n: size }],
+          },
+        ])
       );
     }
     window.history.replaceState({}, "", window.location.pathname);
@@ -623,6 +638,8 @@ export default function Lobby({
         insuranceLevel={p.levels.insurance}
         onFinish={async (o: BattleOutcome) => {
           const goodsBefore = goodsValue(p.depots);
+          // Площадь до боя — для счёта состязания: его считают от неё.
+          const intactBefore = intactCells(p);
           p.cells = o.cells;
           p.guns = o.guns;
           p.depots = o.depots;
@@ -636,15 +653,28 @@ export default function Lobby({
             o.result.killedByGuns + o.result.killedByMg + o.result.killedByBalloons;
           p.stats.dronesKilled += killed;
           p.stats.cellsBurned += o.result.burned;
-          // Состязание пройдено — открываем следующий номер. Только победа
-          // и только тот номер, что сейчас открыт: старые в очереди не двигают.
-          if (
-            o.won &&
-            battle.competitionStage &&
-            battle.competitionStage === p.competitionAt
-          ) {
-            p.competitionAt = battle.competitionStage + 1;
-            saveCompetitionAt(p.competitionAt);
+          // Состязание: счёт попытки, лучший по номеру, и следующий номер,
+          // если склад уцелел. Сервер считает то же самое у себя, а при
+          // следующем входе его прогресс перекроет этот.
+          const stage = battle.competitionStage;
+          const attempt = stage
+            ? competitionScore(intactBefore, intactCells(p))
+            : null;
+          const record =
+            !!stage && !!attempt && attempt.score > (p.competitionBest[stage]?.score ?? -1);
+          if (stage && attempt) {
+            if (record) {
+              p.competitionBest = {
+                ...p.competitionBest,
+                [stage]: { ...attempt, area: intactBefore },
+              };
+            }
+            if (o.won) {
+              p.competitionAt = Math.max(
+                p.competitionAt,
+                Math.min(COMPETITION_STAGES, stage + 1)
+              );
+            }
           }
           p.credits +=
             insurance(
@@ -665,9 +695,15 @@ export default function Lobby({
           }
           setBattle(null);
           setMessage(
-            o.won
-              ? t("battle.repelled", { killed })
-              : t("battle.burntDown", { from: battle.from })
+            stage && attempt
+              ? t(record ? "competition.record" : "competition.result", {
+                  n: stage,
+                  pct: attempt.pct,
+                  score: attempt.score,
+                })
+              : o.won
+                ? t("battle.repelled", { killed })
+                : t("battle.burntDown", { from: battle.from })
           );
           setVersion((v) => v + 1);
           forceRender((v) => v + 1);
@@ -679,7 +715,8 @@ export default function Lobby({
               battle.remote ? battle.id : undefined,
               o.trace
             );
-            if (battle.remote) {
+            // в состязании писать некому: второй стороны нет
+            if (battle.remote && !stage) {
               notifyBattle(battle.id, "resolved");
               setPostCommentRaid(battle.id);
             }
@@ -979,27 +1016,33 @@ export default function Lobby({
   };
 
   /**
-   * Состязание на свой склад: фиксированный состав по номеру, бесплатно,
-   * в локальную очередь. Сервер о нём не знает.
+   * Состязание на свой склад: постоянный состав и зерно по номеру,
+   * бесплатно. Вошедшему ставит в очередь сервер — бой идёт той же дорогой,
+   * что живой, с повтором и журналом; без входа очередь своя, в браузере.
    */
-  const testRaid = (
-    waves: WavePlan[],
-    droneLevel: number,
-    stage: number
-  ): string | null => {
-    const n = raidTotal(waves);
+  const addCompetition = async (stage: number): Promise<string | null> => {
+    const plan = buildCompetition(stage);
+    const n = raidTotal(plan.waves);
     if (n < 1) return t("raid.empty");
     const order = makeOrder(
       t("competition.title", { n: stage }),
-      n,
-      waves[0].pattern,
-      waves[0].direction
+      plan.waves,
+      plan.droneLevel,
+      plan.seed
     );
-    order.waves = waves;
-    order.droneLevel = droneLevel;
     order.competitionStage = stage;
+    if (repo.mode === "cloud") {
+      try {
+        // Серверный id вместо своего: следующий опрос узнает этот же налёт
+        // и не задвоит его в очереди.
+        order.id = await repo.queueCompetition(stage, plan.waves, plan.seed, plan.droneLevel);
+        order.remote = true;
+      } catch (e) {
+        return (e as Error).message;
+      }
+    }
     p.incoming.push(order);
-    setTestRaid(false);
+    setCompetitionOpen(false);
     setMessage(t("competition.queued", { n: stage, size: n }));
     notifyTestRaid(n, stage);
     touch();
@@ -1647,8 +1690,8 @@ export default function Lobby({
       <Button size="sm" onClick={() => setSummonRaid(true)}>
         {t("attacks.summon")}
       </Button>
-      <Button size="sm" onClick={() => setTestRaid(true)}>
-        {t("attacks.test")}
+      <Button size="sm" onClick={() => setCompetitionOpen(true)}>
+        {t("attacks.competition")}
       </Button>
     </div>
   );
@@ -2035,11 +2078,12 @@ export default function Lobby({
         />
       )}
 
-      {testRaidOpen && (
-        <TestRaidDialog
-          competitionAt={p.competitionAt ?? 1}
-          onCancel={() => setTestRaid(false)}
-          onAdd={testRaid}
+      {competitionOpen && (
+        <CompetitionDialog
+          competitionAt={p.competitionAt}
+          best={p.competitionBest}
+          onCancel={() => setCompetitionOpen(false)}
+          onAdd={addCompetition}
         />
       )}
 

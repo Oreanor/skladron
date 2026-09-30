@@ -1,8 +1,11 @@
 /**
- * Состязания: прогрессивные налёты на свой склад вместо свободного «пробного».
- * №1 — учебка; к 7–8 без апгрейдов уже спотыкаешься. Волны и начинки
- * растут вместе с номером: сначала микс в одной волне, потом несколько волн
- * разного состава.
+ * Состязания: сто налётов на свой склад с растущей сложностью. Счёт — сколько
+ * склада уцелело, с поправкой на площадь: большой склад сберечь труднее.
+ * Лучший счёт по каждому номеру хранится, пройденные можно переигрывать.
+ *
+ * Номер открывается, когда на предыдущем склад уцелел хоть сколько-то.
+ * Состав номера и зерно боя постоянны: переигрывая, выходишь против того же
+ * роя, и счёт сравним с прошлым.
  */
 
 import {
@@ -11,25 +14,55 @@ import {
   type Payload,
   type WavePlan,
 } from "./attack";
-import { RAID } from "./tuning";
 
-/** Потолок состязания — не выше пробного налёта. */
-const COMPETITION_CAP = Math.min(250, RAID.max);
+/** Сколько всего номеров. */
+export const COMPETITION_STAGES = 100;
+
+function clampStage(stage: number) {
+  return Math.min(COMPETITION_STAGES, Math.max(1, Math.floor(stage)));
+}
+
+/**
+ * Размер роя: от 12 на первом номере до 250 на сотом, ровно. Та же формула
+ * стоит в queue_competition — сервер сверяет по ней размер.
+ */
 export function competitionDrones(stage: number) {
-  const n = Math.max(1, Math.floor(stage));
-  return Math.min(COMPETITION_CAP, Math.round(12 * Math.pow(1.35, n - 1)));
+  const n = clampStage(stage);
+  return 12 + Math.floor(((n - 1) * 238) / (COMPETITION_STAGES - 1));
 }
 
-/** Уровень дронов роя: с третьего номера растёт, потолок 5. */
+/** Уровень дронов роя: +1 каждые двадцать номеров, с 1 до 5. */
 export function competitionDroneLevel(stage: number) {
-  const n = Math.max(1, Math.floor(stage));
-  return Math.min(5, 1 + Math.floor(Math.max(0, n - 3) / 2));
+  return 1 + Math.floor((clampStage(stage) - 1) / 20);
 }
 
-/** Сколько волн: 1 → 2 → 3 → 4. */
+/** Сколько волн: +1 каждые двадцать пять номеров, с 1 до 4. */
 export function competitionWaveCount(stage: number) {
-  const n = Math.max(1, Math.floor(stage));
-  return Math.min(4, 1 + Math.floor((n - 1) / 2));
+  return 1 + Math.floor((clampStage(stage) - 1) / 25);
+}
+
+/** Зерно боя номера: одно на все попытки, чтобы счёт был сравним. */
+export function competitionSeed(stage: number) {
+  return clampStage(stage) * 9973;
+}
+
+/**
+ * Счёт попытки: процент уцелевших клеток × √(площадь / 100). Склад в 400
+ * клеток, сбережённый наполовину, стоит столько же, сколько склад в 100,
+ * сбережённый целиком. Сервер считает так же в resolve_attack.
+ */
+export function competitionScore(intactBefore: number, intactAfter: number) {
+  if (intactBefore <= 0) return { pct: 0, score: 0 };
+  const pct = Math.floor((Math.max(0, intactAfter) * 100) / intactBefore);
+  return { pct, score: Math.round(pct * Math.sqrt(intactBefore / 100)) };
+}
+
+/** Лучшая попытка номера. */
+export interface CompetitionBest {
+  score: number;
+  pct: number;
+  /** Площадь склада на момент попытки, клеток. */
+  area: number;
 }
 
 const EASY: Pattern[] = ["drip", "lines", "random"];
@@ -41,9 +74,9 @@ function pick<T>(list: T[], rnd: () => number): T {
 }
 
 function patternFor(stage: number, rnd: () => number): Pattern {
-  if (stage <= 2) return pick(EASY, rnd);
-  if (stage <= 5) return pick([...EASY, ...MID], rnd);
-  if (stage <= 7) return pick(MID, rnd);
+  if (stage <= 10) return pick(EASY, rnd);
+  if (stage <= 30) return pick([...EASY, ...MID], rnd);
+  if (stage <= 50) return pick(MID, rnd);
   return pick(HARD, rnd);
 }
 
@@ -60,19 +93,19 @@ function groupsFor(
 ): WavePlan["groups"] {
   if (n <= 0) return [{ payload: "plain", n: 0 }];
 
-  // №1–2: только пустые.
-  if (stage <= 2) return [{ payload: "plain", n }];
+  // Первый десяток: только пустые.
+  if (stage <= 10) return [{ payload: "plain", n }];
 
   // Пул начинок растёт с номером; у волны сдвигаем акцент.
   const pool: Payload[] =
-    stage <= 4
+    stage <= 25
       ? ["plain", "jammer", "blower"]
-      : stage <= 6
+      : stage <= 45
         ? ["plain", "jammer", "heavy", "foamer", "turbo"]
         : ["plain", "jammer", "heavy", "stealth", "turbo", "demag", "blower"];
 
-  // Сколько типов в этой волне: 2, с №5 часто 3.
-  const types = stage <= 4 ? 2 : stage >= 7 || rnd() > 0.35 ? 3 : 2;
+  // Сколько типов в этой волне: 2, дальше часто 3.
+  const types = stage <= 25 ? 2 : stage >= 50 || rnd() > 0.35 ? 3 : 2;
 
   // Стартуем с разных мест пула, чтобы соседние волны не совпадали.
   const start = (waveIndex * 2 + Math.floor(rnd() * pool.length)) % pool.length;
@@ -81,8 +114,8 @@ function groupsFor(
     const p = pool[(start + i) % pool.length];
     if (!chosen.includes(p)) chosen.push(p);
   }
-  // На последних волнах сложных состязаний чаще «острый» акцент.
-  if (stage >= 6 && waveIndex === waveCount - 1 && !chosen.includes("stealth") && pool.includes("stealth")) {
+  // На последних волнах сложных номеров чаще «острый» акцент.
+  if (stage >= 45 && waveIndex === waveCount - 1 && !chosen.includes("stealth") && pool.includes("stealth")) {
     chosen[chosen.length - 1] = rnd() > 0.5 ? "stealth" : "heavy";
   }
 
@@ -123,12 +156,13 @@ export interface CompetitionPlan {
   waves: WavePlan[];
   droneLevel: number;
   drones: number;
+  seed: number;
 }
 
 /** План состязания №stage. Сид от номера — один и тот же состав при повторе. */
-export function buildCompetition(stage: number, seed = stage * 9973): CompetitionPlan {
-  const n = Math.max(1, Math.floor(stage));
-  const rnd = mulberry32(seed);
+export function buildCompetition(stage: number): CompetitionPlan {
+  const n = clampStage(stage);
+  const rnd = mulberry32(n * 9973);
   const drones = competitionDrones(n);
   const droneLevel = competitionDroneLevel(n);
   const waveCount = competitionWaveCount(n);
@@ -141,27 +175,18 @@ export function buildCompetition(stage: number, seed = stage * 9973): Competitio
     groups: groupsFor(n, count, i, waveCount, rnd),
   }));
 
-  return { stage: n, waves, droneLevel, drones };
+  return { stage: n, waves, droneLevel, drones, seed: competitionSeed(n) };
 }
 
-/** Прогресс состязаний живёт в браузере: серверным профилем не возимся. */
-const COMP_KEY = "wb.competitionAt";
-
-export function loadCompetitionAt() {
-  if (typeof window === "undefined") return 1;
-  try {
-    const n = Number(window.localStorage.getItem(COMP_KEY));
-    return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1;
-  } catch {
-    return 1;
-  }
-}
-
-export function saveCompetitionAt(stage: number) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(COMP_KEY, String(Math.max(1, Math.floor(stage))));
-  } catch {
-    // приватный режим — номер просто не запомнится
+/**
+ * Сервер зовёт нападающего состязания по имени твоего же склада. В очереди
+ * и в бою ему место под номером: подписываем на месте.
+ */
+export function titleCompetitions(
+  list: { from: string; competitionStage?: number }[],
+  t: (key: "competition.title", vars: { n: number }) => string
+) {
+  for (const a of list) {
+    if (a.competitionStage) a.from = t("competition.title", { n: a.competitionStage });
   }
 }

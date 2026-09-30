@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
   const db = createClient(URL, SERVICE, { auth: { persistSession: false } });
 
-  // Состязание / локальный тест не пишется в attacks: извещаем только игрока.
+  // Состязание или отладочный налёт: второй стороны нет, извещаем только игрока.
   if (event === "test") {
     const drones = Math.floor(Number(body.drones));
     if (!Number.isFinite(drones) || drones < 1 || drones > 500) {

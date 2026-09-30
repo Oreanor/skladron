@@ -7,7 +7,7 @@ import { GRID } from "./base";
 import { SIM } from "./tuning";
 
 export interface Frame {
-  /** Клетка под прицелом. -1, если прицел убран с карты. */
+  /** Клетка под прицелом. Прицел убран с карты — кадра нет вовсе (null). */
   x: number;
   y: number;
   firing: boolean;
@@ -15,8 +15,7 @@ export interface Frame {
 
 const IDLE = "-";
 
-// Разделитель — двоеточие, а не точка: координаты целочисленные, но
-// отрицательные в старых записях встречаются, и точка о них спотыкалась.
+// Кадр — «x:y», у стреляющего с «!» на конце; прицела нет — «-».
 const encodeFrame = (f: Frame | null) =>
   f ? `${f.x}:${f.y}${f.firing ? "!" : ""}` : IDLE;
 
@@ -65,21 +64,12 @@ export function decodeTrace(src: string, limit = SIM.maxFrames): (Frame | null)[
     if (code !== IDLE) {
       const firing = code.endsWith("!");
       const point = firing ? code.slice(0, -1) : code;
-      if (!/^-?\d+:-?\d+$/.test(point)) throw new Error("bad trace frame");
+      if (!/^\d{1,3}:\d{1,3}$/.test(point)) throw new Error("bad trace frame");
       const [rawX, rawY] = point.split(":");
       const x = Number(rawX);
       const y = Number(rawY);
-      // Старые клиенты успевали записать координату на клетку за краем при
-      // уходе курсора. Оставляем этот узкий допуск ради старых повторов, но
-      // не принимаем произвольные или бесконечные координаты.
-      if (
-        !Number.isSafeInteger(x) ||
-        !Number.isSafeInteger(y) ||
-        x < -1 ||
-        y < -1 ||
-        x > GRID ||
-        y > GRID
-      ) {
+      // Бой пишет только клетки поля: за краем прицела нет, там кадр «-».
+      if (x >= GRID || y >= GRID) {
         throw new Error("trace coordinates are out of bounds");
       }
       frame = { x, y, firing };

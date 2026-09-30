@@ -8,7 +8,6 @@ import {
   decodeCells,
   decodePgBytea,
   encodeRle,
-  normalizeDepots,
   type DepotKind,
   sanitizeGuns,
 } from "./base";
@@ -103,6 +102,16 @@ export interface Repo {
   /** Докупка в контейнеры: дроны или шары, счёт в штуках. */
   buyDepot(p: Player, amount: number, kind: DepotKind): Promise<Partial<Player>>;
   /**
+   * Состязание на свой склад: сервер ставит его в очередь как налёт на
+   * самого себя, и бой идёт той же дорогой, что живой. Возвращает id налёта.
+   */
+  queueCompetition(
+    stage: number,
+    waves: WavePlan[],
+    seed: number,
+    droneLevel: number
+  ): Promise<string>;
+  /**
    * Налёт волнами. Дронов снимает сервер со своей копии склада, надбавку за
    * начинку списывает кредитами, обратно приходит id и новый склад.
    */
@@ -162,7 +171,6 @@ class LocalRepo implements Repo {
   }
 
   async saveBase(p: Player) {
-    p.depots = normalizeDepots(p.depots);
     p.guns = sanitizeGuns(p.guns);
     localSave(p);
     return {};
@@ -238,6 +246,11 @@ class LocalRepo implements Repo {
     throw new Error("Атаки на друзей доступны после входа через Google");
   }
 
+  async queueCompetition(): Promise<string> {
+    // Без входа сервера нет: лобби ставит состязание в очередь у себя.
+    throw new Error("offline");
+  }
+
   // Локальная игра идёт без сервера, а разговаривать не с кем: соперники
   // тут выдуманные. Отдаём пустоту, чтобы окно открывалось и не падало.
   async messages() {
@@ -293,12 +306,76 @@ class LocalRepo implements Repo {
     fresh.enemies = p.enemies;
     fresh.founded = p.founded;
     fresh.competitionAt = p.competitionAt;
+    fresh.competitionBest = p.competitionBest;
     localSave(fresh);
     return fresh;
   }
 }
 
 // ---------- Supabase ----------
+
+/**
+ * Повтор боя по id — и для журнала в игре, и для страницы по ссылке, куда
+ * заходят без входа. Одна функция на оба места: раньше страница собирала
+ * заказ сама, забыла про волны и проигрывала любой налёт одной волной.
+ */
+export async function publicReplay(id: string): Promise<{
+  defender: string;
+  competitionStage?: number;
+  replay: ReplayData;
+} | null> {
+  const db = supabase();
+  if (!db) throw new Error("Supabase не настроен");
+  const { data, error } = await db.rpc("public_replay", { attack_id: id });
+  if (error) throw error;
+  const row = (data as {
+    attacker: string;
+    defender: string;
+    drones: number;
+    pattern: Pattern;
+    direction: number;
+    seed: number;
+    drone_level: number;
+    simulation_version: number;
+    waves: WavePlan[];
+    snap_cells: string;
+    snap_guns: Gun[];
+    snap_depots: Depot[];
+    snap_levels: SnapLevels;
+    trace: string;
+    resolved_at: string;
+    competition_stage: number | null;
+  }[] | null)?.[0];
+  if (!row) return null;
+  // Повтор, снятый под прежнюю версию боя, проигрывать нечем: запись рук
+  // не подходит к нынешней геометрии волн. Лучше честно сказать «нет
+  // повтора», чем уронить страницу на попытке его построить.
+  if (row.simulation_version !== SIMULATION_VERSION) return null;
+  return {
+    defender: row.defender,
+    competitionStage: row.competition_stage ?? undefined,
+    replay: {
+      order: {
+        id,
+        from: row.attacker,
+        createdAt: Date.parse(row.resolved_at),
+        drones: row.drones,
+        pattern: row.pattern,
+        direction: row.direction,
+        seed: row.seed,
+        waves: row.waves,
+        droneLevel: row.drone_level,
+        simulationVersion: row.simulation_version,
+        competitionStage: row.competition_stage ?? undefined,
+      },
+      cells: row.snap_cells,
+      guns: row.snap_guns,
+      depots: row.snap_depots,
+      levels: row.snap_levels,
+      trace: row.trace,
+    },
+  };
+}
 
 interface ProfileRow {
   base_name: string | null;
@@ -307,12 +384,13 @@ interface ProfileRow {
   founded: boolean;
   last_income_at: string;
   created_at: string;
-  // в базе может лежать статистика более старого образца, чем знает клиент
-  stats: Partial<Player["stats"]> | null;
-  enemies: Player["enemies"] | null;
-  levels: Partial<Player["levels"]> | null;
-  loan: number | null;
+  stats: Player["stats"];
+  enemies: Player["enemies"];
+  levels: Player["levels"];
+  loan: number;
   loan_due: string | null;
+  competition_at: number;
+  competition_best: Player["competitionBest"];
 }
 
 /** collect_income отдаёт именно credits_added — имя колонки, а не поля Income. */
@@ -320,7 +398,6 @@ interface IncomeRow {
   credits_added: number;
   days: number;
   sold_drones: number;
-  sold_scouts: number;
 }
 
 interface BaseRow {
@@ -338,12 +415,13 @@ interface IncomingAttackRow {
   pattern: Pattern;
   direction: number;
   seed: number;
-  waves: WavePlan[] | null;
-  drone_level: number | null;
-  simulation_version: number | null;
-  from_email: string | null;
+  waves: WavePlan[];
+  drone_level: number;
+  simulation_version: number;
+  from_email: string;
   avatar: string | null;
   opener: string | null;
+  competition_stage: number | null;
 }
 
 interface AttackReportRow {
@@ -357,13 +435,14 @@ interface AttackReportRow {
   pattern: Pattern;
   direction: number;
   seed: number;
-  snap_cells: string | null;
-  snap_guns: Gun[] | null;
-  snap_depots: Depot[] | null;
-  snap_levels: SnapLevels | null;
-  waves: WavePlan[] | null;
-  trace: string | null;
-  simulation_version: number | null;
+  snap_cells: string;
+  snap_guns: Gun[];
+  snap_depots: Depot[];
+  snap_levels: SnapLevels;
+  waves: WavePlan[];
+  drone_level: number;
+  trace: string;
+  simulation_version: number;
 }
 
 class CloudRepo implements Repo {
@@ -391,25 +470,25 @@ class CloudRepo implements Repo {
 
     const row = prof as ProfileRow;
     const b = base as BaseRow;
-    const fresh = newPlayer();
     const player: Player = {
-      ...fresh,
       name: row.base_name ?? "",
-      avatar: row.avatar ?? null,
+      avatar: row.avatar,
       credits: attacks.credits ?? row.credits,
       founded: row.founded,
       lastIncomeAt: Date.parse(row.last_income_at),
       createdAt: Date.parse(row.created_at),
-      // недостающие счётчики берём нулями: иначе fmt() падает на undefined
-      stats: { ...fresh.stats, ...(row.stats ?? {}), ...(attacks.stats ?? {}) },
-      levels: { ...fresh.levels, ...(row.levels ?? {}) },
-      loan: row.loan ?? 0,
+      stats: row.stats,
+      levels: row.levels,
+      loan: row.loan,
       loanDue: row.loan_due ? Date.parse(row.loan_due) : null,
       cells: decodePgBytea(b.cells),
-      guns: sanitizeGuns(b.guns ?? []),
-      depots: normalizeDepots(b.drone_cells ?? []),
+      guns: b.guns,
+      depots: b.drone_cells,
       incoming: attacks.incoming,
-      enemies: row.enemies ?? [],
+      enemies: row.enemies,
+      // прогресс состязаний ведёт сервер: он же считает и счёт попытки
+      competitionAt: row.competition_at,
+      competitionBest: row.competition_best,
     };
 
     // склад врага могли переименовать — подтягиваем актуальные имена
@@ -431,9 +510,8 @@ class CloudRepo implements Repo {
       income: {
         credits: first?.credits_added ?? 0,
         days: first?.days ?? 0,
-        sold:
-          first && (first.sold_drones || first.sold_scouts)
-            ? { drones: (first.sold_drones ?? 0) + (first.sold_scouts ?? 0) }
+        sold: first?.sold_drones
+            ? { drones: first.sold_drones }
             : null,
       },
       reports: attacks.reports,
@@ -454,9 +532,9 @@ class CloudRepo implements Repo {
     const incoming = ((incomingResult.data ?? []) as IncomingAttackRow[])
       // Налёт чужой версии отыграть нечем — у него другая геометрия волн.
       // Выкидываем при чтении, а не при входе в бой: очередь разбирается
-      // строго по порядку, и такой налёт запер бы её целиком. Пропасть он
-      // не пропадёт — прогон схемы подметает их при поднятии версии.
-      .filter((row) => (row.simulation_version ?? 1) === SIMULATION_VERSION)
+      // строго по порядку, и такой налёт запер бы её целиком. Патч, что
+      // поднимает версию, перештамповывает неотыгранные.
+      .filter((row) => row.simulation_version === SIMULATION_VERSION)
       .map((row) => ({
       id: row.id,
       from: row.from_name,
@@ -466,15 +544,16 @@ class CloudRepo implements Repo {
       pattern: row.pattern,
       direction: row.direction,
       seed: row.seed,
-      // Волн может не быть у старых налётов — тогда заказ читается одной
-      // волной простых дронов, как и писался.
-      waves: row.waves ?? undefined,
+      waves: row.waves,
       // дроны летят на том уровне, до какого их довёл нападающий
-      droneLevel: row.drone_level ?? 1,
-      simulationVersion: row.simulation_version ?? SIMULATION_VERSION,
-      fromEmail: row.from_email ?? undefined,
+      droneLevel: row.drone_level,
+      simulationVersion: row.simulation_version,
+      // У состязания нападающий — ты сам: почту не отдаём, иначе опрос
+      // записал бы тебя в собственные враги.
+      fromEmail: row.competition_stage ? undefined : row.from_email,
       avatar: row.avatar ?? null,
       opener: row.opener ?? undefined,
+      competitionStage: row.competition_stage ?? undefined,
       remote: true,
     }));
     const reports = ((reportResult.data ?? []) as AttackReportRow[]).map((row) => ({
@@ -484,11 +563,10 @@ class CloudRepo implements Repo {
       result: row.result,
       loot: row.loot,
       destroyed: row.destroyed,
-      // Повтор есть не у всех: старые налёты писались без слепка склада, а
-      // у снятых под прежнюю версию боя запись рук к нынешней геометрии
+      // У снятых под прежнюю версию боя запись рук к нынешней геометрии
       // волн не подходит — такой повтор не показываем вовсе.
       replay:
-        row.snap_cells && (row.simulation_version ?? 1) === SIMULATION_VERSION
+        row.simulation_version === SIMULATION_VERSION
         ? {
             order: {
               id: row.id,
@@ -498,14 +576,15 @@ class CloudRepo implements Repo {
               pattern: row.pattern,
               direction: row.direction,
               seed: row.seed,
-              waves: row.waves ?? undefined,
-              simulationVersion: row.simulation_version ?? 1,
+              waves: row.waves,
+              droneLevel: row.drone_level,
+              simulationVersion: row.simulation_version,
             },
             cells: row.snap_cells,
-            guns: row.snap_guns ?? [],
-            depots: row.snap_depots ?? [],
-            levels: row.snap_levels ?? {},
-            trace: row.trace ?? "",
+            guns: row.snap_guns,
+            depots: row.snap_depots,
+            levels: row.snap_levels,
+            trace: row.trace,
           }
         : undefined,
     }));
@@ -524,9 +603,7 @@ class CloudRepo implements Repo {
   async saveBase(p: Player) {
     // Список врагов сюда не подмешиваем: он меняется втрое реже карты, а
     // писался вторым запросом на каждую поставленную клетку.
-    // depots/guns чистим до RPC: leftover kind=scout и лишние поля иначе
-    // валят guns_valid / depots_only_changed → 400 на любой перенос.
-    p.depots = normalizeDepots(p.depots);
+    // Лишние поля пушек (alive, spray…) сервер в guns_valid отвергает.
     p.guns = sanitizeGuns(p.guns);
     const { data, error } = await this.db().rpc("save_base", {
       new_cells: encodeRle(p.cells),
@@ -682,29 +759,35 @@ class CloudRepo implements Repo {
     if (e2) throw e2;
     const b = base as BaseRow;
     p.cells = decodePgBytea(b.cells);
-    p.guns = sanitizeGuns(b.guns ?? []);
-    p.depots = normalizeDepots(b.drone_cells ?? []);
-    const row = prof as { credits: number; levels: Partial<Player["levels"]> | null } | null;
-    if (row) {
-      p.credits = row.credits;
-      p.levels = { ...p.levels, ...(row.levels ?? {}) };
-    }
+    p.guns = b.guns;
+    p.depots = b.drone_cells;
+    const row = prof as { credits: number; levels: Player["levels"] };
+    p.credits = row.credits;
+    p.levels = row.levels;
   }
 
 
 
   async buyDepot(p: Player, amount: number, kind: DepotKind) {
-    p.depots = normalizeDepots(p.depots);
     const { data, error } = await this.db().rpc("buy_depot", {
-      // Имя SQL-параметра оставлено от старой функции, но это точное
-      // количество штук, а не число пачек.
-      packs: amount,
+      amount,
       depot_kind: kind,
       new_depots: p.depots,
     });
     if (error) throw error;
     const row = (data as { credits: number }[] | null)?.[0];
     return row ? { credits: row.credits } : {};
+  }
+
+  async queueCompetition(stage: number, waves: WavePlan[], seed: number, droneLevel: number) {
+    const { data, error } = await this.db().rpc("queue_competition", {
+      stage,
+      attack_waves: waves,
+      attack_seed: seed,
+      attack_drone_level: droneLevel,
+    });
+    if (error) throw error;
+    return data as string;
   }
 
   async sendAttack(
@@ -754,6 +837,7 @@ class CloudRepo implements Repo {
       destroyed: boolean;
       burned: number;
       has_replay: boolean;
+      competition_stage: number | null;
     }[]).map((row) => ({
       id: row.id,
       side: row.side,
@@ -765,6 +849,7 @@ class CloudRepo implements Repo {
       loot: row.loot,
       destroyed: row.destroyed,
       hasReplay: row.has_replay,
+      competitionStage: row.competition_stage ?? undefined,
     }));
   }
 
@@ -774,49 +859,7 @@ class CloudRepo implements Repo {
   }
 
   async replayOf(id: string) {
-    const { data, error } = await this.db().rpc("public_replay", { attack_id: id });
-    if (error) throw error;
-    const row = (data as {
-      attacker: string;
-      defender: string;
-      drones: number;
-      pattern: Pattern;
-      direction: number;
-      seed: number;
-      drone_level: number | null;
-      simulation_version: number | null;
-      waves: WavePlan[] | null;
-      snap_cells: string;
-      snap_guns: Gun[] | null;
-      snap_depots: Depot[] | null;
-      snap_levels: SnapLevels | null;
-      trace: string | null;
-      resolved_at: string;
-    }[] | null)?.[0];
-    if (!row) return null;
-    // Повтор, снятый под прежнюю версию боя, проигрывать нечем: запись рук
-    // не подходит к нынешней геометрии волн. Лучше честно сказать «нет
-    // повтора», чем уронить страницу на попытке его построить.
-    if ((row.simulation_version ?? 1) !== SIMULATION_VERSION) return null;
-    return {
-      order: {
-        id,
-        from: row.attacker,
-        createdAt: Date.parse(row.resolved_at),
-        drones: row.drones,
-        pattern: row.pattern,
-        direction: row.direction,
-        seed: row.seed,
-        waves: row.waves ?? undefined,
-        droneLevel: row.drone_level ?? 1,
-        simulationVersion: row.simulation_version ?? 1,
-      },
-      cells: row.snap_cells,
-      guns: row.snap_guns ?? [],
-      depots: row.snap_depots ?? [],
-      levels: row.snap_levels ?? {},
-      trace: row.trace ?? "",
-    };
+    return (await publicReplay(id))?.replay ?? null;
   }
 
   async acknowledgeReport(id: string) {
@@ -836,7 +879,7 @@ class CloudRepo implements Repo {
     const { data, error } = await this.db().rpc("apply_battle", {
       new_cells: encodeRle(p.cells),
       new_guns: sanitizeGuns(p.guns),
-      new_depots: normalizeDepots(p.depots),
+      new_depots: p.depots,
       result,
     });
     if (error) throw error;
@@ -880,6 +923,7 @@ class CloudRepo implements Repo {
     fresh.name = p.name;
     fresh.enemies = p.enemies;
     fresh.competitionAt = p.competitionAt;
+    fresh.competitionBest = p.competitionBest;
     return fresh;
   }
 
@@ -896,6 +940,7 @@ class CloudRepo implements Repo {
     fresh.stats = { ...p.stats, wipes: p.stats.wipes + 1 };
     fresh.enemies = p.enemies;
     fresh.competitionAt = p.competitionAt;
+    fresh.competitionBest = p.competitionBest;
     return fresh;
   }
 }

@@ -272,7 +272,7 @@ const pt: Dict = {
 
 
   "attacks.summon": "+ ataque",
-  "attacks.test": "+ teste",
+  "attacks.competition": "+ competição",
   "attacks.defend": "Defender",
   "attacks.dronesPattern": "{drones} drones · {pattern}",
   "attacks.ready": "à espera de defesa",
@@ -397,6 +397,12 @@ const pt: Dict = {
   "competition.waves": "Vagas",
   "competition.wave": "Vaga {n}",
   "competition.queued": "Competição n.º {n} na fila · {size} drones",
+  "competition.record": "Competição n.º {n}: novo recorde — {score} pts ({pct}% intacto)",
+  "competition.result": "Competição n.º {n}: {score} pts ({pct}% intacto)",
+  "competition.best": "Melhor",
+  "competition.bestValue": "{score} pts · {pct}% de {area}",
+  "competition.noBest": "por jogar",
+  "competition.scoring": "Pontos = % do armazém salvo × √(área / 100): um armazém grande é mais difícil de salvar. A seguinte abre se o armazém sobreviver.",
 
   "stats.battles": "Combates",
   "stats.dronesKilled": "Drones abatidos",

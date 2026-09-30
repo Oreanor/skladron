@@ -273,7 +273,7 @@ const en = {
 
 
   "attacks.summon": "+ raid",
-  "attacks.test": "+ test",
+  "attacks.competition": "+ competition",
   "attacks.defend": "Defend",
   "attacks.dronesPattern": "{drones} drones · {pattern}",
   "attacks.ready": "awaiting defence",
@@ -397,6 +397,12 @@ const en = {
   "competition.waves": "Waves",
   "competition.wave": "Wave {n}",
   "competition.queued": "Competition #{n} queued · {size} drones",
+  "competition.record": "Competition #{n}: new record — {score} pts ({pct}% survived)",
+  "competition.result": "Competition #{n}: {score} pts ({pct}% survived)",
+  "competition.best": "Best",
+  "competition.bestValue": "{score} pts · {pct}% of {area}",
+  "competition.noBest": "not played yet",
+  "competition.scoring": "Points = % of warehouse saved × √(area / 100): a big warehouse is harder to save. The next one opens if the warehouse survives.",
 
   "stats.battles": "Battles",
   "stats.dronesKilled": "Drones downed",

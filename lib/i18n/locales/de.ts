@@ -272,7 +272,7 @@ const de: Dict = {
 
 
   "attacks.summon": "+ Angriff",
-  "attacks.test": "+ Test",
+  "attacks.competition": "+ Wettkampf",
   "attacks.defend": "Abwehren",
   "attacks.dronesPattern": "{drones} Drohnen · {pattern}",
   "attacks.ready": "wartet auf Abwehr",
@@ -397,6 +397,12 @@ const de: Dict = {
   "competition.waves": "Wellen",
   "competition.wave": "Welle {n}",
   "competition.queued": "Wettkampf Nr. {n} in der Schlange · {size} Drohnen",
+  "competition.record": "Wettkampf Nr. {n}: neuer Rekord — {score} Pkt. ({pct} % erhalten)",
+  "competition.result": "Wettkampf Nr. {n}: {score} Pkt. ({pct} % erhalten)",
+  "competition.best": "Bestwert",
+  "competition.bestValue": "{score} Pkt. · {pct} % von {area}",
+  "competition.noBest": "noch nicht gespielt",
+  "competition.scoring": "Punkte = erhaltener Lageranteil in % × √(Fläche / 100): Ein großes Lager ist schwerer zu halten. Der nächste öffnet sich, wenn das Lager übersteht.",
 
   "stats.battles": "Kämpfe",
   "stats.dronesKilled": "Drohnen abgeschossen",
