@@ -16,6 +16,18 @@ import { Button, IconButton } from "../ui";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 
+/** Дата боя коротко: 23.11.25. */
+const day = (at: number) => {
+  const d = new Date(at);
+  const two = (n: number) => String(n).padStart(2, "0");
+  return `${two(d.getDate())}.${two(d.getMonth() + 1)}.${two(d.getFullYear() % 100)}`;
+};
+
+/** Дата в начале строки: бледная, моноширинная, чтобы столбиком. */
+const Day = ({ at }: { at: number }) => (
+  <span className="mr-2 font-mono text-[11px] text-neutral-500">{day(at)}</span>
+);
+
 /** Сколько боёв видно без прокрутки: журнал не должен выдавливать соседей. */
 const VISIBLE = "max-h-[10.5rem]";
 
@@ -67,6 +79,7 @@ export default function RaidsPanel({
           >
             <div className="min-w-0">
               <div className="truncate text-neutral-200">
+                <Day at={a.createdAt} />
                 <span className="text-red-300">{t("replays.incoming")}</span>{" "}
                 <b className="font-semibold">{a.from}</b>
               </div>
@@ -102,6 +115,7 @@ export default function RaidsPanel({
         <li key={r.id} className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <div className={`truncate ${r.pending ? "text-neutral-400" : "text-neutral-200"}`}>
+              <Day at={r.at} />
               <span className={r.side === "attack" ? "text-red-300" : "text-sky-300"}>
                 {t(r.side === "attack" ? "replays.attack" : "replays.defence")}
               </span>{" "}
