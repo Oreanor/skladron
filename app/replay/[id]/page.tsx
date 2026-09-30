@@ -7,7 +7,7 @@ import { use, useEffect, useState } from "react";
 import Replay, { type ReplayData } from "@/components/Replay";
 import { Button } from "@/components/ui";
 import { SettingsProvider, useT } from "@/lib/i18n";
-import { explain } from "@/lib/errors";
+import { explainAlone } from "@/lib/errors";
 import { publicReplay } from "@/lib/repo";
 
 function Screen({ id }: { id: string }) {
@@ -36,7 +36,7 @@ function Screen({ id }: { id: string }) {
       })
       .catch((e: Error) => {
         if (!alive) return;
-        setFailed(explain(e, t));
+        setFailed(explainAlone(e, t));
         setState("gone");
       });
     return () => {

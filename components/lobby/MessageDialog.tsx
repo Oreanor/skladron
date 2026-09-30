@@ -15,7 +15,7 @@ import { Send } from "lucide-react";
 import type { Enemy } from "@/lib/enemy";
 import type { Message } from "@/lib/attack";
 import { useT } from "@/lib/i18n";
-import { explain } from "@/lib/errors";
+import { explainAlone } from "@/lib/errors";
 import Avatar from "../Avatar";
 import { Button, IconButton, Modal, inputClass } from "../ui";
 
@@ -49,7 +49,7 @@ export default function MessageDialog({
       .catch((e) => {
         if (alive) {
           setThread([]);
-          setError(explain(e, t));
+          setError(explainAlone(e, t));
         }
       });
     return () => {

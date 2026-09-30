@@ -5,7 +5,7 @@ import { cloudEnabled, supabase } from "@/lib/supabase";
 import Lobby from "./Lobby";
 import { Button } from "./ui";
 import { useT } from "@/lib/i18n";
-import { explain } from "@/lib/errors";
+import { explainAlone } from "@/lib/errors";
 
 export interface Account {
   email: string | null;
@@ -59,7 +59,7 @@ export default function AuthGate() {
       provider: "google",
       options: { redirectTo: window.location.origin },
     });
-    if (e) setError(explain(e, t));
+    if (e) setError(explainAlone(e, t));
   };
 
   const signOut = () => {

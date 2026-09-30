@@ -77,3 +77,12 @@ export function explain(e: unknown, t: Translate): string {
   }
   return raw ? t("error.unknown", { detail: raw }) : t("error.unknownBare");
 }
+
+/**
+ * То же, но отдельной строкой, а не после «Не удалось …:». Фразы в словаре
+ * со строчной — они обычно идут после двоеточия; сами по себе — с заглавной.
+ */
+export function explainAlone(e: unknown, t: Translate): string {
+  const text = explain(e, t);
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}

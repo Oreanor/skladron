@@ -13,7 +13,7 @@ import { decodeTrace } from "@/lib/replay";
 import { SIM } from "@/lib/tuning";
 import { fmt } from "@/lib/economy";
 import { useT } from "@/lib/i18n";
-import { explain } from "@/lib/errors";
+import { explainAlone } from "@/lib/errors";
 import MapCanvas, { CELL } from "./MapCanvas";
 import { Button, Chip, ChipBar, inputClass } from "./ui";
 import Avatar from "./Avatar";
@@ -74,7 +74,7 @@ function Talk({ battleId }: { battleId: string }) {
       setItems((cur) => [...cur, fresh]);
       setDraft("");
     } catch (e) {
-      setError(explain(e, t));
+      setError(explainAlone(e, t));
     } finally {
       setBusy(false);
     }

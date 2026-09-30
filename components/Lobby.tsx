@@ -158,7 +158,7 @@ import MapCanvas, { type Pt } from "./MapCanvas";
 import AccountMenu, { SettingsList } from "./AccountMenu";
 import AvatarView from "./Avatar";
 import { useT } from "@/lib/i18n";
-import { explain } from "@/lib/errors";
+import { explain, explainAlone } from "@/lib/errors";
 import type { Key } from "@/lib/i18n/dict";
 import { Trophy } from "lucide-react";
 import {
@@ -861,7 +861,9 @@ export default function Lobby({
       // узнает от бота, а не по первому прилетевшему рою.
       notifyRivalAdded(email);
     } catch (e) {
-      return t("enemies.notSaved", { error: explain(e, t) });
+      // Тут сервер решает, можно ли добавить (есть ли такой игрок, не ты ли
+      // это), — ничего не сохранялось, так что «не удалось сохранить» врало бы.
+      return explainAlone(e, t);
     }
     // В облаке склад соперника живёт на сервере; выдумывать ему карту нужно
     // только локально, где настоящих противников нет и бой идёт с ботом.
@@ -971,7 +973,7 @@ export default function Lobby({
         order.id = await repo.queueCompetition(stage, plan.waves, plan.seed, plan.droneLevel);
         order.remote = true;
       } catch (e) {
-        setMessage(explain(e, t));
+        setMessage(explainAlone(e, t));
         return;
       }
     }

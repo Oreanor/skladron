@@ -36,7 +36,7 @@ import { supabase } from "@/lib/supabase";
 import AvatarView from "../Avatar";
 import { Button, Modal } from "../ui";
 import { useT } from "@/lib/i18n";
-import { explain } from "@/lib/errors";
+import { explainAlone } from "@/lib/errors";
 
 const PRESET_LIST = Array.from({ length: PRESETS }, (_, i) => String(i + 1));
 /** Сторона мелкого лица в ленте, px. */
@@ -152,7 +152,7 @@ export default function AvatarPicker({
       setPicked(stored);
       stripRef.current?.scrollTo({ left: 0, behavior: "smooth" });
     } catch (e) {
-      setError(explain(e, t));
+      setError(explainAlone(e, t));
     } finally {
       setBusy(false);
     }
