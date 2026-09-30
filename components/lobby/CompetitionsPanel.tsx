@@ -8,7 +8,7 @@
  * запускается сразу, мимо очереди налётов: оно не чей-то рой, а тренировка.
  */
 
-import { Play, RotateCcw } from "lucide-react";
+import { Crosshair, Play, RotateCcw } from "lucide-react";
 import {
   COMPETITION_STAGES,
   competitionDrones,
@@ -91,7 +91,7 @@ export default function CompetitionsPanel({
                   className="h-8 w-8 border-amber-400/60 text-amber-300"
                   onClick={() => onPlay(n)}
                 >
-                  <Play className="h-4 w-4 fill-current" />
+                  <Crosshair className="h-4 w-4" />
                 </IconButton>
               )}
             </div>
