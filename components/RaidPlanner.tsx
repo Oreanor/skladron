@@ -266,34 +266,36 @@ export default function RaidPlanner({
               })}
             </div>
 
-            <Button
-              size="sm"
-              className="mt-3"
-              onClick={() =>
-                patch(wi, { groups: [...wave.groups, { payload: "plain", n: 10 }] })
-              }
-            >
-              <Plus className="h-4 w-4" />
-              {t("raid.addGroup")}
-            </Button>
+            <div className="mt-3 flex justify-center">
+              <Button
+                size="sm"
+                onClick={() =>
+                  patch(wi, { groups: [...wave.groups, { payload: "plain", n: 10 }] })
+                }
+              >
+                <Plus className="h-4 w-4" />
+                {t("raid.addGroup")}
+              </Button>
+            </div>
           </div>
         ))}
       </div>
 
-      <Button
-        size="sm"
-        className="mt-4"
-        onClick={() => {
-          const prev = waves[waves.length - 1]?.delay ?? 0;
-          onChange([
-            ...waves,
-            newWave(Math.max(1, Math.min(20, max - total)), Math.min(99, prev + 1)),
-          ]);
-        }}
-      >
-        <Plus className="h-4 w-4" />
-        {t("raid.addWave")}
-      </Button>
+      <div className="mt-4 flex justify-center">
+        <Button
+          size="sm"
+          onClick={() => {
+            const prev = waves[waves.length - 1]?.delay ?? 0;
+            onChange([
+              ...waves,
+              newWave(Math.max(1, Math.min(20, max - total)), Math.min(99, prev + 1)),
+            ]);
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          {t("raid.addWave")}
+        </Button>
+      </div>
 
       <dl className="mt-5 space-y-1 font-mono text-sm">
         <div className="flex items-center justify-between gap-3">
