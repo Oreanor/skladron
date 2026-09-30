@@ -67,7 +67,8 @@ export default function RaidsPanel({
           >
             <div className="min-w-0">
               <div className="truncate text-neutral-200">
-                <span className="text-red-300">{t("replays.incoming")}</span> {a.from}
+                <span className="text-red-300">{t("replays.incoming")}</span>{" "}
+                <b className="font-semibold">{a.from}</b>
               </div>
               <div className="font-mono text-[11px] text-neutral-500">
                 {t("attacks.dronesPattern", {
@@ -104,7 +105,7 @@ export default function RaidsPanel({
               <span className={r.side === "attack" ? "text-red-300" : "text-sky-300"}>
                 {t(r.side === "attack" ? "replays.attack" : "replays.defence")}
               </span>{" "}
-              {r.foe}
+              <b className="font-semibold">{r.foe}</b>
             </div>
             <div className="font-mono text-[11px] text-neutral-500">
               {r.pending
