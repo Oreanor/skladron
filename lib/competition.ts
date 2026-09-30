@@ -63,6 +63,8 @@ export interface CompetitionBest {
   pct: number;
   /** Площадь склада на момент попытки, клеток. */
   area: number;
+  /** Id боя этой попытки — по нему открывается повтор. Без входа его нет. */
+  id?: string;
 }
 
 const EASY: Pattern[] = ["drip", "lines", "random"];

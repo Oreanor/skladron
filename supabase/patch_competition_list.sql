@@ -1,25 +1,64 @@
--- Счёт каждой попытки состязания — для журнала состязаний.
--- Выполнить в Supabase → SQL Editor до деплоя клиента.
+-- Журнал состязаний по номерам: у рекорда номера — id лучшей попытки, по
+-- нему открывается повтор. Удалять бои из журнала больше нельзя. Состязание
+-- не стоит в очереди налётов и не держит их часы.
+-- Выполнить в Supabase → SQL Editor до деплоя клиента. Годится и после
+-- patch_competition_journal.sql, если его успели выполнить, и без него.
 
-alter table attacks add column if not exists competition_score int;
-
--- Уже сыгранным считаем по слепку: сколько целых клеток было до боя и
--- сколько из них сгорело.
-update attacks a
-   set competition_score = case when s.intact > 0
-         then ((s.intact - coalesce((a.result->>'burned')::int, 0)) * 100) / s.intact
-         else 0 end
-  from (
-    select x.id, (select count(*) from generate_series(0, 9999) i
-                   where get_byte(decode(x.snap_cells, 'base64'), i) = 1) as intact
-      from attacks x
-     where x.competition_stage is not null and x.status = 'resolved'
-       and x.snap_cells is not null
-  ) s
- where a.id = s.id and a.competition_score is null;
-
--- у raid_log сменился состав колонок: create or replace такого не умеет
 drop function if exists raid_log();
+drop function if exists hide_raid(uuid);
+alter table attacks drop column if exists competition_score;
+alter table attacks drop column if exists hidden_by;
+
+create or replace function pending_attacks()
+returns table (
+  id uuid, from_name text, created_at timestamptz, activated_at timestamptz,
+  drones int, pattern text, direction int, seed int, waves jsonb, drone_level int,
+  simulation_version int,
+  from_email text,
+  avatar text,
+  opener text,
+  competition_stage int
+)
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  head uuid;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+
+  -- Часы идут только у первой атаки в очереди: пропускать нельзя, а у тех,
+  -- что ждут позади, время ещё не начиналось. Отметку ставим при первой же
+  -- выдаче списка — это и есть «первый показ». Состязание в очередь налётов
+  -- не встаёт: его играют сразу, и часов ему не нужно.
+  select a.id into head
+    from attacks a
+   where a.defender_id = uid and a.status = 'pending'
+     and a.competition_stage is null
+   order by a.created_at
+   limit 1;
+
+  if head is not null then
+    update attacks set activated_at = now()
+     where attacks.id = head and attacks.activated_at is null;
+  end if;
+
+  return query
+    select a.id,
+           coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
+           a.created_at, a.activated_at, a.drones, a.pattern, a.direction, a.seed,
+           a.waves, a.drone_level, a.simulation_version, p.email, p.avatar,
+           (select c.body
+              from battle_comments c
+             where c.attack_id = a.id and c.author_id = a.attacker_id
+             order by c.created_at
+             limit 1),
+           a.competition_stage
+      from attacks a
+      join profiles p on p.id = a.attacker_id
+     where a.defender_id = uid and a.status = 'pending'
+     order by a.created_at;
+end;
+$$;
 
 create or replace function resolve_attack(
   attack_id uuid,
@@ -102,7 +141,7 @@ begin
                then competition_best || jsonb_build_object(
                       order_row.competition_stage::text,
                       jsonb_build_object('score', comp_score, 'pct', comp_pct,
-                                         'area', intact_before))
+                                         'area', intact_before, 'id', attack_id))
                else competition_best
              end,
              competition_at = case
@@ -126,7 +165,6 @@ begin
   update attacks
      set status = 'resolved', result = resolve_attack.result, loot = earned,
          destroyed = defender_intact = 0, resolved_at = now(),
-         competition_score = comp_score,
          -- Слепок уже записан в claim_attack; здесь только исход и руки.
          trace = battle_trace,
          resolving_token = null,
@@ -140,8 +178,7 @@ $$;
 create or replace function raid_log()
 returns table (
   id uuid, side text, foe text, at timestamptz, pending boolean,
-  drones int, loot int, destroyed boolean, burned int, has_replay boolean,
-  competition_stage int, competition_score int
+  drones int, loot int, destroyed boolean, burned int, has_replay boolean
 )
 language sql security definer set search_path = public stable as $$
   -- Свои налёты видны и до боя: защитник ещё не отбивался, показывать
@@ -159,20 +196,43 @@ language sql security definer set search_path = public stable as $$
          a.status = 'pending',
          a.drones, a.loot, a.destroyed,
          coalesce((a.result->>'burned')::int, 0),
-         a.snap_cells is not null,
-         a.competition_stage, a.competition_score
+         a.snap_cells is not null
     from attacks a
     join profiles t on t.id = a.attacker_id
     join profiles d on d.id = a.defender_id
-   where not (auth.uid() = any (a.hidden_by))
+   -- состязаний тут нет: у них свой журнал, по номерам
+   where a.competition_stage is null
      and (
-       (a.attacker_id = auth.uid() and a.competition_stage is null
-        and a.status in ('pending', 'resolved'))
+       (a.attacker_id = auth.uid() and a.status in ('pending', 'resolved'))
        or (a.defender_id = auth.uid() and a.status = 'resolved')
      )
    order by coalesce(a.resolved_at, a.created_at) desc
    limit 30;
 $$;
+
+-- К уже набранным рекордам дописываем id лучшей попытки: берём сыгранную
+-- попытку этого номера с наибольшим уцелевшим процентом, из равных — позднюю.
+update profiles p
+   set competition_best = (
+     select jsonb_object_agg(k, case when best.id is null then v
+                                     else v || jsonb_build_object('id', best.id) end)
+       from jsonb_each(p.competition_best) as t(k, v)
+       left join lateral (
+         select a.id
+           from attacks a
+           cross join lateral (
+             select count(*) as intact
+               from generate_series(0, 9999) i
+              where get_byte(decode(a.snap_cells, 'base64'), i) = 1
+           ) c
+          where a.defender_id = p.id and a.competition_stage = k::int
+            and a.status = 'resolved' and a.snap_cells is not null and c.intact > 0
+          order by ((c.intact - coalesce((a.result->>'burned')::int, 0)) * 100) / c.intact desc,
+                   a.resolved_at desc
+          limit 1
+       ) best on true
+   )
+ where p.competition_best <> '{}'::jsonb;
 
 grant execute on function raid_log to authenticated;
 

@@ -389,14 +389,10 @@ create table if not exists attacks (
   -- Состязание — налёт на самого себя: нападающий и защитник один человек,
   -- а тут стоит номер. У настоящих налётов пусто.
   competition_stage int,
-  -- счёт этой попытки состязания: сколько процентов склада уцелело
-  competition_score int,
   status text not null default 'pending' check (status in ('pending', 'resolved')),
   result jsonb,
   loot int not null default 0,
   destroyed boolean not null default false,
-  -- кто убрал бой из своего журнала: строка одна на двоих, прячем по-своему
-  hidden_by uuid[] not null default '{}',
   -- повтор налёта: слепок склада защитника до боя и запись его действий
   snap_cells text,
   snap_guns jsonb,
@@ -809,10 +805,12 @@ begin
 
   -- Часы идут только у первой атаки в очереди: пропускать нельзя, а у тех,
   -- что ждут позади, время ещё не начиналось. Отметку ставим при первой же
-  -- выдаче списка — это и есть «первый показ».
+  -- выдаче списка — это и есть «первый показ». Состязание в очередь налётов
+  -- не встаёт: его играют сразу, и часов ему не нужно.
   select a.id into head
     from attacks a
    where a.defender_id = uid and a.status = 'pending'
+     and a.competition_stage is null
    order by a.created_at
    limit 1;
 
@@ -1553,7 +1551,7 @@ begin
                then competition_best || jsonb_build_object(
                       order_row.competition_stage::text,
                       jsonb_build_object('score', comp_score, 'pct', comp_pct,
-                                         'area', intact_before))
+                                         'area', intact_before, 'id', attack_id))
                else competition_best
              end,
              competition_at = case
@@ -1577,7 +1575,6 @@ begin
   update attacks
      set status = 'resolved', result = resolve_attack.result, loot = earned,
          destroyed = defender_intact = 0, resolved_at = now(),
-         competition_score = comp_score,
          -- Слепок уже записан в claim_attack; здесь только исход и руки.
          trace = battle_trace,
          resolving_token = null,
@@ -2031,8 +2028,7 @@ grant execute on function set_avatar to authenticated;
 create or replace function raid_log()
 returns table (
   id uuid, side text, foe text, at timestamptz, pending boolean,
-  drones int, loot int, destroyed boolean, burned int, has_replay boolean,
-  competition_stage int, competition_score int
+  drones int, loot int, destroyed boolean, burned int, has_replay boolean
 )
 language sql security definer set search_path = public stable as $$
   -- Свои налёты видны и до боя: защитник ещё не отбивался, показывать
@@ -2050,33 +2046,18 @@ language sql security definer set search_path = public stable as $$
          a.status = 'pending',
          a.drones, a.loot, a.destroyed,
          coalesce((a.result->>'burned')::int, 0),
-         a.snap_cells is not null,
-         a.competition_stage, a.competition_score
+         a.snap_cells is not null
     from attacks a
     join profiles t on t.id = a.attacker_id
     join profiles d on d.id = a.defender_id
-   where not (auth.uid() = any (a.hidden_by))
+   -- состязаний тут нет: у них свой журнал, по номерам
+   where a.competition_stage is null
      and (
-       (a.attacker_id = auth.uid() and a.competition_stage is null
-        and a.status in ('pending', 'resolved'))
+       (a.attacker_id = auth.uid() and a.status in ('pending', 'resolved'))
        or (a.defender_id = auth.uid() and a.status = 'resolved')
      )
    order by coalesce(a.resolved_at, a.created_at) desc
    limit 30;
-$$;
-
--- Убрать бой из своего журнала. У второй стороны он остаётся: строка одна.
-create or replace function hide_raid(attack_id uuid)
-returns void language plpgsql security definer set search_path = public as $$
-declare uid uuid := auth.uid();
-begin
-  if uid is null then raise exception 'not authenticated'; end if;
-  update attacks
-     set hidden_by = array_append(hidden_by, uid)
-   where id = attack_id
-     and (attacker_id = uid or defender_id = uid)
-     and not (uid = any (hidden_by));
-end;
 $$;
 
 -- ---------- ссылка на повтор ----------
@@ -2177,7 +2158,7 @@ grant execute on function ensure_player, collect_income, save_base,
   buy_depot, apply_battle, wipe_base, rename_base, save_enemies,
   base_names, stale_patches, launch_scout, upgrade, add_rival,
   send_message, message_thread, read_messages, unread_messages,
-  take_loan, repay_loan, raid_log, hide_raid,
+  take_loan, repay_loan, raid_log,
   send_attack, queue_competition, pending_attacks, attack_reports, ack_attack_report, restart_game to authenticated;
 
 -- PostgREST держит список функций в кэше. Supabase обычно перечитывает его сам,

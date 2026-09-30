@@ -136,8 +136,6 @@ export interface Repo {
   acknowledgeReport(id: string): Promise<void>;
   /** Журнал боёв — и своих налётов, и чужих: из него открываются повторы. */
   raidLog(): Promise<RaidLog[]>;
-  /** Убрать бой из своего журнала. */
-  hideRaid(id: string): Promise<void>;
   /** Повтор одного боя целиком: карта, пушки, запись действий. */
   replayOf(id: string): Promise<ReplayData | null>;
   /** Переименование склада — отдельная операция, карты не касается. */
@@ -278,8 +276,6 @@ class LocalRepo implements Repo {
   async raidLog() {
     return [] as RaidLog[];
   }
-
-  async hideRaid(_id: string) {}
 
   async replayOf(_id: string) {
     return null;
@@ -837,8 +833,6 @@ class CloudRepo implements Repo {
       destroyed: boolean;
       burned: number;
       has_replay: boolean;
-      competition_stage: number | null;
-      competition_score: number | null;
     }[]).map((row) => ({
       id: row.id,
       side: row.side,
@@ -850,14 +844,7 @@ class CloudRepo implements Repo {
       loot: row.loot,
       destroyed: row.destroyed,
       hasReplay: row.has_replay,
-      competitionStage: row.competition_stage ?? undefined,
-      competitionScore: row.competition_score ?? undefined,
     }));
-  }
-
-  async hideRaid(id: string) {
-    const { error } = await this.db().rpc("hide_raid", { attack_id: id });
-    if (error) throw error;
   }
 
   async replayOf(id: string) {

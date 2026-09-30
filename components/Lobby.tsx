@@ -110,7 +110,7 @@ import {
   type BuildResult,
 } from "@/lib/build";
 import Battle, { type BattleOutcome } from "./Battle";
-import CompetitionDialog from "./lobby/CompetitionDialog";
+import CompetitionsPanel from "./lobby/CompetitionsPanel";
 import SummonRaidDialog from "./lobby/SummonRaidDialog";
 import AttackReportDialog from "./lobby/AttackReportDialog";
 import MessageDialog from "./lobby/MessageDialog";
@@ -217,7 +217,6 @@ export default function Lobby({
   /** После отбитого удалённого налёта — необязательная реплика. */
   const [postCommentRaid, setPostCommentRaid] = useState<string | null>(null);
   /** Открыт ли планировщик пробного налёта на себя. */
-  const [competitionOpen, setCompetitionOpen] = useState(false);
   const [summonRaidOpen, setSummonRaid] = useState(false);
   const [ready, setReady] = useState(false);
   const [version, setVersion] = useState(0);
@@ -335,16 +334,7 @@ export default function Lobby({
   const loadRaids = () => {
     void repo
       .raidLog()
-      .then((rows) =>
-        // у состязания вторая сторона — ты сам: в журнале оно под номером
-        setRaids(
-          rows.map((r) =>
-            r.competitionStage
-              ? { ...r, foe: t("competition.title", { n: r.competitionStage }) }
-              : r
-          )
-        )
-      )
+      .then((rows) => setRaids(rows))
       .catch(() => {
         // журнал — не игра, из-за него ломаться нечему
       });
@@ -665,7 +655,12 @@ export default function Lobby({
             if (record) {
               p.competitionBest = {
                 ...p.competitionBest,
-                [stage]: { ...attempt, area: intactBefore },
+                [stage]: {
+                  ...attempt,
+                  area: intactBefore,
+                  // повтор есть только у боя, что считал сервер
+                  id: battle.remote ? battle.id : undefined,
+                },
               };
             }
             if (o.won) {
@@ -1019,10 +1014,18 @@ export default function Lobby({
    * бесплатно. Вошедшему ставит в очередь сервер — бой идёт той же дорогой,
    * что живой, с повтором и журналом; без входа очередь своя, в браузере.
    */
-  const addCompetition = async (stage: number): Promise<string | null> => {
+  /**
+   * Сыграть состязание: сразу в бой, мимо очереди налётов. Если этот номер
+   * уже стоит в очереди — бой прервали на полпути, — играем его, а не
+   * ставим второй.
+   */
+  const playCompetition = async (stage: number) => {
+    const queued = p.incoming.find((a) => a.competitionStage === stage);
+    if (queued) {
+      await defend(queued);
+      return;
+    }
     const plan = buildCompetition(stage);
-    const n = raidTotal(plan.waves);
-    if (n < 1) return t("raid.empty");
     const order = makeOrder(
       t("competition.title", { n: stage }),
       plan.waves,
@@ -1037,15 +1040,13 @@ export default function Lobby({
         order.id = await repo.queueCompetition(stage, plan.waves, plan.seed, plan.droneLevel);
         order.remote = true;
       } catch (e) {
-        return (e as Error).message;
+        setMessage((e as Error).message);
+        return;
       }
     }
     p.incoming.push(order);
-    setCompetitionOpen(false);
-    setMessage(t("competition.queued", { n: stage, size: n }));
-    notifyTestRaid(n, stage);
     touch();
-    return null;
+    await defend(order);
   };
 
   /**
@@ -1555,30 +1556,17 @@ export default function Lobby({
   };
 
   /** Открыть повтор из журнала: сам бой подгружаем по одной атаке. */
-  const openReplay = async (row: RaidLog) => {
+  /** Открыть повтор: name — тот, чей склад отбивался, он стоит в шапке. */
+  const openReplay = async (id: string, name: string) => {
     try {
-      const data = await repo.replayOf(row.id);
+      const data = await repo.replayOf(id);
       if (!data) {
         setMessage(t("replay.gone"));
         return;
       }
-      // в шапке повтора стоит тот, чей склад отбивался
-      setWatching({
-        id: row.id,
-        name: row.side === "attack" ? row.foe : p.name,
-        replay: data,
-      });
+      setWatching({ id, name, replay: data });
     } catch (e) {
       setMessage(t("replay.failed", { error: (e as Error).message }));
-    }
-  };
-
-  const hideRaid = async (id: string) => {
-    setRaids((rows) => rows.filter((r) => r.id !== id));
-    try {
-      await repo.hideRaid(id);
-    } catch {
-      loadRaids();
     }
   };
 
@@ -1674,39 +1662,27 @@ export default function Lobby({
   };
 
   // Журналы собираем один раз: они идут и в боковую колонку, и в шторку.
-  // Бои и состязания — порознь, но очередь у них одна: разбирается она
-  // строго по порядку, и первым в ней может стоять что угодно.
+  // Состязания в журнал боёв не попадают: у них свой, по номерам.
   const raidsBody = (
     <RaidsPanel
       incoming={p.incoming.filter((a) => !a.competitionStage)}
-      queue={p.incoming}
-      raids={raids.filter((r) => !r.competitionStage)}
-      empty="replays.empty"
+      raids={raids}
       onDefend={(order) => void defend(order)}
-      onWatch={(r) => void openReplay(r)}
-      onHide={(id) => void hideRaid(id)}
+      onWatch={(r) => void openReplay(r.id, r.side === "attack" ? r.foe : p.name)}
     />
   );
   const competitionsBody = (
-    <RaidsPanel
-      incoming={p.incoming.filter((a) => a.competitionStage)}
-      queue={p.incoming}
-      raids={raids.filter((r) => r.competitionStage)}
-      empty="competitions.empty"
-      onDefend={(order) => void defend(order)}
-      onWatch={(r) => void openReplay(r)}
-      onHide={(id) => void hideRaid(id)}
+    <CompetitionsPanel
+      competitionAt={p.competitionAt}
+      best={p.competitionBest}
+      onPlay={(stage) => void playCompetition(stage)}
+      onWatch={(_stage, id) => void openReplay(id, p.name)}
     />
   );
 
   const summonButton = (
     <Button size="sm" onClick={() => setSummonRaid(true)}>
       {t("attacks.summon")}
-    </Button>
-  );
-  const competitionButton = (
-    <Button size="sm" onClick={() => setCompetitionOpen(true)}>
-      {t("attacks.competition")}
     </Button>
   );
 
@@ -1754,11 +1730,7 @@ export default function Lobby({
   > = {
     enemies: { title: "panel.enemies", body: enemiesBody },
     replays: { title: "panel.replays", action: summonButton, body: raidsBody },
-    competitions: {
-      title: "panel.competitions",
-      action: competitionButton,
-      body: competitionsBody,
-    },
+    competitions: { title: "panel.competitions", body: competitionsBody },
     stats: { title: "panel.stats", body: <StatsPanel stats={p.stats} /> },
   };
 
@@ -1925,7 +1897,6 @@ export default function Lobby({
         </IconButton>
         <IconButton
           label={t("panel.competitions")}
-          badge={p.incoming.filter((a) => a.competitionStage).length}
           onClick={() => toggleSheet("competitions")}
         >
           <Trophy className="h-5 w-5" />
@@ -2108,15 +2079,6 @@ export default function Lobby({
         />
       )}
 
-      {competitionOpen && (
-        <CompetitionDialog
-          competitionAt={p.competitionAt}
-          best={p.competitionBest}
-          onCancel={() => setCompetitionOpen(false)}
-          onAdd={addCompetition}
-        />
-      )}
-
       {watching && (
         // Повтор — почти во весь экран: смотреть бой в полоске внизу нечего.
         <div
@@ -2288,7 +2250,6 @@ export default function Lobby({
         title={t("panel.competitions")}
         onClose={() => setSheet(null)}
       >
-        <div className="mb-3 flex justify-end">{competitionButton}</div>
         {competitionsBody}
       </Sheet>
       <Sheet open={sheet === "enemies"} title={t("panel.enemies")} onClose={() => setSheet(null)}>

@@ -173,10 +173,6 @@ export interface RaidLog {
   loot: number;
   destroyed: boolean;
   hasReplay: boolean;
-  /** Номер состязания, если бой был на своём складе с самим собой. */
-  competitionStage?: number;
-  /** Счёт этой попытки состязания: сколько процентов склада уцелело. */
-  competitionScore?: number;
 }
 
 /** Итог исходящего налёта, который приходит только после боя защитника. */
