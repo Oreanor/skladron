@@ -390,7 +390,6 @@ const en = {
   "raid.notEnough": "Could not gather that many drones",
 
   "competition.title": "Competition #{n}",
-  "competition.subtitle": "Fixed swarm for this stage. Costs nothing; win to unlock the next.",
   "competition.add": "Add",
   "competition.drones": "Drones",
   "competition.droneLevel": "Drone level",

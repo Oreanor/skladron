@@ -390,7 +390,6 @@ const fr: Dict = {
   "raid.notEnough": "Impossible de réunir autant de drones",
 
   "competition.title": "Épreuve n°{n}",
-  "competition.subtitle": "Essaim fixe selon le numéro. Ne coûte rien ; gagne pour débloquer le suivant.",
   "competition.add": "Ajouter",
   "competition.drones": "Drones",
   "competition.droneLevel": "Niveau des drones",

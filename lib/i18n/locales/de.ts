@@ -390,7 +390,6 @@ const de: Dict = {
   "raid.notEnough": "So viele Drohnen kamen nicht zusammen",
 
   "competition.title": "Wettkampf Nr. {n}",
-  "competition.subtitle": "Fester Schwarm nach Nummer. Kostet nichts; Sieg öffnet den nächsten.",
   "competition.add": "Hinzufügen",
   "competition.drones": "Drohnen",
   "competition.droneLevel": "Drohnenstufe",

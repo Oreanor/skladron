@@ -28,7 +28,6 @@ export default function TestRaidDialog({
   return (
     <Modal
       title={t("competition.title", { n: plan.stage })}
-      subtitle={t("competition.subtitle")}
       onClose={onCancel}
       footer={
         <div className="flex flex-wrap justify-center gap-2">
