@@ -260,7 +260,7 @@ export function EnemyProfile({
         <div
           className={
             enemy.scout
-              ? "flex flex-col gap-4 sm:flex-row sm:items-start"
+              ? "flex flex-col gap-4 sm:flex-row sm:items-stretch"
               : "flex flex-col gap-4"
           }
         >
@@ -317,7 +317,7 @@ export function EnemyProfile({
             <Button
               variant="outline"
               size="sm"
-              className="mt-2 self-start text-neutral-400"
+              className="mt-auto self-center text-neutral-400"
               onClick={() => setRemoving(true)}
             >
               {t("enemies.remove")}
@@ -329,7 +329,7 @@ export function EnemyProfile({
               type="button"
               onClick={onShowMap}
               title={t("scout.map")}
-              className="min-w-0 flex-1 cursor-pointer overflow-hidden rounded-md border border-neutral-700 transition hover:border-neutral-500"
+              className="min-w-0 flex-1 cursor-pointer self-start overflow-hidden rounded-md border border-neutral-700 transition hover:border-neutral-500"
             >
               <ScoutThumb snapshot={enemy.scout} />
             </button>
