@@ -274,7 +274,15 @@ export default function Replay({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <ChipBar className="shrink-0 flex-wrap">
-        <Chip label={t("replay.of")} value={name} />
+        {/* у состязания склад свой: вместо «налёт на …» — его номер */}
+        {replay.order.competitionStage ? (
+          <Chip
+            label={t("replay.competition")}
+            value={t("competition.title", { n: replay.order.competitionStage })}
+          />
+        ) : (
+          <Chip label={t("replay.of")} value={name} />
+        )}
         <Chip label={t("battle.time")} value={`${Math.floor(hud.time)} ${t("battle.seconds")}`} />
         <Chip label={t("battle.inAir")} value={String(hud.inAir)} />
         <Chip label={t("battle.burned")} value={fmt(hud.burned)} tone="text-orange-300" />

@@ -6,6 +6,9 @@
  * Обе половины в одном списке намеренно. Входящие сверху и в очереди —
  * отбиваются строго по порядку, и по списку сразу видно, чья очередь;
  * ниже прошедшие бои, из которых открывается повтор.
+ *
+ * Тот же список служит и журналу состязаний: ему отдают только состязания,
+ * а очередь (queue) — общую, потому что разбирается она одна на всё.
  */
 
 import { Play, Trash2 } from "lucide-react";
@@ -38,27 +41,34 @@ export function StatsPanel({ stats }: { stats: PlayerStats }) {
 
 export default function RaidsPanel({
   incoming,
+  queue = incoming,
   raids,
+  empty,
   onDefend,
   onWatch,
   onHide,
 }: {
-  /** Что к нам летит. Первый в списке и есть тот, кого отбивают. */
+  /** Что к нам летит и показывается в этом журнале. */
   incoming: AttackOrder[];
+  /** Вся очередь целиком: первый в ней и есть тот, кого отбивают. */
+  queue?: AttackOrder[];
   raids: RaidLog[];
+  /** Что сказать, когда список пуст. */
+  empty: Key;
   onDefend: (order: AttackOrder) => void;
   onWatch: (raid: RaidLog) => void;
   onHide: (id: string) => void;
 }) {
   const t = useT();
   if (!raids.length && !incoming.length) {
-    return <p className="text-neutral-500">{t("replays.empty")}</p>;
+    return <p className="text-neutral-500">{t(empty)}</p>;
   }
 
   return (
     <ul className={`${VISIBLE} space-y-2 overflow-y-auto overscroll-contain pr-1`}>
-      {incoming.map((a, i) => {
-        const first = i === 0;
+      {incoming.map((a) => {
+        const at = queue.indexOf(a);
+        const first = at === 0;
         const edge = a.pattern === "lines" ? ` ${t(`edge.${a.direction}` as Key)}` : "";
         return (
           <li
@@ -67,7 +77,11 @@ export default function RaidsPanel({
           >
             <div className="min-w-0">
               <div className="truncate text-neutral-200">
-                <span className="text-red-300">{t("replays.incoming")}</span> {a.from}
+                {/* у состязания в подписи уже номер — «налёт от» ему не нужен */}
+                {!a.competitionStage && (
+                  <span className="text-red-300">{t("replays.incoming")} </span>
+                )}
+                {a.from}
               </div>
               <div className="font-mono text-[11px] text-neutral-500">
                 {t("attacks.dronesPattern", {
@@ -76,7 +90,7 @@ export default function RaidsPanel({
                 })}
                 {edge}
                 {" · "}
-                {first ? t("attacks.ready") : t("attacks.queued", { position: i + 1 })}
+                {first ? t("attacks.ready") : t("attacks.queued", { position: at + 1 })}
               </div>
             </div>
             {first ? (
@@ -101,9 +115,11 @@ export default function RaidsPanel({
         <li key={r.id} className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <div className={`truncate ${r.pending ? "text-neutral-400" : "text-neutral-200"}`}>
-              <span className={r.side === "attack" ? "text-red-300" : "text-sky-300"}>
-                {t(r.side === "attack" ? "replays.attack" : "replays.defence")}
-              </span>{" "}
+              {!r.competitionStage && (
+                <span className={r.side === "attack" ? "text-red-300" : "text-sky-300"}>
+                  {t(r.side === "attack" ? "replays.attack" : "replays.defence")}{" "}
+                </span>
+              )}
               {r.foe}
             </div>
             <div className="font-mono text-[11px] text-neutral-500">

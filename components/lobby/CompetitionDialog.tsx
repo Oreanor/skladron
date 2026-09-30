@@ -1,12 +1,13 @@
 "use client";
 
 /*
- * Состязание с кнопки «+ состязание»: сетка открытых номеров с лучшим счётом
- * под каждым — пройденные можно переигрывать. По умолчанию выбран старший
- * открытый. Состав только для просмотра, «Добавить» ставит рой в очередь.
+ * Состязание с кнопки «+ состязание»: лента открытых номеров с лучшим счётом
+ * под каждым — пройденные можно переигрывать. Лента в одну строку и
+ * листается вбок, сколько бы номеров ни открылось. По умолчанию выбран
+ * старший открытый. Состав только для просмотра, «Добавить» ставит рой в очередь.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { waveSize } from "@/lib/attack";
 import { buildCompetition, type CompetitionBest } from "@/lib/competition";
 import { Button, Modal } from "../ui";
@@ -30,6 +31,30 @@ export default function CompetitionDialog({
   const [stage, setStage] = useState(competitionAt);
   const plan = useMemo(() => buildCompetition(stage), [stage]);
   const mine = best[stage];
+  const strip = useRef<HTMLUListElement>(null);
+
+  // При открытии лента встаёт так, чтобы выбранный номер был посередине.
+  // scrollIntoView не годится: он крутит заодно и окно, и страницу под ним.
+  useEffect(() => {
+    const list = strip.current;
+    const on = list?.querySelector<HTMLElement>("[data-on]");
+    if (!list || !on) return;
+    list.scrollLeft = on.offsetLeft - (list.clientWidth - on.offsetWidth) / 2;
+  }, []);
+
+  // Колесо мыши листает ленту вбок: вертикальной прокрутки у неё нет, а
+  // тянуть полосу внизу на десктопе неудобно.
+  useEffect(() => {
+    const list = strip.current;
+    if (!list) return;
+    const onWheel = (e: WheelEvent) => {
+      if (list.scrollWidth <= list.clientWidth || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      e.preventDefault();
+      list.scrollLeft += e.deltaY;
+    };
+    list.addEventListener("wheel", onWheel, { passive: false });
+    return () => list.removeEventListener("wheel", onWheel);
+  }, []);
 
   const add = async () => {
     setBusy(true);
@@ -52,16 +77,19 @@ export default function CompetitionDialog({
         </div>
       }
     >
-      <ul className="mb-3 grid max-h-40 grid-cols-5 gap-1 overflow-y-auto overscroll-contain pr-1 sm:grid-cols-8">
+      <ul
+        ref={strip}
+        className="relative mb-3 flex snap-x gap-1 overflow-x-auto overscroll-x-contain pb-1.5"
+      >
         {Array.from({ length: competitionAt }, (_, i) => i + 1).map((n) => {
           const b = best[n];
           const on = n === stage;
           return (
-            <li key={n}>
+            <li key={n} className="shrink-0 snap-start" data-on={on || undefined}>
               <button
                 type="button"
                 onClick={() => setStage(n)}
-                className={`flex w-full flex-col items-center rounded border px-1 py-1 font-mono text-xs ${
+                className={`flex w-11 flex-col items-center rounded border px-1 py-1 font-mono text-xs ${
                   on
                     ? "border-amber-400 bg-amber-400/15 text-amber-200"
                     : "border-neutral-700 bg-neutral-900 text-neutral-300 hover:border-neutral-500"

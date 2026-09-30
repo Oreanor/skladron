@@ -63,7 +63,7 @@ export const isBuildKind = (t: ToolId | null): t is GunKind =>
 /** Кнопка «Апгрейд» карты не касается: она только открывает модалку. */
 export type ToolId = Tool | "upgrade" | "insurance" | "loan";
 /** Панели, которые на телефоне открываются шторкой снизу. */
-export type SheetId = "attacks" | "enemies" | "menu";
+export type SheetId = "attacks" | "competitions" | "enemies" | "menu";
 /** Панели инструментов: они всплывают модалкой и вёрстку не разрывают. */
 export type ModalId = "upgrade" | "insurance" | "loan" | "telegram" | "avatar";
 
@@ -205,7 +205,7 @@ export const BOT_COUNT = 4;
 /** Потолок пробного налёта по ссылке: посмотреть режим, а не похоронить склад. */
 
 /** Панели правой колонки в порядке по умолчанию. */
-export const DEFAULT_PANELS = ["replays", "enemies", "stats"];
+export const DEFAULT_PANELS = ["replays", "competitions", "enemies", "stats"];
 export const PANELS_KEY = "wb.panels.v1";
 
 /**
@@ -239,9 +239,7 @@ export function readPanels(): {
       ...(saved.order ?? []).filter((id) => DEFAULT_PANELS.includes(id)),
       ...DEFAULT_PANELS.filter((id) => !(saved.order ?? []).includes(id)),
     ];
-    const tool =
-      (saved.tool as string | undefined) === "scouts" ? "drones" : saved.tool;
-    return { order, hidden: saved.hidden ?? {}, tool };
+    return { order, hidden: saved.hidden ?? {}, tool: saved.tool };
   } catch {
     return { order: DEFAULT_PANELS, hidden: {} };
   }

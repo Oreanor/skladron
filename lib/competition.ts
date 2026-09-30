@@ -23,22 +23,23 @@ function clampStage(stage: number) {
 }
 
 /**
- * Размер роя: от 12 на первом номере до 250 на сотом, ровно. Та же формула
- * стоит в queue_competition — сервер сверяет по ней размер.
+ * Размер роя: от 12 на первом номере, около пяти дронов за номер — к сотому
+ * под 490, у самого потолка налёта. Та же формула стоит в queue_competition:
+ * сервер сверяет по ней размер.
  */
 export function competitionDrones(stage: number) {
   const n = clampStage(stage);
-  return 12 + Math.floor(((n - 1) * 238) / (COMPETITION_STAGES - 1));
+  return 12 + Math.floor(((n - 1) * 476) / (COMPETITION_STAGES - 1));
 }
 
-/** Уровень дронов роя: +1 каждые двадцать номеров, с 1 до 5. */
+/** Уровень дронов роя: +1 каждые десять номеров, с 1 до 5 (с №41). */
 export function competitionDroneLevel(stage: number) {
-  return 1 + Math.floor((clampStage(stage) - 1) / 20);
+  return Math.min(5, 1 + Math.floor((clampStage(stage) - 1) / 10));
 }
 
-/** Сколько волн: +1 каждые двадцать пять номеров, с 1 до 4. */
+/** Сколько волн: +1 каждые тринадцать номеров, с 1 до 4 (с №40). */
 export function competitionWaveCount(stage: number) {
-  return 1 + Math.floor((clampStage(stage) - 1) / 25);
+  return Math.min(4, 1 + Math.floor((clampStage(stage) - 1) / 13));
 }
 
 /** Зерно боя номера: одно на все попытки, чтобы счёт был сравним. */
@@ -73,9 +74,9 @@ function pick<T>(list: T[], rnd: () => number): T {
 }
 
 function patternFor(stage: number, rnd: () => number): Pattern {
-  if (stage <= 10) return pick(EASY, rnd);
-  if (stage <= 30) return pick([...EASY, ...MID], rnd);
-  if (stage <= 50) return pick(MID, rnd);
+  if (stage <= 5) return pick(EASY, rnd);
+  if (stage <= 15) return pick([...EASY, ...MID], rnd);
+  if (stage <= 25) return pick(MID, rnd);
   return pick(HARD, rnd);
 }
 
@@ -92,19 +93,19 @@ function groupsFor(
 ): WavePlan["groups"] {
   if (n <= 0) return [{ payload: "plain", n: 0 }];
 
-  // Первый десяток: только пустые.
-  if (stage <= 10) return [{ payload: "plain", n }];
+  // Первые пять: только пустые.
+  if (stage <= 5) return [{ payload: "plain", n }];
 
   // Пул начинок растёт с номером; у волны сдвигаем акцент.
   const pool: Payload[] =
-    stage <= 25
+    stage <= 13
       ? ["plain", "jammer", "blower"]
-      : stage <= 45
+      : stage <= 23
         ? ["plain", "jammer", "heavy", "foamer", "turbo"]
         : ["plain", "jammer", "heavy", "stealth", "turbo", "demag", "blower"];
 
   // Сколько типов в этой волне: 2, дальше часто 3.
-  const types = stage <= 25 ? 2 : stage >= 50 || rnd() > 0.35 ? 3 : 2;
+  const types = stage <= 13 ? 2 : stage >= 25 || rnd() > 0.35 ? 3 : 2;
 
   // Стартуем с разных мест пула, чтобы соседние волны не совпадали.
   const start = (waveIndex * 2 + Math.floor(rnd() * pool.length)) % pool.length;
@@ -114,7 +115,7 @@ function groupsFor(
     if (!chosen.includes(p)) chosen.push(p);
   }
   // На последних волнах сложных номеров чаще «острый» акцент.
-  if (stage >= 45 && waveIndex === waveCount - 1 && !chosen.includes("stealth") && pool.includes("stealth")) {
+  if (stage >= 23 && waveIndex === waveCount - 1 && !chosen.includes("stealth") && pool.includes("stealth")) {
     chosen[chosen.length - 1] = rnd() > 0.5 ? "stealth" : "heavy";
   }
 

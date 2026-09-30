@@ -164,8 +164,7 @@ import AccountMenu, { SettingsList } from "./AccountMenu";
 import AvatarView from "./Avatar";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
-import {
-} from "lucide-react";
+import { Trophy } from "lucide-react";
 import {
   decodeRle,
   encodeRle,
@@ -1674,11 +1673,26 @@ export default function Lobby({
     setBattle(order);
   };
 
-  // Журнал собираем один раз: он идёт и в боковую колонку, и в шторку.
+  // Журналы собираем один раз: они идут и в боковую колонку, и в шторку.
+  // Бои и состязания — порознь, но очередь у них одна: разбирается она
+  // строго по порядку, и первым в ней может стоять что угодно.
   const raidsBody = (
     <RaidsPanel
-      incoming={p.incoming}
-      raids={raids}
+      incoming={p.incoming.filter((a) => !a.competitionStage)}
+      queue={p.incoming}
+      raids={raids.filter((r) => !r.competitionStage)}
+      empty="replays.empty"
+      onDefend={(order) => void defend(order)}
+      onWatch={(r) => void openReplay(r)}
+      onHide={(id) => void hideRaid(id)}
+    />
+  );
+  const competitionsBody = (
+    <RaidsPanel
+      incoming={p.incoming.filter((a) => a.competitionStage)}
+      queue={p.incoming}
+      raids={raids.filter((r) => r.competitionStage)}
+      empty="competitions.empty"
       onDefend={(order) => void defend(order)}
       onWatch={(r) => void openReplay(r)}
       onHide={(id) => void hideRaid(id)}
@@ -1686,14 +1700,14 @@ export default function Lobby({
   );
 
   const summonButton = (
-    <div className="flex flex-wrap justify-end gap-2">
-      <Button size="sm" onClick={() => setSummonRaid(true)}>
-        {t("attacks.summon")}
-      </Button>
-      <Button size="sm" onClick={() => setCompetitionOpen(true)}>
-        {t("attacks.competition")}
-      </Button>
-    </div>
+    <Button size="sm" onClick={() => setSummonRaid(true)}>
+      {t("attacks.summon")}
+    </Button>
+  );
+  const competitionButton = (
+    <Button size="sm" onClick={() => setCompetitionOpen(true)}>
+      {t("attacks.competition")}
+    </Button>
   );
 
   const enemiesBody = (
@@ -1740,6 +1754,11 @@ export default function Lobby({
   > = {
     enemies: { title: "panel.enemies", body: enemiesBody },
     replays: { title: "panel.replays", action: summonButton, body: raidsBody },
+    competitions: {
+      title: "panel.competitions",
+      action: competitionButton,
+      body: competitionsBody,
+    },
     stats: { title: "panel.stats", body: <StatsPanel stats={p.stats} /> },
   };
 
@@ -1897,8 +1916,19 @@ export default function Lobby({
         <span className="min-w-0 flex-1 truncate font-mono text-sm text-emerald-300">
           {t("stat.creditsLine", { credits: fmt(p.credits), income: fmt(income) })}
         </span>
-        <IconButton label={t("panel.replays")} badge={p.incoming.length} onClick={() => toggleSheet("attacks")}>
+        <IconButton
+          label={t("panel.replays")}
+          badge={p.incoming.filter((a) => !a.competitionStage).length}
+          onClick={() => toggleSheet("attacks")}
+        >
           <IconTarget />
+        </IconButton>
+        <IconButton
+          label={t("panel.competitions")}
+          badge={p.incoming.filter((a) => a.competitionStage).length}
+          onClick={() => toggleSheet("competitions")}
+        >
+          <Trophy className="h-5 w-5" />
         </IconButton>
         <IconButton label={t("panel.enemies")} onClick={() => toggleSheet("enemies")}>
           <IconUsers />
@@ -2250,8 +2280,16 @@ export default function Lobby({
       )}
 
       <Sheet open={sheet === "attacks"} title={t("panel.replays")} onClose={() => setSheet(null)}>
-        <div className="mb-3">{summonButton}</div>
+        <div className="mb-3 flex justify-end">{summonButton}</div>
         {raidsBody}
+      </Sheet>
+      <Sheet
+        open={sheet === "competitions"}
+        title={t("panel.competitions")}
+        onClose={() => setSheet(null)}
+      >
+        <div className="mb-3 flex justify-end">{competitionButton}</div>
+        {competitionsBody}
       </Sheet>
       <Sheet open={sheet === "enemies"} title={t("panel.enemies")} onClose={() => setSheet(null)}>
         {enemiesBody}

@@ -285,7 +285,7 @@ export default function Battle({
                 {done.won ? t("battle.won") : t("battle.lost")}
               </div>
               <p className="mb-4 text-sm text-neutral-400">
-                {t("battle.header", {
+                {t(order.competitionStage ? "battle.headerCompetition" : "battle.header", {
                   from: order.from,
                   drones: order.drones,
                   pattern: patternName,
@@ -346,7 +346,7 @@ export default function Battle({
       <aside className="hidden min-h-0 space-y-4 overflow-y-auto text-sm lg:block [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Panel title={t("panel.raid")}>
           <p className="mb-3 text-neutral-300">
-            {t("battle.header", {
+            {t(order.competitionStage ? "battle.headerCompetition" : "battle.header", {
               from: order.from,
               drones: order.drones,
               pattern: patternName,

@@ -668,10 +668,10 @@ begin
   end if;
   perform check_waves(attack_waves);
   drone_count := waves_drones(attack_waves);
-  if drone_count <> 12 + ((stage - 1) * 238) / 99 then
+  if drone_count <> 12 + ((stage - 1) * 476) / 99 then
     raise exception 'bad drone count';
   end if;
-  if attack_drone_level is distinct from 1 + (stage - 1) / 20 then
+  if attack_drone_level is distinct from least(5, 1 + (stage - 1) / 10) then
     raise exception 'bad drone level';
   end if;
   if attack_seed is distinct from stage * 9973 then
