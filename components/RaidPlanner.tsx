@@ -13,7 +13,6 @@ import {
   PAYLOADS,
   payloadCost,
   raidTotal,
-  waveSize,
   type Pattern,
   type Payload,
   type WavePlan,
@@ -117,11 +116,13 @@ export default function RaidPlanner({
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {waves.map((wave, wi) => (
-          <div key={wi} className="rounded-md border border-neutral-700 bg-neutral-950/50 p-3">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <div className="flex min-w-0 items-center gap-1">
+          <div key={wi} className="rounded-md border border-neutral-700 bg-neutral-950/50 p-4">
+            {/* шапка: слева номер волны, справа её задержка и крестик */}
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <SectionTitle>{t("raid.wave", { n: wi + 1 })}</SectionTitle>
+              <div className="flex shrink-0 items-center gap-1">
                 <span className="font-mono text-xs text-neutral-400">+</span>
                 <input
                   type="number"
@@ -144,21 +145,13 @@ export default function RaidPlanner({
                   }
                 />
                 <span className="shrink-0 text-xs text-neutral-400">{t("battle.seconds")}</span>
-                <span className="ml-2">
-                  <SectionTitle>{t("raid.wave", { n: wi + 1 })}</SectionTitle>
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs text-neutral-500">
-                  {t("raid.waveDrones", { n: waveSize(wave) })}
-                </span>
                 {waves.length > 1 && (
                   <button
                     type="button"
                     aria-label={t("raid.removeWave")}
                     title={t("raid.removeWave")}
                     onClick={() => onChange(waves.filter((_, k) => k !== wi))}
-                    className="flex h-6 w-6 items-center justify-center rounded text-neutral-500 transition hover:bg-neutral-800 hover:text-neutral-200"
+                    className="ml-2 flex h-6 w-6 items-center justify-center rounded text-neutral-500 transition hover:bg-neutral-800 hover:text-neutral-200"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -166,7 +159,7 @@ export default function RaidPlanner({
               </div>
             </div>
 
-            <div className="mb-3 space-y-2">
+            <div className="mb-4 space-y-2">
               <select
                 value={wave.pattern}
                 aria-label={t("raid.pattern")}
@@ -256,14 +249,11 @@ export default function RaidPlanner({
                   </div>
                 );
               })}
-              <p className="text-[11px] leading-snug text-neutral-500">
-                {t(`payload.${wave.groups[0]?.payload ?? "plain"}Hint` as Key)}
-              </p>
             </div>
 
             <Button
               size="sm"
-              className="mt-2 w-full"
+              className="mt-3 w-full"
               onClick={() =>
                 patch(wi, { groups: [...wave.groups, { payload: "plain", n: 10 }] })
               }
@@ -278,7 +268,7 @@ export default function RaidPlanner({
       <Button
         size="sm"
         block
-        className="mt-3"
+        className="mt-4"
         onClick={() => {
           const prev = waves[waves.length - 1]?.delay ?? 0;
           onChange([
@@ -291,7 +281,7 @@ export default function RaidPlanner({
         {t("raid.addWave")}
       </Button>
 
-      <dl className="mt-4 space-y-1 font-mono text-sm">
+      <dl className="mt-5 space-y-1 font-mono text-sm">
         <div className="flex items-center justify-between gap-3">
           <dt className="text-neutral-400">{t("raid.total")}</dt>
           <dd className={total > Math.min(stock, max) ? "text-red-400" : "text-neutral-100"}>

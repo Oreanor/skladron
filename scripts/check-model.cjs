@@ -94,9 +94,7 @@ console.log('\n— у каждой начинки есть всё, что ей �
     if (!new RegExp(`'${p}'`).test(waves)) miss.push('белый список check_waves');
     if (!new RegExp(`^  ${p}: "payload\\.${p}"`, 'm').test(battle)) miss.push('легенда боя');
     const noName = missingIn(`payload.${p}`);
-    const noHint = missingIn(`payload.${p}Hint`);
     if (noName.length) miss.push('подпись в ' + noName.join('/'));
-    if (noHint.length) miss.push('подсказка в ' + noHint.join('/'));
     if (miss.length) fail(`${p}: нет ${miss.join('; ')}`);
     else pass(p);
   }
