@@ -17,7 +17,7 @@ const en: RuleSection[] = [
       "The same moment everything stored ships out at double the purchase price: drones at {droneSale} cr. Whatever you did not send into battle is sold.",
       "Away for a while? The rent accrues for at most {capDays} days.",
       "Short of money? The bank lends {loanMin}–{loanMax} cr for {loanHours} hours at {loanRate}%. The goods you buy with it can burn in a raid — the debt will not.",
-      "Money strategy: the real income is burning rival warehouses ({loot} cr per cell). Defence bounty is smaller — a clean stop of a big swarm pays hundreds or about a thousand, usually two to three times less than a successful attack; a test raid on yourself earns it too. Flat broke — take a loan, defend a self-raid, or wipe and get a floor of at least {credits} cr.",
+      "Money strategy: the real income is burning rival warehouses ({loot} cr per cell). Defence bounty is smaller — a clean stop of a big swarm pays hundreds or about a thousand, usually two to three times less than a successful attack; missions earn it too. Flat broke — take a loan, play a mission, or wipe and get a floor of at least {credits} cr.",
     ],
   },
   {
@@ -62,6 +62,16 @@ const en: RuleSection[] = [
     ],
   },
   {
+    title: "Missions",
+    lines: [
+      "Missions are a single-player campaign: 100 battles on your own warehouse, no rival needed, any time, free of charge.",
+      "The swarm grows with every number: from 12 drones in one wave to nearly 500 in four, with levelled-up drones and every kind of warhead.",
+      "A mission's score is the share of your warehouse that survived: save it all and you get 100. The best score for every number is kept.",
+      "The next mission opens if any of the warehouse survives. Passed ones can be replayed — a number always brings the same swarm, so scores compare fairly.",
+      "What burns in a mission burns for real, but insurance and the defence bounty pay out just as in any battle.",
+    ],
+  },
+  {
     title: "Recon",
     lines: [
       "Recon sorties spend drones from the same warehouse containers as raids.",
@@ -90,7 +100,7 @@ const ru: RuleSection[] = [
       "Тогда же уходит отгрузка: всё, что лежит, продаётся вдвое дороже закупки — дроны по {droneSale} кр. Что не пустил в дело, то продано.",
       "Не заходил долго — аренда копится не больше чем за {capDays} суток.",
       "Не хватает денег — банк даёт {loanMin}–{loanMax} кр на {loanHours} часа под {loanRate}%. Купленный на них товар может сгореть в налёте, долг — нет.",
-      "Стратегия кассы: основные деньги — с чужих складов ({loot} кр за сожжённую клетку). Премия за отбой меньше — при чистом отбое крупного роя это сотни или около тысячи, в среднем вдвое–втрое скромнее атаки; тестовый налёт на себя тоже её даёт. Упал в ноль — заём, отбитый тест на себя или полный снос с подушкой не меньше {credits} кр.",
+      "Стратегия кассы: основные деньги — с чужих складов ({loot} кр за сожжённую клетку). Премия за отбой меньше — при чистом отбое крупного роя это сотни или около тысячи, в среднем вдвое–втрое скромнее атаки; миссии тоже её дают. Упал в ноль — заём, миссия или полный снос с подушкой не меньше {credits} кр.",
     ],
   },
   {
@@ -135,6 +145,16 @@ const ru: RuleSection[] = [
     ],
   },
   {
+    title: "Миссии",
+    lines: [
+      "Миссии — одиночная кампания: 100 боёв на своём складе, без соперника, в любое время и бесплатно.",
+      "Рой растёт с каждым номером: от 12 дронов в одной волне до почти 500 в четырёх, с прокачанными дронами и всеми видами начинки.",
+      "Счёт миссии — сколько процентов склада уцелело: сберёг всё — 100. Лучший счёт по каждому номеру хранится.",
+      "Следующая миссия открывается, если склад уцелел хоть сколько-то. Пройденные можно переиграть: у номера всегда один и тот же рой, так что счёт честно сравним.",
+      "Сгоревшее в миссии сгорает по-настоящему, но страховка и премия за отбой платятся как в любом бою.",
+    ],
+  },
+  {
     title: "Разведка",
     lines: [
       "На разведку тратятся те же дроны, что лежат в контейнерах склада.",
@@ -163,7 +183,7 @@ const es: RuleSection[] = [
       "En ese mismo momento se expide todo lo almacenado al doble del precio de compra: drones a {droneSale} cr. Lo que no enviaste al combate, se vende.",
       "¿Estuviste fuera? La renta se acumula como mucho {capDays} días.",
       "¿Falta dinero? El banco presta {loanMin}–{loanMax} cr por {loanHours} horas al {loanRate}%. La mercancía comprada puede arder en un ataque; la deuda no.",
-      "Estrategia de caja: el dinero gordo viene de quemar almacenes rivales ({loot} cr por celda). La prima de defensa es menor — un rechazo limpio de un enjambre grande da cientos o cerca de mil, unas dos o tres veces menos que un ataque bueno; un ataque de prueba contra ti también la paga. Sin un cr — préstamo, defensa de un autoataque o derribo total con un suelo de al menos {credits} cr.",
+      "Estrategia de caja: el dinero gordo viene de quemar almacenes rivales ({loot} cr por celda). La prima de defensa es menor — un rechazo limpio de un enjambre grande da cientos o cerca de mil, unas dos o tres veces menos que un ataque bueno; las misiones también la pagan. Sin un cr — préstamo, una misión o derribo total con un suelo de al menos {credits} cr.",
     ],
   },
   {
@@ -208,6 +228,16 @@ const es: RuleSection[] = [
     ],
   },
   {
+    title: "Misiones",
+    lines: [
+      "Las misiones son una campaña en solitario: 100 combates en tu propio almacén, sin rival, cuando quieras y gratis.",
+      "El enjambre crece con cada número: de 12 drones en una oleada a casi 500 en cuatro, con drones mejorados y todo tipo de carga.",
+      "La puntuación de una misión es el porcentaje del almacén que sobrevivió: si lo salvas todo, 100. Se guarda la mejor puntuación de cada número.",
+      "La siguiente misión se abre si sobrevive algo del almacén. Las superadas se pueden repetir: cada número trae siempre el mismo enjambre, así que las puntuaciones se comparan con justicia.",
+      "Lo que arde en una misión arde de verdad, pero el seguro y la prima de defensa pagan como en cualquier combate.",
+    ],
+  },
+  {
     title: "Exploración",
     lines: [
       "La exploración gasta drones de los mismos contenedores del almacén que los ataques.",
@@ -236,7 +266,7 @@ const pt: RuleSection[] = [
       "No mesmo momento sai a expedição: tudo o que está guardado vende-se ao dobro da compra — drones a {droneSale} cr. O que não mandaste ao combate, foi vendido.",
       "Estiveste fora? A renda acumula no máximo {capDays} dias.",
       "Falta dinheiro? O banco empresta {loanMin}–{loanMax} cr por {loanHours} horas a {loanRate}%. A mercadoria comprada pode arder num ataque; a dívida não.",
-      "Estratégia de caixa: o dinheiro grosso vem de queimar armazéns rivais ({loot} cr por célula). O prémio de defesa é menor — uma defesa limpa de um enxame grande dá centenas ou cerca de mil, em média duas a três vezes menos que um ataque bom; um ataque de teste a ti próprio também o paga. A zero — empréstimo, defesa de um autoataque ou derrube total com chão de pelo menos {credits} cr.",
+      "Estratégia de caixa: o dinheiro grosso vem de queimar armazéns rivais ({loot} cr por célula). O prémio de defesa é menor — uma defesa limpa de um enxame grande dá centenas ou cerca de mil, em média duas a três vezes menos que um ataque bom; as missões também o pagam. A zero — empréstimo, uma missão ou derrube total com chão de pelo menos {credits} cr.",
     ],
   },
   {
@@ -281,6 +311,16 @@ const pt: RuleSection[] = [
     ],
   },
   {
+    title: "Missões",
+    lines: [
+      "As missões são uma campanha a solo: 100 combates no teu próprio armazém, sem rival, quando quiseres e de graça.",
+      "O enxame cresce a cada número: de 12 drones numa vaga a quase 500 em quatro, com drones melhorados e todo o tipo de carga.",
+      "A pontuação de uma missão é a percentagem do armazém que sobreviveu: salvas tudo, 100. Guarda-se a melhor pontuação de cada número.",
+      "A missão seguinte abre se sobreviver algo do armazém. As passadas podem repetir-se: cada número traz sempre o mesmo enxame, por isso as pontuações comparam-se com justiça.",
+      "O que arde numa missão arde a sério, mas o seguro e o prémio de defesa pagam como em qualquer combate.",
+    ],
+  },
+  {
     title: "Reconhecimento",
     lines: [
       "O reconhecimento gasta drones dos mesmos contentores do armazém que os ataques.",
@@ -309,7 +349,7 @@ const fr: RuleSection[] = [
       "Au même moment part l’expédition : tout ce qui est stocké se vend au double du prix d’achat — drones à {droneSale} cr. Ce que tu n’as pas envoyé au combat est vendu.",
       "Absent longtemps ? Le loyer s’accumule sur {capDays} jours au maximum.",
       "À court d’argent ? La banque prête {loanMin}–{loanMax} cr pour {loanHours} heures à {loanRate} %. La marchandise achetée peut brûler dans un raid, la dette non.",
-      "Stratégie de caisse : le gros de l’argent vient des entrepôts rivaux ({loot} cr par case brûlée). La prime de défense est plus petite — un rejet propre d’un gros essaim rapporte des centaines ou environ mille, en moyenne deux à trois fois moins qu’une bonne attaque ; un raid-test sur soi-même la donne aussi. À zéro — emprunt, défense d’un auto-raid, ou wipe avec un plancher d’au moins {credits} cr.",
+      "Stratégie de caisse : le gros de l’argent vient des entrepôts rivaux ({loot} cr par case brûlée). La prime de défense est plus petite — un rejet propre d’un gros essaim rapporte des centaines ou environ mille, en moyenne deux à trois fois moins qu’une bonne attaque ; les missions la donnent aussi. À zéro — emprunt, une mission, ou wipe avec un plancher d’au moins {credits} cr.",
     ],
   },
   {
@@ -354,6 +394,16 @@ const fr: RuleSection[] = [
     ],
   },
   {
+    title: "Missions",
+    lines: [
+      "Les missions sont une campagne en solo : 100 combats sur ton propre entrepôt, sans rival, quand tu veux et gratuitement.",
+      "L’essaim grossit à chaque numéro : de 12 drones en une vague à près de 500 en quatre, avec des drones améliorés et toutes les charges.",
+      "Le score d’une mission est la part de l’entrepôt qui a survécu : tout sauvé, 100. Le meilleur score de chaque numéro est gardé.",
+      "La mission suivante s’ouvre si une partie de l’entrepôt survit. Celles déjà passées se rejouent : un numéro amène toujours le même essaim, les scores se comparent donc honnêtement.",
+      "Ce qui brûle en mission brûle pour de vrai, mais l’assurance et la prime de défense paient comme dans tout combat.",
+    ],
+  },
+  {
     title: "Reconnaissance",
     lines: [
       "La reconnaissance dépense les drones des mêmes conteneurs d’entrepôt que les raids.",
@@ -382,7 +432,7 @@ const de: RuleSection[] = [
       "Im selben Moment geht die Verladung raus: alles Eingelagerte wird zum doppelten Einkaufspreis verkauft — Drohnen zu {droneSale} Cr. Was du nicht in den Einsatz geschickt hast, ist verkauft.",
       "Länger weg gewesen? Die Miete läuft höchstens {capDays} Tage auf.",
       "Zu wenig Geld? Die Bank leiht {loanMin}–{loanMax} Cr für {loanHours} Stunden zu {loanRate} %. Die dafür gekaufte Ware kann bei einem Angriff verbrennen — die Schuld nicht.",
-      "Geldstrategie: das große Geld kommt von fremden Lagern ({loot} Cr je abgebranntem Feld). Die Abwehrprämie ist kleiner — saubere Abwehr eines großen Schwarms bringt Hunderte oder etwa tausend, im Schnitt zwei- bis dreimal weniger als ein guter Angriff; ein Testangriff auf dich selbst zahlt sie auch. Bei null — Kredit, Abwehr eines Selbstangriffs oder Totalverlust mit Boden von mindestens {credits} Cr.",
+      "Geldstrategie: das große Geld kommt von fremden Lagern ({loot} Cr je abgebranntem Feld). Die Abwehrprämie ist kleiner — saubere Abwehr eines großen Schwarms bringt Hunderte oder etwa tausend, im Schnitt zwei- bis dreimal weniger als ein guter Angriff; Missionen zahlen sie auch. Bei null — Kredit, eine Mission oder Totalverlust mit Boden von mindestens {credits} Cr.",
     ],
   },
   {
@@ -427,6 +477,16 @@ const de: RuleSection[] = [
     ],
   },
   {
+    title: "Missionen",
+    lines: [
+      "Missionen sind eine Einzelspieler-Kampagne: 100 Kämpfe auf deinem eigenen Lager, ohne Rivalen, jederzeit und kostenlos.",
+      "Der Schwarm wächst mit jeder Nummer: von 12 Drohnen in einer Welle bis fast 500 in vier, mit aufgewerteten Drohnen und allen Ladungen.",
+      "Die Punktzahl einer Mission ist der Anteil des Lagers, der übersteht: alles gerettet — 100. Die beste Punktzahl jeder Nummer bleibt gespeichert.",
+      "Die nächste Mission öffnet sich, wenn etwas vom Lager übersteht. Geschaffte lassen sich wiederholen: eine Nummer bringt immer denselben Schwarm, die Punkte sind also fair vergleichbar.",
+      "Was in einer Mission brennt, brennt wirklich, aber Versicherung und Abwehrprämie zahlen wie in jedem Kampf.",
+    ],
+  },
+  {
     title: "Aufklärung",
     lines: [
       "Aufklärung verbraucht dieselben Lagerdrohnen in Containern wie Angriffe.",
@@ -455,7 +515,7 @@ const it: RuleSection[] = [
       "Nello stesso momento parte la spedizione: tutto ciò che è stoccato si vende al doppio dell’acquisto — droni a {droneSale} cr. Quello che non hai mandato in battaglia è venduto.",
       "Sei stato via? L’affitto si accumula al massimo per {capDays} giorni.",
       "Soldi finiti? La banca presta {loanMin}–{loanMax} cr per {loanHours} ore al {loanRate}%. La merce comprata può bruciare in un attacco, il debito no.",
-      "Strategia di cassa: i soldi grossi vengono dai magazzini rivali ({loot} cr per cella bruciata). Il premio di difesa è minore — un respingimento pulito di uno sciame grande dà centinaia o circa mille, in media due-tre volte meno di un buon attacco; anche un attacco di prova su di te lo paga. A zero — prestito, difesa di un auto-attacco o wipe con un pavimento di almeno {credits} cr.",
+      "Strategia di cassa: i soldi grossi vengono dai magazzini rivali ({loot} cr per cella bruciata). Il premio di difesa è minore — un respingimento pulito di uno sciame grande dà centinaia o circa mille, in media due-tre volte meno di un buon attacco; anche le missioni lo pagano. A zero — prestito, una missione o wipe con un pavimento di almeno {credits} cr.",
     ],
   },
   {
@@ -497,6 +557,16 @@ const it: RuleSection[] = [
       "Dopo un wipe totale il magazzino riparte, ma il conto viene portato almeno a {credits} cr per ricostruire.",
       "Nessuno viene pagato per i droni abbattuti: i soldi li porta la merce, non gli spari.",
       "Ogni combattimento finito finisce nel diario: lo si può rivedere o copiarne il link per mostrarlo.",
+    ],
+  },
+  {
+    title: "Missioni",
+    lines: [
+      "Le missioni sono una campagna in solitario: 100 battaglie sul tuo magazzino, senza rivali, quando vuoi e gratis.",
+      "Lo sciame cresce a ogni numero: da 12 droni in un’ondata a quasi 500 in quattro, con droni potenziati e ogni tipo di carica.",
+      "Il punteggio di una missione è la quota del magazzino sopravvissuta: salvi tutto, 100. Il miglior punteggio di ogni numero resta salvato.",
+      "La missione successiva si apre se qualcosa del magazzino sopravvive. Quelle superate si possono rigiocare: un numero porta sempre lo stesso sciame, quindi i punteggi si confrontano onestamente.",
+      "Ciò che brucia in missione brucia davvero, ma l’assicurazione e il premio di difesa pagano come in ogni battaglia.",
     ],
   },
   {
