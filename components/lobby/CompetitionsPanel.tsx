@@ -88,7 +88,7 @@ export default function CompetitionsPanel({
                 <IconButton
                   label={t("competitions.play")}
                   title={t("competitions.play")}
-                  className="h-8 w-8 border-amber-400/60 text-amber-300"
+                  className="h-8 w-8 border-red-500/60 text-red-400"
                   onClick={() => onPlay(n)}
                 >
                   <Crosshair className="h-4 w-4" />
