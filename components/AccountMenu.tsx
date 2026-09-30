@@ -5,7 +5,7 @@
 // показывается на телефоне внутри шторки меню.
 
 import { useEffect, useRef, useState } from "react";
-import { UserRound, BookOpen, LogOut, Moon, RotateCcw, Send, Sun } from "lucide-react";
+import { BarChart3, UserRound, BookOpen, LogOut, Moon, RotateCcw, Send, Sun } from "lucide-react";
 import { LOCALES, LOCALE_NAMES, useSettings, type Locale } from "@/lib/i18n";
 import { SectionTitle } from "./ui";
 import AvatarView from "./Avatar";
@@ -64,6 +64,7 @@ export function SettingsList({
   onAvatar,
   onTelegram,
   onRules,
+  onStats,
   onRestart,
   onSignOut,
 }: {
@@ -73,6 +74,8 @@ export function SettingsList({
   onTelegram?: () => void;
   /** Показать правила игры. */
   onRules?: () => void;
+  /** Показать статистику игрока. */
+  onStats?: () => void;
   /** Начать игру сначала — спрашивает подтверждение снаружи. */
   onRestart?: () => void;
   onSignOut?: () => void;
@@ -105,7 +108,7 @@ export function SettingsList({
       </div>
       <ThemeSwitch />
 
-      {(onAvatar || onTelegram || onRules) && (
+      {(onAvatar || onTelegram || onRules || onStats) && (
         <div className="mt-1 border-t border-neutral-800 pt-1">
           {onAvatar && (
             <button onClick={onAvatar} className={ROW}>
@@ -123,6 +126,12 @@ export function SettingsList({
             <button onClick={onRules} className={ROW}>
               <BookOpen className="h-4 w-4" />
               <span className="flex-1">{t("menu.rules")}</span>
+            </button>
+          )}
+          {onStats && (
+            <button onClick={onStats} className={ROW}>
+              <BarChart3 className="h-4 w-4" />
+              <span className="flex-1">{t("panel.stats")}</span>
             </button>
           )}
         </div>
@@ -156,6 +165,7 @@ export default function AccountMenu({
   onAvatar,
   onTelegram,
   onRules,
+  onStats,
   onRestart,
   onSignOut,
 }: {
@@ -167,6 +177,7 @@ export default function AccountMenu({
   onAvatar?: () => void;
   onTelegram?: () => void;
   onRules?: () => void;
+  onStats?: () => void;
   onRestart?: () => void;
   /** Без аккаунта выхода нет — остаются язык и тема. */
   onSignOut?: () => void;
@@ -228,6 +239,14 @@ export default function AccountMenu({
                 ? () => {
                     setOpen(false);
                     onRules();
+                  }
+                : undefined
+            }
+            onStats={
+              onStats
+                ? () => {
+                    setOpen(false);
+                    onStats();
                   }
                 : undefined
             }

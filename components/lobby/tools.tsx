@@ -203,7 +203,7 @@ export const BOT_COUNT = 4;
 /** Потолок пробного налёта по ссылке: посмотреть режим, а не похоронить склад. */
 
 /** Панели правой колонки в порядке по умолчанию. */
-export const DEFAULT_PANELS = ["replays", "competitions", "enemies", "stats"];
+export const DEFAULT_PANELS = ["replays", "competitions", "enemies"];
 export const PANELS_KEY = "wb.panels.v1";
 
 export function readPanels(): {

@@ -232,6 +232,7 @@ export default function Lobby({
     [repo]
   );
   const [showRules, setShowRules] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const [telegram, setTelegram] = useState<{ code: string; linked: boolean } | null>(null);
   const [panelOrder, setPanelOrder] = useState(DEFAULT_PANELS);
   const [hidden, setHidden] = useState<Record<string, boolean>>({});
@@ -1657,7 +1658,6 @@ export default function Lobby({
     enemies: { title: "panel.enemies", body: enemiesBody },
     replays: { title: "panel.replays", action: summonButton, body: raidsBody },
     competitions: { title: "panel.competitions", body: competitionsBody },
-    stats: { title: "panel.stats", body: <StatsPanel stats={p.stats} /> },
   };
 
   const baseNameBody = (
@@ -1805,6 +1805,7 @@ export default function Lobby({
         void repo.telegram().then(setTelegram).catch(() => setTelegram(null));
       }}
       onRules={() => setShowRules(true)}
+      onStats={() => setShowStats(true)}
       onRestart={() => setConfirmRestart(true)}
       onSignOut={account ? onSignOut : undefined}
     />
@@ -1971,6 +1972,19 @@ export default function Lobby({
 
       {/* мобильные шторки */}
       {showRules && <Rules onClose={() => setShowRules(false)} />}
+      {showStats && (
+        <Modal
+          title={t("panel.stats")}
+          onClose={() => setShowStats(false)}
+          footer={
+            <Button variant="build" onClick={() => setShowStats(false)}>
+              {t("common.ok")}
+            </Button>
+          }
+        >
+          <StatsPanel stats={p.stats} />
+        </Modal>
+      )}
 
       {confirmRestart && (
         <ConfirmDialog
@@ -2212,12 +2226,6 @@ export default function Lobby({
           )}
           <div>
             <div className="mb-2">
-              <SectionTitle>{t("panel.stats")}</SectionTitle>
-            </div>
-            <StatsPanel stats={p.stats} />
-          </div>
-          <div>
-            <div className="mb-2">
               <SectionTitle>{t("panel.controls")}</SectionTitle>
             </div>
             <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-neutral-400">
@@ -2272,6 +2280,10 @@ export default function Lobby({
               onRules={() => {
                 setSheet(null);
                 setShowRules(true);
+              }}
+              onStats={() => {
+                setSheet(null);
+                setShowStats(true);
               }}
               onRestart={() => {
                 setSheet(null);
