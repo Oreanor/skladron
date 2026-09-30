@@ -547,14 +547,14 @@ export function drawFrame(
 
 
 /** Сколько секунд живёт клуб дыма над пожаром — от клетки до растворения. */
-const SMOKE_LIFE = 2.4;
+const SMOKE_LIFE = 3.2;
 
 /**
  * Дым над горящими клетками: клубы поднимаются, расширяются, сносятся
  * ветром и тают. Каждый клуб — функция времени и номера клетки, в бою его
  * нет вовсе: бой у защитника и на сервере обязан совпадать, а отрисовка в
- * него не лезет. Большой пожар — по одному клубу на клетку, иначе на сотнях
- * горящих клеток дым съел бы кадр.
+ * него не лезет. Над большим пожаром клубов на клетку меньше, иначе на
+ * сотнях горящих клеток дым съел бы кадр.
  */
 function drawFireSmoke(
   ctx: CanvasRenderingContext2D,
@@ -564,10 +564,10 @@ function drawFireSmoke(
   now: number
 ) {
   if (!count) return;
-  const per = count > 300 ? 1 : 2;
+  const per = count > 300 ? 1 : count > 150 ? 2 : 3;
   const t = now / 1000;
   ctx.save();
-  ctx.fillStyle = "rgb(58, 54, 50)";
+  ctx.fillStyle = "rgb(78, 74, 70)";
   for (const i of cells) {
     const x = i % GRID;
     const y = (i / GRID) | 0;
@@ -575,14 +575,14 @@ function drawFireSmoke(
     const shift = ((x * 92821 + y * 68917) % 1000) / 1000;
     for (let j = 0; j < per; j++) {
       const k = (t / SMOKE_LIFE + shift + j / per) % 1;
-      const rise = k * 2.2; // клеток вверх за жизнь клуба
-      const drift = k * 0.9 + Math.sin((t + shift * 7) * 1.7 + j) * 0.15; // ветер вправо
-      ctx.globalAlpha = 0.34 * Math.sin(k * Math.PI); // проявляется и тает
+      const rise = k * 4; // клеток вверх за жизнь клуба
+      const drift = k * 1.4 + Math.sin((t + shift * 7) * 1.7 + j) * 0.25; // ветер вправо
+      ctx.globalAlpha = 0.55 * Math.sin(k * Math.PI); // проявляется и тает
       ctx.beginPath();
       ctx.arc(
         (x + 0.5 + drift) * cell,
         (y + 0.4 - rise) * cell,
-        cell * (0.35 + 0.9 * k),
+        cell * (0.6 + 2 * k),
         0,
         Math.PI * 2
       );
