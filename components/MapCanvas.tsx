@@ -40,6 +40,11 @@ export interface MapCanvasProps {
    * или рука игрока на карте. В бою и на разведке этого ставить нельзя.
    */
   idle?: boolean;
+  /**
+   * Стартовать со всей картой в окне, без обрезки по короткой стороне. В
+   * бою и на разведке надо видеть весь квадрат; в лобби — заполнить окно.
+   */
+  fit?: boolean;
   className?: string;
   /** Накладки поверх карты: например всплывающее сообщение. */
   children?: ReactNode;
@@ -47,6 +52,13 @@ export interface MapCanvasProps {
 
 /** Масштаб, при котором окно заполнено картой без пустых полей. */
 const coverScale = (w: number, h: number) => Math.max(w, h) / SIZE;
+/** Масштаб, при котором вся карта целиком влезает в окно. */
+const fitScale = (w: number, h: number) => Math.min(w, h) / SIZE;
+/** Пределы зума. Нижний — не выше «вся карта», чтобы к ней можно было вернуться. */
+const zoomLimits = (w: number, h: number) => {
+  const cover = coverScale(w, h);
+  return { min: Math.min(cover * MIN_ZOOM, fitScale(w, h)), max: cover * MAX_ZOOM };
+};
 
 export default function MapCanvas({
   scene,
@@ -59,6 +71,7 @@ export default function MapCanvas({
   onLeave,
   cursor = "crosshair",
   idle = false,
+  fit = false,
   className = "",
   children,
 }: MapCanvasProps) {
@@ -122,8 +135,8 @@ export default function MapCanvas({
       // Пределы от cover — того же базового масштаба, от которого UI
       // считает «1×» / «вся карта». Раньше clamp шёл от fit, и на
       // неквадратном окне максимум получался ~4×(min/max) ≈ 3.1×.
-      const base = coverScale(w, h);
-      const next = Math.max(base * MIN_ZOOM, Math.min(base * MAX_ZOOM, v.zoom * factor));
+      const { min, max } = zoomLimits(w, h);
+      const next = Math.max(min, Math.min(max, v.zoom * factor));
       if (next === v.zoom) return;
       v.zoom = next;
       v.panX = wx - sx / v.zoom;
@@ -148,7 +161,8 @@ export default function MapCanvas({
       if (prev.w === w && prev.h === h) return;
       boxSize.current = { w, h };
       const v = viewRef.current;
-      const base = coverScale(w, h);
+      const base = fit ? fitScale(w, h) : coverScale(w, h);
+      const { min, max } = zoomLimits(w, h);
       if (!prev.w || !prev.h) {
         baseZoom.current = base;
         v.zoom = base;
@@ -158,7 +172,7 @@ export default function MapCanvas({
         // поворот или ресайз окна: держим ту же кратность приближения
         const rel = v.zoom / baseZoom.current;
         baseZoom.current = base;
-        v.zoom = Math.max(base * MIN_ZOOM, Math.min(base * MAX_ZOOM, base * rel));
+        v.zoom = Math.max(min, Math.min(max, base * rel));
       }
       // сменилась только высота (выехала панель) — вид не трогаем,
       // иначе карта прыгала бы от каждой всплывающей полосы
@@ -171,7 +185,7 @@ export default function MapCanvas({
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [clampPan]);
+  }, [clampPan, fit]);
 
   // колесо и щипок на трекпаде. Слушатель вешаем вручную: React-обработчик
   // пассивный и не даст отменить зум страницы.

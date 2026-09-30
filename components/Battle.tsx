@@ -203,6 +203,7 @@ export default function Battle({
     <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(12rem,20vw,18rem)] lg:gap-4">
       <div className="relative flex min-h-0 flex-1 flex-col gap-2">
         <MapCanvas
+          fit
           className="min-h-0 flex-1"
           scene={scene}
           sceneVersion={version}

@@ -292,6 +292,7 @@ export default function Replay({
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="relative min-h-0 flex-1">
           <MapCanvas
+            fit
             className="h-full min-h-0 rounded-b-none"
             scene={scene}
             sceneVersion={version}

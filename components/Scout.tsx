@@ -248,6 +248,7 @@ export default function Scout({
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <div className="relative flex min-h-0 flex-1 flex-col gap-2">
         <MapCanvas
+          fit
           className="min-h-0 flex-1"
           scene={scene}
           sceneVersion={0}

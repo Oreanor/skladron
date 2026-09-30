@@ -94,6 +94,7 @@ export default function ScoutMap({
 
   return (
     <MapCanvas
+      fit
       className={className}
       scene={scene}
       sceneVersion={0}
