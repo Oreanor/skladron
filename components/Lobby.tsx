@@ -163,6 +163,7 @@ import MapCanvas, { type Pt } from "./MapCanvas";
 import AccountMenu, { SettingsList } from "./AccountMenu";
 import AvatarView from "./Avatar";
 import { useT } from "@/lib/i18n";
+import { explain } from "@/lib/errors";
 import type { Key } from "@/lib/i18n/dict";
 import { Trophy } from "lucide-react";
 import {
@@ -383,7 +384,7 @@ export default function Lobby({
       if (patch.credits !== undefined) cur.credits = patch.credits;
       forceRender((v) => v + 1);
     } catch (e) {
-      setMessage(t("save.rejected", { error: (e as Error).message }));
+      setMessage(t("save.rejected", { error: explain(e, t) }));
       await resyncBase();
     }
   };
@@ -440,7 +441,7 @@ export default function Lobby({
       })
       .catch((e) => {
         if (!alive) return;
-        setMessage(t("load.failed", { error: (e as Error).message }));
+        setMessage(t("load.failed", { error: explain(e, t) }));
         setReady(true);
       });
     return () => {
@@ -722,7 +723,7 @@ export default function Lobby({
             if (patch.credits !== undefined) p.credits = patch.credits;
             forceRender((v) => v + 1);
           } catch (e) {
-            setMessage(t("battle.notSaved", { error: (e as Error).message }));
+            setMessage(t("battle.notSaved", { error: explain(e, t) }));
             // Тот же случай: у сервера бой остался неотбитым, и показать его
             // снова надо — иначе отбиваться будет нечем, а очередь встанет.
             attacks.unmarkResolved(battle.id);
@@ -763,7 +764,7 @@ export default function Lobby({
           try {
             await repo.saveEnemies(p);
           } catch (e) {
-            setMessage(t("enemies.notSaved", { error: (e as Error).message }));
+            setMessage(t("enemies.notSaved", { error: explain(e, t) }));
           }
         }}
       />
@@ -862,7 +863,7 @@ export default function Lobby({
       p.credits = previousCredits;
       setVersion((v) => v + 1);
       forceRender((v) => v + 1);
-      setMessage(t("arsenal.buyFailed", { error: (e as Error).message }));
+      setMessage(t("arsenal.buyFailed", { error: explain(e, t) }));
     }
   };
 
@@ -890,7 +891,7 @@ export default function Lobby({
     try {
       await repo.rename(p, name);
     } catch (e) {
-      setMessage(t("base.nameNotSaved", { error: (e as Error).message }));
+      setMessage(t("base.nameNotSaved", { error: explain(e, t) }));
     }
   };
 
@@ -909,7 +910,7 @@ export default function Lobby({
       setMessage(t("base.renamed", { name }));
     } catch (e) {
       p.name = prev; // сервер не принял — возвращаем как было
-      setMessage(t("base.renameFailed", { error: (e as Error).message }));
+      setMessage(t("base.renameFailed", { error: explain(e, t) }));
       forceRender((v) => v + 1);
     }
   };
@@ -928,7 +929,7 @@ export default function Lobby({
       // узнает от бота, а не по первому прилетевшему рою.
       notifyRivalAdded(email);
     } catch (e) {
-      return t("enemies.notSaved", { error: (e as Error).message });
+      return t("enemies.notSaved", { error: explain(e, t) });
     }
     // В облаке склад соперника живёт на сервере; выдумывать ему карту нужно
     // только локально, где настоящих противников нет и бой идёт с ботом.
@@ -943,7 +944,7 @@ export default function Lobby({
     } catch (e) {
       p.enemies = p.enemies.filter((item) => item.id !== enemy.id);
       forceRender((v) => v + 1);
-      return t("enemies.notSaved", { error: (e as Error).message });
+      return t("enemies.notSaved", { error: explain(e, t) });
     }
   };
 
@@ -971,7 +972,7 @@ export default function Lobby({
       forceRender((v) => v + 1);
       return null;
     } catch (e) {
-      return t("scout.failed", { error: (e as Error).message });
+      return t("scout.failed", { error: explain(e, t) });
     }
   };
 
@@ -1001,7 +1002,7 @@ export default function Lobby({
       forceRender((value) => value + 1);
       return null;
     } catch (error) {
-      return t("raid.sendFailed", { error: (error as Error).message });
+      return t("raid.sendFailed", { error: explain(error, t) });
     }
   };
 
@@ -1038,7 +1039,7 @@ export default function Lobby({
         order.id = await repo.queueCompetition(stage, plan.waves, plan.seed, plan.droneLevel);
         order.remote = true;
       } catch (e) {
-        setMessage((e as Error).message);
+        setMessage(explain(e, t));
         return;
       }
     }
@@ -1494,7 +1495,7 @@ export default function Lobby({
               setVersion((v) => v + 1);
               forceRender((v) => v + 1);
             } catch (e) {
-              setMessage(t("doomed.failed", { error: (e as Error).message }));
+              setMessage(t("doomed.failed", { error: explain(e, t) }));
             }
           }}
         >
@@ -1512,7 +1513,7 @@ export default function Lobby({
       setVersion((v) => v + 1);
       forceRender((v) => v + 1);
     } catch (e) {
-      setMessage(t("burnt.razeFailed", { error: (e as Error).message }));
+      setMessage(t("burnt.razeFailed", { error: explain(e, t) }));
     }
   };
 
@@ -1527,7 +1528,7 @@ export default function Lobby({
       setVersion((v) => v + 1);
       forceRender((v) => v + 1);
     } catch (e) {
-      setMessage(t("restart.failed", { error: (e as Error).message }));
+      setMessage(t("restart.failed", { error: explain(e, t) }));
     }
   };
 
@@ -1538,7 +1539,7 @@ export default function Lobby({
       setModal(null);
       forceRender((v) => v + 1);
     } catch (e) {
-      setMessage(t("loan.failed", { error: (e as Error).message }));
+      setMessage(t("loan.failed", { error: explain(e, t) }));
     }
   };
 
@@ -1549,7 +1550,7 @@ export default function Lobby({
       setModal(null);
       forceRender((v) => v + 1);
     } catch (e) {
-      setMessage(t("loan.failed", { error: (e as Error).message }));
+      setMessage(t("loan.failed", { error: explain(e, t) }));
     }
   };
 
@@ -1558,7 +1559,7 @@ export default function Lobby({
   const removeEnemy = (enemy: Enemy) => {
     p.enemies = p.enemies.filter((e) => e.email.toLowerCase() !== enemy.email.toLowerCase());
     forceRender((v) => v + 1);
-    void repo.saveEnemies(p).catch((e: Error) => setMessage(t("enemies.notSaved", { error: e.message })));
+    void repo.saveEnemies(p).catch((e: unknown) => setMessage(t("enemies.notSaved", { error: explain(e, t) })));
   };
 
 
@@ -1581,7 +1582,7 @@ export default function Lobby({
       }
       setWatching({ id, name, replay: data });
     } catch (e) {
-      setMessage(t("replay.failed", { error: (e as Error).message }));
+      setMessage(t("replay.failed", { error: explain(e, t) }));
     }
   };
 
@@ -1616,7 +1617,7 @@ export default function Lobby({
       );
       forceRender((v) => v + 1);
     } catch (e) {
-      setMessage(t("upgrade.failed", { error: (e as Error).message }));
+      setMessage(t("upgrade.failed", { error: explain(e, t) }));
       // Скорее всего наши уровни разошлись с серверными — берём его версию.
       await resyncBase();
     }
@@ -2167,7 +2168,7 @@ export default function Lobby({
               setReports((current) => current.filter((item) => item.id !== report.id));
               loadRaids();
             } catch (error) {
-              setMessage(t("report.closeFailed", { error: (error as Error).message }));
+              setMessage(t("report.closeFailed", { error: explain(error, t) }));
             }
           }}
         />
@@ -2249,7 +2250,7 @@ export default function Lobby({
               await repo.setAvatar(p, value);
               forceRender((v) => v + 1);
             } catch (e) {
-              setMessage(t("save.rejected", { error: (e as Error).message }));
+              setMessage(t("save.rejected", { error: explain(e, t) }));
             }
           }}
           onClose={() => setModal(null)}

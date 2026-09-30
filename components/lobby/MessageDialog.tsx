@@ -15,6 +15,7 @@ import { Send } from "lucide-react";
 import type { Enemy } from "@/lib/enemy";
 import type { Message } from "@/lib/attack";
 import { useT } from "@/lib/i18n";
+import { explain } from "@/lib/errors";
 import Avatar from "../Avatar";
 import { Button, IconButton, Modal, inputClass } from "../ui";
 
@@ -48,13 +49,13 @@ export default function MessageDialog({
       .catch((e) => {
         if (alive) {
           setThread([]);
-          setError((e as Error).message);
+          setError(explain(e, t));
         }
       });
     return () => {
       alive = false;
     };
-  }, [enemy.email, load]);
+  }, [enemy.email, load, t]);
 
   // Свежее внизу, как в любом разговоре: подкручиваем к хвосту.
   useEffect(() => {
