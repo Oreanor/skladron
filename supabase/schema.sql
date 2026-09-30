@@ -679,11 +679,11 @@ begin
   if attack_seed is distinct from stage * 9973 then
     raise exception 'bad competition seed';
   end if;
-  if (select count(*) from attacks a
-       where a.defender_id = uid and a.competition_stage is not null
-         and a.status = 'pending') >= price('queued') then
-    raise exception 'too many competitions already queued';
-  end if;
+  -- Миссию играют сразу, так что неотыгранная прежняя — брошенная: бой
+  -- прервали или его не засчитали. Убираем, а не копим до потолка.
+  delete from attacks a
+   where a.defender_id = uid and a.competition_stage is not null
+     and a.status = 'pending';
 
   head := attack_waves -> 0;
   insert into attacks (

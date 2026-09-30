@@ -1021,6 +1021,8 @@ export default function Lobby({
       await defend(queued);
       return;
     }
+    // сервер убирает прежние неотыгранные миссии — убираем и мы
+    p.incoming = p.incoming.filter((a) => !a.competitionStage);
     const plan = buildCompetition(stage);
     const order = makeOrder(
       t("competition.title", { n: stage }),
