@@ -28,6 +28,20 @@ const Day = ({ at }: { at: number }) => (
   <span className="mr-2 font-mono text-[11px] text-neutral-500">{day(at)}</span>
 );
 
+/** Ник второй стороны: жирный и белый; если соперник в списке — кликается. */
+const Foe = ({ name, open }: { name: string; open?: () => void }) =>
+  open ? (
+    <button
+      type="button"
+      onClick={open}
+      className="font-semibold text-neutral-100 underline-offset-2 hover:underline"
+    >
+      {name}
+    </button>
+  ) : (
+    <b className="font-semibold text-neutral-100">{name}</b>
+  );
+
 /** Сколько боёв видно без прокрутки: журнал не должен выдавливать соседей. */
 const VISIBLE = "max-h-[10.5rem]";
 
@@ -54,6 +68,7 @@ export default function RaidsPanel({
   onDefend,
   onWatch,
   onHide,
+  onFoe,
 }: {
   /** Что к нам летит. Первый в списке и есть тот, кого отбивают. */
   incoming: AttackOrder[];
@@ -61,6 +76,11 @@ export default function RaidsPanel({
   onDefend: (order: AttackOrder) => void;
   onWatch: (raid: RaidLog) => void;
   onHide: (id: string) => void;
+  /**
+   * Открыть карточку врага по почте. Возвращает undefined для тех, кого нет
+   * в списке соперников, — их ник не кликается.
+   */
+  onFoe: (email: string | undefined) => (() => void) | undefined;
 }) {
   const t = useT();
   if (!raids.length && !incoming.length) {
@@ -81,7 +101,7 @@ export default function RaidsPanel({
               <div className="truncate text-neutral-200">
                 <Day at={a.createdAt} />
                 <span className="text-red-300">{t("replays.incoming")}</span>{" "}
-                <b className="font-semibold text-neutral-100">{a.from}</b>
+                <Foe name={a.from} open={onFoe(a.fromEmail)} />
               </div>
               <div className="font-mono text-[11px] text-neutral-500">
                 {t("attacks.dronesPattern", {
@@ -119,7 +139,7 @@ export default function RaidsPanel({
               <span className={r.side === "attack" ? "text-red-300" : "text-sky-300"}>
                 {t(r.side === "attack" ? "replays.attack" : "replays.defence")}
               </span>{" "}
-              <b className="font-semibold text-neutral-100">{r.foe}</b>
+              <Foe name={r.foe} open={onFoe(r.foeEmail)} />
             </div>
             <div className="font-mono text-[11px] text-neutral-500">
               {r.pending

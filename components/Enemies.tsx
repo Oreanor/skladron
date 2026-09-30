@@ -207,7 +207,7 @@ export default function Enemies({
   );
 }
 
-function EnemyProfile({
+export function EnemyProfile({
   enemy,
   onClose,
   onShowMap,
@@ -233,7 +233,7 @@ function EnemyProfile({
     <Modal
       title={enemy.name}
       subtitle={enemy.email}
-      wide={Boolean(enemy.scout)}
+      wide={enemy.scout ? "xl" : false}
       onClose={onClose}
       footer={
         <Button variant="build" onClick={onClose}>
@@ -252,7 +252,7 @@ function EnemyProfile({
             : "flex flex-col gap-4"
         }
       >
-        <div className="flex w-full shrink-0 flex-col gap-3 sm:w-44">
+        <div className="flex w-full shrink-0 flex-col gap-3 sm:w-64">
           <Avatar
             avatar={enemy.avatar ?? null}
             name={enemy.name}

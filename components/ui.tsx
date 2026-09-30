@@ -335,8 +335,8 @@ export function Modal({
 }: {
   title: string;
   subtitle?: string;
-  /** Широкая карточка: для длинных текстов вроде правил. */
-  wide?: boolean;
+  /** Широкая карточка: для длинных текстов вроде правил; "xl" — ещё шире. */
+  wide?: boolean | "xl";
   /** Прибитая к низу строка кнопок: она не уезжает вместе с текстом. */
   footer?: ReactNode;
   onClose?: () => void;
@@ -365,7 +365,7 @@ export function Modal({
       */}
       <div
         className={`flex max-h-[92dvh] w-full flex-col rounded-t-2xl border border-neutral-700 bg-neutral-900 shadow-2xl sm:rounded-md ${
-          wide ? "max-w-3xl" : "max-w-sm"
+          wide === "xl" ? "max-w-4xl" : wide ? "max-w-3xl" : "max-w-sm"
         }`}
       >
         <div className="flex shrink-0 items-start gap-2 px-5 pb-2 pt-5">

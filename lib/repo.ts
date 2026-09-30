@@ -830,6 +830,7 @@ class CloudRepo implements Repo {
       id: string;
       side: "attack" | "defence";
       foe: string;
+      foe_email: string;
       at: string;
       pending: boolean;
       drones: number;
@@ -841,6 +842,7 @@ class CloudRepo implements Repo {
       id: row.id,
       side: row.side,
       foe: row.foe,
+      foeEmail: row.foe_email,
       at: Date.parse(row.at),
       pending: row.pending,
       drones: row.drones,

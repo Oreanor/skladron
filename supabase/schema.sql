@@ -2029,21 +2029,21 @@ grant execute on function set_avatar to authenticated;
 
 create or replace function raid_log()
 returns table (
-  id uuid, side text, foe text, at timestamptz, pending boolean,
+  id uuid, side text, foe text, foe_email text, at timestamptz, pending boolean,
   drones int, loot int, destroyed boolean, burned int, has_replay boolean
 )
 language sql security definer set search_path = public stable as $$
   -- Свои налёты видны и до боя: защитник ещё не отбивался, показывать
-  -- нечего, но знать, что рой в пути, полезно. Состязание — это бой на
-  -- своём складе: в журнале оно оборона, а до боя стоит в очереди.
+  -- нечего, но знать, что рой в пути, полезно. Почта второй стороны — чтобы
+  -- по нику в журнале открыть его карточку: имя склада не уникально.
   select a.id,
-         case when a.attacker_id = auth.uid() and a.competition_stage is null
-              then 'attack' else 'defence' end,
+         case when a.attacker_id = auth.uid() then 'attack' else 'defence' end,
          case
            when a.attacker_id = auth.uid()
              then coalesce(d.base_name, d.display_name, split_part(d.email, '@', 1))
            else coalesce(t.base_name, t.display_name, split_part(t.email, '@', 1))
          end,
+         case when a.attacker_id = auth.uid() then d.email else t.email end,
          coalesce(a.resolved_at, a.created_at),
          a.status = 'pending',
          a.drones, a.loot, a.destroyed,

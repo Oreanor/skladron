@@ -81,7 +81,7 @@ import {
   makeEnemy,
 } from "@/lib/enemy";
 import type { Account } from "./AuthGate";
-import Enemies from "./Enemies";
+import Enemies, { EnemyProfile } from "./Enemies";
 import {
   drawCoverage,
   drawDepots,
@@ -243,6 +243,8 @@ export default function Lobby({
   const [dragPanel, setDragPanel] = useState<string | null>(null);
   /** Журнал боёв: и свои налёты, и те, где отбивался. */
   const [raids, setRaids] = useState<RaidLog[]>([]);
+  /** Карточка врага, открытая по нику из журнала боёв. */
+  const [foeCard, setFoeCard] = useState<Enemy | null>(null);
   /** Идущий разведвылет: карта врага, его пушки и сколько самолётов послали. */
   const [scout, setScout] = useState<{
     enemy: Enemy;
@@ -1556,6 +1558,20 @@ export default function Lobby({
   };
 
   /** Открыть повтор из журнала: сам бой подгружаем по одной атаке. */
+  /** Полная карта разведки врага. */
+  const showMap = (enemy: Enemy) => {
+    setSheet(null);
+    setStale([]);
+    setMapOf(enemy);
+    // сверяем снимок с тем, что у врага сейчас: изменённое затянет туманом
+    if (enemy.scout) {
+      void repo
+        .stalePatches(enemy.email, enemy.scout.cells)
+        .then(setStale)
+        .catch(() => setStale([]));
+    }
+  };
+
   const hideRaid = async (id: string) => {
     setRaids((rows) => rows.filter((r) => r.id !== id));
     try {
@@ -1679,6 +1695,17 @@ export default function Lobby({
       onDefend={(order) => void defend(order)}
       onWatch={(r) => void openReplay(r.id, r.side === "attack" ? r.foe : p.name)}
       onHide={(id) => void hideRaid(id)}
+      onFoe={(email) => {
+        const enemy = email
+          ? p.enemies.find((e) => e.email.toLowerCase() === email.toLowerCase())
+          : undefined;
+        return enemy
+          ? () => {
+              setSheet(null);
+              setFoeCard(enemy);
+            }
+          : undefined;
+      }}
     />
   );
   const competitionsBody = (
@@ -1705,18 +1732,7 @@ export default function Lobby({
       onAdd={addEnemy}
       onRaid={doRaid}
       onScout={doScout}
-      onShowMap={(enemy) => {
-        setSheet(null);
-        setStale([]);
-        setMapOf(enemy);
-        // сверяем снимок с тем, что у врага сейчас: изменённое затянет туманом
-        if (enemy.scout) {
-          void repo
-            .stalePatches(enemy.email, enemy.scout.cells)
-            .then(setStale)
-            .catch(() => setStale([]));
-        }
-      }}
+      onShowMap={showMap}
       onWrite={(enemy) => {
         setSheet(null);
         setWriteTo(enemy);
@@ -2086,6 +2102,21 @@ export default function Lobby({
             if (!err) setSummonRaid(false);
             return err;
           }}
+        />
+      )}
+
+      {foeCard && (
+        <EnemyProfile
+          enemy={foeCard}
+          onClose={() => setFoeCard(null)}
+          onShowMap={
+            foeCard.scout
+              ? () => {
+                  setFoeCard(null);
+                  showMap(foeCard);
+                }
+              : undefined
+          }
         />
       )}
 
