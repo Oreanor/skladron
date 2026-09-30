@@ -248,14 +248,9 @@ export function EnemyProfile({
         wide={enemy.scout ? "xl" : false}
         onClose={onClose}
         footer={
-          <div className="flex flex-wrap justify-center gap-2">
-            <Button variant="outline" onClick={() => setRemoving(true)}>
-              {t("enemies.remove")}
-            </Button>
-            <Button variant="build" onClick={onClose}>
-              {t("common.ok")}
-            </Button>
-          </div>
+          <Button variant="build" onClick={onClose}>
+            {t("common.ok")}
+          </Button>
         }
       >
         {/*
@@ -318,6 +313,15 @@ export function EnemyProfile({
                 ))}
               </ul>
             )}
+            {/* внизу колонки, подальше от «ОК»: удаление не жмут мимоходом */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2 self-start text-neutral-400"
+              onClick={() => setRemoving(true)}
+            >
+              {t("enemies.remove")}
+            </Button>
           </div>
 
           {enemy.scout && (
