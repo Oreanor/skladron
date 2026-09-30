@@ -39,13 +39,13 @@ export default function CompetitionsPanel({
   const stages = Array.from({ length: competitionAt }, (_, i) => competitionAt - i);
 
   return (
-    <ul className={`${VISIBLE} -mx-2 space-y-0.5 overflow-y-auto overscroll-contain`}>
+    <ul className={`${VISIBLE} -mx-3 space-y-0.5 overflow-y-auto overscroll-contain pr-1.5`}>
       {stages.map((n) => {
         const done = n < competitionAt || allDone;
         const b = done ? best[n] : undefined;
         const waves = competitionWaveCount(n);
         return (
-          <li key={n} className="flex items-center justify-between gap-2 rounded-md px-2 py-1 transition-colors hover:bg-neutral-800/60">
+          <li key={n} className="flex items-center justify-between gap-2 rounded-md px-3 py-1.5 transition-colors hover:bg-neutral-800/60">
             <div className="min-w-0">
               <div className="truncate text-neutral-200">
                 {t("competition.title", { n })}
