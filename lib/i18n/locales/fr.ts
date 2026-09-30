@@ -105,7 +105,7 @@ const fr: Dict = {
   "upgrade.water": "Lance à incendie",
   "depot.noCredits": "Pas assez de crédits pour un conteneur : {cost} cr",
   "tool.upgrade": "Amélioration",
-  "tool.upgradeHint": "Améliorer canons et drones",
+  "tool.upgradeHint": "Améliorations et perfectionnements",
   "tool.priceFrom": "à partir de {cost} cr",
   "upgrade.explain": "Le niveau vaut pour toute la classe d’un coup : ce qui est déjà à l’entrepôt comme ce que tu achèteras ensuite.",
   "upgrade.drones": "Drones",
@@ -221,7 +221,7 @@ const fr: Dict = {
   "tool.trapHint": "Retient les drones par aimant",
   "tool.rocketHint": "Missiles guidés à longue portée",
   "tool.dronesHint": "Drones pour tes raids",
-  "tool.balloonsHint": "Barrage où s’écrasent les drones",
+  "tool.balloonsHint": "Ballons qui gênent les drones",
 
 
   "panel.base": "Entrepôt",

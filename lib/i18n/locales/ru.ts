@@ -105,7 +105,7 @@ const ru: Dict = {
   "upgrade.water": "Брандспойт",
   "depot.noCredits": "Не хватает кредитов на контейнер: {cost} кр",
   "tool.upgrade": "Апгрейд",
-  "tool.upgradeHint": "Прокачать пушки и дронов",
+  "tool.upgradeHint": "Улучшения и усовершенствования",
   "tool.priceFrom": "от {cost} кр",
   "upgrade.explain": "Уровень достаётся всему классу сразу — и тому, что уже лежит на складе, и тому, что купишь потом.",
   "upgrade.drones": "Дроны",
@@ -218,10 +218,10 @@ const ru: Dict = {
   "tool.repairHint": "Ремонт сгоревших клеток",
   "tool.gunHint": "Сбивает дронов в небе",
   "tool.sprayHint": "Тушит пожары вокруг",
-  "tool.trapHint": "Держит дронов магнитом",
+  "tool.trapHint": "Удерживает дронов магнитом",
   "tool.rocketHint": "Самонаводящиеся ракеты, бьёт далеко",
   "tool.dronesHint": "Дроны для своих налётов",
-  "tool.balloonsHint": "Заграждение, о которое бьются дроны",
+  "tool.balloonsHint": "Воздушные шары, мешающие дронам",
 
 
   "panel.base": "Склад",

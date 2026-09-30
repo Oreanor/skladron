@@ -105,7 +105,7 @@ const pt: Dict = {
   "upgrade.water": "Mangueira",
   "depot.noCredits": "Sem créditos para um contentor: {cost} cr",
   "tool.upgrade": "Melhoria",
-  "tool.upgradeHint": "Melhorar canhões e drones",
+  "tool.upgradeHint": "Melhorias e aperfeiçoamentos",
   "tool.priceFrom": "a partir de {cost} cr",
   "upgrade.explain": "O nível vale para toda a classe de uma vez — o que já está no armazém e o que comprares depois.",
   "upgrade.drones": "Drones",
@@ -221,7 +221,7 @@ const pt: Dict = {
   "tool.trapHint": "Prende drones com íman",
   "tool.rocketHint": "Mísseis guiados de longo alcance",
   "tool.dronesHint": "Drones para os teus ataques",
-  "tool.balloonsHint": "Barreira onde os drones batem",
+  "tool.balloonsHint": "Balões que atrapalham os drones",
 
 
   "panel.base": "Armazém",

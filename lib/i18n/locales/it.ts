@@ -105,7 +105,7 @@ const it: Dict = {
   "upgrade.water": "Manichetta",
   "depot.noCredits": "Crediti insufficienti per un container: {cost} cr",
   "tool.upgrade": "Potenziamento",
-  "tool.upgradeHint": "Potenziare cannoni e droni",
+  "tool.upgradeHint": "Miglioramenti e perfezionamenti",
   "tool.priceFrom": "da {cost} cr",
   "upgrade.explain": "Il livello vale per tutta la classe in una volta: sia per quello che è già in magazzino sia per quello che comprerai poi.",
   "upgrade.drones": "Droni",
@@ -221,7 +221,7 @@ const it: Dict = {
   "tool.trapHint": "Trattiene droni col magnete",
   "tool.rocketHint": "Missili guidati a lunga gittata",
   "tool.dronesHint": "Droni per i tuoi attacchi",
-  "tool.balloonsHint": "Sbarramento contro cui cadono i droni",
+  "tool.balloonsHint": "Palloni che ostacolano i droni",
 
 
   "panel.base": "Magazzino",

@@ -105,7 +105,7 @@ const de: Dict = {
   "upgrade.water": "Löschschlauch",
   "depot.noCredits": "Zu wenig Kredite für einen Container: {cost} Cr",
   "tool.upgrade": "Ausbau",
-  "tool.upgradeHint": "Geschütze und Drohnen verbessern",
+  "tool.upgradeHint": "Verbesserungen und Aufwertungen",
   "tool.priceFrom": "ab {cost} Cr",
   "upgrade.explain": "Die Stufe gilt für die ganze Klasse auf einmal — für das, was schon im Lager liegt, und für alles, was du später kaufst.",
   "upgrade.drones": "Drohnen",
@@ -221,7 +221,7 @@ const de: Dict = {
   "tool.trapHint": "Hält Drohnen per Magnet",
   "tool.rocketHint": "Zielsuchende Raketen, große Reichweite",
   "tool.dronesHint": "Drohnen für eigene Angriffe",
-  "tool.balloonsHint": "Sperre, an der Drohnen zerschellen",
+  "tool.balloonsHint": "Ballons, die Drohnen behindern",
 
 
   "panel.base": "Lager",

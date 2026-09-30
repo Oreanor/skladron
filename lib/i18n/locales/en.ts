@@ -106,7 +106,7 @@ const en = {
   "upgrade.water": "Fire hose",
   "depot.noCredits": "Not enough credits for a container: {cost} cr",
   "tool.upgrade": "Upgrade",
-  "tool.upgradeHint": "Level up guns and drones",
+  "tool.upgradeHint": "Upgrades and improvements",
   "tool.priceFrom": "from {cost} cr",
   "upgrade.explain": "A level covers the whole class at once — what already sits in the warehouse and everything you buy later.",
   "upgrade.drones": "Drones",
@@ -222,7 +222,7 @@ const en = {
   "tool.trapHint": "Holds drones by magnet",
   "tool.rocketHint": "Long-range homing missiles",
   "tool.dronesHint": "Drones for your raids",
-  "tool.balloonsHint": "A barrage drones crash into",
+  "tool.balloonsHint": "Balloons that get in drones' way",
 
 
   "panel.base": "Warehouse",
