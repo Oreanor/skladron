@@ -1783,6 +1783,9 @@ export default function Lobby({
   // с подтверждением, и тревога, и обычные сообщения. Порядок — по тому,
   // что сейчас важнее для рук.
   const draftOpen = drafting && draftRect && draftRect.w > 0 && draftRect.h > 0;
+  // Тревога — только о чужих налётах: миссию игрок запускает сам, а
+  // недоигранная висит в очереди до следующего «играть» в журнале миссий.
+  const raidsIn = p.incoming.filter((a) => !a.competitionStage);
   let barTone = "border-neutral-800 bg-neutral-900/40 text-neutral-500";
   let barBody: ReactNode = (
     // Те же числа, что и на самой кнопке: сырые vars не знают ни цены по
@@ -1875,23 +1878,23 @@ export default function Lobby({
         </Button>
       </>
     );
-  } else if (p.incoming.length > 0) {
+  } else if (raidsIn.length > 0) {
     barTone = "border-red-900/70 bg-red-950/30 text-red-100";
     barBody = (
       <>
         <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-500" />
         <span className="min-w-0 truncate">
-          {t("attacks.incoming", { from: p.incoming[0].from, drones: p.incoming[0].drones })}
+          {t("attacks.incoming", { from: raidsIn[0].from, drones: raidsIn[0].drones })}
         </span>
         <Button
           variant="danger"
           size="sm"
           className="ml-auto"
-          onClick={() => void defend(p.incoming[0])}
+          onClick={() => void defend(raidsIn[0])}
           disabled={intact === 0}
         >
-          {p.incoming.length > 1
-            ? t("attacks.defendCount", { count: p.incoming.length })
+          {raidsIn.length > 1
+            ? t("attacks.defendCount", { count: raidsIn.length })
             : t("attacks.defend")}
         </Button>
       </>
