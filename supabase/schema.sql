@@ -1537,13 +1537,13 @@ begin
              * (100 + (price('loot_curve') * share_pct * share_pct * share_pct) / 1000000))
             / 100;
   -- Состязание: добычи нет — жечь самого себя ради неё нельзя. Вместо неё
-  -- счёт: уцелевший процент × √(площадь / 100), как competitionScore на
+  -- счёт: сколько процентов склада уцелело, как competitionScore на
   -- клиенте. Лучший по номеру храним; уцелел склад — открыт следующий.
   if order_row.competition_stage is not null then
     earned := 0;
     if intact_before > 0 then
       comp_pct := (defender_intact * 100) / intact_before;
-      comp_score := round((comp_pct * sqrt(intact_before / 100.0))::numeric)::int;
+      comp_score := comp_pct;
       update profiles
          set competition_best = case
                when coalesce((competition_best -> order_row.competition_stage::text

@@ -81,9 +81,7 @@ export default function CompetitionDialog({
         <div className="flex justify-between gap-3">
           <dt className="text-neutral-500">{t("competition.best")}</dt>
           <dd className="text-neutral-100">
-            {mine
-              ? t("competition.bestValue", { score: mine.score, pct: mine.pct, area: mine.area })
-              : t("competition.noBest")}
+            {mine ? mine.score : t("competition.noBest")}
           </dd>
         </div>
         <div className="flex justify-between gap-3">
@@ -117,7 +115,6 @@ export default function CompetitionDialog({
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-xs text-neutral-500">{t("competition.scoring")}</p>
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
     </Modal>
   );
