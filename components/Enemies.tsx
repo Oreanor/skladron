@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RAID_COMMENT_MAX } from "@/lib/comments";
 import { payloadCost, raidTotal, type WavePlan } from "@/lib/attack";
 import { MAX_ATTACK_DRONES, type Enemy } from "@/lib/enemy";
@@ -8,7 +8,7 @@ import { scoutCounts } from "@/lib/scout";
 import { installColors } from "@/lib/render";
 import { SCOUT } from "@/lib/tuning";
 import { Crosshair, MessageSquare, Plane } from "lucide-react";
-import ScoutThumb from "./lobby/ScoutThumb";
+import ScoutMap from "./ScoutMap";
 import { Button, Card, ConfirmDialog, IconButton, Modal, inputClass } from "./ui";
 import Avatar from "./Avatar";
 import RaidPlanner, { newWave } from "./RaidPlanner";
@@ -33,8 +33,8 @@ interface Props {
   onRaid: (enemy: Enemy, waves: WavePlan[], comment?: string) => Promise<string | null>;
   /** Разведка: сколько самолётов послать. Вернёт текст ошибки или null. */
   onScout: (enemy: Enemy, planes: number) => Promise<string | null>;
-  /** Показать снятую карту врага во весь экран. */
-  onShowMap: (enemy: Enemy) => void;
+  /** Квадраты, где враг менял склад после съёмки: они снова под туманом. */
+  fetchStale: (enemy: Enemy) => Promise<number[]>;
   /** Открыть разговор с соперником. */
   onWrite: (enemy: Enemy) => void;
   /** Сколько непрочитанного от кого, по почте в нижнем регистре. */
@@ -52,7 +52,7 @@ export default function Enemies({
   onAdd,
   onRaid,
   onScout,
-  onShowMap,
+  fetchStale,
   onWrite,
   unread,
   onRemove,
@@ -169,14 +169,7 @@ export default function Enemies({
             setProfile(null);
             onRemove(profile);
           }}
-          onShowMap={
-            profile.scout
-              ? () => {
-                  setProfile(null);
-                  onShowMap(profile);
-                }
-              : undefined
-          }
+          fetchStale={fetchStale}
         />
       )}
 
@@ -218,17 +211,30 @@ export function EnemyProfile({
   enemy,
   onClose,
   onRemove,
-  onShowMap,
+  fetchStale,
 }: {
   enemy: Enemy;
   onClose: () => void;
   /** Убрать из списка соперников — после подтверждения. */
   onRemove: () => void;
-  /** Открыть полную карту разведки — по клику на снимок. */
-  onShowMap?: () => void;
+  /** Квадраты, где враг менял склад после съёмки: они снова под туманом. */
+  fetchStale: (enemy: Enemy) => Promise<number[]>;
 }) {
   const t = useT();
   const [removing, setRemoving] = useState(false);
+  const [stale, setStale] = useState<number[]>([]);
+
+  // сверяем снимок с тем, что у врага сейчас: изменённое затянет туманом
+  useEffect(() => {
+    if (!enemy.scout) return;
+    let alive = true;
+    fetchStale(enemy)
+      .then((patches) => alive && setStale(patches))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [enemy, fetchStale]);
   const last =
     enemy.lastRaidAt > 0
       ? new Date(enemy.lastRaidAt).toLocaleString(undefined, {
@@ -324,15 +330,13 @@ export function EnemyProfile({
             </Button>
           </div>
 
+          {/* живая карта: колесо зумит, правая кнопка тащит — как везде */}
           {enemy.scout && (
-            <button
-              type="button"
-              onClick={onShowMap}
-              title={t("scout.map")}
-              className="min-w-0 flex-1 cursor-pointer self-start overflow-hidden rounded-md border border-neutral-700 transition hover:border-neutral-500"
-            >
-              <ScoutThumb snapshot={enemy.scout} />
-            </button>
+            <ScoutMap
+              snapshot={enemy.scout}
+              stale={stale}
+              className="aspect-square max-h-[60dvh] min-w-0 flex-1 self-start"
+            />
           )}
         </div>
       </Modal>

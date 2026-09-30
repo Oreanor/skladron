@@ -238,16 +238,3 @@ export function scoutCounts(guns: Gun[]): ScoutCounts {
   return out;
 }
 
-/** Советы по начинке под то, что сняли. */
-export function scoutPayloadTips(counts: ScoutCounts): Array<
-  "scout.tip.aa" | "scout.tip.spray" | "scout.tip.trap" | "scout.tip.none"
-> {
-  const tips: Array<
-    "scout.tip.aa" | "scout.tip.spray" | "scout.tip.trap" | "scout.tip.none"
-  > = [];
-  if (counts.gun + counts.rocket > 0) tips.push("scout.tip.aa");
-  if (counts.spray > 0) tips.push("scout.tip.spray");
-  if (counts.trap > 0) tips.push("scout.tip.trap");
-  if (!tips.length) tips.push("scout.tip.none");
-  return tips;
-}

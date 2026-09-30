@@ -3,7 +3,6 @@
 import type { Dict } from "../dict";
 
 const it: Dict = {
-  "scout.stale": "{patches} zone sono cambiate dal tuo volo: tornano sotto la nebbia.",
   "tg.title": "Telegram",
   "tg.explain": "Collega Telegram — il bot scrive di attacchi, e esiti dei tuoi.",
   "tg.linked": "Telegram collegato: il bot scrive di attacchi e i loro esiti.",
@@ -91,7 +90,6 @@ const it: Dict = {
   "replay.again": "Di nuovo",
   "replay.of": "attacco a",
   "replay.competition": "replica",
-  "scout.map": "Mappa",
   "battle.insurance": "Assicurazione",
   "battle.defenseBounty": "Premio di difesa",
   "restart.menu": "Ricomincia",
@@ -145,14 +143,7 @@ const it: Dict = {
   "scout.reportTitle": "{name}: quanto mappato",
   "scout.reportHint": "La mappa resta disponibile con i vuoti rimasti. Si aggiorna solo con un nuovo volo.",
   "scout.keep": "Tieni la mappa",
-  "scout.viewTitle": "{name}: mappa ricognita",
-  "scout.viewHint": "Rilevata {ago}. Lo scuro non è mai stato sorvolato.",
   "scout.analysis": "Difesa",
-  "scout.payloadAdvice": "Quale carica portare",
-  "scout.tip.aa": "Cannoni e lanciarazzi — disturbatore di cannoni o invisibile; il turbo riduce il tempo sotto il fuoco.",
-  "scout.tip.spray": "Estintori — disturbatore di estintori, altrimenti il fuoco si spegne in fretta.",
-  "scout.tip.trap": "Trappole — disturbatore di trappole, altrimenti lo sciame si inceppa in avvicinamento.",
-  "scout.tip.none": "Nessuna installazione nel rilevato — basta la carica vuota.",
   "gun.gunThere": "Qui c’è già un cannone",
   "gun.dragTip": "Scegli «Cannone» e trascina i cannoni per il magazzino sulle celle evidenziate.",
   "repair.done": "Riparate {cells} celle per {cost} cr",

@@ -3,7 +3,6 @@
 import type { Dict } from "../dict";
 
 const de: Dict = {
-  "scout.stale": "{patches} Felder haben sich seit deinem Flug verändert — sie liegen wieder im Nebel.",
   "tg.title": "Telegram",
   "tg.explain": "Verknüpfe Telegram — der Bot schreibt über Angriffe, und deine Ausgänge.",
   "tg.linked": "Telegram ist verknüpft: der Bot schreibt über Angriffe und ihre Ausgänge.",
@@ -91,7 +90,6 @@ const de: Dict = {
   "replay.again": "Nochmal",
   "replay.of": "Angriff auf",
   "replay.competition": "Wiederholung",
-  "scout.map": "Karte",
   "battle.insurance": "Versicherung",
   "battle.defenseBounty": "Abwehrprämie",
   "restart.menu": "Neu anfangen",
@@ -145,14 +143,7 @@ const de: Dict = {
   "scout.reportTitle": "{name}: was kartiert wurde",
   "scout.reportHint": "Die Karte bleibt mit den entstandenen Lücken erhalten. Auffrischen geht nur mit einem neuen Flug.",
   "scout.keep": "Karte behalten",
-  "scout.viewTitle": "{name}: aufgeklärte Karte",
-  "scout.viewHint": "Aufgenommen {ago}. Das Dunkle wurde nie überflogen.",
   "scout.analysis": "Verteidigung",
-  "scout.payloadAdvice": "Welche Ladung mitnehmen",
-  "scout.tip.aa": "Geschütze und Werfer — Geschützstörer oder Tarnkappe; Turbo verkürzt die Zeit unter Beschuss.",
-  "scout.tip.spray": "Löscher — Löscherstörer, sonst ist das Feuer schnell aus.",
-  "scout.tip.trap": "Fallen — Fallenstörer, sonst bleibt der Schwarm im Anflug hängen.",
-  "scout.tip.none": "Keine Anlagen im Aufgenommenen — leere Ladung reicht.",
   "gun.gunThere": "Hier steht schon ein Geschütz",
   "gun.dragTip": "Wähle «Geschütz» und zieh die Geschütze übers Lager auf die markierten Felder.",
   "repair.done": "{cells} Felder für {cost} Cr repariert",

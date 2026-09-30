@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -145,7 +146,6 @@ import {
   type ToolId,
 } from "./lobby/tools";
 import Scout, { type ScoutOutcome } from "./Scout";
-import ScoutMap from "./ScoutMap";
 import Replay, { type ReplayData } from "./Replay";
 import Rules from "./Rules";
 import { postRaidComment } from "@/lib/comments";
@@ -226,12 +226,15 @@ export default function Lobby({
   const [confirmWipe, setConfirmWipe] = useState(false);
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [loanAmount, setLoanAmount] = useState(LOAN_MIN);
-  /** Чью снятую карту сейчас смотрим и что на ней успело устареть. */
-  const [mapOf, setMapOf] = useState<Enemy | null>(null);
   /** С кем открыт разговор и сколько непрочитанного от кого. */
   const [writeTo, setWriteTo] = useState<Enemy | null>(null);
   const [unread, setUnread] = useState<Record<string, number>>({});
-  const [stale, setStale] = useState<number[]>([]);
+  /** Где враг менял склад после разведки: карточка затягивает это туманом. */
+  const fetchStale = useCallback(
+    (enemy: Enemy) =>
+      enemy.scout ? repo.stalePatches(enemy.email, enemy.scout.cells) : Promise.resolve([]),
+    [repo]
+  );
   /** Что сейчас крутим: чей бой и сама запись. */
   const [watching, setWatching] = useState<
     { id: string; name: string; replay: ReplayData } | null
@@ -728,17 +731,6 @@ export default function Lobby({
             loadRaids();
           }
         }}
-      />
-    );
-  }
-
-  if (mapOf?.scout) {
-    return (
-      <ScoutMap
-        name={mapOf.name}
-        snapshot={mapOf.scout}
-        stale={stale}
-        onClose={() => setMapOf(null)}
       />
     );
   }
@@ -1565,19 +1557,6 @@ export default function Lobby({
     void repo.saveEnemies(p).catch((e: Error) => setMessage(t("enemies.notSaved", { error: e.message })));
   };
 
-  /** Полная карта разведки врага. */
-  const showMap = (enemy: Enemy) => {
-    setSheet(null);
-    setStale([]);
-    setMapOf(enemy);
-    // сверяем снимок с тем, что у врага сейчас: изменённое затянет туманом
-    if (enemy.scout) {
-      void repo
-        .stalePatches(enemy.email, enemy.scout.cells)
-        .then(setStale)
-        .catch(() => setStale([]));
-    }
-  };
 
   const hideRaid = async (id: string) => {
     setRaids((rows) => rows.filter((r) => r.id !== id));
@@ -1740,7 +1719,7 @@ export default function Lobby({
       onAdd={addEnemy}
       onRaid={doRaid}
       onScout={doScout}
-      onShowMap={showMap}
+      fetchStale={fetchStale}
       onWrite={(enemy) => {
         setSheet(null);
         setWriteTo(enemy);
@@ -2124,14 +2103,7 @@ export default function Lobby({
             setFoeCard(null);
             removeEnemy(foeCard);
           }}
-          onShowMap={
-            foeCard.scout
-              ? () => {
-                  setFoeCard(null);
-                  showMap(foeCard);
-                }
-              : undefined
-          }
+          fetchStale={fetchStale}
         />
       )}
 

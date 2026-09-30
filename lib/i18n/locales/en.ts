@@ -4,7 +4,6 @@
  */
 
 const en = {
-  "scout.stale": "{patches} patches have changed since your flight — they are back under fog.",
   "tg.title": "Telegram",
   "tg.explain": "Link Telegram and the bot will write about enemy raids, and your raid outcomes.",
   "tg.linked": "Telegram is linked — the bot will write about raids and their outcomes.",
@@ -92,7 +91,6 @@ const en = {
   "replay.again": "Replay",
   "replay.of": "raid on",
   "replay.competition": "replay",
-  "scout.map": "Map",
   "battle.insurance": "Insurance",
   "battle.defenseBounty": "Defence bounty",
   "restart.menu": "Start over",
@@ -146,14 +144,7 @@ const en = {
   "scout.reportTitle": "{name}: what we mapped",
   "scout.reportHint": "The map stays available with the gaps you left. Fly again to refresh it.",
   "scout.keep": "Keep the map",
-  "scout.viewTitle": "{name}: scouted map",
-  "scout.viewHint": "Taken {ago}. The dark areas were never flown over.",
   "scout.analysis": "Defenses",
-  "scout.payloadAdvice": "Which warheads to bring",
-  "scout.tip.aa": "Guns and launchers — gun jammer or stealth; turbo spends less time under fire.",
-  "scout.tip.spray": "Sprinklers — sprinkler jammer, or the fire goes out fast.",
-  "scout.tip.trap": "Traps — trap jammer, or the swarm sticks on the approach.",
-  "scout.tip.none": "No installations in what you mapped — empty warheads are enough.",
   "gun.gunThere": "There is already a gun here",
   "gun.dragTip": "Pick «Gun» and drag guns across the warehouse onto the highlighted cells.",
   "repair.done": "Repaired {cells} cells for {cost} cr",

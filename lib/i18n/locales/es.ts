@@ -3,7 +3,6 @@
 import type { Dict } from "../dict";
 
 const es: Dict = {
-  "scout.stale": "Han cambiado {patches} zonas desde tu vuelo: vuelven a estar bajo niebla.",
   "tg.title": "Telegram",
   "tg.explain": "Vincula Telegram — el bot avisa de ataques ajenos, y el resultado de los tuyos.",
   "tg.linked": "Telegram vinculado: el bot escribe de ataques y sus resultados.",
@@ -91,7 +90,6 @@ const es: Dict = {
   "replay.again": "Otra vez",
   "replay.of": "ataque a",
   "replay.competition": "repetición",
-  "scout.map": "Mapa",
   "battle.insurance": "Seguro",
   "battle.defenseBounty": "Prima de defensa",
   "restart.menu": "Empezar de nuevo",
@@ -145,14 +143,7 @@ const es: Dict = {
   "scout.reportTitle": "{name}: lo cartografiado",
   "scout.reportHint": "El mapa queda disponible con los huecos que hayan salido. Solo un nuevo vuelo lo actualiza.",
   "scout.keep": "Quedarse el mapa",
-  "scout.viewTitle": "{name}: mapa explorado",
-  "scout.viewHint": "Tomado {ago}. Lo oscuro es lo que no se sobrevoló.",
   "scout.analysis": "Defensa",
-  "scout.payloadAdvice": "Qué carga llevar",
-  "scout.tip.aa": "Cañones y lanzaderas — inhibidor de cañones o invisible; turbo reduce el tiempo bajo fuego.",
-  "scout.tip.spray": "Extintores — inhibidor de extintores, o el fuego se apaga rápido.",
-  "scout.tip.trap": "Trampas — inhibidor de trampas, o el enjambre se atasca en la aproximación.",
-  "scout.tip.none": "No hay instalaciones en lo explorado — basta la carga vacía.",
   "gun.gunThere": "Aquí ya hay un cañón",
   "gun.dragTip": "Elige «Cañón» y arrastra los cañones por el almacén a las celdas resaltadas.",
   "repair.done": "Reparadas {cells} celdas por {cost} cr",

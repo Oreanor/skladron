@@ -3,7 +3,6 @@
 import type { Dict } from "../dict";
 
 const pt: Dict = {
-  "scout.stale": "Mudaram {patches} zonas desde o teu voo — voltaram para debaixo do nevoeiro.",
   "tg.title": "Telegram",
   "tg.explain": "Liga o Telegram — o bot avisa de ataques, e resultados dos teus.",
   "tg.linked": "Telegram ligado: o bot escreve sobre ataques e os seus resultados.",
@@ -91,7 +90,6 @@ const pt: Dict = {
   "replay.again": "Outra vez",
   "replay.of": "ataque a",
   "replay.competition": "repetição",
-  "scout.map": "Mapa",
   "battle.insurance": "Seguro",
   "battle.defenseBounty": "Prémio de defesa",
   "restart.menu": "Começar de novo",
@@ -145,14 +143,7 @@ const pt: Dict = {
   "scout.reportTitle": "{name}: o que foi mapeado",
   "scout.reportHint": "O mapa fica disponível com as falhas que sobraram. Só um novo voo o actualiza.",
   "scout.keep": "Ficar com o mapa",
-  "scout.viewTitle": "{name}: mapa explorado",
-  "scout.viewHint": "Levantado {ago}. O escuro é o que não foi sobrevoado.",
   "scout.analysis": "Defesa",
-  "scout.payloadAdvice": "Que carga levar",
-  "scout.tip.aa": "Canhões e lançadores — inibidor de canhões ou invisível; o turbo reduz o tempo sob fogo.",
-  "scout.tip.spray": "Extintores — inibidor de extintores, senão o fogo apaga-se depressa.",
-  "scout.tip.trap": "Armadilhas — inibidor de armadilhas, senão o enxame fica preso na aproximação.",
-  "scout.tip.none": "Não há instalações no explorado — basta a carga vazia.",
   "gun.gunThere": "Já está aqui um canhão",
   "gun.dragTip": "Escolhe «Canhão» e arrasta os canhões pelo armazém até às células realçadas.",
   "repair.done": "Reparadas {cells} células por {cost} cr",

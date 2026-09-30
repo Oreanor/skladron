@@ -3,7 +3,6 @@
 import type { Dict } from "../dict";
 
 const fr: Dict = {
-  "scout.stale": "{patches} zones ont changé depuis ton vol : elles repassent sous le brouillard.",
   "tg.title": "Telegram",
   "tg.explain": "Relie Telegram — le bot écrit pour les raids ennemis, et le sort des tiens.",
   "tg.linked": "Telegram relié : le bot écrit pour les raids et leurs issues.",
@@ -91,7 +90,6 @@ const fr: Dict = {
   "replay.again": "Rejouer",
   "replay.of": "raid sur",
   "replay.competition": "rediffusion",
-  "scout.map": "Carte",
   "battle.insurance": "Assurance",
   "battle.defenseBounty": "Prime de défense",
   "restart.menu": "Tout recommencer",
@@ -145,14 +143,7 @@ const fr: Dict = {
   "scout.reportTitle": "{name} : ce qui est cartographié",
   "scout.reportHint": "La carte reste disponible avec les trous laissés. Seul un nouveau vol la met à jour.",
   "scout.keep": "Garder la carte",
-  "scout.viewTitle": "{name} : carte reconnue",
-  "scout.viewHint": "Relevée {ago}. Le sombre n’a jamais été survolé.",
   "scout.analysis": "Défense",
-  "scout.payloadAdvice": "Quelle charge emporter",
-  "scout.tip.aa": "Canons et lance-roquettes — brouilleur de canons ou furtif ; le turbo réduit le temps sous le feu.",
-  "scout.tip.spray": "Extincteurs — brouilleur d’extincteurs, sinon le feu s’éteint vite.",
-  "scout.tip.trap": "Pièges — brouilleur de pièges, sinon l’essaim s’accroche à l’approche.",
-  "scout.tip.none": "Aucune installation dans le relevé — une charge vide suffit.",
   "gun.gunThere": "Il y a déjà un canon ici",
   "gun.dragTip": "Choisis « Canon » et fais glisser les canons dans l’entrepôt vers les cases surlignées.",
   "repair.done": "{cells} cases réparées pour {cost} cr",
