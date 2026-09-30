@@ -36,7 +36,7 @@ const pt: Dict = {
   "raidComment.sent": "Enviado",
   "raidComment.reportField": "Comentário sobre o ataque",
   "replays.incoming": "ataque de",
-  "replays.pending": "{drones} drones · ainda por combater",
+  "replays.pending": "{drones} drones · por combater",
   "tool.priceBox": "{cost} cr/{perCell} un",
   "stat.creditsLine": "{credits} (+{income} cr/12h)",
   "tool.loan": "Crédito",

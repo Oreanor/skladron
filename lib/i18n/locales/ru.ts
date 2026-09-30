@@ -36,7 +36,7 @@ const ru: Dict = {
   "raidComment.sent": "Отправлено",
   "raidComment.reportField": "Комментарий к налёту",
   "replays.incoming": "налёт от",
-  "replays.pending": "{drones} дронов · бой ещё не отыгран",
+  "replays.pending": "{drones} дронов · бой не отыгран",
   "tool.priceBox": "{cost} кр/{perCell} шт",
   "stat.creditsLine": "{credits} (+{income} кр/12ч)",
   "tool.loan": "Кредит",

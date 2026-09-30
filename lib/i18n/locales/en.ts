@@ -37,7 +37,7 @@ const en = {
   "raidComment.sent": "Sent",
   "raidComment.reportField": "Comment on this raid",
   "replays.incoming": "raid from",
-  "replays.pending": "{drones} drones · not fought yet",
+  "replays.pending": "{drones} drones · not fought",
   "tool.priceBox": "{cost} cr/{perCell} pcs",
   "stat.creditsLine": "{credits} (+{income} cr/12h)",
   "tool.loan": "Loan",
