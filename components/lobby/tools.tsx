@@ -36,8 +36,6 @@ import {
 } from "@/lib/economy";
 import { BALLOONS_PER_CELL, DRONES_PER_CELL, type GunKind } from "@/lib/base";
 import { ROCKET, SPRAY, TRAP } from "@/lib/tuning";
-import type { AttackOrder } from "@/lib/attack";
-import type { Player } from "@/lib/player";
 import type { Key } from "@/lib/i18n/dict";
 import { IconBalloon, IconDrone } from "../ui";
 
@@ -207,18 +205,6 @@ export const BOT_COUNT = 4;
 /** Панели правой колонки в порядке по умолчанию. */
 export const DEFAULT_PANELS = ["replays", "competitions", "enemies", "stats"];
 export const PANELS_KEY = "wb.panels.v1";
-
-/**
- * Соперник, приславший этот налёт. Ищем по почте, а не по имени склада:
- * имена не уникальны и меняются переименованием, а почта — то же самое,
- * по чему соперника и заводят. У ботов почты нет, для них имя и остаётся
- * единственной приметой.
- */
-export function findFoe(p: Player, order: AttackOrder) {
-  const mail = order.fromEmail?.toLowerCase();
-  if (mail) return p.enemies.find((e) => e.email.toLowerCase() === mail);
-  return p.enemies.find((e) => e.name === order.from);
-}
 
 export function readPanels(): {
   order: string[];

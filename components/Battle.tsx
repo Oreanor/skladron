@@ -11,7 +11,6 @@ import {
   settle,
   update,
   type BattleLevels,
-  type BattleResult,
   type GameState,
 } from "@/lib/engine";
 import { drawFrame, COLORS } from "@/lib/render";
@@ -19,20 +18,12 @@ import { goodsValue, insurance, defenseBounty, fmt } from "@/lib/economy";
 import MapCanvas, { type Pt } from "./MapCanvas";
 import { Button, Chip, ChipBar, IconButton, Panel, Row } from "./ui";
 import { encodeTrace, type Frame } from "@/lib/replay";
+import type { BattleOutcome } from "@/lib/outcome";
 import { SIM } from "@/lib/tuning";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 import { PAYLOADS, type Payload } from "@/lib/attack";
 
-export interface BattleOutcome {
-  cells: Uint8Array;
-  guns: Gun[];
-  depots: Depot[];
-  result: BattleResult;
-  won: boolean;
-  /** Запись действий защитника: по ней нападавший увидит бой своими глазами. */
-  trace: string;
-}
 
 interface Props {
   cells: Uint8Array;

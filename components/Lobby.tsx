@@ -37,9 +37,6 @@ import {
   SCRAP_REWARD,
   priceAt,
   loanDebt,
-  goodsValue,
-  insurance,
-  defenseBounty,
   MIN_BASE_CELLS,
   REPAIR_COST,
   maxLevel,
@@ -56,7 +53,6 @@ import {
   type AttackOrder,
   type AttackReport,
   type Pattern,
-  type RaidLog,
   type WavePlan,
   makeOrder,
 } from "@/lib/attack";
@@ -71,8 +67,6 @@ import {
 } from "@/lib/player";
 import {
   buildCompetition,
-  COMPETITION_STAGES,
-  competitionScore,
   titleCompetitions,
 } from "@/lib/competition";
 import { getRepo } from "@/lib/repo";
@@ -110,8 +104,10 @@ import {
   scrapAt as scrapCell,
   type BuildResult,
 } from "@/lib/build";
-import Battle, { type BattleOutcome } from "./Battle";
+import Battle from "./Battle";
+import { applyOutcome, type BattleOutcome } from "@/lib/outcome";
 import CompetitionsPanel from "./lobby/CompetitionsPanel";
+import { useJournal } from "./lobby/useJournal";
 import SummonRaidDialog from "./lobby/SummonRaidDialog";
 import AttackReportDialog from "./lobby/AttackReportDialog";
 import MessageDialog from "./lobby/MessageDialog";
@@ -137,7 +133,6 @@ import {
   DEFAULT_PANELS,
   PANELS_KEY,
   TOOLS,
-  findFoe,
   isBuildKind,
   readPanels,
   type ModalId,
@@ -146,7 +141,7 @@ import {
   type ToolId,
 } from "./lobby/tools";
 import Scout, { type ScoutOutcome } from "./Scout";
-import Replay, { type ReplayData } from "./Replay";
+import Replay from "./Replay";
 import Rules from "./Rules";
 import { postRaidComment } from "@/lib/comments";
 import {
@@ -236,17 +231,17 @@ export default function Lobby({
       enemy.scout ? repo.stalePatches(enemy.email, enemy.scout.cells) : Promise.resolve([]),
     [repo]
   );
-  /** Что сейчас крутим: чей бой и сама запись. */
-  const [watching, setWatching] = useState<
-    { id: string; name: string; replay: ReplayData } | null
-  >(null);
   const [showRules, setShowRules] = useState(false);
   const [telegram, setTelegram] = useState<{ code: string; linked: boolean } | null>(null);
   const [panelOrder, setPanelOrder] = useState(DEFAULT_PANELS);
   const [hidden, setHidden] = useState<Record<string, boolean>>({});
   const [dragPanel, setDragPanel] = useState<string | null>(null);
   /** Журнал боёв: и свои налёты, и те, где отбивался. */
-  const [raids, setRaids] = useState<RaidLog[]>([]);
+  const { raids, loadRaids, hideRaid, openReplay, watching, setWatching } = useJournal(
+    repo,
+    t,
+    setMessage
+  );
   /** Карточка врага, открытая по нику из журнала боёв. */
   const [foeCard, setFoeCard] = useState<Enemy | null>(null);
   /** Идущий разведвылет: карта врага, его пушки и сколько самолётов послали. */
@@ -335,15 +330,6 @@ export default function Lobby({
       savePanels(next, hidden);
       return next;
     });
-  };
-
-  const loadRaids = () => {
-    void repo
-      .raidLog()
-      .then((rows) => setRaids(rows))
-      .catch(() => {
-        // журнал — не игра, из-за него ломаться нечему
-      });
   };
 
   const resyncBase = async () => {
@@ -632,74 +618,19 @@ export default function Lobby({
         }}
         insuranceLevel={p.levels.insurance}
         onFinish={async (o: BattleOutcome) => {
-          const goodsBefore = goodsValue(p.depots);
-          // Площадь до боя — для счёта состязания: его считают от неё.
-          const intactBefore = intactCells(p);
-          p.cells = o.cells;
-          p.guns = o.guns;
-          p.depots = o.depots;
-          p.incoming = p.incoming.filter((a) => a.id !== battle.id);
+          const { killed, mission, foeChanged } = applyOutcome(p, battle, o);
           // Сервер узнает об исходе только из applyBattle ниже, а опрос идёт
           // раз в десять секунд и собирает очередь заново. Без этой отметки
           // только что отбитый рой успевал вернуться в список.
           attacks.markResolved(battle.id);
-          p.stats.battles++;
-          const killed =
-            o.result.killedByGuns + o.result.killedByMg + o.result.killedByBalloons;
-          p.stats.dronesKilled += killed;
-          p.stats.cellsBurned += o.result.burned;
-          // Состязание: счёт попытки, лучший по номеру, и следующий номер,
-          // если склад уцелел. Сервер считает то же самое у себя, а при
-          // следующем входе его прогресс перекроет этот.
-          const stage = battle.competitionStage;
-          const attempt = stage
-            ? competitionScore(intactBefore, intactCells(p))
-            : null;
-          const record =
-            !!stage && !!attempt && attempt.score > (p.competitionBest[stage]?.score ?? -1);
-          if (stage && attempt) {
-            if (record) {
-              p.competitionBest = {
-                ...p.competitionBest,
-                [stage]: {
-                  ...attempt,
-                  area: intactBefore,
-                  // повтор есть только у боя, что считал сервер
-                  id: battle.remote ? battle.id : undefined,
-                },
-              };
-            }
-            if (o.won) {
-              p.competitionAt = Math.max(
-                p.competitionAt,
-                Math.min(COMPETITION_STAGES, stage + 1)
-              );
-            }
-          }
-          p.credits +=
-            insurance(
-              o.result.burned,
-              goodsBefore - goodsValue(o.depots),
-              o.result.gunsLost,
-              p.levels.insurance,
-              o.result.spraysLost,
-              o.result.trapsLost,
-              o.result.rocketsLost
-            ) + defenseBounty(battle.drones, o.result.burned);
-          // Счёт вражды: записываем, сколько он у нас сжёг. Ищем по почте —
-          // имя склада не уникально и меняется переименованием.
-          const foe = findFoe(p, battle);
-          if (foe) {
-            foe.burnedByThem += o.result.burned;
-            void repo.saveEnemies(p).catch(() => {});
-          }
+          if (foeChanged) void repo.saveEnemies(p).catch(() => {});
           setBattle(null);
           setMessage(
-            stage && attempt
-              ? t(record ? "competition.record" : "competition.result", {
-                  n: stage,
-                  pct: attempt.pct,
-                  score: attempt.score,
+            mission
+              ? t(mission.record ? "competition.record" : "competition.result", {
+                  n: mission.stage,
+                  pct: mission.pct,
+                  score: mission.score,
                 })
               : o.won
                 ? t("battle.repelled", { killed })
@@ -715,8 +646,8 @@ export default function Lobby({
               battle.remote ? battle.id : undefined,
               o.trace
             );
-            // в состязании писать некому: второй стороны нет
-            if (battle.remote && !stage) {
+            // в миссии писать некому: второй стороны нет
+            if (battle.remote && !mission) {
               notifyBattle(battle.id, "resolved");
               setPostCommentRaid(battle.id);
             }
@@ -1562,29 +1493,6 @@ export default function Lobby({
     void repo.saveEnemies(p).catch((e: unknown) => setMessage(t("enemies.notSaved", { error: explain(e, t) })));
   };
 
-
-  const hideRaid = async (id: string) => {
-    setRaids((rows) => rows.filter((r) => r.id !== id));
-    try {
-      await repo.hideRaid(id);
-    } catch {
-      loadRaids();
-    }
-  };
-
-  /** Открыть повтор: name — тот, чей склад отбивался, он стоит в шапке. */
-  const openReplay = async (id: string, name: string) => {
-    try {
-      const data = await repo.replayOf(id);
-      if (!data) {
-        setMessage(t("replay.gone"));
-        return;
-      }
-      setWatching({ id, name, replay: data });
-    } catch (e) {
-      setMessage(t("replay.failed", { error: explain(e, t) }));
-    }
-  };
 
   const income = shiftIncome(p);
   const pickTool = (id: ToolId) => {
