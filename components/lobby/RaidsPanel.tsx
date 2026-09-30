@@ -23,11 +23,6 @@ const day = (at: number) => {
   return `${two(d.getDate())}.${two(d.getMonth() + 1)}.${two(d.getFullYear() % 100)}`;
 };
 
-/** Дата в начале строки: бледная, моноширинная, чтобы столбиком. */
-const Day = ({ at }: { at: number }) => (
-  <span className="mr-2 font-mono text-[11px] text-neutral-500">{day(at)}</span>
-);
-
 /** Ник второй стороны: жирный и белый; если соперник в списке — кликается. */
 const Foe = ({ name, open }: { name: string; open?: () => void }) =>
   open ? (
@@ -99,11 +94,12 @@ export default function RaidsPanel({
           >
             <div className="min-w-0">
               <div className="truncate text-neutral-200">
-                <Day at={a.createdAt} />
                 <span className="text-red-300">{t("replays.incoming")}</span>{" "}
                 <Foe name={a.from} open={onFoe(a.fromEmail)} />
               </div>
               <div className="font-mono text-[11px] text-neutral-500">
+                {day(a.createdAt)}
+                {", "}
                 {t("attacks.dronesPattern", {
                   drones: a.drones,
                   pattern: t(`pattern.${a.pattern}` as Key).toLowerCase(),
@@ -135,7 +131,6 @@ export default function RaidsPanel({
         <li key={r.id} className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <div className={`truncate ${r.pending ? "text-neutral-400" : "text-neutral-200"}`}>
-              <Day at={r.at} />
               <span className={r.side === "attack" ? "text-red-300" : "text-sky-300"}>
                 {t(r.side === "attack" ? "replays.attack" : "replays.defence")}
               </span>{" "}
@@ -143,10 +138,10 @@ export default function RaidsPanel({
             </div>
             <div className="font-mono text-[11px] text-neutral-500">
               {r.pending
-                ? t("replays.pending", { drones: r.drones })
-                : t("replays.line", { drones: r.drones, burned: fmt(r.burned) })}
+                ? `${day(r.at)}, ${t("replays.pending", { drones: r.drones })}`
+                : `${day(r.at)}, ${t("replays.line", { drones: r.drones, burned: fmt(r.burned) })}`}
               {!r.pending && r.side === "attack" && r.loot > 0
-                ? ` · +${fmt(r.loot)} ${t("battle.creditsSuffix")}`
+                ? `, +${fmt(r.loot)} ${t("battle.creditsSuffix")}`
                 : ""}
             </div>
           </div>
