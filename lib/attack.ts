@@ -477,6 +477,8 @@ function waveTickets(
       // Рукава растут с роем и каждый наматывает turns оборотов — как у
       // галактики. Сдвиг точки вылета равномерно раскладывает эти обороты по
       // слоям; закрутка полёта против знака сдвига, чтобы рой шёл по изгибу ветви.
+      // Направление выбирает нападающий: чётная сторона — рой вращается по
+      // часовой, нечётная — против (ось y на карте смотрит вниз).
       const arms = scaleCount(
         n,
         WAVE.spiral.armsMin,
@@ -492,7 +494,7 @@ function waveTickets(
         Math.max(WAVE.spiral.gapMin, duration / Math.max(1, layers - 1))
       );
       const emit = layers > 1 ? (WAVE.spiral.turns * TAU) / (layers - 1) : 0;
-      const spin = rnd() < 0.5 ? 1 : -1;
+      const spin = direction % 2 === 0 ? -1 : 1;
       const from = rnd() * TAU;
       for (let i = 0; i < n; i++) {
         const wave = (i / arms) | 0;
