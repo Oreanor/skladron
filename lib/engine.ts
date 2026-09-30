@@ -852,7 +852,7 @@ function arrive(s: GameState, d: Drone): boolean {
   }
 
   ignite(s, d.ti);
-  s.booms.push({ x: d.tx, y: d.ty, t: 0, r: 2.5 });
+  s.booms.push({ x: d.tx, y: d.ty, t: 0, r: 2.5 * PAYLOAD[d.payload].blast });
   // Взрывчатка забирает не одну клетку, а крест вокруг неё: радиус меряем
   // по кратчайшему пути, а не по квадрату, — при единице это цель и четыре
   // прилегающие, ровно пять.
@@ -1248,7 +1248,7 @@ function stepDrones(s: GameState, dt: number, gunsById: Map<number, Gun>) {
       // при этом пропадал — выглядело как необъяснимые потери.
       if (g && prey(d.payload) === null && s.rnd() < DRONE.gunCollision) {
         killGun(s, g);
-        s.booms.push({ x: cx + 0.5, y: cy + 0.5, t: 0, r: 3 });
+        s.booms.push({ x: cx + 0.5, y: cy + 0.5, t: 0, r: 3 * PAYLOAD[d.payload].blast });
         s.drones.splice(i, 1);
         // Его никто не сбивал — он дошёл и снёс установку собой. В счёт идёт
         // прорвавшимся, иначе сбитые и прорвавшиеся не сходятся с высланными.
