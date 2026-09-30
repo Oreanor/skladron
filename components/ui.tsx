@@ -191,7 +191,10 @@ export function Panel({
             ) : (
               <SectionTitle>{title}</SectionTitle>
             ))}
-          {!collapsed && action}
+          {/* Кнопка выше строки заголовка: без отрицательных отступов шапка
+              вырастала при развороте, и заголовок съезжал вниз. Так она
+              заходит в поле панели, а шапка всегда высотой в заголовок. */}
+          {!collapsed && action && <div className="-my-2 shrink-0 lg:-my-1.5">{action}</div>}
         </div>
       )}
       {!collapsed && children}

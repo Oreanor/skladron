@@ -1,13 +1,12 @@
--- Журнал состязаний по номерам: у рекорда номера — id лучшей попытки, по
--- нему открывается повтор. Удалять бои из журнала больше нельзя. Состязание
--- не стоит в очереди налётов и не держит их часы.
--- Выполнить в Supabase → SQL Editor до деплоя клиента. Годится и после
--- patch_competition_journal.sql, если его успели выполнить, и без него.
+-- Журнал миссий по номерам: у рекорда номера — id лучшей попытки, по нему
+-- открывается повтор. Миссия не стоит в очереди налётов и не держит их часы.
+-- Выполнить в Supabase → SQL Editor до деплоя клиента. Прогонять повторно
+-- можно: если прошлая версия этого патча уже убрала удаление боёв из
+-- журнала, эта его вернёт (убранные тогда бои снова будут видны).
 
 drop function if exists raid_log();
-drop function if exists hide_raid(uuid);
 alter table attacks drop column if exists competition_score;
-alter table attacks drop column if exists hidden_by;
+alter table attacks add column if not exists hidden_by uuid[] not null default '{}';
 
 create or replace function pending_attacks()
 returns table (
@@ -202,12 +201,26 @@ language sql security definer set search_path = public stable as $$
     join profiles d on d.id = a.defender_id
    -- состязаний тут нет: у них свой журнал, по номерам
    where a.competition_stage is null
+     and not (auth.uid() = any (a.hidden_by))
      and (
        (a.attacker_id = auth.uid() and a.status in ('pending', 'resolved'))
        or (a.defender_id = auth.uid() and a.status = 'resolved')
      )
    order by coalesce(a.resolved_at, a.created_at) desc
    limit 30;
+$$;
+
+create or replace function hide_raid(attack_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  update attacks
+     set hidden_by = array_append(hidden_by, uid)
+   where id = attack_id
+     and (attacker_id = uid or defender_id = uid)
+     and not (uid = any (hidden_by));
+end;
 $$;
 
 -- К уже набранным рекордам дописываем id лучшей попытки: берём сыгранную
@@ -234,6 +247,6 @@ update profiles p
    )
  where p.competition_best <> '{}'::jsonb;
 
-grant execute on function raid_log to authenticated;
+grant execute on function raid_log, hide_raid to authenticated;
 
 notify pgrst, 'reload schema';

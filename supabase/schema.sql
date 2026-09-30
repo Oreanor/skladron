@@ -393,6 +393,8 @@ create table if not exists attacks (
   result jsonb,
   loot int not null default 0,
   destroyed boolean not null default false,
+  -- кто убрал бой из своего журнала: строка одна на двоих, прячем по-своему
+  hidden_by uuid[] not null default '{}',
   -- повтор налёта: слепок склада защитника до боя и запись его действий
   snap_cells text,
   snap_guns jsonb,
@@ -2052,12 +2054,27 @@ language sql security definer set search_path = public stable as $$
     join profiles d on d.id = a.defender_id
    -- состязаний тут нет: у них свой журнал, по номерам
    where a.competition_stage is null
+     and not (auth.uid() = any (a.hidden_by))
      and (
        (a.attacker_id = auth.uid() and a.status in ('pending', 'resolved'))
        or (a.defender_id = auth.uid() and a.status = 'resolved')
      )
    order by coalesce(a.resolved_at, a.created_at) desc
    limit 30;
+$$;
+
+-- Убрать бой из своего журнала. У второй стороны он остаётся: строка одна.
+create or replace function hide_raid(attack_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  update attacks
+     set hidden_by = array_append(hidden_by, uid)
+   where id = attack_id
+     and (attacker_id = uid or defender_id = uid)
+     and not (uid = any (hidden_by));
+end;
 $$;
 
 -- ---------- ссылка на повтор ----------
@@ -2158,7 +2175,7 @@ grant execute on function ensure_player, collect_income, save_base,
   buy_depot, apply_battle, wipe_base, rename_base, save_enemies,
   base_names, stale_patches, launch_scout, upgrade, add_rival,
   send_message, message_thread, read_messages, unread_messages,
-  take_loan, repay_loan, raid_log,
+  take_loan, repay_loan, raid_log, hide_raid,
   send_attack, queue_competition, pending_attacks, attack_reports, ack_attack_report, restart_game to authenticated;
 
 -- PostgREST держит список функций в кэше. Supabase обычно перечитывает его сам,

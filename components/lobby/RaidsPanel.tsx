@@ -8,7 +8,7 @@
  * ниже прошедшие бои, из которых открывается повтор.
  */
 
-import { Play } from "lucide-react";
+import { Play, Trash2 } from "lucide-react";
 import { fmt } from "@/lib/economy";
 import type { AttackOrder, RaidLog } from "@/lib/attack";
 import type { PlayerStats } from "@/lib/player";
@@ -41,12 +41,14 @@ export default function RaidsPanel({
   raids,
   onDefend,
   onWatch,
+  onHide,
 }: {
   /** Что к нам летит. Первый в списке и есть тот, кого отбивают. */
   incoming: AttackOrder[];
   raids: RaidLog[];
   onDefend: (order: AttackOrder) => void;
   onWatch: (raid: RaidLog) => void;
+  onHide: (id: string) => void;
 }) {
   const t = useT();
   if (!raids.length && !incoming.length) {
@@ -113,16 +115,28 @@ export default function RaidsPanel({
                 : ""}
             </div>
           </div>
-          {/* пока бой не отыгран, смотреть нечего */}
-          {!r.pending && r.hasReplay && (
-            <IconButton
-              label={t("replay.watch")}
-              title={t("replay.watch")}
-              className="h-8 w-8 shrink-0"
-              onClick={() => onWatch(r)}
-            >
-              <Play className="h-4 w-4" />
-            </IconButton>
+          {/* пока бой не отыгран, смотреть и убирать нечего */}
+          {!r.pending && (
+            <div className="flex shrink-0 gap-1">
+              <IconButton
+                label={t("replays.hide")}
+                title={t("replays.hide")}
+                className="h-8 w-8"
+                onClick={() => onHide(r.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </IconButton>
+              {r.hasReplay && (
+                <IconButton
+                  label={t("replay.watch")}
+                  title={t("replay.watch")}
+                  className="h-8 w-8"
+                  onClick={() => onWatch(r)}
+                >
+                  <Play className="h-4 w-4" />
+                </IconButton>
+              )}
+            </div>
           )}
         </li>
       ))}

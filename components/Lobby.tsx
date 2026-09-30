@@ -1556,6 +1556,15 @@ export default function Lobby({
   };
 
   /** Открыть повтор из журнала: сам бой подгружаем по одной атаке. */
+  const hideRaid = async (id: string) => {
+    setRaids((rows) => rows.filter((r) => r.id !== id));
+    try {
+      await repo.hideRaid(id);
+    } catch {
+      loadRaids();
+    }
+  };
+
   /** Открыть повтор: name — тот, чей склад отбивался, он стоит в шапке. */
   const openReplay = async (id: string, name: string) => {
     try {
@@ -1669,6 +1678,7 @@ export default function Lobby({
       raids={raids}
       onDefend={(order) => void defend(order)}
       onWatch={(r) => void openReplay(r.id, r.side === "attack" ? r.foe : p.name)}
+      onHide={(id) => void hideRaid(id)}
     />
   );
   const competitionsBody = (
