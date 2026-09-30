@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { GRID, type Depot, type Gun } from "@/lib/base";
 import { buildPlan, type AttackOrder } from "@/lib/attack";
 import {
+  afterglow,
   createBattle,
   setAim,
   setFiring,
@@ -62,6 +63,9 @@ interface Hud {
   /** Сколько дронов каждого груза ещё в воздухе и не сбито. */
   byPayload: Partial<Record<Payload, number>>;
 }
+
+/** Сколько поле видно после конца боя, прежде чем его накроет итог. */
+const END_PAUSE_MS = 1500;
 
 export default function Battle({
   cells,
@@ -125,6 +129,7 @@ export default function Battle({
           );
         }
         update(s, SIM.step);
+        afterglow(s, SIM.step);
       }
 
       // Перерисовка карты стоит десяти тысяч заливок, а пожар ползёт
@@ -157,14 +162,21 @@ export default function Battle({
           byPayload,
         });
       }
+      // Исход и запись снимаем ровно в миг конца боя, а итог показываем чуть
+      // позже: иначе он накрывал поле в тот же кадр, когда гасла последняя
+      // клетка, и не было видно, успел ли ты её потушить.
       if (s.phase !== "playing" && !finished.current) {
         finished.current = true;
-        const out = settle(s);
-        setDone({ ...out, won: s.phase === "won", trace: encodeTrace(trace.current) });
+        const out = { ...settle(s), won: s.phase === "won", trace: encodeTrace(trace.current) };
+        endTimer = window.setTimeout(() => setDone(out), END_PAUSE_MS);
       }
     };
+    let endTimer = 0;
     raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(endTimer);
+    };
   }, [s, startGoods]);
 
   /**

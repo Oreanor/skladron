@@ -1710,6 +1710,14 @@ function stepFire(s: GameState, dt: number) {
   }
 }
 
+/**
+ * Бой кончился, а на поле ещё догорают взрывы и тает дым: пока итог не
+ * закрыл поле, пусть доигрывают. Только следы — расчёт боя уже закончен.
+ */
+export function afterglow(s: GameState, dt: number) {
+  if (s.phase !== "playing") stepEffects(s, dt);
+}
+
 /** Следы боя: взрывы, выстрелы, дым. На расчёт не влияют. */
 function stepEffects(s: GameState, dt: number) {
   for (let i = s.booms.length - 1; i >= 0; i--) {
