@@ -218,7 +218,7 @@ const ru: Dict = {
   "tool.repairHint": "Ремонт сгоревших клеток",
   "tool.gunHint": "Сбивает дронов в небе",
   "tool.sprayHint": "Тушит пожары вокруг",
-  "tool.trapHint": "Удерживает дронов магнитом",
+  "tool.trapHint": "Удерживает дроны магнитом",
   "tool.rocketHint": "Самонаводящиеся ракеты, бьёт далеко",
   "tool.dronesHint": "Дроны для своих налётов",
   "tool.balloonsHint": "Воздушные шары, мешающие дронам",
