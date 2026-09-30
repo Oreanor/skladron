@@ -57,13 +57,7 @@ export function notifyMessage(email: string, messageId: string) {
   quiet(() => post({ event: "message", email, messageId }));
 }
 
-/** Состязание или отладочный налёт с ?raid=: второй стороны нет, пишем самому себе. */
-export function notifyTestRaid(drones: number, stage?: number) {
-  quiet(() =>
-    post({
-      event: "test",
-      drones,
-      ...(stage != null ? { stage } : {}),
-    })
-  );
+/** Отладочный налёт с ?raid=: второй стороны нет, пишем самому себе. */
+export function notifyTestRaid(drones: number) {
+  quiet(() => post({ event: "test", drones }));
 }

@@ -5,8 +5,8 @@ import type { Dict } from "../dict";
 const ru: Dict = {
   "scout.stale": "С прошлого вылета изменилось участков: {patches} — они снова под туманом.",
   "tg.title": "Телеграм",
-  "tg.explain": "Привяжи телеграм — бот напишет про чужие налёты, исход твоих и состязания.",
-  "tg.linked": "Телеграм привязан: бот напишет про налёты, их исход и состязания.",
+  "tg.explain": "Привяжи телеграм — бот напишет про чужие налёты и исход твоих.",
+  "tg.linked": "Телеграм привязан: бот напишет про налёты и их исход.",
   "tg.link": "Привязать телеграм",
   "tg.unlink": "Отвязать",
   "tg.noBot": "В этой сборке бот не настроен.",
@@ -42,7 +42,7 @@ const ru: Dict = {
   "tool.loan": "Кредит",
   "tool.loanHint": "Занять от {cost} кр на сутки под {rate}%. Купленный на них товар может сгореть, долг — нет.",
   "panel.replays": "Журнал боёв",
-  "panel.competitions": "Журнал состязаний",
+  "panel.competitions": "Журнал миссий",
   "replays.empty": "Боёв пока не было. Пошли налёт или дождись чужого.",
   "competitions.line": "{drones} дронов",
   "competitions.play": "Играть",
@@ -394,9 +394,9 @@ const ru: Dict = {
   "raid.sending": "Отправляю…",
   "raid.notEnough": "Не удалось собрать нужное количество дронов",
 
-  "competition.title": "Состязание №{n}",
-  "competition.record": "Состязание №{n}: {score}% — новый рекорд",
-  "competition.result": "Состязание №{n}: {score}%",
+  "competition.title": "Миссия №{n}",
+  "competition.record": "Миссия №{n}: {score}% — новый рекорд",
+  "competition.result": "Миссия №{n}: {score}%",
 
   "stats.battles": "Боёв",
   "stats.dronesKilled": "Дронов сбито",

@@ -6,8 +6,8 @@
 const en = {
   "scout.stale": "{patches} patches have changed since your flight — they are back under fog.",
   "tg.title": "Telegram",
-  "tg.explain": "Link Telegram and the bot will write about enemy raids, your raid outcomes, and competitions.",
-  "tg.linked": "Telegram is linked — the bot will write about raids, their outcomes, and competitions.",
+  "tg.explain": "Link Telegram and the bot will write about enemy raids, and your raid outcomes.",
+  "tg.linked": "Telegram is linked — the bot will write about raids and their outcomes.",
   "tg.link": "Link Telegram",
   "tg.unlink": "Unlink",
   "tg.noBot": "The bot is not set up in this build.",
@@ -43,7 +43,7 @@ const en = {
   "tool.loan": "Loan",
   "tool.loanHint": "Borrow from {cost} cr for a day at {rate}%. The goods you buy with it can burn — the debt will not.",
   "panel.replays": "Battle log",
-  "panel.competitions": "Competitions",
+  "panel.competitions": "Missions",
   "replays.empty": "No battles yet. Send a raid or wait for one.",
   "competitions.line": "{drones} drones",
   "competitions.play": "Play",
@@ -394,9 +394,9 @@ const en = {
   "raid.sending": "Sending…",
   "raid.notEnough": "Could not gather that many drones",
 
-  "competition.title": "Competition #{n}",
-  "competition.record": "Competition #{n}: {score}% — new record",
-  "competition.result": "Competition #{n}: {score}%",
+  "competition.title": "Mission #{n}",
+  "competition.record": "Mission #{n}: {score}% — new record",
+  "competition.result": "Mission #{n}: {score}%",
 
   "stats.battles": "Battles",
   "stats.dronesKilled": "Drones downed",

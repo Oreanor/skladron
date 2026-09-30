@@ -5,8 +5,8 @@ import type { Dict } from "../dict";
 const de: Dict = {
   "scout.stale": "{patches} Felder haben sich seit deinem Flug verändert — sie liegen wieder im Nebel.",
   "tg.title": "Telegram",
-  "tg.explain": "Verknüpfe Telegram — der Bot schreibt über Angriffe, deine Ausgänge und Wettkämpfe.",
-  "tg.linked": "Telegram ist verknüpft: der Bot schreibt über Angriffe, Ausgänge und Wettkämpfe.",
+  "tg.explain": "Verknüpfe Telegram — der Bot schreibt über Angriffe, und deine Ausgänge.",
+  "tg.linked": "Telegram ist verknüpft: der Bot schreibt über Angriffe und ihre Ausgänge.",
   "tg.link": "Telegram verknüpfen",
   "tg.unlink": "Trennen",
   "tg.noBot": "In dieser Fassung ist der Bot nicht eingerichtet.",
@@ -42,7 +42,7 @@ const de: Dict = {
   "tool.loan": "Kredit",
   "tool.loanHint": "Ab {cost} Cr für einen Tag zu {rate} % leihen. Die dafür gekaufte Ware kann abbrennen — die Schuld nicht.",
   "panel.replays": "Gefechtsbuch",
-  "panel.competitions": "Wettkämpfe",
+  "panel.competitions": "Missionen",
   "replays.empty": "Noch keine Gefechte. Schick einen Angriff oder warte auf einen.",
   "competitions.line": "{drones} Drohnen",
   "competitions.play": "Spielen",
@@ -394,9 +394,9 @@ const de: Dict = {
   "raid.sending": "Wird geschickt…",
   "raid.notEnough": "So viele Drohnen kamen nicht zusammen",
 
-  "competition.title": "Wettkampf Nr. {n}",
-  "competition.record": "Wettkampf Nr. {n}: {score}% — neuer Rekord",
-  "competition.result": "Wettkampf Nr. {n}: {score}%",
+  "competition.title": "Mission Nr. {n}",
+  "competition.record": "Mission Nr. {n}: {score}% — neuer Rekord",
+  "competition.result": "Mission Nr. {n}: {score}%",
 
   "stats.battles": "Kämpfe",
   "stats.dronesKilled": "Drohnen abgeschossen",

@@ -5,8 +5,8 @@ import type { Dict } from "../dict";
 const fr: Dict = {
   "scout.stale": "{patches} zones ont changé depuis ton vol : elles repassent sous le brouillard.",
   "tg.title": "Telegram",
-  "tg.explain": "Relie Telegram — le bot écrit pour les raids ennemis, le sort des tiens et les épreuves.",
-  "tg.linked": "Telegram relié : le bot écrit pour les raids, leurs issues et les épreuves.",
+  "tg.explain": "Relie Telegram — le bot écrit pour les raids ennemis, et le sort des tiens.",
+  "tg.linked": "Telegram relié : le bot écrit pour les raids et leurs issues.",
   "tg.link": "Relier Telegram",
   "tg.unlink": "Délier",
   "tg.noBot": "Dans cette version le bot n’est pas configuré.",
@@ -42,7 +42,7 @@ const fr: Dict = {
   "tool.loan": "Crédit",
   "tool.loanHint": "Emprunte à partir de {cost} cr pour un jour à {rate} %. La marchandise achetée peut brûler, la dette non.",
   "panel.replays": "Journal des combats",
-  "panel.competitions": "Épreuves",
+  "panel.competitions": "Missions",
   "replays.empty": "Pas encore de combats. Lance un raid ou attends-en un.",
   "competitions.line": "{drones} drones",
   "competitions.play": "Jouer",
@@ -394,9 +394,9 @@ const fr: Dict = {
   "raid.sending": "Envoi…",
   "raid.notEnough": "Impossible de réunir autant de drones",
 
-  "competition.title": "Épreuve n°{n}",
-  "competition.record": "Épreuve n°{n} : {score}% — nouveau record",
-  "competition.result": "Épreuve n°{n} : {score}%",
+  "competition.title": "Mission n°{n}",
+  "competition.record": "Mission n°{n} : {score}% — nouveau record",
+  "competition.result": "Mission n°{n} : {score}%",
 
   "stats.battles": "Combats",
   "stats.dronesKilled": "Drones abattus",
