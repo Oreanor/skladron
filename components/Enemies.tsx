@@ -245,7 +245,7 @@ export function EnemyProfile({
       <Modal
         title={enemy.name}
         subtitle={enemy.email}
-        wide={enemy.scout ? "xl" : false}
+        wide={Boolean(enemy.scout)}
         onClose={onClose}
         footer={
           <Button variant="build" onClick={onClose}>
