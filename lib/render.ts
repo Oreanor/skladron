@@ -543,8 +543,6 @@ export function drawFrame(
   for (const b of s.booms) drawBoom(ctx, b, cell);
 }
 
-/** Сколько искр разлетается из взрыва. */
-const SPARKS = 9;
 
 /**
  * Взрыв по фазам: белая вспышка, огненный шар, который растёт и остывает от
@@ -611,16 +609,18 @@ function drawBoom(
     ctx.stroke();
   }
 
-  // искры: у каждой своё направление и скорость, гаснут к концу
-  if (k < 0.75) {
+  // Искры: три-четыре, и летят дальше ударной волны — иначе они терялись
+  // внутри шара. У каждой своё направление и скорость, гаснут к концу.
+  if (k < 0.85) {
     const seed = Math.abs(Math.sin(b.x * 12.9898 + b.y * 78.233)) * 43758.5453;
-    const s = Math.max(1, cell * 0.28);
-    ctx.globalAlpha = 1 - k / 0.75;
+    const sparks = 3 + (Math.floor(seed) % 2);
+    const s = Math.max(1, cell * 0.3);
+    ctx.globalAlpha = 1 - k / 0.85;
     ctx.fillStyle = "rgb(255, 200, 110)";
-    for (let i = 0; i < SPARKS; i++) {
+    for (let i = 0; i < sparks; i++) {
       const h = (seed * (i + 1)) % 1;
-      const ang = ((i + h) / SPARKS) * Math.PI * 2;
-      const dist = r * (0.4 + 0.9 * h) * out;
+      const ang = ((i + h) / sparks) * Math.PI * 2;
+      const dist = r * (1.3 + 1.0 * h) * out;
       ctx.fillRect(x + Math.cos(ang) * dist - s / 2, y + Math.sin(ang) * dist - s / 2, s, s);
     }
   }
