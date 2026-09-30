@@ -268,7 +268,7 @@ export default function RaidPlanner({
 
             <Button
               size="sm"
-              className="mt-3 w-full"
+              className="mt-3"
               onClick={() =>
                 patch(wi, { groups: [...wave.groups, { payload: "plain", n: 10 }] })
               }
@@ -282,7 +282,6 @@ export default function RaidPlanner({
 
       <Button
         size="sm"
-        block
         className="mt-4"
         onClick={() => {
           const prev = waves[waves.length - 1]?.delay ?? 0;
