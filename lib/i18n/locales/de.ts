@@ -124,13 +124,12 @@ const de: Dict = {
   "upgrade.cantAfford": "Zu wenig Credits: der Ausbau kostet {cost} Cr",
   "scout.finish": "Einsatz beenden",
   "scout.finishHint": "Beendet den Flug und behält das Kartierte. Noch vorrätige Drohnen sind trotzdem verbraucht.",
-  "scout.needPlanes": "Nicht genug Drohnen im Lager — kauf erst welche",
   "scout.failed": "Karte konnte nicht geladen werden: {error}",
   "scout.button": "Aufklären",
-  "scout.title": "Aufklärung: {name}",
-  "scout.subtitle": "Lagerdrohnen auf Aufklärungsflügen fliegen unbewaffnet. Jeder kommt von einer zufälligen Seite herein und kartiert, worüber er fliegt; ein Geschütz, das ihn erfasst, holt ihn herunter.",
-  "scout.planes": "Flugzeuge: {n} von {max}",
-  "scout.send": "{n} schicken",
+  "scout.ask": "Eine Drohne zur Aufklärung von „{name}“ schicken?",
+  "scout.lastShot": "Letzte Aufnahme: {at}",
+  "scout.never": "Noch nie aufgeklärt",
+  "scout.needPlanes": "Nicht genug Drohnen im Lager — kauf erst welche",
   "scout.left": "Nach links",
   "scout.right": "Nach rechts",
   "scout.planesLeft": "im Vorrat",
@@ -425,6 +424,8 @@ const de: Dict = {
   "menu.signOut": "Abmelden",
 
   "common.cancel": "Abbrechen",
+  "common.yes": "Ja",
+  "common.no": "Nein",
   "common.close": "Schließen",
 };
 

@@ -124,13 +124,12 @@ const pt: Dict = {
   "upgrade.cantAfford": "Créditos insuficientes: a melhoria custa {cost} cr",
   "scout.finish": "Terminar a saída",
   "scout.finishHint": "Termina o voo e guarda o que foi mapeado. Os aviões ainda em reserva gastam-se na mesma.",
-  "scout.needPlanes": "Não há aviões no hangar — compra primeiro",
   "scout.failed": "Não foi possível obter o mapa: {error}",
   "scout.button": "Explorar",
-  "scout.title": "Exploração: {name}",
-  "scout.subtitle": "Os aviões de reconhecimento vão desarmados. Cada um entra por um lado aleatório e mapeia o que sobrevoa; um canhão que consiga fixá-lo abate-o.",
-  "scout.planes": "Aviões: {n} de {max}",
-  "scout.send": "Enviar {n}",
+  "scout.ask": "Enviar um drone para espiar «{name}»?",
+  "scout.lastShot": "Última captura: {at}",
+  "scout.never": "Ainda sem reconhecimento",
+  "scout.needPlanes": "Não há aviões no hangar — compra primeiro",
   "scout.left": "Para a esquerda",
   "scout.right": "Para a direita",
   "scout.planesLeft": "em reserva",
@@ -425,6 +424,8 @@ const pt: Dict = {
   "menu.signOut": "Sair",
 
   "common.cancel": "Cancelar",
+  "common.yes": "Sim",
+  "common.no": "Não",
   "common.close": "Fechar",
 };
 

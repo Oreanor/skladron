@@ -947,7 +947,9 @@ export default function Lobby({
     }
   };
 
-  const doScout = async (enemy: Enemy, planes: number): Promise<string | null> => {
+  /** Разведка всегда одним дроном: снимает, что успеет, и возвращается. */
+  const doScout = async (enemy: Enemy): Promise<string | null> => {
+    const planes = 1;
     if (drones < planes) return t("scout.needPlanes");
     try {
       await flushPersist();

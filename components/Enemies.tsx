@@ -6,7 +6,6 @@ import { payloadCost, raidTotal, type WavePlan } from "@/lib/attack";
 import { MAX_ATTACK_DRONES, type Enemy } from "@/lib/enemy";
 import { scoutCounts } from "@/lib/scout";
 import { installColors } from "@/lib/render";
-import { SCOUT } from "@/lib/tuning";
 import { Crosshair, MessageSquare, Plane } from "lucide-react";
 import ScoutMap from "./ScoutMap";
 import { Button, Card, ConfirmDialog, IconButton, Modal, inputClass } from "./ui";
@@ -31,8 +30,8 @@ interface Props {
   droneCost: number;
   onAdd: (email: string) => Promise<string | null>; // текст ошибки или null
   onRaid: (enemy: Enemy, waves: WavePlan[], comment?: string) => Promise<string | null>;
-  /** Разведка: сколько самолётов послать. Вернёт текст ошибки или null. */
-  onScout: (enemy: Enemy, planes: number) => Promise<string | null>;
+  /** Разведка одним дроном. Вернёт текст ошибки или null. */
+  onScout: (enemy: Enemy) => Promise<string | null>;
   /** Квадраты, где враг менял склад после съёмки: они снова под туманом. */
   fetchStale: (enemy: Enemy) => Promise<number[]>;
   /** Открыть разговор с соперником. */
@@ -141,6 +140,8 @@ export default function Enemies({
                     label={t("scout.button")}
                     title={t("scout.button")}
                     className="h-9 w-9"
+                    // разведка тратит дрон со склада: без дронов лететь некому
+                    disabled={drones < 1}
                     onClick={() => setScoutTarget(e)}
                   >
                     <Plane className="h-4 w-4" />
@@ -174,12 +175,11 @@ export default function Enemies({
       )}
 
       {scoutTarget && (
-        <ScoutDialog
+        <ScoutConfirm
           enemy={scoutTarget}
-          stock={drones}
           onCancel={() => setScoutTarget(null)}
-          onSend={async (n) => {
-            const error = await onScout(scoutTarget, n);
+          onSend={async () => {
+            const error = await onScout(scoutTarget);
             if (!error) setScoutTarget(null);
             return error;
           }}
@@ -353,61 +353,55 @@ export function EnemyProfile({
   );
 }
 
-function ScoutDialog({
+/**
+ * Разведка — один дрон, без выбора числа: спрашиваем только «послать?» и
+ * напоминаем, когда снимали в прошлый раз.
+ */
+function ScoutConfirm({
   enemy,
-  stock,
   onCancel,
   onSend,
 }: {
   enemy: Enemy;
-  stock: number;
   onCancel: () => void;
-  onSend: (planes: number) => Promise<string | null>;
+  onSend: () => Promise<string | null>;
 }) {
   const t = useT();
-  const max = Math.min(stock, SCOUT.maxPlanes);
-  const [n, setN] = useState(Math.min(3, Math.max(1, max)));
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const last = enemy.scout
+    ? new Date(enemy.scout.at).toLocaleString(undefined, {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
 
   const send = async () => {
     if (sending) return;
     setSending(true);
-    setError(await onSend(n));
+    setError(await onSend());
     setSending(false);
   };
 
   return (
     <Modal
-      title={t("scout.title", { name: enemy.name })}
-      subtitle={t("scout.subtitle")}
+      title={t("scout.ask", { name: enemy.name })}
+      subtitle={last ? t("scout.lastShot", { at: last }) : t("scout.never")}
       onClose={onCancel}
       footer={
         <div className="flex flex-wrap justify-center gap-2">
-          <Button
-            variant="build"
-            disabled={sending || max < 1}
-            onClick={() => void send()}
-          >
-            {max < 1 ? t("scout.needPlanes") : t("scout.send", { n })}
+          <Button variant="build" disabled={sending} onClick={() => void send()}>
+            {t("common.yes")}
           </Button>
-          <Button variant="outline" onClick={onCancel}>{t("common.cancel")}</Button>
+          <Button variant="outline" onClick={onCancel}>
+            {t("common.no")}
+          </Button>
         </div>
       }
     >
-      <label className="mb-1 block text-xs uppercase tracking-wider text-neutral-400">
-        {t("scout.planes", { n, max })}
-      </label>
-      <input
-        type="range"
-        min={1}
-        max={Math.max(1, max)}
-        step={1}
-        value={n}
-        onChange={(e) => setN(Number(e.target.value))}
-        className="mb-4 h-8 w-full cursor-pointer accent-sky-400"
-      />
-      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      {error ? <p className="text-xs text-red-400">{error}</p> : <></>}
     </Modal>
   );
 }

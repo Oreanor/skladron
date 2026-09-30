@@ -124,13 +124,12 @@ const es: Dict = {
   "upgrade.cantAfford": "No hay créditos suficientes: la mejora cuesta {cost} cr",
   "scout.finish": "Terminar la salida",
   "scout.finishHint": "Termina el vuelo y conserva lo cartografiado. Los aviones que quedan en reserva se gastan igual.",
-  "scout.needPlanes": "No hay aviones en el hangar: compra alguno primero",
   "scout.failed": "No se pudo obtener el mapa: {error}",
   "scout.button": "Explorar",
-  "scout.title": "Exploración: {name}",
-  "scout.subtitle": "Los aviones de reconocimiento van desarmados. Cada uno entra por un lado al azar y cartografía lo que sobrevuela; un cañón que le fije el blanco lo derriba.",
-  "scout.planes": "Aviones: {n} de {max}",
-  "scout.send": "Enviar {n}",
+  "scout.ask": "¿Enviar un dron a explorar «{name}»?",
+  "scout.lastShot": "Última toma: {at}",
+  "scout.never": "Aún sin explorar",
+  "scout.needPlanes": "No hay aviones en el hangar: compra alguno primero",
   "scout.left": "A la izquierda",
   "scout.right": "A la derecha",
   "scout.planesLeft": "en reserva",
@@ -425,6 +424,8 @@ const es: Dict = {
   "menu.signOut": "Salir",
 
   "common.cancel": "Cancelar",
+  "common.yes": "Sí",
+  "common.no": "No",
   "common.close": "Cerrar",
 };
 

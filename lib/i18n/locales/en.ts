@@ -125,13 +125,12 @@ const en = {
   "upgrade.cantAfford": "Not enough credits: the upgrade costs {cost} cr",
   "scout.finish": "End the sortie",
   "scout.finishHint": "Ends the flight and keeps what you have mapped. Drones still in reserve are spent all the same.",
-  "scout.needPlanes": "Not enough drones in the warehouse — buy some first",
   "scout.failed": "Could not open the map: {error}",
   "scout.button": "Scout",
-  "scout.title": "Scout {name}",
-  "scout.subtitle": "Warehouse drones on a recon sortie carry no weapons. Each one flies in from a random side and maps what it passes over; a gun that gets a lock will bring it down.",
-  "scout.planes": "Planes: {n} of {max}",
-  "scout.send": "Send {n} planes",
+  "scout.ask": "Send a drone to scout «{name}»?",
+  "scout.lastShot": "Last shot: {at}",
+  "scout.never": "Never scouted yet",
+  "scout.needPlanes": "Not enough drones in the warehouse — buy some first",
   "scout.left": "Turn left",
   "scout.right": "Turn right",
   "scout.planesLeft": "planes",
@@ -425,6 +424,8 @@ const en = {
   "menu.signOut": "Sign out",
 
   "common.cancel": "Cancel",
+  "common.yes": "Yes",
+  "common.no": "No",
   "common.close": "Close",
 } as const;
 

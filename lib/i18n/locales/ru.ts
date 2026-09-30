@@ -124,13 +124,12 @@ const ru: Dict = {
   "upgrade.cantAfford": "Не хватает кредитов: апгрейд стоит {cost} кр",
   "scout.finish": "Закончить вылет",
   "scout.finishHint": "Завершает полёт и оставляет снятое. Дроны из запаса всё равно списаны.",
-  "scout.needPlanes": "На складе не хватает дронов — сначала купи",
   "scout.failed": "Не удалось получить карту: {error}",
   "scout.button": "Разведать",
-  "scout.title": "Разведка: {name}",
-  "scout.subtitle": "На разведку идут дроны со склада, без оружия. Каждый заходит с случайной стороны и снимает всё, над чем пролетел; пушка, успевшая взять его на прицел, собьёт.",
-  "scout.planes": "Самолётов: {n} из {max}",
-  "scout.send": "Отправить {n}",
+  "scout.ask": "Послать дрон на разведку склада «{name}»?",
+  "scout.lastShot": "Последняя съёмка: {at}",
+  "scout.never": "Разведки ещё не было",
+  "scout.needPlanes": "На складе не хватает дронов — сначала купи",
   "scout.left": "Влево",
   "scout.right": "Вправо",
   "scout.planesLeft": "в запасе",
@@ -425,6 +424,8 @@ const ru: Dict = {
   "menu.signOut": "Выйти",
 
   "common.cancel": "Отмена",
+  "common.yes": "Да",
+  "common.no": "Нет",
   "common.close": "Закрыть",
 };
 

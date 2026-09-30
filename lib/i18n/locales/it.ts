@@ -124,13 +124,12 @@ const it: Dict = {
   "upgrade.cantAfford": "Crediti insufficienti: il potenziamento costa {cost} cr",
   "scout.finish": "Termina la sortita",
   "scout.finishHint": "Chiude il volo e tiene quanto mappato. I ricognitori ancora in riserva si consumano lo stesso.",
-  "scout.needPlanes": "Nessun ricognitore in hangar: comprane prima",
   "scout.failed": "Non è stato possibile ottenere la mappa: {error}",
   "scout.button": "Ricognizione",
-  "scout.title": "Ricognizione: {name}",
-  "scout.subtitle": "I ricognitori sono disarmati. Ognuno entra da un lato a caso e mappa ciò che sorvola; un cannone che riesce ad agganciarlo lo abbatte.",
-  "scout.planes": "Aerei: {n} su {max}",
-  "scout.send": "Manda {n}",
+  "scout.ask": "Mandare un drone a esplorare «{name}»?",
+  "scout.lastShot": "Ultima ripresa: {at}",
+  "scout.never": "Mai esplorato",
+  "scout.needPlanes": "Nessun ricognitore in hangar: comprane prima",
   "scout.left": "A sinistra",
   "scout.right": "A destra",
   "scout.planesLeft": "in riserva",
@@ -425,6 +424,8 @@ const it: Dict = {
   "menu.signOut": "Esci",
 
   "common.cancel": "Annulla",
+  "common.yes": "Sì",
+  "common.no": "No",
   "common.close": "Chiudi",
 };
 

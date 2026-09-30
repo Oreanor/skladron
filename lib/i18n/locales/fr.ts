@@ -124,13 +124,12 @@ const fr: Dict = {
   "upgrade.cantAfford": "Crédits insuffisants : l’amélioration coûte {cost} cr",
   "scout.finish": "Terminer la sortie",
   "scout.finishHint": "Met fin au vol et garde ce qui est cartographié. Les avions encore en réserve sont dépensés quand même.",
-  "scout.needPlanes": "Aucun avion au hangar — achètes-en d’abord",
   "scout.failed": "Impossible d’obtenir la carte : {error}",
   "scout.button": "Reconnaître",
-  "scout.title": "Reconnaissance : {name}",
-  "scout.subtitle": "Les avions de reconnaissance sont désarmés. Chacun entre par un côté au hasard et cartographie ce qu’il survole ; un canon qui l’accroche l’abat.",
-  "scout.planes": "Avions : {n} sur {max}",
-  "scout.send": "Envoyer {n}",
+  "scout.ask": "Envoyer un drone repérer « {name} » ?",
+  "scout.lastShot": "Dernière prise : {at}",
+  "scout.never": "Jamais repéré",
+  "scout.needPlanes": "Aucun avion au hangar — achètes-en d’abord",
   "scout.left": "À gauche",
   "scout.right": "À droite",
   "scout.planesLeft": "en réserve",
@@ -425,6 +424,8 @@ const fr: Dict = {
   "menu.signOut": "Se déconnecter",
 
   "common.cancel": "Annuler",
+  "common.yes": "Oui",
+  "common.no": "Non",
   "common.close": "Fermer",
 };
 
