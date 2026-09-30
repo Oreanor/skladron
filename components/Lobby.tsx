@@ -1558,6 +1558,13 @@ export default function Lobby({
   };
 
   /** Открыть повтор из журнала: сам бой подгружаем по одной атаке. */
+  /** Убрать соперника из списка. Счёт вражды уходит вместе с ним. */
+  const removeEnemy = (enemy: Enemy) => {
+    p.enemies = p.enemies.filter((e) => e.email.toLowerCase() !== enemy.email.toLowerCase());
+    forceRender((v) => v + 1);
+    void repo.saveEnemies(p).catch((e: Error) => setMessage(t("enemies.notSaved", { error: e.message })));
+  };
+
   /** Полная карта разведки врага. */
   const showMap = (enemy: Enemy) => {
     setSheet(null);
@@ -1725,6 +1732,7 @@ export default function Lobby({
 
   const enemiesBody = (
     <Enemies
+      onRemove={removeEnemy}
       enemies={p.enemies}
       drones={drones}
       credits={p.credits}
@@ -2109,6 +2117,10 @@ export default function Lobby({
         <EnemyProfile
           enemy={foeCard}
           onClose={() => setFoeCard(null)}
+          onRemove={() => {
+            setFoeCard(null);
+            removeEnemy(foeCard);
+          }}
           onShowMap={
             foeCard.scout
               ? () => {

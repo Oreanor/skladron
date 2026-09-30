@@ -13,7 +13,6 @@ const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SECRET = process.env.TELEGRAM_BROADCAST_SECRET;
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://skladron.vercel.app";
 
 const MESSAGE = [
   "Складрон за день подрос. Коротко, что нового.",
@@ -48,8 +47,6 @@ const MESSAGE = [
   "когда пал склад; премия за отбой и подушка после вайпа; заём до десяти",
   "тысяч; шестьдесят четыре аватарки и своя картинка; повтор боя с полосой",
   "прогресса и кнопкой «Ещё раз»; комментарии к налёту.",
-  "",
-  SITE,
 ].join("\n");
 
 const PAUSE_MS = 40;

@@ -9,7 +9,7 @@ import { installColors } from "@/lib/render";
 import { SCOUT } from "@/lib/tuning";
 import { Crosshair, MessageSquare, Plane } from "lucide-react";
 import ScoutThumb from "./lobby/ScoutThumb";
-import { Button, Card, IconButton, Modal, inputClass } from "./ui";
+import { Button, Card, ConfirmDialog, IconButton, Modal, inputClass } from "./ui";
 import Avatar from "./Avatar";
 import RaidPlanner, { newWave } from "./RaidPlanner";
 import { useT } from "@/lib/i18n";
@@ -39,6 +39,8 @@ interface Props {
   onWrite: (enemy: Enemy) => void;
   /** Сколько непрочитанного от кого, по почте в нижнем регистре. */
   unread: Record<string, number>;
+  /** Убрать из списка соперников. */
+  onRemove: (enemy: Enemy) => void;
   onChanged: () => void;
 }
 
@@ -53,6 +55,7 @@ export default function Enemies({
   onShowMap,
   onWrite,
   unread,
+  onRemove,
   onChanged,
 }: Props) {
   const t = useT();
@@ -162,6 +165,10 @@ export default function Enemies({
         <EnemyProfile
           enemy={profile}
           onClose={() => setProfile(null)}
+          onRemove={() => {
+            setProfile(null);
+            onRemove(profile);
+          }}
           onShowMap={
             profile.scout
               ? () => {
@@ -210,14 +217,18 @@ export default function Enemies({
 export function EnemyProfile({
   enemy,
   onClose,
+  onRemove,
   onShowMap,
 }: {
   enemy: Enemy;
   onClose: () => void;
+  /** Убрать из списка соперников — после подтверждения. */
+  onRemove: () => void;
   /** Открыть полную карту разведки — по клику на снимок. */
   onShowMap?: () => void;
 }) {
   const t = useT();
+  const [removing, setRemoving] = useState(false);
   const last =
     enemy.lastRaidAt > 0
       ? new Date(enemy.lastRaidAt).toLocaleString(undefined, {
@@ -230,91 +241,107 @@ export function EnemyProfile({
   const counts = enemy.scout ? scoutCounts(enemy.scout.guns) : null;
 
   return (
-    <Modal
-      title={enemy.name}
-      subtitle={enemy.email}
-      wide={enemy.scout ? "xl" : false}
-      onClose={onClose}
-      footer={
-        <Button variant="build" onClick={onClose}>
-          {t("common.ok")}
-        </Button>
-      }
-    >
-      {/*
-        Слева вся инфа столбиком, справа только карта — под снимок ничего
-        не кладём. Атака и разведка живут в списке соперников.
-      */}
-      <div
-        className={
-          enemy.scout
-            ? "flex flex-col gap-4 sm:flex-row sm:items-start"
-            : "flex flex-col gap-4"
+    <>
+      <Modal
+        title={enemy.name}
+        subtitle={enemy.email}
+        wide={enemy.scout ? "xl" : false}
+        onClose={onClose}
+        footer={
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button variant="outline" onClick={() => setRemoving(true)}>
+              {t("enemies.remove")}
+            </Button>
+            <Button variant="build" onClick={onClose}>
+              {t("common.ok")}
+            </Button>
+          </div>
         }
       >
-        <div className="flex w-full shrink-0 flex-col gap-3 sm:w-64">
-          <Avatar
-            avatar={enemy.avatar ?? null}
-            name={enemy.name}
-            email={enemy.email}
-            size="lg"
-          />
-          <dl className="space-y-1.5 font-mono text-sm">
-            <div className="flex justify-between gap-3">
-              <dt className="text-neutral-500">{t("enemies.burnedByMe")}</dt>
-              <dd className="text-neutral-200">{enemy.burnedByMe}</dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-neutral-500">{t("enemies.burnedByThem")}</dt>
-              <dd className="text-neutral-200">{enemy.burnedByThem}</dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-neutral-500">{t("enemies.lastRaid")}</dt>
-              <dd className="text-right text-neutral-200">
-                {last ?? t("enemies.noRaidYet")}
-              </dd>
-            </div>
-            {!enemy.scout && (
+        {/*
+          Слева вся инфа столбиком, справа только карта — под снимок ничего
+          не кладём. Атака и разведка живут в списке соперников.
+        */}
+        <div
+          className={
+            enemy.scout
+              ? "flex flex-col gap-4 sm:flex-row sm:items-start"
+              : "flex flex-col gap-4"
+          }
+        >
+          <div className="flex w-full shrink-0 flex-col gap-3 sm:w-64">
+            <Avatar
+              avatar={enemy.avatar ?? null}
+              name={enemy.name}
+              email={enemy.email}
+              size="lg"
+            />
+            <dl className="space-y-1.5 font-mono text-sm">
               <div className="flex justify-between gap-3">
-                <dt className="text-neutral-500">{t("enemies.scoutStatus")}</dt>
-                <dd className="text-neutral-200">{t("enemies.scoutNone")}</dd>
+                <dt className="text-neutral-500">{t("enemies.burnedByMe")}</dt>
+                <dd className="text-neutral-200">{enemy.burnedByMe}</dd>
               </div>
-            )}
-          </dl>
-          {counts && (
-            <ul className="space-y-2 border-t border-neutral-800 pt-3 font-mono text-sm">
-              <li className="text-xs uppercase tracking-widest text-neutral-500">
-                {t("scout.analysis")}
-              </li>
-              {SCOUT_KINDS.map((kind) => (
-                <li key={kind} className="flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2 text-neutral-400">
-                    <span
-                      className="h-2.5 w-2.5 shrink-0 rounded-sm ring-1 ring-black/40"
-                      style={{ background: installColors(kind).top }}
-                      aria-hidden
-                    />
-                    {t(SCOUT_KIND_LABEL[kind])}
-                  </span>
-                  <span className="text-neutral-100">{counts[kind]}</span>
+              <div className="flex justify-between gap-3">
+                <dt className="text-neutral-500">{t("enemies.burnedByThem")}</dt>
+                <dd className="text-neutral-200">{enemy.burnedByThem}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-neutral-500">{t("enemies.lastRaid")}</dt>
+                <dd className="text-right text-neutral-200">
+                  {last ?? t("enemies.noRaidYet")}
+                </dd>
+              </div>
+              {!enemy.scout && (
+                <div className="flex justify-between gap-3">
+                  <dt className="text-neutral-500">{t("enemies.scoutStatus")}</dt>
+                  <dd className="text-neutral-200">{t("enemies.scoutNone")}</dd>
+                </div>
+              )}
+            </dl>
+            {counts && (
+              <ul className="space-y-2 border-t border-neutral-800 pt-3 font-mono text-sm">
+                <li className="text-xs uppercase tracking-widest text-neutral-500">
+                  {t("scout.analysis")}
                 </li>
-              ))}
-            </ul>
+                {SCOUT_KINDS.map((kind) => (
+                  <li key={kind} className="flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2 text-neutral-400">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-sm ring-1 ring-black/40"
+                        style={{ background: installColors(kind).top }}
+                        aria-hidden
+                      />
+                      {t(SCOUT_KIND_LABEL[kind])}
+                    </span>
+                    <span className="text-neutral-100">{counts[kind]}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {enemy.scout && (
+            <button
+              type="button"
+              onClick={onShowMap}
+              title={t("scout.map")}
+              className="min-w-0 flex-1 cursor-pointer overflow-hidden rounded-md border border-neutral-700 transition hover:border-neutral-500"
+            >
+              <ScoutThumb snapshot={enemy.scout} />
+            </button>
           )}
         </div>
-
-        {enemy.scout && (
-          <button
-            type="button"
-            onClick={onShowMap}
-            title={t("scout.map")}
-            className="min-w-0 flex-1 cursor-pointer overflow-hidden rounded-md border border-neutral-700 transition hover:border-neutral-500"
-          >
-            <ScoutThumb snapshot={enemy.scout} />
-          </button>
-        )}
-      </div>
-    </Modal>
+      </Modal>
+      {removing && (
+        <ConfirmDialog
+          title={t("enemies.removeConfirm", { name: enemy.name })}
+          subtitle={t("enemies.removeNote")}
+          confirm={t("enemies.remove")}
+          onCancel={() => setRemoving(false)}
+          onConfirm={onRemove}
+        />
+      )}
+    </>
   );
 }
 

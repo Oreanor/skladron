@@ -46,7 +46,7 @@ async function send(chatId: number, text: string) {
 export function sentRaidMessage(attackerName: string, drones: number): string {
   return (
     `На твой склад летит налёт от «${attackerName}» — ${drones} дронов. ` +
-    `Отбивай, когда готов: очередь не пропускается. ${SITE}`
+    `Отбивай, когда готов: очередь не пропускается.`
   );
 }
 
@@ -223,7 +223,7 @@ export async function notifyRaidComment(
 export function rivalAddedMessage(fromName: string): string {
   return (
     `Склад «${fromName}» добавил тебя во враги — теперь он видит твой адрес ` +
-    `и может слать налёты. Он же появился и в твоём списке: ответить есть чем. ${SITE}`
+    `и может слать налёты. Он же появился и в твоём списке: ответить есть чем.`
   );
 }
 
@@ -263,7 +263,7 @@ export async function notifyRivalAdded(
 /** Текст того, кому написали. Саму реплику показываем: ради неё и пишем. */
 export function rivalMessageText(fromName: string, body: string): string {
   const line = body.length > 300 ? `${body.slice(0, 300)}…` : body;
-  return `Сообщение от склада «${fromName}»:\n\n${line}\n\n${SITE}`;
+  return `Сообщение от склада «${fromName}»:\n\n${line}`;
 }
 
 /**

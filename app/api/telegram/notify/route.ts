@@ -14,7 +14,6 @@ const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://skladron.vercel.app";
 
 type Event = "sent" | "resolved" | "test" | "comment" | "rival" | "message";
 
@@ -75,7 +74,7 @@ export async function POST(request: Request) {
     if (!me?.tg_chat_id) return Response.json({ ok: true, sent: false });
     await send(
       Number(me.tg_chat_id),
-      `Налёт на твой склад — ${drones} дронов в очереди. Открой игру: ${SITE}`
+      `Налёт на твой склад — ${drones} дронов в очереди.`
     );
     return Response.json({ ok: true, sent: true });
   }
