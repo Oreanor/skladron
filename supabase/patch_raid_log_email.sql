@@ -1,6 +1,11 @@
 -- Журнал боёв отдаёт почту второй стороны: по нику в журнале открывается
 -- карточка врага, а искать его по имени нельзя — имя склада не уникально.
 -- Выполнить в Supabase → SQL Editor до деплоя клиента.
+--
+-- Заодно возвращает удаление боя из журнала, если его убрала первая версия
+-- patch_competition_list.sql. Прогонять повторно можно.
+
+alter table attacks add column if not exists hidden_by uuid[] not null default '{}';
 
 -- у raid_log сменился состав колонок: create or replace такого не умеет
 drop function if exists raid_log();
@@ -41,6 +46,19 @@ language sql security definer set search_path = public stable as $$
    limit 30;
 $$;
 
-grant execute on function raid_log to authenticated;
+create or replace function hide_raid(attack_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  update attacks
+     set hidden_by = array_append(hidden_by, uid)
+   where id = attack_id
+     and (attacker_id = uid or defender_id = uid)
+     and not (uid = any (hidden_by));
+end;
+$$;
+
+grant execute on function raid_log, hide_raid to authenticated;
 
 notify pgrst, 'reload schema';
