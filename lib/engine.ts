@@ -609,7 +609,8 @@ function aimTick(s: GameState) {
 
 /**
  * Подбитый дрон упал: склад — пожар, земля — выжженное пятно. Взрывчатка
- * рвётся и при падении — тем же крестом, что и на цели, и разрыв крупнее.
+ * рвётся и при падении — склад горит тем же крестом, что и на цели, а земля
+ * обугливается одной клеткой; разрыв крупнее.
  */
 function crash(s: GameState, d: Drone) {
   const cx = Math.max(0, Math.min(GRID - 1, Math.floor(d.x)));
@@ -621,7 +622,9 @@ function crash(s: GameState, d: Drone) {
       if (x < 0 || y < 0 || x >= GRID || y >= GRID) continue;
       const i = idx(x, y);
       if (s.cells[i] === G_BASE) ignite(s, i);
-      else if (s.cells[i] === G_GROUND) {
+      // Земля обугливается только под самим взрывом: крест на земле выглядел
+      // неестественно. Склад горит крестом — там это урон, а не след.
+      else if (s.cells[i] === G_GROUND && x === cx && y === cy) {
         s.cells[i] = G_SCORCH;
         s.dirty = true;
       }
