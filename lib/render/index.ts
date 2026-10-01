@@ -211,24 +211,77 @@ export function drawCoverage(
       stroke: COLORS.trapRangeLine,
     },
   } as const;
-  for (const kind of show) {
-    const part = live.filter((g) => kindOf(g) === kind);
-    if (!part.length) continue;
-    const st = styles[kind];
-    const r = (st.r + 0.5) * cell;
-    ctx.beginPath();
-    for (const g of part) {
-      const cx = (g.cx + 0.5) * cell;
-      const cy = (g.cy + 0.5) * cell;
-      ctx.moveTo(cx + r, cy);
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+
+  // Слой пересобираем, только когда поменялся набор живых установок или их
+  // дальность: в бою это гибель установки, в лобби — постройка и
+  // перестановка. В остальные кадры — одна готовая картинка.
+  const key =
+    `${cell}|${show.join()}|${range}|${rocketsRange}|${spraysRange}|${trapsRange}|` +
+    live.map((g) => `${g.cx},${g.cy},${kindOf(g)}`).join(";");
+  let cached = coverageLayers.get(ctx.canvas);
+  if (!cached || cached.key !== key) {
+    const side = GRID * cell * COVER_SCALE;
+    const layer = cached?.layer ?? document.createElement("canvas");
+    layer.width = side;
+    layer.height = side;
+    const g = layer.getContext("2d");
+    if (!g) return;
+    g.setTransform(COVER_SCALE, 0, 0, COVER_SCALE, 0, 0);
+    for (const kind of show) {
+      const part = live.filter((item) => kindOf(item) === kind);
+      if (!part.length) continue;
+      const st = styles[kind];
+      const r = (st.r + 0.5) * cell;
+      const circles = (target: CanvasRenderingContext2D, radius: number) => {
+        target.beginPath();
+        for (const item of part) {
+          const cx = (item.cx + 0.5) * cell;
+          const cy = (item.cy + 0.5) * cell;
+          target.moveTo(cx + radius, cy);
+          target.arc(cx, cy, radius, 0, Math.PI * 2);
+        }
+      };
+      // заливка вида — как и была, полупрозрачная, одна на все его круги
+      circles(g, r);
+      g.fillStyle = st.fill;
+      g.fill();
+      // Обводка — только по внешнему краю зоны вида. Обводим все круги на
+      // отдельном холсте и стираем то, что глубже края хоть одного из них:
+      // дуги внутри зоны, от которых она и рябила, уходят, контур остаётся.
+      const edge = coverageEdge(side);
+      edge.setTransform(COVER_SCALE, 0, 0, COVER_SCALE, 0, 0);
+      circles(edge, r);
+      edge.strokeStyle = st.stroke;
+      edge.lineWidth = 1;
+      edge.stroke();
+      edge.globalCompositeOperation = "destination-out";
+      circles(edge, r - 0.5 - 1 / COVER_SCALE);
+      edge.fill();
+      edge.globalCompositeOperation = "source-over";
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.drawImage(edge.canvas, 0, 0);
+      g.setTransform(COVER_SCALE, 0, 0, COVER_SCALE, 0, 0);
     }
-    ctx.fillStyle = st.fill;
-    ctx.fill();
-    ctx.strokeStyle = st.stroke;
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    cached = { key, layer };
+    coverageLayers.set(ctx.canvas, cached);
   }
+  ctx.drawImage(cached.layer, 0, 0, GRID * cell, GRID * cell);
+}
+
+/** Слой зон рисуется вдвое крупнее карты: при приближении края не мылятся. */
+const COVER_SCALE = 2;
+/** Готовые зоны для каждого холста — у боя, лобби и разведки свои. */
+const coverageLayers = new WeakMap<
+  HTMLCanvasElement | OffscreenCanvas,
+  { key: string; layer: HTMLCanvasElement }
+>();
+/** Холст для контура одного вида: чистый, нужного размера, один на всех. */
+let edgeCanvas: HTMLCanvasElement | null = null;
+function coverageEdge(side: number): CanvasRenderingContext2D {
+  edgeCanvas ??= document.createElement("canvas");
+  edgeCanvas.width = side; // заодно и очищает
+  edgeCanvas.height = side;
+  return edgeCanvas.getContext("2d")!;
 }
 
 /** Динамика боя: прицел, огонь, дроны, ракеты, взрывы. */
