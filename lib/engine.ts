@@ -126,6 +126,11 @@ export interface Rocket {
   id: number;
   /** Чья: пока её ракета в воздухе, ракетница не пускает вторую. */
   from: number;
+  /**
+   * За кем пущена — id дрона. Цель одна на весь полёт: потеряла её — не
+   * ищет другую, а летит прямо и уходит с поля.
+   */
+  target: number;
   x: number;
   y: number;
   dx: number;
@@ -1448,7 +1453,7 @@ function stepMissiles(s: GameState, dt: number, byId: Map<number, Drone>) {
  * доворачивает, причём не на ту цель, в которую целились, а на ту, что
  * ближе всего к ней самой прямо сейчас.
  */
-function stepRockets(s: GameState, dt: number) {
+function stepRockets(s: GameState, dt: number, dronesById: Map<number, Drone>) {
   // Кто уже держит ракету в воздухе. Считаем разом: перебирать ракеты
   // заново для каждой установки незачем, их там единицы.
   const busy = new Set<number>();
@@ -1474,6 +1479,7 @@ function stepRockets(s: GameState, dt: number) {
     s.rockets.push({
       id: s.nextId++,
       from: g.id,
+      target: best.id,
       x: gx,
       y: gy,
       dx: Math.cos(a + off),
@@ -1501,8 +1507,10 @@ function stepRockets(s: GameState, dt: number) {
       s.rockets.splice(i, 1);
       continue;
     }
-    // Цель не закреплена: кто ближе к самой ракете, на того и доворот.
-    const t = nearestDrone(s, m.x, m.y, Infinity);
+    // Доворот только на свою цель. Сбили её, упала или пропала — ракета
+    // больше не рулит: летит как летела и уходит с поля, по чужим не бьёт.
+    const found = dronesById.get(m.target);
+    const t = found && !found.hit ? found : undefined;
     if (t) {
       const a = Math.atan2(t.y - m.y, t.x - m.x);
       const ca = Math.atan2(m.dy, m.dx);
@@ -1757,9 +1765,9 @@ export function update(s: GameState, dt: number) {
   // были бы и те, кого в этом же кадре сбили. Одна карта на такт — раньше
   // её строила себе каждая фаза, которой нужен дрон по номеру.
   const dronesById = new Map<number, Drone>();
-  if (s.missiles.length) for (const d of s.drones) dronesById.set(d.id, d);
+  for (const d of s.drones) dronesById.set(d.id, d);
   stepMissiles(s, dt, dronesById);
-  stepRockets(s, dt);
+  stepRockets(s, dt, dronesById);
   stepBalloons(s, dt);
   stepFire(s, dt);
   stepEffects(s, dt);
