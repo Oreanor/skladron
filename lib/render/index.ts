@@ -6,7 +6,7 @@ import {
   G_SCORCH,
   gunKind,
   type Gun,
-} from "./base";
+} from "../base";
 import {
   aimMode,
   gunRange,
@@ -15,9 +15,9 @@ import {
   suppressRange,
   trapRange,
   type GameState,
-} from "./engine";
-import { BLOW, FX, GUN, ROCKET, SPRAY, SUPPRESS, TRAP } from "./tuning";
-import { COLORS } from "./render/colors";
+} from "../engine";
+import { BLOW, FX, GUN, ROCKET, SPRAY, SUPPRESS, TRAP } from "../tuning";
+import { COLORS } from "./colors";
 import {
   drawBalloons,
   drawDepots,
@@ -25,10 +25,10 @@ import {
   drawSpray,
   drawTrap,
   drawTurret,
-} from "./render/pieces";
+} from "./pieces";
 
 // Палитра и сами предметы живут в render/: их правят отдельно от кадра боя.
-export { COLORS, installColors } from "./render/colors";
+export { COLORS, installColors } from "./colors";
 export {
   drawBalloons,
   drawDepots,
@@ -37,7 +37,7 @@ export {
   drawSpray,
   drawTrap,
   drawTurret,
-} from "./render/pieces";
+} from "./pieces";
 
 /** Всё, что нужно для отрисовки карты — и бою, и редактору. */
 export interface Scene {
