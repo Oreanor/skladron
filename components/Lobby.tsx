@@ -30,7 +30,6 @@ import {
   priceAt,
   loanDebt,
   MIN_BASE_CELLS,
-  REPAIR_COST,
   maxLevel,
   upgradeCost,
   type UpgradeKind,
@@ -93,6 +92,7 @@ import CompetitionsPanel from "./lobby/CompetitionsPanel";
 import { useJournal } from "./lobby/useJournal";
 import { mapHandlers, pushPriceTag, useMapRefs } from "./lobby/mapInput";
 import { drawLobbyOverlay } from "./lobby/drawLobby";
+import { statusBar } from "./lobby/statusBar";
 import SummonRaidDialog from "./lobby/SummonRaidDialog";
 import AttackReportDialog from "./lobby/AttackReportDialog";
 import MessageDialog from "./lobby/MessageDialog";
@@ -1261,127 +1261,37 @@ export default function Lobby({
   );
 
   // ---------- полоса сообщений ----------
-  // Всё, что игра говорит игроку, идёт одной строкой под кнопками: и рамка
-  // с подтверждением, и тревога, и обычные сообщения. Порядок — по тому,
-  // что сейчас важнее для рук.
   const draftOpen = drafting && draftRect && draftRect.w > 0 && draftRect.h > 0;
   // Тревога — только о чужих налётах: миссию игрок запускает сам, а
   // недоигранная висит в очереди до следующего «играть» в журнале миссий.
   const raidsIn = p.incoming.filter((a) => !a.competitionStage);
-  let barTone = "border-neutral-800 bg-neutral-900/40 text-neutral-500";
-  let barBody: ReactNode = (
+  const { tone: barTone, body: barBody } = statusBar({
+    t,
+    tool,
     // Те же числа, что и на самой кнопке: сырые vars не знают ни цены по
     // уровню, ни прокачанной дальности, и в строке оставались «{cost}».
-    <span className="min-w-0 truncate">{t(activeTool.hint, toolVars(activeTool))}</span>
-  );
-
-  if (draftOpen && draftRect) {
-    barTone = "border-amber-700/60 bg-amber-950/30 text-amber-100";
-    barBody = (
-      <>
-        <span className="font-mono">
-          {t(
-            tool === "scrap"
-              ? "scrap.summary"
-              : tool === "repair"
-              ? "repair.summary"
-              : "draft.summary",
-            {
-              w: draftRect.w,
-              h: draftRect.h,
-              cells: draftCells,
-              cost: fmt(Math.abs(draftCost)),
-            }
-          )}
-        </span>
-        {!draftConnects && (
-          <span className="text-red-400">
-            {t(tool === "scrap" ? "scrap.splits" : "draft.gap")}
-          </span>
-        )}
-        {draftConnects && !draftAfford && (
-          <span className="text-red-400">{t("draft.tooExpensive")}</span>
-        )}
-        {(tool === "repair" || tool === "scrap") && draftCells === 0 && (
-          <span className="text-neutral-400">{t("repair.nothing")}</span>
-        )}
-        <div className="ml-auto flex gap-2">
-          <Button
-            variant="build"
-            size="sm"
-            onClick={commitDraft}
-            disabled={!draftConnects || !draftAfford || draftCells === 0}
-          >
-            {t("draft.confirm")}
-          </Button>
-          <Button size="sm" onClick={hand.onRightClick}>
-            {t("draft.remove")}
-          </Button>
-        </div>
-      </>
-    );
-  } else if (message) {
-    barTone = "border-neutral-700 bg-neutral-900 text-neutral-200";
-    barBody = <span className="min-w-0">{message}</span>;
-  } else if (p.founded && intact === 0) {
-    barTone = "border-red-900/70 bg-red-950/30 text-red-100";
-    barBody = (
-      <>
-        <span className="min-w-0">{t("burnt.notice", { cost: REPAIR_COST, side: STARTER_SIDE })}</span>
-        <div className="ml-auto flex gap-2">
-          <Button size="sm" active={tool === "repair"} onClick={() => pickTool("repair")}>
-            {t("tool.repair")}
-          </Button>
-          <Button variant="danger" size="sm" onClick={() => setConfirmWipe(true)}>
-            {t("burnt.raze")}
-          </Button>
-        </div>
-      </>
-    );
-  } else if (!p.founded) {
-    barTone = "border-neutral-700 bg-neutral-900 text-neutral-200";
-    barBody = (
-      <>
-        <span className="font-mono">
-          <span className="text-neutral-400">{t("base.areaShort")} </span>
-          <span className={intact >= MIN_BASE_CELLS ? "text-emerald-300" : "text-neutral-100"}>
-            {intact}/{MIN_BASE_CELLS}
-          </span>
-        </span>
-        <span className="min-w-0 truncate text-neutral-400">{t("base.drawHint")}</span>
-        <Button
-          variant="build"
-          size="sm"
-          className="ml-auto"
-          onClick={() => setNaming("found")}
-          disabled={intact < MIN_BASE_CELLS}
-        >
-          {t("base.foundShort")}
-        </Button>
-      </>
-    );
-  } else if (raidsIn.length > 0) {
-    barTone = "border-red-900/70 bg-red-950/30 text-red-100";
-    barBody = (
-      <>
-        <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-500" />
-        <span className="min-w-0 truncate">
-          {t("attacks.incoming", { from: raidsIn[0].from, drones: raidsIn[0].drones })}
-        </span>
-        <Button
-          variant="danger"
-          size="sm"
-          className="ml-auto"
-          onClick={() => void defend(raidsIn[0])}
-          disabled={intact === 0}
-        >
-          {raidsIn.length > 1
-            ? t("attacks.defendCount", { count: raidsIn.length })
-            : t("attacks.defend")}
-        </Button>
-      </>
-    );
-  }
+    hint: t(activeTool.hint, toolVars(activeTool)),
+    draft:
+      draftOpen && draftRect
+        ? {
+            rect: draftRect,
+            cells: draftCells,
+            cost: draftCost,
+            connects: draftConnects,
+            afford: draftAfford,
+          }
+        : null,
+    message,
+    founded: p.founded,
+    intact,
+    raidsIn,
+    commitDraft,
+    cancelDraft: hand.onRightClick,
+    pickRepair: () => pickTool("repair"),
+    askRaze: () => setConfirmWipe(true),
+    askFound: () => setNaming("found"),
+    defend: (order) => void defend(order),
+  });
 
   const accountLine = (
     <AccountMenu
