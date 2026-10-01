@@ -253,13 +253,16 @@ export function Sheet({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-30 flex flex-col justify-end lg:hidden">
+    // Обёртка на весь экран, но сама нажатий не ловит: шапка с кнопками
+    // панелей остаётся живой, и тычок в соседнюю кнопку сразу меняет
+    // шторку — закрывать текущую крестиком не нужно.
+    <div className="pointer-events-none fixed inset-0 z-30 flex flex-col justify-end lg:hidden">
       <button
         aria-label={t("common.close")}
         onClick={onClose}
-        className="absolute inset-x-0 bottom-0 top-14 cursor-default bg-black/60"
+        className="pointer-events-auto absolute inset-x-0 bottom-0 top-14 cursor-default bg-black/60"
       />
-      <div className="relative max-h-[82dvh] overflow-y-auto overscroll-contain rounded-t-2xl border-t border-neutral-700 bg-neutral-900 shadow-2xl">
+      <div className="pointer-events-auto relative max-h-[82dvh] overflow-y-auto overscroll-contain rounded-t-2xl border-t border-neutral-700 bg-neutral-900 shadow-2xl">
         <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-neutral-800 bg-neutral-900/95 px-4 py-3 backdrop-blur">
           <SectionTitle>{title}</SectionTitle>
           <Button variant="ghost" size="sm" onClick={onClose} className="-my-1 text-lg leading-none">
