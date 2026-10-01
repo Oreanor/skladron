@@ -79,6 +79,7 @@ import type { Account } from "./AuthGate";
 import Enemies, { EnemyProfile } from "./lobby/Enemies";
 import {
   drawCoverage,
+  drawHoverLabel,
   drawDepots,
   drawRocket,
   drawSpray,
@@ -122,7 +123,6 @@ import {
   drawDropTarget,
   drawFreeCells,
   drawHoverCell,
-  drawHoverLabel,
   drawPicked,
   drawPriceTags,
   dropAllowed,

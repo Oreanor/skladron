@@ -686,3 +686,35 @@ function drawBoom(
 
   ctx.restore();
 }
+
+/**
+ * Подпись-плашка над клеткой. Размер держим экранный, а не игровой, иначе
+ * на отдалении она станет нечитаемой; но на 0.5× обратный масштаб раздул бы
+ * её вдвое, поэтому он с потолком.
+ */
+export function drawHoverLabel(
+  ctx: CanvasRenderingContext2D,
+  cell: number,
+  cx: number,
+  cy: number,
+  label: string,
+  zoom: number
+) {
+  const inv = Math.min(1 / (zoom || 1), 1.35);
+  ctx.save();
+  ctx.translate((cx + 0.5) * cell, cy * cell - cell * 0.35);
+  ctx.scale(inv, inv);
+  ctx.font = "600 12px ui-sans-serif, system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const tw = ctx.measureText(label).width;
+  const padX = 6;
+  const padY = 3;
+  const boxH = 12 + padY * 2;
+  const boxY = -boxH;
+  ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+  ctx.fillRect(-tw / 2 - padX, boxY, tw + padX * 2, boxH);
+  ctx.fillStyle = "#f5f5f5";
+  ctx.fillText(label, 0, boxY + boxH / 2);
+  ctx.restore();
+}

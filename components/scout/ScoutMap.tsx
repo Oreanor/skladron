@@ -11,7 +11,7 @@ import { drawCoverage, installColors } from "@/lib/render";
 import type { ScoutSnapshot } from "@/lib/enemy";
 import { seenGuns } from "@/lib/scout";
 import MapCanvas, { CELL, SIZE } from "../MapCanvas";
-import { drawHoverLabel } from "../lobby/overlay";
+import { drawHoverLabel } from "@/lib/render";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 
