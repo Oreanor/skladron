@@ -1378,32 +1378,41 @@ function stepGuns(s: GameState, dt: number) {
     // шевелящемуся стволу видно, что пушка жива, просто её глушат.
     g.jammed = Math.max(0, g.jammed - dt);
 
-    // Башня доворачивает к последней цели — по ней видно, куда пушка смотрит.
     const tempo = gunTempo(s);
-    turnTurret(g, GUN.turretTurn * tempo, dt);
-
     g.cd -= dt;
-    if (g.cd > 0 || g.jammed > 0) continue;
     const gx = g.cx + 0.5;
     const gy = g.cy + 0.5;
-    // Подавителя зенитка берёт на общих основаниях. Не даёт ей выстрелить
-    // не запрет, а его собственный радиус: заглушённая пушка до проверки
-    // цели уже не доходит.
-    const best = nearestDrone(s, gx, gy, gunRange(s) + 0.5);
-    if (best) {
-      // Снаряд неуправляемый — стреляем туда, где дрон окажется к встрече.
-      const a = leadAngle(gx, gy, best, missileSpeed(s));
-      g.aim = a;
-      s.missiles.push({
-        id: s.nextId++,
-        x: gx,
-        y: gy,
-        dx: Math.cos(a),
-        dy: Math.sin(a),
-        life: MISSILE.life,
-      });
-      g.cd = GUN.cooldown / tempo;
+
+    // Наводимся загодя: за GUN.aimAhead до конца перезарядки ищем цель и
+    // доворачиваем ствол на точку упреждения. Подавителя зенитка берёт на
+    // общих основаниях; заглушённая — цель не ищет, башня просто шевелится.
+    const ready = g.cd <= 0 && g.jammed <= 0;
+    let best: Drone | null = null;
+    if (g.jammed <= 0 && g.cd <= GUN.aimAhead) {
+      best = nearestDrone(s, gx, gy, gunRange(s) + 0.5);
+      // Снаряд неуправляемый — целимся туда, где дрон окажется к встрече.
+      if (best) g.aim = leadAngle(gx, gy, best, missileSpeed(s));
     }
+    turnTurret(g, GUN.turretTurn * tempo, dt);
+    if (!ready || !best) continue;
+
+    // Стреляем, только когда ствол довёрнут: башня медленная, и цель,
+    // зашедшая сбоку, успевает пройти часть пути, пока пушка поворачивается.
+    let off = g.aim - g.angle;
+    while (off > Math.PI) off -= Math.PI * 2;
+    while (off < -Math.PI) off += Math.PI * 2;
+    if (Math.abs(off) > GUN.aimTolerance) continue;
+
+    // снаряд идёт туда, куда смотрит ствол, а не точно в расчётную точку
+    s.missiles.push({
+      id: s.nextId++,
+      x: gx,
+      y: gy,
+      dx: Math.cos(g.angle),
+      dy: Math.sin(g.angle),
+      life: MISSILE.life,
+    });
+    g.cd = GUN.cooldown / tempo;
   }
 }
 
