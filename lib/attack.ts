@@ -49,7 +49,16 @@ export interface WavePlan {
    * разные значения — подряд или с паузой.
    */
   delay: number;
+  /**
+   * Только у капели: сколько дронов в звене, 1…4. Звено заходит с одной
+   * стороны почти разом и плотно — перегружает одно направление. Без поля —
+   * по одному, как капель и была.
+   */
+  flight?: number;
 }
+
+/** Самое большое звено капели. */
+export const MAX_FLIGHT = 4;
 
 export const waveSize = (w: WavePlan) =>
   w.groups.reduce((n, g) => n + Math.max(0, g.n), 0);
@@ -380,7 +389,7 @@ export function buildPlan(order: AttackOrder): SpawnTicket[] {
     const size = waveSize(wave);
     if (size <= 0) continue;
     const at = WAVE.start + Math.max(0, wave.delay);
-    const tickets = waveTickets(wave.pattern, wave.direction, size, rnd, at);
+    const tickets = waveTickets(wave.pattern, wave.direction, size, rnd, at, wave.flight);
     if (!tickets.length) continue;
     assignPayloads(tickets, wave.groups);
     launchTogether(tickets, at, order.droneLevel);
@@ -395,7 +404,9 @@ function waveTickets(
   direction: number,
   n: number,
   rnd: () => number,
-  start: number
+  start: number,
+  /** Только капель: дронов в звене. */
+  flight = 1
 ): SpawnTicket[] {
   const plan: SpawnTicket[] = [];
 
@@ -612,11 +623,36 @@ function waveTickets(
         first = Math.min(WAVE.drip.firstMax, 2 * avg - last);
       }
       first = Math.max(WAVE.drip.firstMin, first);
+      const size = Math.max(1, Math.min(MAX_FLIGHT, Math.floor(flight)));
       let t = start;
-      for (let i = 0; i < n; i++) {
-        push(t, Math.floor(rnd() * 4), WAVE.edgeSpread);
-        const k = i / Math.max(1, n - 1);
-        t += first - k * (first - last);
+      if (size === 1) {
+        // По одному — тем же путём и теми же случайными числами, что и
+        // раньше: иначе разошлись бы повторы уже сыгранных налётов.
+        for (let i = 0; i < n; i++) {
+          push(t, Math.floor(rnd() * 4), WAVE.edgeSpread);
+          const k = i / Math.max(1, n - 1);
+          t += first - k * (first - last);
+        }
+        break;
+      }
+      // Звеньями: капель та же, но каждая капля — несколько дронов с одной
+      // стороны, плечом к плечу и почти разом. Капель реже — дронов столько же.
+      const drops = Math.ceil(n / size);
+      for (let d = 0, left = n; d < drops; d++) {
+        const edge = Math.floor(rnd() * 4);
+        const ox = rnd() * (GRID + WAVE.edgeSpread * 2) - WAVE.edgeSpread;
+        const here = Math.min(size, left);
+        for (let m = 0; m < here; m++) {
+          plan.push({
+            at: t + m * WAVE.drip.flightGap,
+            edge,
+            ox: ox + (m - (here - 1) / 2) * WAVE.drip.flightSpacing,
+            oy: (rnd() - 0.5) * WAVE.edgeDepth,
+          });
+        }
+        left -= here;
+        const k = d / Math.max(1, drops - 1);
+        t += (first - k * (first - last)) * size;
       }
       break;
     }

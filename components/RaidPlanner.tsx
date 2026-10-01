@@ -9,6 +9,7 @@
 
 import {
   EDGES,
+  MAX_FLIGHT,
   PATTERNS,
   PAYLOADS,
   payloadCost,
@@ -172,6 +173,21 @@ export default function RaidPlanner({
                   </option>
                 ))}
               </select>
+              {/* у капели — сколько дронов в звене: звено перегружает одно направление */}
+              {wave.pattern === "drip" && (
+                <select
+                  value={wave.flight ?? 1}
+                  aria-label={t("raid.flight")}
+                  onChange={(e) => patch(wi, { flight: Number(e.target.value) })}
+                  className={`${selectClass} w-full`}
+                >
+                  {Array.from({ length: MAX_FLIGHT }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>
+                      {t(n === 1 ? "flight.one" : "flight.many", { n })}
+                    </option>
+                  ))}
+                </select>
+              )}
               {/* у спирали вместо стороны — куда она закручивается */}
               {wave.pattern === "spiral" && (
                 <select

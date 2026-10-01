@@ -527,6 +527,11 @@ begin
        or coalesce((wave->>'delay')::numeric, 0) > 300 then
       raise exception 'bad wave delay';
     end if;
+    -- звено капели: сколько дронов заходит разом с одной стороны
+    if coalesce((wave->>'flight')::int, 1) < 1
+       or coalesce((wave->>'flight')::int, 1) > 4 then
+      raise exception 'bad wave flight';
+    end if;
     if jsonb_typeof(coalesce(wave->'groups', 'null'::jsonb)) <> 'array'
        or jsonb_array_length(wave->'groups') = 0
        or jsonb_array_length(wave->'groups') > 8 then
