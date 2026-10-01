@@ -14,6 +14,7 @@ import { SIM } from "@/lib/tuning";
 import { fmt } from "@/lib/economy";
 import { useT } from "@/lib/i18n";
 import { explainAlone } from "@/lib/errors";
+import ZonesToggle, { useZones } from "./ZonesToggle";
 import MapCanvas, { CELL } from "./MapCanvas";
 import { Button, Chip, ChipBar, inputClass } from "./ui";
 import Avatar from "./Avatar";
@@ -155,6 +156,7 @@ export default function Replay({
   onClose?: () => void;
 }) {
   const t = useT();
+  const [zones, setZones] = useZones();
   const [shared, setShared] = useState(false);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(2);
   /** Счётчик прогонов: по нему эффект крутит бой с нуля в том же окне. */
@@ -269,7 +271,7 @@ export default function Replay({
   };
 
   const overlay = (ctx: CanvasRenderingContext2D, now: number) => {
-    drawFrame(ctx, s, CELL, null, now);
+    drawFrame(ctx, s, CELL, null, now, zones);
   };
 
   return (
@@ -321,6 +323,7 @@ export default function Replay({
             {v}×
           </Button>
         ))}
+        <ZonesToggle on={zones} onChange={setZones} className="ml-2" />
         {shareId && (
           <Button
             className="ml-auto"
