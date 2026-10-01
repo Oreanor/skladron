@@ -181,6 +181,8 @@ export interface Puff {
    * След ракеты живёт меньше, иначе он тянулся бы через всю карту.
    */
   life?: number;
+  /** Светлый клуб — выхлоп ракеты. Без поля — чёрный дым подбитого. */
+  light?: boolean;
 }
 
 export interface Hole {
@@ -1536,6 +1538,7 @@ function stepRockets(s: GameState, dt: number, dronesById: Map<number, Drone>) {
         t: 0,
         r: ROCKET.smokeSize,
         life: ROCKET.smokeLife,
+        light: true,
       });
     }
 
