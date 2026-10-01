@@ -11,21 +11,13 @@ import {
 } from "react";
 import {
   GRID,
-  G_BASE,
-  G_BURNT,
   balloonCount,
-  depotKind,
   type DepotKind,
-  type Rect,
   droneCount,
   countFreeCells,
   countKind,
-  gunKind,
   type GunKind,
-  idx,
-  isBuilding,
   normRect,
-  touchesBuilding,
 } from "@/lib/base";
 import {
   CELL_COST,
@@ -77,18 +69,8 @@ import {
 } from "@/lib/enemy";
 import type { Account } from "./AuthGate";
 import Enemies, { EnemyProfile } from "./lobby/Enemies";
-import {
-  drawCoverage,
-  drawHoverLabel,
-  drawDepots,
-  drawRocket,
-  drawSpray,
-  drawTrap,
-  drawTurret,
-  type CoverageKind,
-  type View,
-} from "@/lib/render";
-import { gunRange, rocketRange, rocketTempo, sprayRange, trapRange } from "@/lib/engine";
+import { type View } from "@/lib/render";
+import { rocketRange, rocketTempo, sprayRange, trapRange } from "@/lib/engine";
 import { RAID, ROCKET } from "@/lib/tuning";
 import {
   applyDraft,
@@ -109,6 +91,8 @@ import Battle from "./battle/Battle";
 import { applyOutcome, type BattleOutcome } from "@/lib/outcome";
 import CompetitionsPanel from "./lobby/CompetitionsPanel";
 import { useJournal } from "./lobby/useJournal";
+import { mapHandlers, pushPriceTag, useMapRefs } from "./lobby/mapInput";
+import { drawLobbyOverlay } from "./lobby/drawLobby";
 import SummonRaidDialog from "./lobby/SummonRaidDialog";
 import AttackReportDialog from "./lobby/AttackReportDialog";
 import MessageDialog from "./lobby/MessageDialog";
@@ -117,16 +101,6 @@ import { useAttacks } from "./lobby/useAttacks";
 import { InsuranceDialog, LoanDialog, UpgradeDialog } from "./lobby/MoneyDialogs";
 import RaidsPanel, { StatsPanel } from "./lobby/RaidsPanel";
 import AvatarPicker from "./lobby/AvatarPicker";
-import {
-  drawDraft,
-  drawDropTarget,
-  drawFreeCells,
-  drawHoverCell,
-  drawPicked,
-  drawPriceTags,
-  dropAllowed,
-  onMap,
-} from "./lobby/overlay";
 import {
   BOT_COUNT,
   DEFAULT_PANELS,
@@ -153,7 +127,7 @@ import { PostRaidCommentModal, RaidOpenerModal } from "./lobby/RaidCommentModals
 
 /** Имя бота из настроек сборки: без него привязывать некуда. */
 const TG_BOT = process.env.NEXT_PUBLIC_TELEGRAM_BOT;
-import MapCanvas, { type Pt } from "./MapCanvas";
+import MapCanvas from "./MapCanvas";
 import AccountMenu, { SettingsList } from "./AccountMenu";
 import AvatarView from "./Avatar";
 import { useT } from "@/lib/i18n";
@@ -260,25 +234,8 @@ export default function Lobby({
   const [reports, setReports] = useState<AttackReport[]>([]);
   const toggleSheet = (id: SheetId) => setSheet((cur) => (cur === id ? null : id));
 
-  // заготовка площади
-  const draftRef = useRef<Rect | null>(null);
-  const dragRef = useRef<{
-    mode: "create" | "move" | "resize";
-    corner: number;
-    startX: number;
-    startY: number;
-    origin: Rect;
-    moved: boolean;
-  } | null>(null);
-  const hoverRef = useRef<Pt | null>(null);
-  /** Ценники, всплывающие над клеткой в момент покупки. */
-  const priceTags = useRef<{ x: number; y: number; text: string; gain: boolean; at: number }[]>([]);
-  /** Последняя нарисованная рамка: по ней решаем, нужен ли React-рендер. */
-  const draftKey = useRef("");
-  const paintingRef = useRef(false);
-  // раскладка контейнеров
-  const dragDepotRef = useRef<{ cx: number; cy: number } | null>(null);
-  const dragGunRef = useRef<{ cx: number; cy: number; kind: GunKind } | null>(null);
+  /** Руки на карте: рамка, перетаскивание, ценники — всё в refs. */
+  const map = useMapRefs();
 
   /** Пишем склад с задержкой: на сервере это одна проверяемая операция. */
   /**
@@ -532,7 +489,7 @@ export default function Lobby({
   // Сцена собирается на каждом React-обновлении. Это важно для ремонта и
   // drag-and-drop: там массив клеток/контейнеров заменяется целиком, чтобы
   // canvas гарантированно получил новое состояние, а не старую ссылку.
-  const dragGun = dragGunRef.current;
+  const dragGun = map.dragGun.current;
   const scene = p
     ? {
         cells: p.cells,
@@ -707,7 +664,7 @@ export default function Lobby({
   // Рамкой работают и «Площадь», и «Ремонт»: выделил, подправил, утвердил.
   // Разница только в том, что считается внутри рамки и почём.
   const drafting = tool === "area" || tool === "repair" || tool === "scrap";
-  const draft = draftRef.current;
+  const draft = map.draft.current;
   const draftRect = draft ? normRect(draft) : null;
   // Сколько клеток, почём и можно ли — считает стройка; лобби только
   // рисует по этому ценник и решает, красить ли рамку красным.
@@ -750,8 +707,8 @@ export default function Lobby({
             : t("draft.built", { cells: before, cost: fmt(r.spent) })
       );
     }
-    draftRef.current = null;
-    dragRef.current = null;
+    map.draft.current = null;
+    map.drag.current = null;
     if (before > 0) touch();
     else forceRender((v) => v + 1);
   };
@@ -1001,413 +958,45 @@ export default function Lobby({
       )
     );
 
-  // ---------- ввод по карте ----------
-
-  const cellOf = (pt: Pt) => ({ x: Math.floor(pt.x), y: Math.floor(pt.y) });
+  // ---------- ввод и отрисовка по карте ----------
 
   /** «−100 кр» над клеткой: видно, за что ушли деньги, и куда вернулись. */
-  const showPrice = (x: number, y: number, amount: number) => {
-    priceTags.current.push({
-      x,
-      y,
-      text: `${amount < 0 ? "−" : "+"}${fmt(Math.abs(amount))} ${t("battle.creditsSuffix")}`,
-      gain: amount > 0,
-      at: performance.now(),
-    });
-  };
+  const showPrice = (x: number, y: number, amount: number) => pushPriceTag(map, t, x, y, amount);
 
   if (process.env.NODE_ENV !== "production") {
     (window as unknown as { __lobby: unknown }).__lobby = {
       player: p,
       tool,
-      dragDepot: dragDepotRef,
+      dragDepot: map.dragDepot,
       moveDepot,
     };
   }
 
-  const cornerNear = (r: Rect, pt: Pt) => {
-    const corners: [number, number][] = [
-      [r.x, r.y],
-      [r.x + r.w, r.y],
-      [r.x, r.y + r.h],
-      [r.x + r.w, r.y + r.h],
-    ];
-    for (let i = 0; i < 4; i++) {
-      if (Math.abs(corners[i][0] - pt.x) < 2.5 && Math.abs(corners[i][1] - pt.y) < 2.5) return i;
-    }
-    return -1;
-  };
+  const hand = mapHandlers(map, {
+    p,
+    tool,
+    drafting,
+    rerender: () => forceRender((v) => v + 1),
+    buildOne,
+    repairAt,
+    scrapAt,
+    gunAt,
+    buyDepotAt,
+    moveDepot,
+    moveGun,
+    commitDraft,
+  });
 
-  const onDown = (pt: Pt, button: number) => {
-    if (button !== 0) return;
-    const c = cellOf(pt);
-
-    // Уголок рамки главнее всего: он маленький, специально под курсором, и
-    // рядом с ним вполне может стоять пушка.
-    const rect = drafting && draftRef.current ? normRect(draftRef.current) : null;
-    if (rect) {
-      const corner = cornerNear(rect, pt);
-      if (corner >= 0) {
-        dragRef.current = {
-          mode: "resize",
-          corner,
-          startX: pt.x,
-          startY: pt.y,
-          origin: rect,
-          moved: false,
-        };
-        return;
-      }
-    }
-
-    // Что стоит на складе, то и берётся мышкой — в любом режиме. Иначе
-    // непонятно, почему пушка тащится при одной кнопке и не тащится при другой.
-    const depot = p.depots.find((q) => q.cx === c.x && q.cy === c.y);
-    if (depot) {
-      dragDepotRef.current = { cx: depot.cx, cy: depot.cy };
-      forceRender((v) => v + 1);
-      return;
-    }
-    const gun = p.guns.find((q) => q.cx === c.x && q.cy === c.y);
-    if (gun) {
-      dragGunRef.current = { cx: gun.cx, cy: gun.cy, kind: gunKind(gun) };
-      forceRender((v) => v + 1);
-      return;
-    }
-
-    if (tool === "drones" || tool === "balloons") {
-      void buyDepotAt(c.x, c.y, tool === "balloons" ? "balloon" : "basic");
-      return;
-    }
-    if (isBuildKind(tool)) {
-      gunAt(c.x, c.y, tool);
-      return;
-    }
-    if (!drafting) return;
-
-    const cur = draftRef.current ? normRect(draftRef.current) : null;
-    if (cur) {
-      const corner = cornerNear(cur, pt);
-      if (corner >= 0) {
-        dragRef.current = {
-          mode: "resize",
-          corner,
-          startX: pt.x,
-          startY: pt.y,
-          origin: cur,
-          moved: false,
-        };
-        return;
-      }
-      if (pt.x >= cur.x && pt.x <= cur.x + cur.w && pt.y >= cur.y && pt.y <= cur.y + cur.h) {
-        dragRef.current = {
-          mode: "move",
-          corner: -1,
-          startX: pt.x,
-          startY: pt.y,
-          origin: cur,
-          moved: false,
-        };
-        return;
-      }
-    }
-    draftRef.current = { x: Math.floor(pt.x), y: Math.floor(pt.y), w: 0, h: 0 };
-    dragRef.current = {
-      mode: "create",
-      corner: -1,
-      startX: pt.x,
-      startY: pt.y,
-      origin: { x: Math.floor(pt.x), y: Math.floor(pt.y), w: 0, h: 0 },
-      moved: false,
-    };
-  };
-
-  const onMove = (pt: Pt) => {
-    hoverRef.current = pt;
-    const drag = dragRef.current;
-    if (!drag || !drafting) return;
-    const dx = pt.x - drag.startX;
-    const dy = pt.y - drag.startY;
-    if (Math.abs(dx) > 0.4 || Math.abs(dy) > 0.4) drag.moved = true;
-
-    switch (drag.mode) {
-      case "create":
-        draftRef.current = {
-          x: drag.origin.x,
-          y: drag.origin.y,
-          w: Math.round(pt.x - drag.origin.x),
-          h: Math.round(pt.y - drag.origin.y),
-        };
-        break;
-      case "move":
-        draftRef.current = {
-          x: drag.origin.x + Math.round(dx),
-          y: drag.origin.y + Math.round(dy),
-          w: drag.origin.w,
-          h: drag.origin.h,
-        };
-        break;
-      default: {
-        const o = drag.origin;
-        let x0 = o.x;
-        let y0 = o.y;
-        let x1 = o.x + o.w;
-        let y1 = o.y + o.h;
-        if (drag.corner === 0 || drag.corner === 2) x0 = Math.round(pt.x);
-        else x1 = Math.round(pt.x);
-        if (drag.corner === 0 || drag.corner === 1) y0 = Math.round(pt.y);
-        else y1 = Math.round(pt.y);
-        draftRef.current = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
-        break;
-      }
-    }
-    // Рамку каждый кадр рисует overlay прямо из ref. React нужен только
-    // ради цифр в подсказке — а они меняются, лишь когда рамка сменила
-    // клетки, а не на каждый пиксель мыши.
-    const r = draftRef.current;
-    const key = r ? `${r.x}|${r.y}|${r.w}|${r.h}` : "";
-    if (key !== draftKey.current) {
-      draftKey.current = key;
-      forceRender((v) => v + 1);
-    }
-  };
-
-  const onUp = (pt: Pt) => {
-    paintingRef.current = false;
-
-    const fromDepot = dragDepotRef.current;
-    if (fromDepot) {
-      dragDepotRef.current = null;
-      const c = cellOf(pt);
-      if (c.x !== fromDepot.cx || c.y !== fromDepot.cy) moveDepot(fromDepot, c.x, c.y);
-      forceRender((v) => v + 1);
-      return;
-    }
-    const fromGun = dragGunRef.current;
-    if (fromGun) {
-      dragGunRef.current = null;
-      const c = cellOf(pt);
-      // Отпустил там же, откуда взял — просто передумал тащить.
-      if (c.x !== fromGun.cx || c.y !== fromGun.cy) moveGun(fromGun, c.x, c.y);
-      forceRender((v) => v + 1);
-      return;
-    }
-    const drag = dragRef.current;
-    if (!drag || !drafting) return;
-    dragRef.current = null;
-
-    if (drag.mode === "create" && !drag.moved) {
-      // одиночный тап: достраиваем или чиним ровно одну клетку
-      draftRef.current = null;
-      const c = cellOf(pt);
-      if (tool === "repair") repairAt(c.x, c.y);
-      else if (tool === "scrap") scrapAt(c.x, c.y);
-      else buildOne(c.x, c.y);
-      return;
-    }
-    if (drag.mode !== "create" && !drag.moved) {
-      commitDraft(); // клик по заготовке утверждает её
-      return;
-    }
-    forceRender((v) => v + 1);
-  };
-
-  const onRightClick = () => {
-    if (drafting && draftRef.current) {
-      draftRef.current = null;
-      dragRef.current = null;
-      forceRender((v) => v + 1);
-    }
-  };
-
-  // ---------- отрисовка поверх карты ----------
-
-  /**
-   * Чьи круги покрытия сейчас уместны. Выбран инструмент установки — её и
-   * показываем; тащим готовую — показываем круги её рода. В остальное время
-   * ничьи: втроём они закрывают склад так, что на нём ничего не разобрать.
-   */
-  /**
-   * Где на складе уже стоит то, что сейчас выбрано. Подсвечиваем только
-   * предметы: у площади, ремонта и сноса подсвечивать нечего — они работают
-   * по клеткам, а не по объектам.
-   */
-  const pickedSpots = (): { cx: number; cy: number }[] => {
-    if (isBuildKind(tool)) {
-      return p.guns.filter((g) => gunKind(g) === tool);
-    }
-    if (tool === "drones" || tool === "balloons") {
-      const want = tool === "balloons" ? "balloon" : "basic";
-      return p.depots.filter((d) => depotKind(d) === want);
-    }
-    return [];
-  };
-
-  const coverageFor = (): CoverageKind[] => {
-    if (isBuildKind(tool)) return [tool];
-    const from = dragGunRef.current;
-    if (!from) return [];
-    const g = p.guns.find((item) => item.cx === from.cx && item.cy === from.cy);
-    return g ? [gunKind(g)] : [];
-  };
-
-  const overlay = (ctx: CanvasRenderingContext2D, frameNow: number, view?: View) => {
-    const cell = 7;
-    // Круги показываем только у того, что сейчас ставят: втроём они
-    // закрывают склад так, что на нём уже ничего не разобрать. Дальность
-    // берём прокачанную, иначе не видно, что дал апгрейд.
-    drawCoverage(
-      ctx,
-      p.guns,
-      cell,
-      gunRange({ gunLevel: p.levels.guns }),
-      sprayRange({ sprayLevel: p.levels.sprays }),
-      trapRange({ trapLevel: p.levels.traps }),
-      rocketRange({ rocketLevel: p.levels.rockets }),
-      coverageFor()
-    );
-
-    const draggedDepot = dragDepotRef.current;
-    drawDepots(
-      ctx,
-      draggedDepot
-        ? p.depots.filter((item) => item.cx !== draggedDepot.cx || item.cy !== draggedDepot.cy)
-        : p.depots,
-      cell
-    );
-
-    const d = draftRef.current ? normRect(draftRef.current) : null;
-    if (d) {
-      drawDraft(ctx, cell, d, {
-        cells: p.cells,
-        burntOnly: tool === "repair" || tool === "scrap" ? tool : undefined,
-        // У сноса «соединяет» и значит «не разорвёт склад» — одна и та же
-        // проверка, второй флаг ей не нужен.
-        scrapWhole: tool !== "scrap" || draftConnects,
-        afford: draftAfford,
-        connects: draftConnects,
-      });
-    }
-
-    const hover = hoverRef.current;
-    const hx = hover ? Math.floor(hover.x) : -1;
-    const hy = hover ? Math.floor(hover.y) : -1;
-
-    // Установки и контейнеры переставляются одинаково: тянем и роняем. Видно
-    // и куда можно, и куда нельзя.
-    const placing = isBuildKind(tool) || dragGunRef.current;
-    const stacking = tool === "drones" || tool === "balloons" || draggedDepot;
-    if (placing || stacking) {
-      drawFreeCells(
-        ctx,
-        cell,
-        p.cells,
-        p.guns,
-        p.depots,
-        placing ? "rgba(140, 215, 255, 0.16)" : "rgba(214, 168, 92, 0.18)"
-      );
-    }
-
-    const dragged = dragGunRef.current ?? draggedDepot;
-    if (dragged && hover) {
-      const ok = dropAllowed(p.cells, p.guns, p.depots, hx, hy, dragged);
-      // контейнер тащим вместе с его содержимым: видно, что именно несёшь
-      if (draggedDepot) {
-        const source = p.depots.find(
-          (item) => item.cx === draggedDepot.cx && item.cy === draggedDepot.cy
-        );
-        if (source) drawDepots(ctx, [{ ...source, cx: hx, cy: hy }], cell, !ok);
-      }
-      if (dragGunRef.current) {
-        const from = dragGunRef.current;
-        const source = p.guns.find(
-          (g) => g.cx === from.cx && g.cy === from.cy && gunKind(g) === from.kind
-        );
-        if (source) {
-          const kind = gunKind(source);
-          const px = onMap(hx, hy) ? hx : from.cx;
-          const py = onMap(hx, hy) ? hy : from.cy;
-          const angle = Math.atan2(py + 0.5 - GRID / 2, px + 0.5 - GRID / 2);
-          switch (kind) {
-            case "spray":
-              drawSpray(ctx, px, py, cell, angle, 0, ok);
-              break;
-            case "trap":
-              drawTrap(ctx, px, py, cell, ok);
-              break;
-            case "rocket":
-              drawRocket(ctx, px, py, cell, angle, ok);
-              break;
-            default:
-              drawTurret(ctx, px, py, cell, angle, ok);
-              break;
-          }
-        }
-      }
-      drawDropTarget(ctx, cell, hx, hy, ok, dragGunRef.current ? "#8ecae6" : "#f5c56f");
-    }
-
-    // Клетка под курсором — сработает тут инструмент или нет. При раскладке
-    // контейнеров не рисуем: там уже подсвечены все свободные клетки.
-    if (hover && !d && onMap(hx, hy) && tool !== "drones") {
-      const v = p.cells[idx(hx, hy)];
-      let ok = false;
-      switch (tool) {
-        case "area":
-          ok = !isBuilding(v) && (!hasBuilding || touchesBuilding(p.cells, hx, hy));
-          break;
-        case "repair":
-          ok = v === G_BURNT;
-          break;
-        case "gun":
-        case "spray":
-        case "trap":
-        case "rocket":
-          ok = v === G_BASE && !p.depots.some((q) => q.cx === hx && q.cy === hy);
-          break;
-      }
-      drawHoverCell(ctx, cell, hx, hy, ok);
-    }
-
-    // Выбранную категорию обводим: иначе среди пёстрой карты не найти, есть
-    // ли у тебя разведка и где она стоит.
-    drawPicked(ctx, cell, pickedSpots(), frameNow);
-
-    priceTags.current = drawPriceTags(ctx, cell, priceTags.current, frameNow);
-
-    // Подпись только у установок и контейнеров: землю подписывать нечем.
-    if (hover && onMap(hx, hy)) {
-      const gun = p.guns.find((g) => g.cx === hx && g.cy === hy);
-      const depot = p.depots.find((item) => item.cx === hx && item.cy === hy);
-      let label: string | null = null;
-      if (gun) {
-        const kind = gunKind(gun);
-        switch (kind) {
-          case "spray":
-            label = t("tool.spray");
-            break;
-          case "trap":
-            label = t("tool.trap");
-            break;
-          case "rocket":
-            label = t("tool.rocket");
-            break;
-          default:
-            label = t("tool.gun");
-            break;
-        }
-      } else if (depot) {
-        // Подпись по виду контейнера: на ящике с шарами «Дроны» — ровно та
-        // ошибка, которую подпись и должна была снимать.
-        label = t(
-          depotKind(depot) === "balloon" ? "map.hover.balloons" : "map.hover.drones",
-          { n: depot.n }
-        );
-      }
-      if (label) drawHoverLabel(ctx, cell, hx, hy, label, view?.zoom ?? 1);
-    }
-  };
-
+  const overlay = (ctx: CanvasRenderingContext2D, frameNow: number, view?: View) =>
+    drawLobbyOverlay(ctx, frameNow, view, {
+      p,
+      tool,
+      m: map,
+      draftAfford,
+      draftConnects,
+      hasBuilding,
+      t,
+    });
 
   // ---------- экраны ----------
 
@@ -1506,7 +1095,7 @@ export default function Lobby({
     setTool(id);
     toolRef.current = id;
     savePanels(panelOrder, hidden, id);
-    draftRef.current = null;
+    map.draft.current = null;
     setModal(null);
   };
 
@@ -1725,7 +1314,7 @@ export default function Lobby({
           >
             {t("draft.confirm")}
           </Button>
-          <Button size="sm" onClick={onRightClick}>
+          <Button size="sm" onClick={hand.onRightClick}>
             {t("draft.remove")}
           </Button>
         </div>
@@ -1928,15 +1517,12 @@ export default function Lobby({
             scene={scene}
             sceneVersion={version}
             overlay={overlay}
-            onDown={onDown}
-            onMove={onMove}
-            onUp={onUp}
-            onRightClick={onRightClick}
-            onLeave={() => {
-              hoverRef.current = null;
-              paintingRef.current = false;
-            }}
-            cursor={dragDepotRef.current || dragGunRef.current ? "grabbing" : "crosshair"}
+            onDown={hand.onDown}
+            onMove={hand.onMove}
+            onUp={hand.onUp}
+            onRightClick={hand.onRightClick}
+            onLeave={hand.onLeave}
+            cursor={map.dragDepot.current || map.dragGun.current ? "grabbing" : "crosshair"}
           />
 
         </div>
