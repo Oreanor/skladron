@@ -3,7 +3,7 @@
 -- Выполнить в Supabase → SQL Editor до деплоя клиента.
 --
 -- Заодно возвращает удаление боя из журнала, если его убрала первая версия
--- patch_competition_list.sql. Прогонять повторно можно.
+-- patches/04-competition-list.sql. Прогонять повторно можно.
 
 alter table attacks add column if not exists hidden_by uuid[] not null default '{}';
 

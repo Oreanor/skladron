@@ -2,7 +2,7 @@
 -- не ищет другую, а летит прямо и уходит с поля. Раньше ракета, пока на
 -- поле был хоть один дрон, кого-нибудь да убивала.
 -- Выполнить в Supabase → SQL Editor до деплоя клиента (вместо
--- patch_rocket_range.sql или после него — версия в обоих одна, 19).
+-- patches/11-rocket-range.sql или после него — версия в обоих одна, 19).
 
 create or replace function sim_version() returns int
 language sql immutable as $$ select 19 $$;

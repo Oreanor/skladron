@@ -3,7 +3,7 @@
 -- Выполнить в Supabase → SQL Editor до деплоя клиента. Прогонять повторно можно.
 
 alter table attacks add column if not exists intact_before int;
--- на случай, если первая версия patch_competition_list.sql убрала удаление
+-- на случай, если первая версия patches/04-competition-list.sql убрала удаление
 alter table attacks add column if not exists hidden_by uuid[] not null default '{}';
 
 -- Уже сыгранным считаем по слепку склада: целые клетки — байт 1.

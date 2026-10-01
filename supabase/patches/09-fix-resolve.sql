@@ -1,5 +1,10 @@
--- Счёт состязания — просто процент уцелевшего склада: всё сберёг — 100.
--- Выполнить в Supabase → SQL Editor после patch_competitions.sql.
+-- Срочно: после patches/06-raid-log-pct.sql каждый бой с соперником падал при
+-- записи итога с «missing FROM-clause entry for table "resolve_attack"».
+-- В PL/pgSQL приставку с именем функции можно ставить только параметрам, а
+-- не переменным; переменная intact_before теперь зовётся was_intact и с
+-- колонкой не путается. Несохранённые бои остались в очереди — после патча
+-- их можно отыграть.
+-- Выполнить в Supabase → SQL Editor сразу.
 
 create or replace function resolve_attack(
   attack_id uuid,
@@ -16,7 +21,7 @@ declare
   defender_credits int;
   defender_intact int;
   burned_now int;
-  intact_before int;
+  was_intact int;
   share_pct int;
   earned int;
   base_at timestamptz;
@@ -60,9 +65,9 @@ begin
   -- плюс сожжённые. Арифметика целая и слово в слово повторяет attackLoot
   -- на клиенте — правила и отчёт обязаны показывать то же число.
   burned_now := coalesce((result->>'burned')::int, 0);
-  intact_before := defender_intact + burned_now;
-  share_pct := case when intact_before > 0
-                    then least(100, (burned_now * 100) / intact_before)
+  was_intact := defender_intact + burned_now;
+  share_pct := case when was_intact > 0
+                    then least(100, (burned_now * 100) / was_intact)
                     else 0 end;
   earned := (burned_now * price('loot')
              * (100 + (price('loot_curve') * share_pct * share_pct * share_pct) / 1000000))
@@ -72,8 +77,8 @@ begin
   -- клиенте. Лучший по номеру храним; уцелел склад — открыт следующий.
   if order_row.competition_stage is not null then
     earned := 0;
-    if intact_before > 0 then
-      comp_pct := (defender_intact * 100) / intact_before;
+    if was_intact > 0 then
+      comp_pct := (defender_intact * 100) / was_intact;
       comp_score := comp_pct;
       update profiles
          set competition_best = case
@@ -82,7 +87,7 @@ begin
                then competition_best || jsonb_build_object(
                       order_row.competition_stage::text,
                       jsonb_build_object('score', comp_score, 'pct', comp_pct,
-                                         'area', intact_before))
+                                         'area', was_intact, 'id', attack_id))
                else competition_best
              end,
              competition_at = case
@@ -106,6 +111,7 @@ begin
   update attacks
      set status = 'resolved', result = resolve_attack.result, loot = earned,
          destroyed = defender_intact = 0, resolved_at = now(),
+         intact_before = was_intact,
          -- Слепок уже записан в claim_attack; здесь только исход и руки.
          trace = battle_trace,
          resolving_token = null,
@@ -116,10 +122,3 @@ begin
 end;
 $$;
 
--- рекорды, посчитанные по прежней формуле с площадью, переводим в проценты
-update profiles
-   set competition_best = (
-     select coalesce(jsonb_object_agg(k, v || jsonb_build_object('score', v->'pct')), '{}'::jsonb)
-       from jsonb_each(competition_best) as t(k, v)
-   )
- where competition_best <> '{}'::jsonb;
