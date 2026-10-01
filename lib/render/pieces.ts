@@ -189,13 +189,18 @@ export function drawSpray(
   const metal = alive ? "#c45a52" : "#666";
 
   if (alive && wet > 0) {
+    // Струи дышат: все разом то короче, то длиннее, от половины до полного
+    // радиуса, толщина та же. Фаза — от угла поворота: он и так идёт, пока
+    // установка льёт, и цикл выходит секунды в две. Только рисунок — тушит
+    // она на весь радиус.
+    const reach = range * (0.75 + 0.25 * Math.sin(angle));
     ctx.strokeStyle = "rgba(121, 199, 255, 0.75)";
     ctx.lineWidth = Math.max(1, cell * 0.22);
     ctx.beginPath();
     for (let j = 0; j < SPRAY.jets; j++) {
       const a = angle + (j * Math.PI * 2) / SPRAY.jets;
       ctx.moveTo(x + Math.cos(a) * cell * 0.55, y + Math.sin(a) * cell * 0.55);
-      ctx.lineTo(x + Math.cos(a) * cell * range, y + Math.sin(a) * cell * range);
+      ctx.lineTo(x + Math.cos(a) * cell * reach, y + Math.sin(a) * cell * reach);
     }
     ctx.stroke();
   }
