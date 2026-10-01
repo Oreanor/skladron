@@ -153,26 +153,6 @@ export function drawStatic(
 /** Чьи круги покрытия показывать: зениток, ракетниц, огнетушителей, ловушек. */
 export type CoverageKind = "gun" | "rocket" | "spray" | "trap";
 
-/**
- * Зоны действия — одним слоем. Каждый вид своим цветом, без обводок и
- * непрозрачно; весь слой ложится на карту одной прозрачностью. Раньше
- * каждый вид был своим полупрозрачным слоем с обводкой у каждого круга, и
- * там, где сходились три вида, карта рябила дугами и мешаниной цветов.
- */
-const COVER_ALPHA = 0.16;
-/** Слой рисуется вдвое крупнее карты: при приближении края не мылятся. */
-const COVER_SCALE = 2;
-/** Кто ложится поверх кого: зенитка последней — её зона главная. */
-const COVER_ORDER: readonly CoverageKind[] = ["spray", "trap", "rocket", "gun"];
-const COVER_TINT: Record<CoverageKind, string> = {
-  gun: "rgb(120, 200, 255)",
-  rocket: "rgb(94, 234, 212)",
-  spray: "rgb(214, 64, 56)",
-  trap: "rgb(224, 184, 74)",
-};
-/** Готовый слой зон для каждого холста — у боя, лобби и разведки свой. */
-const coverageLayers = new WeakMap<HTMLCanvasElement | OffscreenCanvas, { key: string; layer: HTMLCanvasElement }>();
-
 export function drawCoverage(
   ctx: CanvasRenderingContext2D,
   guns:
@@ -213,54 +193,42 @@ export function drawCoverage(
         : g.kind === "rocket" || g.rocket === true
           ? "rocket"
           : "gun";
-  const radius: Record<CoverageKind, number> = {
-    gun: range,
-    rocket: rocketsRange,
-    spray: spraysRange,
-    trap: trapsRange,
-  };
-
-  // Слой пересобираем, только когда поменялся набор живых установок или
-  // их дальность: в бою это гибель установки, в лобби — постройка и
-  // перестановка. В остальные кадры — одна готовая картинка.
-  const key =
-    `${cell}|${show.join()}|${range}|${rocketsRange}|${spraysRange}|${trapsRange}|` +
-    live.map((g) => `${g.cx},${g.cy},${kindOf(g)}`).join(";");
-  let cached = coverageLayers.get(ctx.canvas);
-  if (!cached || cached.key !== key) {
-    const side = GRID * cell * COVER_SCALE;
-    const layer = cached?.layer ?? document.createElement("canvas");
-    layer.width = side;
-    layer.height = side;
-    const g = layer.getContext("2d");
-    if (!g) return;
-    g.setTransform(COVER_SCALE, 0, 0, COVER_SCALE, 0, 0);
-    // Виды по очереди, непрозрачно и без обводок: где зоны пересекаются,
-    // видна последняя, а не мешанина из трёх полупрозрачных слоёв.
-    for (const kind of COVER_ORDER) {
-      if (!show.includes(kind)) continue;
-      const part = live.filter((item) => kindOf(item) === kind);
-      if (!part.length) continue;
-      const r = (radius[kind] + 0.5) * cell;
-      g.beginPath();
-      for (const item of part) {
-        const cx = (item.cx + 0.5) * cell;
-        const cy = (item.cy + 0.5) * cell;
-        g.moveTo(cx + r, cy);
-        g.arc(cx, cy, r, 0, Math.PI * 2);
-      }
-      g.fillStyle = COVER_TINT[kind];
-      g.fill();
+  const styles = {
+    gun: { r: range, fill: COLORS.range, stroke: COLORS.rangeLine },
+    rocket: {
+      r: rocketsRange,
+      fill: COLORS.rocketRange,
+      stroke: COLORS.rocketRangeLine,
+    },
+    spray: {
+      r: spraysRange,
+      fill: "rgba(214, 64, 56, 0.12)",
+      stroke: "rgba(255, 128, 121, 0.4)",
+    },
+    trap: {
+      r: trapsRange,
+      fill: COLORS.trapRange,
+      stroke: COLORS.trapRangeLine,
+    },
+  } as const;
+  for (const kind of show) {
+    const part = live.filter((g) => kindOf(g) === kind);
+    if (!part.length) continue;
+    const st = styles[kind];
+    const r = (st.r + 0.5) * cell;
+    ctx.beginPath();
+    for (const g of part) {
+      const cx = (g.cx + 0.5) * cell;
+      const cy = (g.cy + 0.5) * cell;
+      ctx.moveTo(cx + r, cy);
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
     }
-    cached = { key, layer };
-    coverageLayers.set(ctx.canvas, cached);
+    ctx.fillStyle = st.fill;
+    ctx.fill();
+    ctx.strokeStyle = st.stroke;
+    ctx.lineWidth = 1;
+    ctx.stroke();
   }
-
-  // и весь слой — одной прозрачностью
-  ctx.save();
-  ctx.globalAlpha = COVER_ALPHA;
-  ctx.drawImage(cached.layer, 0, 0, GRID * cell, GRID * cell);
-  ctx.restore();
 }
 
 /** Динамика боя: прицел, огонь, дроны, ракеты, взрывы. */
