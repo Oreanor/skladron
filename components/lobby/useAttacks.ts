@@ -17,7 +17,7 @@ import { blankEnemy } from "@/lib/enemy";
 import type { AttackReport } from "@/lib/attack";
 import type { Player } from "@/lib/player";
 import type { Repo } from "@/lib/repo";
-import type { Key } from "@/lib/i18n/dict";
+import type { Translate } from "@/lib/i18n";
 import { notifyBattle } from "@/lib/notify";
 import { titleCompetitions } from "@/lib/competition";
 
@@ -27,8 +27,6 @@ const POLL_MS = 10_000;
 const NAMES_MS = 5 * 60_000;
 /** Шаг часов: по ним же идёт срок займа. */
 const TICK_MS = 1000;
-
-type Translate = (key: Key, vars?: Record<string, string | number>) => string;
 
 export interface AttacksOptions {
   repo: Repo;

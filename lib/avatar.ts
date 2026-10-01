@@ -51,9 +51,6 @@ export function avatarUrl(avatar: Avatar): string | null {
   return Number.isInteger(n) && n >= 1 && n <= PRESETS ? `/avatars/${n}.webp` : null;
 }
 
-/** Адрес готового лица по номеру — для самой выбиралки. */
-export const presetUrl = (n: number) => `/avatars/${n}.webp`;
-
 /**
  * Ужимает выбранный файл до квадрата UPLOAD_SIDE и кодирует в webp.
  *

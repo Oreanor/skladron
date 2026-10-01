@@ -6,7 +6,6 @@ import {
   type ButtonHTMLAttributes,
   type ReactNode,
 } from "react";
-import { fmt } from "@/lib/economy";
 
 // Иконки живут отдельными .svg в components/icons — правятся редактором,
 // а не руками в JSX. Реэкспортируем, чтобы места вызова не менялись.
@@ -282,15 +281,6 @@ export function Row({ label, value }: { label: string; value: string }) {
     <div className="flex items-center justify-between gap-3">
       <dt className="text-neutral-400">{label}</dt>
       <dd className="shrink-0 text-neutral-100">{value}</dd>
-    </div>
-  );
-}
-
-export function StatRow({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span>{label}</span>
-      <span className="text-neutral-200">{fmt(value)}</span>
     </div>
   );
 }

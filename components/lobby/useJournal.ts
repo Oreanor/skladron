@@ -11,9 +11,7 @@ import type { RaidLog } from "@/lib/attack";
 import type { Repo } from "@/lib/repo";
 import type { ReplayData } from "../Replay";
 import { explain } from "@/lib/errors";
-import type { Key } from "@/lib/i18n/dict";
-
-type Translate = (key: Key, vars?: Record<string, string | number>) => string;
+import type { Translate } from "@/lib/i18n";
 
 /** Повтор на экране: чей бой и сама запись. */
 export interface Watching {

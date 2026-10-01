@@ -8,9 +8,8 @@
  * скобках — по нему потом и находится причина.
  */
 
+import type { Translate } from "./i18n";
 import type { Key } from "./i18n/dict";
-
-type Translate = (key: Key, vars?: Record<string, string | number>) => string;
 
 /** Шаблон ответа → что сказать. Первый подошедший и побеждает. */
 const RULES: [RegExp, Key][] = [
