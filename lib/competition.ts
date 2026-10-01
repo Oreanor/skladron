@@ -37,9 +37,14 @@ export function competitionDrones(stage: number) {
   return DRONES_FIRST + Math.floor(((n - 1) * (DRONES_LAST - DRONES_FIRST)) / (COMPETITION_STAGES - 1));
 }
 
-/** Уровень дронов роя: +1 каждые десять номеров, с 1 до 5 (с №41). */
+/**
+ * Уровень дронов роя: +1 каждые одиннадцать номеров, с 1 на первом до 10 на
+ * сотом. Растёт до конца кампании: с уровнем растёт и радиус подавления,
+ * и застрянь он на пятом — прокачанные выше пушки глушить было бы нечем.
+ * Та же формула стоит в queue_competition.
+ */
 export function competitionDroneLevel(stage: number) {
-  return Math.min(5, 1 + Math.floor((clampStage(stage) - 1) / 10));
+  return 1 + Math.floor((clampStage(stage) - 1) / 11);
 }
 
 /** Зерно боя номера: одно на все попытки, чтобы счёт был сравним. */
