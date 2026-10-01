@@ -261,9 +261,14 @@ export function drawFrame(
   for (const r of s.rockets) launched.add(r.from);
   for (const g of s.guns) {
     switch (gunKind(g)) {
-      case "spray":
-        drawSpray(ctx, g.cx, g.cy, cell, g.angle, g.wet, g.alive, reach, g.tank / SPRAY.tank);
+      case "spray": {
+        // Льёт только с водой и без пены. Счётчик струй в движке у пустой или
+        // заглушённой установки застывает на месте — по нему одному струи
+        // висели бы до конца боя.
+        const pouring = g.tank > 0 && g.jammed <= 0 ? g.wet : 0;
+        drawSpray(ctx, g.cx, g.cy, cell, g.angle, pouring, g.alive, reach, g.tank / SPRAY.tank);
         break;
+      }
       case "rocket":
         drawRocket(ctx, g.cx, g.cy, cell, g.angle, g.alive, !launched.has(g.id));
         break;
