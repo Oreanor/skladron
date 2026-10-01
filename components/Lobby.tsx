@@ -89,7 +89,7 @@ import {
   type View,
 } from "@/lib/render";
 import { gunRange, rocketRange, rocketTempo, sprayRange, trapRange } from "@/lib/engine";
-import { ROCKET } from "@/lib/tuning";
+import { RAID, ROCKET } from "@/lib/tuning";
 import {
   applyDraft,
   buildOne as buildCell,
@@ -113,7 +113,6 @@ import SummonRaidDialog from "./lobby/SummonRaidDialog";
 import AttackReportDialog from "./lobby/AttackReportDialog";
 import MessageDialog from "./lobby/MessageDialog";
 import BaseName from "./lobby/BaseName";
-import { TEST_RAID_MAX } from "./lobby/limits";
 import { useAttacks } from "./lobby/useAttacks";
 import { InsuranceDialog, LoanDialog, UpgradeDialog } from "./lobby/MoneyDialogs";
 import RaidsPanel, { StatsPanel } from "./lobby/RaidsPanel";
@@ -455,7 +454,7 @@ export default function Lobby({
       .map((name) => name.trim())
       .filter((name) => (PATTERNS as string[]).includes(name)) as Pattern[];
     if (!list.length) return;
-    const size = Math.min(TEST_RAID_MAX, Math.max(30, Number(q.get("n")) || 200));
+    const size = Math.min(RAID.suggestMax, Math.max(30, Number(q.get("n")) || 200));
     for (const pattern of list) {
       cur.incoming.push(
         makeOrder(t(`bot.${(Math.random() * BOT_COUNT) | 0}` as Key), [
@@ -988,7 +987,7 @@ export default function Lobby({
    */
   const suggestedRaid = () =>
     Math.min(
-      TEST_RAID_MAX,
+      RAID.suggestMax,
       raidSize(
         countKind(p.guns, "gun") +
           // Ракетница сбивает примерно в полтора раза больше зенитки: ракета
