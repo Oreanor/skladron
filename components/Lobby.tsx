@@ -991,9 +991,9 @@ export default function Lobby({
       TEST_RAID_MAX,
       raidSize(
         countKind(p.guns, "gun") +
-          // Ракетница достаёт вдвое дальше зенитки — и в прикидке силы
-          // склада весит вдвое: иначе пробный рой выходил бы смешным.
-          countKind(p.guns, "rocket") * 2 +
+          // Ракетница сбивает примерно в полтора раза больше зенитки: ракета
+          // сама доворачивает на цель. В прикидке силы склада так и весит.
+          Math.round(countKind(p.guns, "rocket") * 1.5) +
           countKind(p.guns, "spray") / 2 +
           countKind(p.guns, "trap"),
         intact,

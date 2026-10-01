@@ -206,7 +206,7 @@ const ru: Dict = {
   "tool.gunHint": "Сбивает дронов в небе",
   "tool.sprayHint": "Тушит пожары вокруг",
   "tool.trapHint": "Удерживает дроны магнитом",
-  "tool.rocketHint": "Самонаводящиеся ракеты, бьёт далеко",
+  "tool.rocketHint": "Самонаводящиеся ракеты",
   "tool.dronesHint": "Дроны для своих налётов",
   "tool.balloonsHint": "Воздушные шары, мешающие дронам",
 

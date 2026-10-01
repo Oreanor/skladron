@@ -207,7 +207,7 @@ const en = {
   "tool.gunHint": "Shoots drones down",
   "tool.sprayHint": "Puts out nearby fires",
   "tool.trapHint": "Holds drones by magnet",
-  "tool.rocketHint": "Long-range homing missiles",
+  "tool.rocketHint": "Homing missiles",
   "tool.dronesHint": "Drones for your raids",
   "tool.balloonsHint": "Balloons that get in drones' way",
 

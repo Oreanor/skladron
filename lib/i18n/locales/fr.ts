@@ -206,7 +206,7 @@ const fr: Dict = {
   "tool.gunHint": "Abat les drones",
   "tool.sprayHint": "Éteint les feux proches",
   "tool.trapHint": "Retient les drones par aimant",
-  "tool.rocketHint": "Missiles guidés à longue portée",
+  "tool.rocketHint": "Missiles guidés",
   "tool.dronesHint": "Drones pour tes raids",
   "tool.balloonsHint": "Ballons qui gênent les drones",
 

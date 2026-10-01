@@ -206,7 +206,7 @@ const de: Dict = {
   "tool.gunHint": "Schießt Drohnen ab",
   "tool.sprayHint": "Löscht Brände ringsum",
   "tool.trapHint": "Hält Drohnen per Magnet",
-  "tool.rocketHint": "Zielsuchende Raketen, große Reichweite",
+  "tool.rocketHint": "Zielsuchende Raketen",
   "tool.dronesHint": "Drohnen für eigene Angriffe",
   "tool.balloonsHint": "Ballons, die Drohnen behindern",
 
