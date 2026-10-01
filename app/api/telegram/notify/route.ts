@@ -2,42 +2,23 @@
 // именно писать, решает сервер: у клиента нет ни токена бота, ни чужих чатов.
 
 import { createClient } from "@supabase/supabase-js";
+import { caller } from "@/lib/server/auth";
+import { sendTelegram as send, telegramReady } from "@/lib/server/telegram";
 import {
   notifyRaidComment,
   notifyResolvedRaid,
   notifyRivalAdded,
   notifyRivalMessage,
   notifySentRaid,
-} from "@/lib/telegramBattleNotify";
+} from "@/lib/server/battleNotify";
 
-const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 type Event = "sent" | "resolved" | "test" | "comment" | "rival" | "message";
 
-async function send(chatId: number, text: string) {
-  if (!TOKEN) return;
-  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
-  });
-}
-
-/** Кто просит. Токен проверяем у Supabase, на слово клиенту не верим. */
-async function caller(request: Request) {
-  const header = request.headers.get("authorization") ?? "";
-  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-  if (!token || !URL || !ANON) return null;
-  const db = createClient(URL, ANON, { auth: { persistSession: false } });
-  const { data } = await db.auth.getUser(token);
-  return data.user?.id ?? null;
-}
-
 export async function POST(request: Request) {
-  if (!URL || !ANON || !SERVICE || !TOKEN) {
+  if (!URL || !SERVICE || !telegramReady) {
     return Response.json({ ok: false, reason: "not configured" });
   }
 

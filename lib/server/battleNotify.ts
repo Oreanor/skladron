@@ -2,8 +2,8 @@
 // /api/telegram/notify и /api/battle/resolve — один слот resolved_notified_at.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { sendTelegram as send } from "./telegram";
 
-const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://skladron.vercel.app";
 
 type ProfileRow = {
@@ -33,14 +33,6 @@ export const nameOf = (p: {
   email: string | null;
 }) => p.base_name ?? p.display_name ?? p.email?.split("@")[0] ?? "склад";
 
-async function send(chatId: number, text: string) {
-  if (!TOKEN) return;
-  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
-  });
-}
 
 /** Текст защитнику: на склад летит новый налёт. */
 export function sentRaidMessage(attackerName: string, drones: number): string {

@@ -15,21 +15,11 @@ import { createClient } from "@supabase/supabase-js";
 import { decodeCells, type Depot, type Gun } from "@/lib/base";
 import type { AttackOrder, Pattern, WavePlan } from "@/lib/attack";
 import { resolveBattle } from "@/lib/resolve";
-import { notifyResolvedRaid } from "@/lib/telegramBattleNotify";
+import { notifyResolvedRaid } from "@/lib/server/battleNotify";
+import { caller } from "@/lib/server/auth";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-/** Кто просит. Токен проверяем у Supabase, на слово клиенту не верим. */
-async function caller(request: Request) {
-  const header = request.headers.get("authorization") ?? "";
-  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-  if (!token || !URL || !ANON) return null;
-  const db = createClient(URL, ANON, { auth: { persistSession: false } });
-  const { data } = await db.auth.getUser(token);
-  return data.user?.id ?? null;
-}
 
 interface AttackRow {
   id: string;
@@ -54,7 +44,7 @@ interface ClaimRow {
 }
 
 export async function POST(request: Request) {
-  if (!URL || !ANON || !SERVICE) {
+  if (!URL || !SERVICE) {
     return Response.json({ error: "not configured" }, { status: 500 });
   }
 

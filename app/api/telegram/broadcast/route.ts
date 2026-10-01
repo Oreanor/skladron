@@ -8,8 +8,8 @@
 // не упереться в лимиты Telegram.
 
 import { createClient } from "@supabase/supabase-js";
+import { sendTelegram as send, telegramReady } from "@/lib/server/telegram";
 
-const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SECRET = process.env.TELEGRAM_BROADCAST_SECRET;
@@ -55,22 +55,12 @@ function sleep(ms: number) {
   return new Promise((done) => setTimeout(done, ms));
 }
 
-async function send(chatId: number, text: string): Promise<boolean> {
-  if (!TOKEN) return false;
-  const res = await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
-  });
-  return res.ok;
-}
-
 export async function POST(request: Request) {
   const header = request.headers.get("x-telegram-broadcast-secret");
   if (!SECRET || header !== SECRET) {
     return new Response("unauthorized", { status: 401 });
   }
-  if (!URL || !SERVICE || !TOKEN) {
+  if (!URL || !SERVICE || !telegramReady) {
     return Response.json({ ok: false, reason: "not configured" });
   }
 

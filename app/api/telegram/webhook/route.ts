@@ -2,21 +2,12 @@
 // потом слать ему извещения. Всё остальное вежливо игнорируем.
 
 import { createClient } from "@supabase/supabase-js";
+import { sendTelegram as reply } from "@/lib/server/telegram";
 
 // Телеграм присылает секрет в заголовке — им и отсекаем чужие запросы.
 const SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
-const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-async function reply(chatId: number, text: string) {
-  if (!TOKEN) return;
-  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text }),
-  });
-}
 
 export async function POST(request: Request) {
   // Падаем закрыто: без секрета ручку не пускаем вовсе. Раньше при пустой
