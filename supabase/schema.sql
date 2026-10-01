@@ -374,7 +374,7 @@ create table if not exists attacks (
   id uuid primary key default gen_random_uuid(),
   attacker_id uuid not null references profiles on delete cascade,
   defender_id uuid not null references profiles on delete cascade,
-  drones int not null check (drones between 1 and 500),
+  drones int not null check (drones between 1 and 1000),
   -- форма и сторона первой волны — для подписей в списке налётов
   pattern text not null check (pattern in ('swarm', 'lines', 'random', 'drip', 'rings', 'spiral', 'flower', 'sweep')),
   direction int not null check (direction between 0 and 3),
@@ -513,7 +513,7 @@ begin
   if w is null or jsonb_typeof(w) <> 'array' or jsonb_array_length(w) = 0 then
     raise exception 'raid must have at least one wave';
   end if;
-  if jsonb_array_length(w) > 8 then raise exception 'too many waves'; end if;
+  if jsonb_array_length(w) > 10 then raise exception 'too many waves'; end if;
   for wave in select * from jsonb_array_elements(w) loop
     if coalesce(wave->>'pattern', '') not in
        ('swarm', 'lines', 'random', 'drip', 'rings', 'spiral', 'flower', 'sweep') then
@@ -675,7 +675,7 @@ begin
   end if;
   perform check_waves(attack_waves);
   drone_count := waves_drones(attack_waves);
-  if drone_count <> 12 + ((stage - 1) * 476) / 99 then
+  if drone_count <> 120 + ((stage - 1) * 880) / 99 then
     raise exception 'bad drone count';
   end if;
   if attack_drone_level is distinct from least(5, 1 + (stage - 1) / 10) then

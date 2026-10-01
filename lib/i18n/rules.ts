@@ -65,7 +65,7 @@ const en: RuleSection[] = [
     title: "Missions",
     lines: [
       "Missions are a single-player campaign: 100 battles on your own warehouse, no rival needed, any time, free of charge.",
-      "The swarm grows with every number: from 12 drones in one wave to nearly 500 in four, with levelled-up drones and every kind of warhead.",
+      "Every mission is 8–10 waves: the first come one after another, small and simple; towards the end they grow, come thicker and overlap. The whole thing grows with the number too — from 120 drones on the first to 1000 on the hundredth, with levelled-up drones and every kind of warhead mixed in.",
       "A mission's score is the share of your warehouse that survived: save it all and you get 100. The best score for every number is kept.",
       "The next mission opens if any of the warehouse survives. Passed ones can be replayed — a number always brings the same swarm, so scores compare fairly.",
       "A mission pays the defence bounty — {defendClean} cr per drone for a clean stop — so the further the number and the bigger the swarm, the bigger the reward. What burns in a mission burns for real, but insurance covers it as in any battle.",
@@ -148,7 +148,7 @@ const ru: RuleSection[] = [
     title: "Миссии",
     lines: [
       "Миссии — одиночная кампания: 100 боёв на своём складе, без соперника, в любое время и бесплатно.",
-      "Рой растёт с каждым номером: от 12 дронов в одной волне до почти 500 в четырёх, с прокачанными дронами и всеми видами начинки.",
+      "В каждой миссии 8–10 волн: первые идут по очереди, мелкие и простые, к концу волны крупнеют, приходят кучнее и накладываются друг на друга. С номером растёт и всё вместе — от 120 дронов на первой до 1000 на сотой, с прокачанными дронами и вперемешку всеми видами начинки.",
       "Счёт миссии — сколько процентов склада уцелело: сберёг всё — 100. Лучший счёт по каждому номеру хранится.",
       "Следующая миссия открывается, если склад уцелел хоть сколько-то. Пройденные можно переиграть: у номера всегда один и тот же рой, так что счёт честно сравним.",
       "Миссия платит премией за отбой — {defendClean} кр за каждого дрона при чистом отбое, так что чем дальше номер и больше рой, тем выше награда. Сгоревшее в миссии сгорает по-настоящему, но страховка его покрывает, как в любом бою.",
@@ -231,7 +231,7 @@ const es: RuleSection[] = [
     title: "Misiones",
     lines: [
       "Las misiones son una campaña en solitario: 100 combates en tu propio almacén, sin rival, cuando quieras y gratis.",
-      "El enjambre crece con cada número: de 12 drones en una oleada a casi 500 en cuatro, con drones mejorados y todo tipo de carga.",
+      "Cada misión tiene 8–10 oleadas: las primeras llegan una tras otra, pequeñas y simples; hacia el final crecen, se apiñan y se solapan. Con el número crece todo: de 120 drones en la primera a 1000 en la centésima, con drones mejorados y todo tipo de carga mezclada.",
       "La puntuación de una misión es el porcentaje del almacén que sobrevivió: si lo salvas todo, 100. Se guarda la mejor puntuación de cada número.",
       "La siguiente misión se abre si sobrevive algo del almacén. Las superadas se pueden repetir: cada número trae siempre el mismo enjambre, así que las puntuaciones se comparan con justicia.",
       "Una misión paga la prima de defensa — {defendClean} cr por dron si no arde nada —, así que cuanto más alto el número y mayor el enjambre, mayor la recompensa. Lo que arde en una misión arde de verdad, pero el seguro lo cubre como en cualquier combate.",
@@ -314,7 +314,7 @@ const pt: RuleSection[] = [
     title: "Missões",
     lines: [
       "As missões são uma campanha a solo: 100 combates no teu próprio armazém, sem rival, quando quiseres e de graça.",
-      "O enxame cresce a cada número: de 12 drones numa vaga a quase 500 em quatro, com drones melhorados e todo o tipo de carga.",
+      "Cada missão tem 8–10 vagas: as primeiras chegam uma após outra, pequenas e simples; para o fim crescem, vêm mais juntas e sobrepõem-se. Com o número cresce tudo: de 120 drones na primeira a 1000 na centésima, com drones melhorados e todo o tipo de carga misturada.",
       "A pontuação de uma missão é a percentagem do armazém que sobreviveu: salvas tudo, 100. Guarda-se a melhor pontuação de cada número.",
       "A missão seguinte abre se sobreviver algo do armazém. As passadas podem repetir-se: cada número traz sempre o mesmo enxame, por isso as pontuações comparam-se com justiça.",
       "Uma missão paga o prémio de defesa — {defendClean} cr por drone se nada arder —, por isso quanto mais alto o número e maior o enxame, maior a recompensa. O que arde numa missão arde a sério, mas o seguro cobre-o como em qualquer combate.",
@@ -397,7 +397,7 @@ const fr: RuleSection[] = [
     title: "Missions",
     lines: [
       "Les missions sont une campagne en solo : 100 combats sur ton propre entrepôt, sans rival, quand tu veux et gratuitement.",
-      "L’essaim grossit à chaque numéro : de 12 drones en une vague à près de 500 en quatre, avec des drones améliorés et toutes les charges.",
+      "Chaque mission compte 8 à 10 vagues : les premières arrivent l’une après l’autre, petites et simples ; vers la fin elles grossissent, se resserrent et se chevauchent. Avec le numéro, tout grandit : de 120 drones à la première à 1000 à la centième, drones améliorés et toutes les charges mêlées.",
       "Le score d’une mission est la part de l’entrepôt qui a survécu : tout sauvé, 100. Le meilleur score de chaque numéro est gardé.",
       "La mission suivante s’ouvre si une partie de l’entrepôt survit. Celles déjà passées se rejouent : un numéro amène toujours le même essaim, les scores se comparent donc honnêtement.",
       "Une mission rapporte la prime de défense — {defendClean} cr par drone si rien ne brûle —, donc plus le numéro est haut et l’essaim gros, plus la récompense grimpe. Ce qui brûle en mission brûle pour de vrai, mais l’assurance le couvre comme dans tout combat.",
@@ -480,7 +480,7 @@ const de: RuleSection[] = [
     title: "Missionen",
     lines: [
       "Missionen sind eine Einzelspieler-Kampagne: 100 Kämpfe auf deinem eigenen Lager, ohne Rivalen, jederzeit und kostenlos.",
-      "Der Schwarm wächst mit jeder Nummer: von 12 Drohnen in einer Welle bis fast 500 in vier, mit aufgewerteten Drohnen und allen Ladungen.",
+      "Jede Mission hat 8–10 Wellen: die ersten kommen nacheinander, klein und einfach; gegen Ende werden sie größer, dichter und überlappen sich. Mit der Nummer wächst alles: von 120 Drohnen in der ersten bis 1000 in der hundertsten, mit aufgewerteten Drohnen und allen Ladungen gemischt.",
       "Die Punktzahl einer Mission ist der Anteil des Lagers, der übersteht: alles gerettet — 100. Die beste Punktzahl jeder Nummer bleibt gespeichert.",
       "Die nächste Mission öffnet sich, wenn etwas vom Lager übersteht. Geschaffte lassen sich wiederholen: eine Nummer bringt immer denselben Schwarm, die Punkte sind also fair vergleichbar.",
       "Eine Mission zahlt die Abwehrprämie — {defendClean} Cr pro Drohne, wenn nichts brennt —, je höher also die Nummer und größer der Schwarm, desto höher die Belohnung. Was in einer Mission brennt, brennt wirklich, aber die Versicherung deckt es wie in jedem Kampf.",
@@ -563,7 +563,7 @@ const it: RuleSection[] = [
     title: "Missioni",
     lines: [
       "Le missioni sono una campagna in solitario: 100 battaglie sul tuo magazzino, senza rivali, quando vuoi e gratis.",
-      "Lo sciame cresce a ogni numero: da 12 droni in un’ondata a quasi 500 in quattro, con droni potenziati e ogni tipo di carica.",
+      "Ogni missione ha 8–10 ondate: le prime arrivano una dopo l’altra, piccole e semplici; verso la fine crescono, si infittiscono e si sovrappongono. Con il numero cresce tutto: da 120 droni nella prima a 1000 nella centesima, con droni potenziati e ogni tipo di carica mescolata.",
       "Il punteggio di una missione è la quota del magazzino sopravvissuta: salvi tutto, 100. Il miglior punteggio di ogni numero resta salvato.",
       "La missione successiva si apre se qualcosa del magazzino sopravvive. Quelle superate si possono rigiocare: un numero porta sempre lo stesso sciame, quindi i punteggi si confrontano onestamente.",
       "Una missione paga il premio di difesa — {defendClean} cr per drone se non brucia nulla —, quindi più alto è il numero e più grande lo sciame, più alta la ricompensa. Ciò che brucia in missione brucia davvero, ma l’assicurazione lo copre come in ogni battaglia.",

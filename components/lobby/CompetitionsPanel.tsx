@@ -11,8 +11,7 @@
 import { Crosshair, Play, RotateCcw } from "lucide-react";
 import {
   COMPETITION_STAGES,
-  competitionDrones,
-  competitionWaveCount,
+  buildCompetition,
   type CompetitionBest,
 } from "@/lib/competition";
 import { IconButton } from "../ui";
@@ -43,7 +42,7 @@ export default function CompetitionsPanel({
       {stages.map((n) => {
         const done = n < competitionAt || allDone;
         const b = done ? best[n] : undefined;
-        const waves = competitionWaveCount(n);
+        const plan = buildCompetition(n);
         return (
           <li key={n} className="flex items-center justify-between gap-2 rounded-md px-3 py-1.5 transition-colors hover:bg-neutral-800/60">
             <div className="min-w-0">
@@ -56,10 +55,7 @@ export default function CompetitionsPanel({
                 </span>
               </div>
               <div className="font-mono text-[11px] text-neutral-500">
-                {t(waves === 1 ? "competitions.line" : "competitions.lineWaves", {
-                  drones: competitionDrones(n),
-                  waves,
-                })}
+                {t("competitions.line", { drones: plan.drones, waves: plan.waves.length })}
               </div>
             </div>
             <div className="flex shrink-0 gap-1">
