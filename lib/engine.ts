@@ -71,6 +71,13 @@ export interface Drone {
   id: number;
   x: number;
   y: number;
+  /**
+   * Скорость, клеток в секунду, — сколько дрон сместился за последний шаг.
+   * По ней зенитка берёт упреждение: считать её из курса нельзя, строй с
+   * закруткой летит не туда, куда смотрит нос.
+   */
+  vx: number;
+  vy: number;
   tx: number;
   ty: number;
   ti: number;
@@ -107,13 +114,13 @@ export interface Drone {
   grabAt: number;
 }
 
+/** Снаряд зенитки: неуправляемый, летит прямо, куда выпустили. */
 export interface Missile {
   id: number;
   x: number;
   y: number;
   dx: number;
   dy: number;
-  target: number;
   life: number;
 }
 
@@ -777,6 +784,8 @@ function spawnDrone(s: GameState, t: SpawnTicket) {
   }
 
   s.drones.push({
+    vx: 0,
+    vy: 0,
     id: s.nextId++,
     x,
     y,
@@ -1382,7 +1391,8 @@ function stepGuns(s: GameState, dt: number) {
     // цели уже не доходит.
     const best = nearestDrone(s, gx, gy, gunRange(s) + 0.5);
     if (best) {
-      const a = Math.atan2(best.y - gy, best.x - gx);
+      // Снаряд неуправляемый — стреляем туда, где дрон окажется к встрече.
+      const a = leadAngle(gx, gy, best, missileSpeed(s));
       g.aim = a;
       s.missiles.push({
         id: s.nextId++,
@@ -1390,7 +1400,6 @@ function stepGuns(s: GameState, dt: number) {
         y: gy,
         dx: Math.cos(a),
         dy: Math.sin(a),
-        target: best.id,
         life: MISSILE.life,
       });
       g.cd = GUN.cooldown / tempo;
@@ -1398,14 +1407,41 @@ function stepGuns(s: GameState, dt: number) {
   }
 }
 
+/** Скорость снаряда зенитки с её прокачкой. */
+const missileSpeed = (s: GameState) => MISSILE.speed * levelBonus(s.gunLevel, GUN.perLevel);
+
 /**
- * Ракеты: догоняют цель, стареют, уходят за край.
- *
- * Цель ищем по индексу, а не перебором: на пятистах дронах это выходило в
- * десятки тысяч сравнений за кадр. Индекс собирает шаг боя — один на такт,
- * после того как рой отработал и мёртвые из него вычеркнуты.
+ * Куда стрелять, чтобы снаряд скорости speed встретил дрона, если тот
+ * полетит как летит. Решаем |p + v·t| = speed·t и берём самое раннее t > 0.
+ * Догнать нельзя — стреляем, куда он сейчас.
  */
-function stepMissiles(s: GameState, dt: number, byId: Map<number, Drone>) {
+function leadAngle(gx: number, gy: number, d: Drone, speed: number) {
+  const px = d.x - gx;
+  const py = d.y - gy;
+  const a = d.vx * d.vx + d.vy * d.vy - speed * speed;
+  const b = 2 * (px * d.vx + py * d.vy);
+  const c = px * px + py * py;
+  let t = -1;
+  if (Math.abs(a) < 1e-9) {
+    if (Math.abs(b) > 1e-9) t = -c / b;
+  } else {
+    const disc = b * b - 4 * a * c;
+    if (disc >= 0) {
+      const root = Math.sqrt(disc);
+      const t1 = (-b - root) / (2 * a);
+      const t2 = (-b + root) / (2 * a);
+      t = Math.min(t1, t2) > 0 ? Math.min(t1, t2) : Math.max(t1, t2);
+    }
+  }
+  if (!(t > 0)) return Math.atan2(py, px);
+  return Math.atan2(py + d.vy * t, px + d.vx * t);
+}
+
+/**
+ * Снаряды зениток: летят прямо, стареют, уходят за край. Управления нет:
+ * сбивают того, в кого попали, а не того, в кого целились.
+ */
+function stepMissiles(s: GameState, dt: number) {
   for (let i = s.missiles.length - 1; i >= 0; i--) {
     const m = s.missiles[i];
     m.life -= dt;
@@ -1417,30 +1453,20 @@ function stepMissiles(s: GameState, dt: number, byId: Map<number, Drone>) {
       s.missiles.splice(i, 1);
       continue;
     }
-    // Сбитый пулемётом дрон ещё планирует к земле, но он уже посчитан:
-    // ракета его больше не видит, иначе один дрон уходил бы в счёт дважды —
-    // и сумма сбитых переваливала за размер роя.
-    const found = byId.get(m.target);
-    const t = found && !found.hit ? found : undefined;
-    if (t) {
-      const a = Math.atan2(t.y - m.y, t.x - m.x);
-      const ca = Math.atan2(m.dy, m.dx);
-      let da = a - ca;
-      while (da > Math.PI) da -= Math.PI * 2;
-      while (da < -Math.PI) da += Math.PI * 2;
-      const turn = Math.max(-MISSILE.turn * dt, Math.min(MISSILE.turn * dt, da));
-      m.dx = Math.cos(ca + turn);
-      m.dy = Math.sin(ca + turn);
-    }
-    const missileSpeed = MISSILE.speed * levelBonus(s.gunLevel, GUN.perLevel);
-    m.x += m.dx * missileSpeed * dt;
-    m.y += m.dy * missileSpeed * dt;
+    const speed = missileSpeed(s);
+    m.x += m.dx * speed * dt;
+    m.y += m.dy * speed * dt;
+    // Попал в того, кто оказался на пути. Сбитый пулемётом дрон ещё
+    // планирует к земле, но он уже посчитан — снаряд проходит сквозь, иначе
+    // один дрон уходил бы в счёт дважды.
     const hit = MISSILE.hitRadius * MISSILE.hitRadius;
-    if (t && (t.x - m.x) * (t.x - m.x) + (t.y - m.y) * (t.y - m.y) < hit) {
+    const at = s.drones.findIndex(
+      (d) => !d.hit && (d.x - m.x) * (d.x - m.x) + (d.y - m.y) * (d.y - m.y) < hit
+    );
+    if (at >= 0) {
+      const t = s.drones[at];
       s.booms.push({ x: t.x, y: t.y, t: 0, r: 2 * PAYLOAD[t.payload].blast });
-      const at = s.drones.indexOf(t);
-      if (at >= 0) s.drones.splice(at, 1);
-      byId.delete(t.id);
+      s.drones.splice(at, 1);
       s.missiles.splice(i, 1);
       s.result.killedByGuns++;
       continue;
@@ -1452,11 +1478,10 @@ function stepMissiles(s: GameState, dt: number, byId: Map<number, Drone>) {
 }
 
 /**
- * Ракетницы и их ракеты. Ракетница берёт дальностью, а не темпом: пуск
- * неточный, перезарядка втрое дольше зенитной, и вторую ракету она не
- * выпустит, пока первая в воздухе. Промах ей прощается — ракета сама
- * доворачивает, причём не на ту цель, в которую целились, а на ту, что
- * ближе всего к ней самой прямо сейчас.
+ * Ракетницы и их ракеты. Пуск неточный, и вторую ракету ракетница не
+ * выпустит, пока первая в воздухе. Зато ракета быстрее снаряда зенитки и
+ * сама доворачивает на свою цель — там, где снаряд зенитки летит прямо и
+ * мажет по тому, кто сменил курс.
  */
 function stepRockets(s: GameState, dt: number, dronesById: Map<number, Drone>) {
   // Кто уже держит ракету в воздухе. Считаем разом: перебирать ракеты
@@ -1763,7 +1788,13 @@ export function update(s: GameState, dt: number) {
 
   stepSpawns(s);
   stepHands(s, dt);
+  // где был каждый дрон до шага — по этому и считаем его скорость
+  const before = s.drones.map((d) => [d, d.x, d.y] as const);
   stepDrones(s, dt, s.gunsById);
+  for (const [d, x, y] of before) {
+    d.vx = (d.x - x) / dt;
+    d.vy = (d.y - y) / dt;
+  }
   stepSprays(s, dt);
   stepGuns(s, dt);
 
@@ -1772,7 +1803,7 @@ export function update(s: GameState, dt: number) {
   // её строила себе каждая фаза, которой нужен дрон по номеру.
   const dronesById = new Map<number, Drone>();
   for (const d of s.drones) dronesById.set(d.id, d);
-  stepMissiles(s, dt, dronesById);
+  stepMissiles(s, dt);
   stepRockets(s, dt, dronesById);
   stepBalloons(s, dt);
   stepFire(s, dt);
