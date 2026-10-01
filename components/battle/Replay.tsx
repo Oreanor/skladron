@@ -15,9 +15,9 @@ import { fmt } from "@/lib/economy";
 import { useT } from "@/lib/i18n";
 import { explainAlone } from "@/lib/errors";
 import ZonesToggle, { useZones } from "./ZonesToggle";
-import MapCanvas, { CELL } from "./MapCanvas";
-import { Button, Chip, ChipBar, inputClass } from "./ui";
-import Avatar from "./Avatar";
+import MapCanvas, { CELL } from "../MapCanvas";
+import { Button, Chip, ChipBar, inputClass } from "../ui";
+import Avatar from "../Avatar";
 import {
   deleteComment,
   loadComments,

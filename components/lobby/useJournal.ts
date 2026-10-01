@@ -9,7 +9,7 @@
 import { useState } from "react";
 import type { RaidLog } from "@/lib/attack";
 import type { Repo } from "@/lib/repo";
-import type { ReplayData } from "../Replay";
+import type { ReplayData } from "../battle/Replay";
 import { explain } from "@/lib/errors";
 import type { Translate } from "@/lib/i18n";
 

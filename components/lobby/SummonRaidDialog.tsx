@@ -10,7 +10,7 @@ import { ChevronDown } from "lucide-react";
 import { MAX_ATTACK_DRONES, type Enemy } from "@/lib/enemy";
 import { payloadCost, raidTotal, type WavePlan } from "@/lib/attack";
 import { RAID_COMMENT_MAX } from "@/lib/comments";
-import RaidPlanner, { newWave } from "../RaidPlanner";
+import RaidPlanner, { newWave } from "./RaidPlanner";
 import { Button, Modal, inputClass } from "../ui";
 import { useT } from "@/lib/i18n";
 

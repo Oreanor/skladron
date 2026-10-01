@@ -4,7 +4,7 @@
 // случайный uuid, а показывается ровно то, что и так видели обе стороны.
 
 import { use, useEffect, useState } from "react";
-import Replay, { type ReplayData } from "@/components/Replay";
+import Replay, { type ReplayData } from "@/components/battle/Replay";
 import { Button } from "@/components/ui";
 import { SettingsProvider, useT } from "@/lib/i18n";
 import { explainAlone } from "@/lib/errors";

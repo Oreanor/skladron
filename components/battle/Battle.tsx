@@ -15,9 +15,9 @@ import {
 } from "@/lib/engine";
 import { drawFrame, COLORS } from "@/lib/render";
 import { goodsValue, insurance, defenseBounty, fmt } from "@/lib/economy";
-import MapCanvas, { type Pt } from "./MapCanvas";
+import MapCanvas, { type Pt } from "../MapCanvas";
 import ZonesToggle, { useZones } from "./ZonesToggle";
-import { Button, Chip, ChipBar, IconButton, Panel, Row } from "./ui";
+import { Button, Chip, ChipBar, IconButton, Panel, Row } from "../ui";
 import { encodeTrace, type Frame } from "@/lib/replay";
 import type { BattleOutcome } from "@/lib/outcome";
 import { SIM } from "@/lib/tuning";

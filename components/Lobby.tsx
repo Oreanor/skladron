@@ -76,7 +76,7 @@ import {
   makeEnemy,
 } from "@/lib/enemy";
 import type { Account } from "./AuthGate";
-import Enemies, { EnemyProfile } from "./Enemies";
+import Enemies, { EnemyProfile } from "./lobby/Enemies";
 import {
   drawCoverage,
   drawDepots,
@@ -104,7 +104,7 @@ import {
   scrapAt as scrapCell,
   type BuildResult,
 } from "@/lib/build";
-import Battle from "./Battle";
+import Battle from "./battle/Battle";
 import { applyOutcome, type BattleOutcome } from "@/lib/outcome";
 import CompetitionsPanel from "./lobby/CompetitionsPanel";
 import { useJournal } from "./lobby/useJournal";
@@ -140,8 +140,8 @@ import {
   type Tool,
   type ToolId,
 } from "./lobby/tools";
-import Scout, { type ScoutOutcome } from "./Scout";
-import Replay from "./Replay";
+import Scout, { type ScoutOutcome } from "./scout/Scout";
+import Replay from "./battle/Replay";
 import Rules from "./Rules";
 import { postRaidComment } from "@/lib/comments";
 import {

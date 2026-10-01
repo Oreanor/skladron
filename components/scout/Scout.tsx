@@ -18,9 +18,9 @@ import {
   type ScoutState,
 } from "@/lib/scout";
 import { useT } from "@/lib/i18n";
-import MapCanvas, { CELL, SIZE } from "./MapCanvas";
+import MapCanvas, { CELL, SIZE } from "../MapCanvas";
 import InstallCounts from "./InstallCounts";
-import { Button, Chip, ChipBar, Row } from "./ui";
+import { Button, Chip, ChipBar, Row } from "../ui";
 
 export interface ScoutOutcome {
   seen: Uint8Array;

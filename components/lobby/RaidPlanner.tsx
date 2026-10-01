@@ -21,7 +21,7 @@ import {
 import { DRONE, PAYLOAD } from "@/lib/tuning";
 import { MAX_LEVEL, fmt, levelBonus } from "@/lib/economy";
 import { Plus, X } from "lucide-react";
-import { Button, SectionTitle } from "./ui";
+import { Button, SectionTitle } from "../ui";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 

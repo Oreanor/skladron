@@ -25,7 +25,7 @@ import type {
   SnapLevels,
   WavePlan,
 } from "./attack";
-import type { ReplayData } from "@/components/Replay";
+import type { ReplayData } from "@/components/battle/Replay";
 import type { BattleResult } from "./engine";
 import type { UpgradeKind } from "./economy";
 import {

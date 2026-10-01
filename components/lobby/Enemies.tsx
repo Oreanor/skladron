@@ -6,11 +6,11 @@ import { payloadCost, raidTotal, type WavePlan } from "@/lib/attack";
 import { MAX_ATTACK_DRONES, type Enemy } from "@/lib/enemy";
 import { scoutCounts, seenGuns } from "@/lib/scout";
 import { decodeRle, fogPatches, type Gun } from "@/lib/base";
-import InstallCounts from "./InstallCounts";
+import InstallCounts from "../scout/InstallCounts";
 import { Crosshair, MessageSquare, Plane } from "lucide-react";
-import ScoutMap from "./ScoutMap";
-import { Button, Card, ConfirmDialog, IconButton, Modal, inputClass } from "./ui";
-import Avatar from "./Avatar";
+import ScoutMap from "../scout/ScoutMap";
+import { Button, Card, ConfirmDialog, IconButton, Modal, inputClass } from "../ui";
+import Avatar from "../Avatar";
 import RaidPlanner, { newWave } from "./RaidPlanner";
 import { useT } from "@/lib/i18n";
 
