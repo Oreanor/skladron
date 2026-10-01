@@ -902,7 +902,8 @@ class CloudRepo implements Repo {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ attackId, trace }),
+      // своя версия движка: сервер не засчитает бой, сыгранный другой
+      body: JSON.stringify({ attackId, trace, version: SIMULATION_VERSION }),
     });
     const body = (await res.json()) as { error?: string; credits?: number };
     if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);

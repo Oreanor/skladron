@@ -15,6 +15,7 @@ import { createClient } from "@supabase/supabase-js";
 import { decodeCells, type Depot, type Gun } from "@/lib/base";
 import type { AttackOrder, Pattern, WavePlan } from "@/lib/attack";
 import { resolveBattle } from "@/lib/resolve";
+import { SIMULATION_VERSION } from "@/lib/tuning";
 import { notifyResolvedRaid } from "@/lib/server/battleNotify";
 import { caller } from "@/lib/server/auth";
 
@@ -48,11 +49,23 @@ export async function POST(request: Request) {
     return Response.json({ error: "not configured" }, { status: 500 });
   }
 
-  const { attackId, trace } = (await request.json()) as {
+  const { attackId, trace, version } = (await request.json()) as {
     attackId?: string;
     trace?: string;
+    /** Версия движка, которым защитник играл бой у себя. */
+    version?: number;
   };
   if (!attackId) return Response.json({ error: "bad request" }, { status: 400 });
+  // Бой засчитываем только той версией движка, которой его и играли. Вкладка
+  // со старым кодом играла по старым правилам, а сервер пересчитал бы её
+  // запись по новым — и молча записал бы другой исход: на экране «уцелело
+  // 90%», а в базе сгорел склад. Отказ — и игрок перезагружает страницу.
+  if (version !== SIMULATION_VERSION) {
+    return Response.json(
+      { error: `unsupported simulation version: client ${version}, server ${SIMULATION_VERSION}` },
+      { status: 409 }
+    );
+  }
   // Запись — это сжатые кадры прицела. Ограничиваем длину: разжимать
   // мегабайты чужой строки на сервере незачем.
   if (typeof trace !== "string" || trace.length > 400_000) {
