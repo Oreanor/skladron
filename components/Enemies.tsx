@@ -1,26 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { RAID_COMMENT_MAX } from "@/lib/comments";
 import { payloadCost, raidTotal, type WavePlan } from "@/lib/attack";
 import { MAX_ATTACK_DRONES, type Enemy } from "@/lib/enemy";
-import { scoutCounts } from "@/lib/scout";
-import { installColors } from "@/lib/render";
+import { scoutCounts, seenGuns } from "@/lib/scout";
+import { decodeRle, fogPatches, type Gun } from "@/lib/base";
+import InstallCounts from "./InstallCounts";
 import { Crosshair, MessageSquare, Plane } from "lucide-react";
 import ScoutMap from "./ScoutMap";
 import { Button, Card, ConfirmDialog, IconButton, Modal, inputClass } from "./ui";
 import Avatar from "./Avatar";
 import RaidPlanner, { newWave } from "./RaidPlanner";
 import { useT } from "@/lib/i18n";
-import type { Key } from "@/lib/i18n/dict";
 
-const SCOUT_KINDS = ["gun", "rocket", "spray", "trap"] as const;
-const SCOUT_KIND_LABEL: Record<(typeof SCOUT_KINDS)[number], Key> = {
-  gun: "tool.gun",
-  rocket: "tool.rocket",
-  spray: "tool.spray",
-  trap: "tool.trap",
-};
 
 interface Props {
   enemies: Enemy[];
@@ -244,7 +237,13 @@ export function EnemyProfile({
           minute: "2-digit",
         })
       : null;
-  const counts = enemy.scout ? scoutCounts(enemy.scout.guns) : null;
+  // Считаем только снятое и не устаревшее — ровно то, что видно на карте.
+  // Раньше шли все установки снимка, вместе с теми, что под туманом.
+  const counts = useMemo(() => {
+    if (!enemy.scout) return null;
+    const seen = fogPatches(decodeRle(enemy.scout.seen), stale);
+    return scoutCounts(seenGuns(enemy.scout.guns as Gun[], seen));
+  }, [enemy.scout, stale]);
 
   return (
     <>
@@ -304,19 +303,9 @@ export function EnemyProfile({
                 <li className="text-xs uppercase tracking-widest text-neutral-500">
                   {t("scout.analysis")}
                 </li>
-                {SCOUT_KINDS.map((kind) => (
-                  <li key={kind} className="flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-2 text-neutral-400">
-                      <span
-                        className="h-2.5 w-2.5 shrink-0 rounded-sm ring-1 ring-black/40"
-                        style={{ background: installColors(kind).top }}
-                        aria-hidden
-                      />
-                      {t(SCOUT_KIND_LABEL[kind])}
-                    </span>
-                    <span className="text-neutral-100">{counts[kind]}</span>
-                  </li>
-                ))}
+                <li className="space-y-2">
+                  <InstallCounts counts={counts} />
+                </li>
               </ul>
             )}
             {/* внизу колонки, подальше от «ОК»: удаление не жмут мимоходом */}

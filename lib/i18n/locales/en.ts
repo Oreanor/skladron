@@ -134,7 +134,6 @@ const en = {
   "scout.right": "Turn right",
   "scout.planesLeft": "planes",
   "scout.mapped": "mapped",
-  "scout.gunsFound": "guns found",
   "scout.lost": "shot down",
   "scout.underFire": "under fire",
   "scout.steerHint": "← → steer the plane",

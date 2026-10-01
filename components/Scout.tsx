@@ -10,6 +10,8 @@ import { CELLS, GRID, gunKind, type Gun } from "@/lib/base";
 import { COLORS, drawCoverage, drawScoutPlane, installColors } from "@/lib/render";
 import {
   createScout,
+  scoutCounts,
+  seenGuns,
   seenShare,
   underFire,
   updateScout,
@@ -17,6 +19,7 @@ import {
 } from "@/lib/scout";
 import { useT } from "@/lib/i18n";
 import MapCanvas, { CELL, SIZE } from "./MapCanvas";
+import InstallCounts from "./InstallCounts";
 import { Button, Chip, ChipBar, Row } from "./ui";
 
 export interface ScoutOutcome {
@@ -267,9 +270,12 @@ export default function Scout({
                     label={t("scout.mapped")}
                     value={`${Math.round(seenShare(done.seen) * 100)}%`}
                   />
-                  <Row label={t("scout.gunsFound")} value={String(visibleGuns(done))} />
                   <Row label={t("scout.lost")} value={String(done.lost)} />
                 </dl>
+                {/* что нашли — сразу по видам, как в карточке врага */}
+                <div className="mb-5 space-y-2 border-t border-neutral-800 pt-3 font-mono text-sm">
+                  <InstallCounts counts={scoutCounts(seenGuns(done.guns, done.seen))} />
+                </div>
                 <div className="flex justify-center px-8">
                   <Button variant="build" onClick={() => onFinish(done)}>
                     {t("scout.keep")}
@@ -332,6 +338,3 @@ export default function Scout({
 }
 
 /** Сколько пушек попало в снятую часть карты. */
-function visibleGuns(o: ScoutOutcome) {
-  return o.guns.filter((g) => o.seen[g.cy * GRID + g.cx]).length;
-}

@@ -9,6 +9,7 @@ import { useMemo, useRef } from "react";
 import { GRID, decodeRle, fogPatches, gunKind, type Gun } from "@/lib/base";
 import { drawCoverage, installColors } from "@/lib/render";
 import type { ScoutSnapshot } from "@/lib/enemy";
+import { seenGuns } from "@/lib/scout";
 import MapCanvas, { CELL, SIZE } from "./MapCanvas";
 import { drawHoverLabel } from "./lobby/overlay";
 import { useT } from "@/lib/i18n";
@@ -45,10 +46,7 @@ export default function ScoutMap({
     [snapshot, stale]
   );
 
-  const visible = useMemo(
-    () => guns.filter((g) => seen[g.cy * GRID + g.cx]),
-    [guns, seen]
-  );
+  const visible = useMemo(() => seenGuns(guns, seen), [guns, seen]);
 
   // туман рисуем разом: карта не меняется, перерисовывать его каждый кадр незачем
   const fog = useMemo(() => {

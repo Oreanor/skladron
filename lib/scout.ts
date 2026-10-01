@@ -232,6 +232,14 @@ export function seenShare(seen: Uint8Array) {
 /** Сколько установок каждого вида видно на снятой карте. */
 export type ScoutCounts = Record<"gun" | "rocket" | "spray" | "trap", number>;
 
+/**
+ * Установки, которые разведка действительно видела: те, что под туманом,
+ * в снимке есть, но игроку их знать неоткуда. По ним и считаем, и рисуем.
+ */
+export function seenGuns(guns: Gun[], seen: Uint8Array): Gun[] {
+  return guns.filter((g) => seen[g.cy * GRID + g.cx]);
+}
+
 export function scoutCounts(guns: Gun[]): ScoutCounts {
   const out: ScoutCounts = { gun: 0, rocket: 0, spray: 0, trap: 0 };
   for (const g of guns) out[gunKind(g)]++;

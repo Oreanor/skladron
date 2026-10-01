@@ -133,7 +133,6 @@ const ru: Dict = {
   "scout.right": "Вправо",
   "scout.planesLeft": "в запасе",
   "scout.mapped": "снято",
-  "scout.gunsFound": "нашли пушек",
   "scout.lost": "сбито",
   "scout.underFire": "под огнём",
   "scout.steerHint": "← → руль",

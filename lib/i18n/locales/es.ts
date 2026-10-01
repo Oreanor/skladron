@@ -133,7 +133,6 @@ const es: Dict = {
   "scout.right": "A la derecha",
   "scout.planesLeft": "en reserva",
   "scout.mapped": "cartografiado",
-  "scout.gunsFound": "cañones hallados",
   "scout.lost": "derribados",
   "scout.underFire": "bajo fuego",
   "scout.steerHint": "← → timón",
