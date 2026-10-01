@@ -93,6 +93,7 @@ import { useJournal } from "./lobby/useJournal";
 import { mapHandlers, pushPriceTag, useMapRefs } from "./lobby/mapInput";
 import { drawLobbyOverlay } from "./lobby/drawLobby";
 import { statusBar } from "./lobby/statusBar";
+import TelegramDialog from "./lobby/TelegramDialog";
 import SummonRaidDialog from "./lobby/SummonRaidDialog";
 import AttackReportDialog from "./lobby/AttackReportDialog";
 import MessageDialog from "./lobby/MessageDialog";
@@ -125,8 +126,6 @@ import {
 } from "@/lib/notify";
 import { PostRaidCommentModal, RaidOpenerModal } from "./lobby/RaidCommentModals";
 
-/** Имя бота из настроек сборки: без него привязывать некуда. */
-const TG_BOT = process.env.NEXT_PUBLIC_TELEGRAM_BOT;
 import MapCanvas from "./MapCanvas";
 import AccountMenu, { SettingsList } from "./AccountMenu";
 import AvatarView from "./Avatar";
@@ -206,7 +205,6 @@ export default function Lobby({
   );
   const [showRules, setShowRules] = useState(false);
   const [showStats, setShowStats] = useState(false);
-  const [telegram, setTelegram] = useState<{ code: string; linked: boolean } | null>(null);
   const [panelOrder, setPanelOrder] = useState(DEFAULT_PANELS);
   const [hidden, setHidden] = useState<Record<string, boolean>>({});
   const [dragPanel, setDragPanel] = useState<string | null>(null);
@@ -437,37 +435,6 @@ export default function Lobby({
     const timer = window.setTimeout(() => setMessage(null), MESSAGE_MS);
     return () => window.clearTimeout(timer);
   }, [message]);
-
-  // Пока открыто окно телеграма — периодически и по возврату во вкладку
-  // спрашиваем статус: Start в боте бывает в другом окне, без опроса кнопка
-  // так и останется «Привязать».
-  useEffect(() => {
-    if (modal !== "telegram") return;
-    let alive = true;
-    const pull = () => {
-      void repo
-        .telegram()
-        .then((row) => {
-          if (alive) setTelegram(row);
-        })
-        .catch(() => {
-          if (alive) setTelegram(null);
-        });
-    };
-    pull();
-    const tick = window.setInterval(pull, 2500);
-    const onShow = () => {
-      if (!document.hidden) pull();
-    };
-    document.addEventListener("visibilitychange", onShow);
-    window.addEventListener("focus", onShow);
-    return () => {
-      alive = false;
-      window.clearInterval(tick);
-      document.removeEventListener("visibilitychange", onShow);
-      window.removeEventListener("focus", onShow);
-    };
-  }, [modal, repo]);
 
   const p = playerRef.current;
   /**
@@ -1299,11 +1266,7 @@ export default function Lobby({
       email={account?.email ?? null}
       avatar={p.avatar}
       onAvatar={() => setModal("avatar")}
-      onTelegram={() => {
-        setModal("telegram");
-        setTelegram(null);
-        void repo.telegram().then(setTelegram).catch(() => setTelegram(null));
-      }}
+      onTelegram={() => setModal("telegram")}
       onRules={() => setShowRules(true)}
       onStats={() => setShowStats(true)}
       onRestart={() => setConfirmRestart(true)}
@@ -1605,51 +1568,7 @@ export default function Lobby({
         />
       )}
 
-      {modal === "telegram" && (
-        <Modal
-          title={t("tg.title")}
-          onClose={() => setModal(null)}
-          footer={
-            <div className="flex flex-wrap justify-center gap-2">
-              {telegram?.linked ? (
-                <Button
-                  variant="danger"
-                  onClick={() => {
-                    void repo.telegramUnlink().then(() => setTelegram({ code: telegram.code, linked: false }));
-                  }}
-                >
-                  {t("tg.unlink")}
-                </Button>
-              ) : (
-                telegram &&
-                TG_BOT && (
-                  <a
-                    href={`https://t.me/${TG_BOT}?start=${encodeURIComponent(telegram.code)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <Button variant="build">{t("tg.link")}</Button>
-                  </a>
-                )
-              )}
-              <Button
-                variant={telegram?.linked || !TG_BOT ? "build" : "outline"}
-                onClick={() => setModal(null)}
-              >
-                {t("common.ok")}
-              </Button>
-            </div>
-          }
-        >
-          <p className="text-sm text-neutral-300">
-            {telegram?.linked ? t("tg.linked") : t("tg.explain")}
-          </p>
-          {!telegram?.linked && TG_BOT && (
-            <p className="mt-2 text-xs text-neutral-500">{t("tg.afterStart")}</p>
-          )}
-          {!TG_BOT && <p className="mt-2 text-xs text-neutral-500">{t("tg.noBot")}</p>}
-        </Modal>
-      )}
+      {modal === "telegram" && <TelegramDialog repo={repo} onClose={() => setModal(null)} />}
       {writeTo && (
         <MessageDialog
           enemy={writeTo}
@@ -1758,8 +1677,6 @@ export default function Lobby({
               onTelegram={() => {
                 setSheet(null);
                 setModal("telegram");
-                setTelegram(null);
-                void repo.telegram().then(setTelegram).catch(() => setTelegram(null));
               }}
               onRules={() => {
                 setSheet(null);
@@ -1782,8 +1699,3 @@ export default function Lobby({
   );
 }
 
-/**
- * Пробный налёт на свой склад. Панель та же, что и у настоящего налёта, но
- * складом и кошельком он не ограничен: это песочница, чтобы посмотреть, как
- * выглядит волна на своей карте.
- */
