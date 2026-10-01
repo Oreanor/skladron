@@ -237,7 +237,9 @@ export function drawFrame(
   s: GameState,
   cell: number,
   hover: { x: number; y: number } | null,
-  now: number
+  now: number,
+  /** Круги действия пушек, огнетушителей и ловушек. В бою их можно убрать. */
+  zones = true
 ) {
   drawDepots(ctx, s.depots, cell);
 
@@ -252,7 +254,7 @@ export function drawFrame(
 
   const reach = sprayRange(s);
   const trapsReach = trapRange(s);
-  drawCoverage(ctx, s.guns, cell, gunRange(s), reach, trapsReach, rocketRange(s));
+  if (zones) drawCoverage(ctx, s.guns, cell, gunRange(s), reach, trapsReach, rocketRange(s));
   // Ракета в воздухе — значит направляющая пуста: по ней видно, кто сейчас
   // перезаряжается, а кто готов пустить.
   const launched = new Set<number>();

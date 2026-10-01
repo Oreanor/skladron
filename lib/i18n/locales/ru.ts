@@ -275,6 +275,7 @@ const ru: Dict = {
 
   "battle.won": "НАЛЁТ ОТБИТ",
   "battle.lost": "СКЛАД ВЫГОРЕЛ",
+  "battle.zones": "Зоны действия",
   "battle.header": "Атака {from} — {drones} дронов, {pattern}",
   "battle.headerCompetition": "{from} — {drones} дронов, {pattern}",
   "battle.back": "Вернуться на склад",

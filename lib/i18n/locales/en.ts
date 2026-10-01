@@ -276,6 +276,7 @@ const en = {
 
   "battle.won": "RAID REPELLED",
   "battle.lost": "WAREHOUSE BURNT",
+  "battle.zones": "Coverage",
   "battle.header": "Attack by {from} — {drones} drones, {pattern}",
   "battle.headerCompetition": "{from} — {drones} drones, {pattern}",
   "battle.back": "Back to the warehouse",

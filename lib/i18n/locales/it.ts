@@ -275,6 +275,7 @@ const it: Dict = {
 
   "battle.won": "INCURSIONE RESPINTA",
   "battle.lost": "MAGAZZINO BRUCIATO",
+  "battle.zones": "Raggi d’azione",
   "battle.header": "Attacco di {from} — {drones} droni, {pattern}",
   "battle.headerCompetition": "{from} — {drones} droni, {pattern}",
   "battle.back": "Torna al magazzino",

@@ -275,6 +275,7 @@ const de: Dict = {
 
   "battle.won": "ANGRIFF ABGEWEHRT",
   "battle.lost": "LAGER ABGEBRANNT",
+  "battle.zones": "Reichweiten",
   "battle.header": "Angriff von {from} — {drones} Drohnen, {pattern}",
   "battle.headerCompetition": "{from} — {drones} Drohnen, {pattern}",
   "battle.back": "Zurück ins Lager",

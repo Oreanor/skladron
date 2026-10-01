@@ -275,6 +275,7 @@ const pt: Dict = {
 
   "battle.won": "ATAQUE REPELIDO",
   "battle.lost": "ARMAZÉM ARDIDO",
+  "battle.zones": "Alcances",
   "battle.header": "Ataque de {from} — {drones} drones, {pattern}",
   "battle.headerCompetition": "{from} — {drones} drones, {pattern}",
   "battle.back": "Voltar ao armazém",

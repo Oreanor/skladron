@@ -55,6 +55,9 @@ interface Hud {
   byPayload: Partial<Record<Payload, number>>;
 }
 
+/** Где помним, показывать ли в бою круги действия установок. */
+const ZONES_KEY = "wb.battleZones";
+
 /** Сколько поле видно после конца боя, прежде чем его накроет итог. */
 const END_PAUSE_MS = 1500;
 
@@ -72,6 +75,22 @@ export default function Battle({
   const [hud, setHud] = useState<Hud | null>(null);
   const [done, setDone] = useState<BattleOutcome | null>(null);
   const [hints, setHints] = useState(false);
+  // Показывать ли круги действия. Помним между боями: кому мешают — мешают всегда.
+  const [zones, setZonesState] = useState(() => {
+    try {
+      return window.localStorage.getItem(ZONES_KEY) !== "0";
+    } catch {
+      return true;
+    }
+  });
+  const setZones = (on: boolean) => {
+    setZonesState(on);
+    try {
+      window.localStorage.setItem(ZONES_KEY, on ? "1" : "0");
+    } catch {
+      // приватный режим — просто не запомним
+    }
+  };
   const t = useT();
   const finished = useRef(false);
   /** Во что обходился товар до боя: из него считаем, сколько сгорело. */
@@ -208,7 +227,7 @@ export default function Battle({
           scene={scene}
           sceneVersion={version}
           cursor="none"
-          overlay={(ctx, now) => drawFrame(ctx, s, 7, hoverRef.current, now)}
+          overlay={(ctx, now) => drawFrame(ctx, s, 7, hoverRef.current, now, zones)}
           onMove={(p) => {
             hoverRef.current = toCell(p);
             setAim(s, aimAt(hoverRef.current));
@@ -268,6 +287,7 @@ export default function Battle({
           <div className="absolute inset-x-2 top-12 z-10 rounded-md border border-neutral-700 bg-neutral-950/95 p-3 text-xs leading-relaxed text-neutral-400 lg:hidden">
             <p className="mb-2 font-semibold text-neutral-300">{t("panel.payloads")}</p>
             <PayloadLegend t={t} counts={hud?.byPayload} />
+            <ZonesToggle on={zones} onChange={setZones} label={t("battle.zones")} />
           </div>
         )}
 
@@ -367,10 +387,34 @@ export default function Battle({
 
         <Panel title={t("panel.payloads")}>
           <PayloadLegend t={t} counts={hud?.byPayload} />
+          <ZonesToggle on={zones} onChange={setZones} label={t("battle.zones")} />
         </Panel>
 
       </aside>
     </div>
+  );
+}
+
+/** Галочка «Зоны действия»: круги установок в гуще боя мешают видеть рой. */
+function ZonesToggle({
+  on,
+  onChange,
+  label,
+}: {
+  on: boolean;
+  onChange: (on: boolean) => void;
+  label: string;
+}) {
+  return (
+    <label className="mt-3 flex cursor-pointer select-none items-center gap-2 border-t border-neutral-800 pt-3 text-xs text-neutral-300">
+      <input
+        type="checkbox"
+        checked={on}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-3.5 w-3.5 cursor-pointer accent-emerald-400"
+      />
+      {label}
+    </label>
   );
 }
 
