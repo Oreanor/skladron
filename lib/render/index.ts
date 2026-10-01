@@ -241,26 +241,15 @@ export function drawCoverage(
           target.arc(cx, cy, radius, 0, Math.PI * 2);
         }
       };
-      // заливка вида — как и была, полупрозрачная, одна на все его круги
+      // Заливка вида — полупрозрачная, одна на все его круги, и обводка у
+      // каждого круга: по пересекающимся дугам видно, где зона перекрыта
+      // дважды и трижды.
       circles(g, r);
       g.fillStyle = st.fill;
       g.fill();
-      // Обводка — только по внешнему краю зоны вида. Обводим все круги на
-      // отдельном холсте и стираем то, что глубже края хоть одного из них:
-      // дуги внутри зоны, от которых она и рябила, уходят, контур остаётся.
-      const edge = coverageEdge(side);
-      edge.setTransform(COVER_SCALE, 0, 0, COVER_SCALE, 0, 0);
-      circles(edge, r);
-      edge.strokeStyle = st.stroke;
-      edge.lineWidth = 1;
-      edge.stroke();
-      edge.globalCompositeOperation = "destination-out";
-      circles(edge, r - 0.5 - 1 / COVER_SCALE);
-      edge.fill();
-      edge.globalCompositeOperation = "source-over";
-      g.setTransform(1, 0, 0, 1, 0, 0);
-      g.drawImage(edge.canvas, 0, 0);
-      g.setTransform(COVER_SCALE, 0, 0, COVER_SCALE, 0, 0);
+      g.strokeStyle = st.stroke;
+      g.lineWidth = 1;
+      g.stroke();
     }
     cached = { key, layer };
     coverageLayers.set(ctx.canvas, cached);
@@ -275,14 +264,7 @@ const coverageLayers = new WeakMap<
   HTMLCanvasElement | OffscreenCanvas,
   { key: string; layer: HTMLCanvasElement }
 >();
-/** Холст для контура одного вида: чистый, нужного размера, один на всех. */
-let edgeCanvas: HTMLCanvasElement | null = null;
-function coverageEdge(side: number): CanvasRenderingContext2D {
-  edgeCanvas ??= document.createElement("canvas");
-  edgeCanvas.width = side; // заодно и очищает
-  edgeCanvas.height = side;
-  return edgeCanvas.getContext("2d")!;
-}
+
 
 /** Динамика боя: прицел, огонь, дроны, ракеты, взрывы. */
 export function drawFrame(
