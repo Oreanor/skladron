@@ -67,6 +67,7 @@ const it: Dict = {
   "blueprint.built": "Magazzino ricostruito secondo «{name}»",
   "blueprint.saved": "Progetto «{name}» salvato",
   "blueprint.failed": "Progetto non riuscito: {error}",
+  "sell.failed": "Vendita non riuscita: {error}",
   "error.tooManyBlueprints": "hai già venti progetti: eliminane uno",
   "error.blueprintSmall": "il progetto è più piccolo del magazzino iniziale",
   "error.blueprintGone": "questo progetto non esiste più",

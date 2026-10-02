@@ -67,6 +67,7 @@ const fr: Dict = {
   "blueprint.built": "Entrepôt reconstruit d’après « {name} »",
   "blueprint.saved": "Plan « {name} » enregistré",
   "blueprint.failed": "Échec du plan : {error}",
+  "sell.failed": "Vente impossible : {error}",
   "error.tooManyBlueprints": "tu as déjà vingt plans — supprimes-en un",
   "error.blueprintSmall": "le plan est plus petit que l’entrepôt de départ",
   "error.blueprintGone": "ce plan n’existe plus",

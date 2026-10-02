@@ -67,6 +67,7 @@ const de: Dict = {
   "blueprint.built": "Lager nach „{name}“ umgebaut",
   "blueprint.saved": "Bauplan „{name}“ gespeichert",
   "blueprint.failed": "Bauplan fehlgeschlagen: {error}",
+  "sell.failed": "Verkauf fehlgeschlagen: {error}",
   "error.tooManyBlueprints": "du hast schon zwanzig Baupläne — lösch einen",
   "error.blueprintSmall": "der Bauplan ist kleiner als das Startlager",
   "error.blueprintGone": "diesen Bauplan gibt es nicht mehr",

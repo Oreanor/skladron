@@ -67,6 +67,7 @@ const ru: Dict = {
   "blueprint.built": "Склад перестроен по чертежу «{name}»",
   "blueprint.saved": "Чертёж «{name}» сохранён",
   "blueprint.failed": "С чертежом не вышло: {error}",
+  "sell.failed": "Продать не вышло: {error}",
   "error.tooManyBlueprints": "чертежей уже двадцать — удали лишний",
   "error.blueprintSmall": "чертёж меньше стартового склада",
   "error.blueprintGone": "такого чертежа больше нет",

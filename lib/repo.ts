@@ -146,6 +146,8 @@ export interface Repo {
   deleteBlueprint(id: string): Promise<void>;
   /** Снести склад и построить чертёж на его месте; p обновляется. */
   buildBlueprint(p: Player, b: Blueprint): Promise<void>;
+  /** Продать контейнер, который уже снят с p.depots. Вернёт кошелёк сервера. */
+  sellDepot(p: Player, x: number, y: number): Promise<Partial<Player>>;
   /** Сколько непрочитанного и от кого: по этому в списке горит счётчик. */
   unread(): Promise<Record<string, number>>;
   /** Код привязки телеграма и то, привязан ли он уже. */
@@ -315,6 +317,11 @@ class LocalRepo implements Repo {
 
   async deleteBlueprint(id: string) {
     this.writeBlueprints(this.readBlueprints().filter((b) => b.id !== id));
+  }
+
+  async sellDepot(p: Player) {
+    localSave(p);
+    return {};
   }
 
   async buildBlueprint(p: Player, b: Blueprint) {
@@ -831,6 +838,13 @@ class CloudRepo implements Repo {
   async deleteBlueprint(id: string) {
     const { error } = await this.db().rpc("delete_blueprint", { bp: id });
     if (error) throw error;
+  }
+
+  async sellDepot(_p: Player, x: number, y: number) {
+    const { data, error } = await this.db().rpc("sell_depot", { at_x: x, at_y: y });
+    if (error) throw error;
+    const row = (data as { credits: number }[] | null)?.[0];
+    return row ? { credits: row.credits } : {};
   }
 
   async buildBlueprint(p: Player, b: Blueprint) {

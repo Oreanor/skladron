@@ -22,7 +22,6 @@ language sql immutable as $$
     when 'spray'  then 150  -- огнетушитель дороже зенитки: бережёт и площадь, и товар
     when 'trap'   then 200  -- ловушка дороже огнетушителя: держит рой в радиусе
     when 'rocket' then 200  -- ракетница вдвое дороже зенитки: и достаёт вдвое дальше
-    when 'refund' then 50
     when 'drones' then 1000
     when 'drone'  then 25
     -- Шар стоит пятёрку: контейнер на десяток — полсотни. Прокачки нет.
@@ -1043,7 +1042,10 @@ declare
   rockets_added int;
   sprays_added int;
   traps_added int;
-  guns_removed int;
+  guns_gone int;
+  rockets_gone int;
+  sprays_gone int;
+  traps_gone int;
   cost int;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
@@ -1105,15 +1107,13 @@ begin
   rockets_added := greatest(0, gun_count(new_guns, 'rocket') - gun_count(cur_guns, 'rocket'));
   sprays_added := greatest(0, gun_count(new_guns, 'spray') - gun_count(cur_guns, 'spray'));
   traps_added := greatest(0, gun_count(new_guns, 'trap') - gun_count(cur_guns, 'trap'));
-  -- Возврат только за реально снятые установки известных видов, а не за
-  -- разницу длин массива: иначе неизвестный kind давал бы бесплатный refund.
-  guns_removed := greatest(
-    0,
-    gun_count(cur_guns, 'gun') + gun_count(cur_guns, 'rocket')
-      + gun_count(cur_guns, 'spray') + gun_count(cur_guns, 'trap')
-      - gun_count(new_guns, 'gun') - gun_count(new_guns, 'rocket')
-      - gun_count(new_guns, 'spray') - gun_count(new_guns, 'trap')
-  );
+  -- Проданные установки — по виду и по нынешней цене закупки: двойной клик
+  -- на складе продаёт по номиналу. Считаем по известным видам, а не по
+  -- длине массива: иначе неизвестный kind давал бы бесплатный возврат.
+  guns_gone := greatest(0, gun_count(cur_guns, 'gun') - gun_count(new_guns, 'gun'));
+  rockets_gone := greatest(0, gun_count(cur_guns, 'rocket') - gun_count(new_guns, 'rocket'));
+  sprays_gone := greatest(0, gun_count(cur_guns, 'spray') - gun_count(new_guns, 'spray'));
+  traps_gone := greatest(0, gun_count(cur_guns, 'trap') - gun_count(new_guns, 'trap'));
 
   -- первые price('free') клеток склада бесплатны, считаем от того, что уже стоит
   free_left := greatest(0, price('free') - claimed);
@@ -1125,7 +1125,10 @@ begin
         + rockets_added * price_at(price('rocket'), coalesce((prof.levels->>'rockets')::int, 1))
         + sprays_added * price_at(price('spray'), coalesce((prof.levels->>'sprays')::int, 1))
         + traps_added * price_at(price('trap'), coalesce((prof.levels->>'traps')::int, 1))
-        - guns_removed * price('refund')
+        - guns_gone * price_at(price('gun'), coalesce((prof.levels->>'guns')::int, 1))
+        - rockets_gone * price_at(price('rocket'), coalesce((prof.levels->>'rockets')::int, 1))
+        - sprays_gone * price_at(price('spray'), coalesce((prof.levels->>'sprays')::int, 1))
+        - traps_gone * price_at(price('trap'), coalesce((prof.levels->>'traps')::int, 1))
         - scrapped * price('scrap');
 
   if prof.credits < cost then
@@ -2335,6 +2338,55 @@ end;
 $;
 
 grant execute on function save_blueprint, delete_blueprint, build_blueprint to authenticated;
+
+-- Продать контейнер со склада: дроны и шары уходят по цене закупки.
+create or replace function sell_depot(at_x int, at_y int)
+returns table (credits int, drones int)
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  prof profiles;
+  cur_depots jsonb;
+  box jsonb;
+  rest jsonb;
+  gain int;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  select * into prof from profiles p where p.id = uid for update;
+  select b.drone_cells into cur_depots from bases b where b.user_id = uid for update;
+
+  if exists (
+    select 1 from attacks a
+     where a.defender_id = uid
+       and a.status = 'pending'
+       and a.resolving_token is not null
+       and a.resolving_at > now() - interval '2 minutes'
+  ) then
+    raise exception 'battle is resolving';
+  end if;
+
+  select e into box
+    from jsonb_array_elements(coalesce(cur_depots, '[]'::jsonb)) e
+   where (e->>'cx')::int = at_x and (e->>'cy')::int = at_y
+   limit 1;
+  if box is null then raise exception 'no depot there'; end if;
+
+  gain := goods_value(jsonb_build_array(box), prof.levels);
+  select coalesce(jsonb_agg(e order by ord), '[]'::jsonb) into rest
+    from jsonb_array_elements(cur_depots) with ordinality as t(e, ord)
+   where not ((e->>'cx')::int = at_x and (e->>'cy')::int = at_y);
+
+  update bases set drone_cells = rest, updated_at = now() where user_id = uid;
+  update profiles
+     set credits = profiles.credits + gain,
+         drones = depot_sum_kind(rest, 'basic')
+   where profiles.id = uid
+   returning profiles.credits, profiles.drones into credits, drones;
+  return next;
+end;
+$$;
+
+grant execute on function sell_depot to authenticated;
 
 -- Postgres по умолчанию отдаёт EXECUTE всем (PUBLIC), поэтому одних grant
 -- мало: с функций, которые принимают игрока параметром, право надо снимать

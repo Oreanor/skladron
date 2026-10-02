@@ -67,6 +67,7 @@ const pt: Dict = {
   "blueprint.built": "Armazém reconstruído segundo «{name}»",
   "blueprint.saved": "Planta «{name}» guardada",
   "blueprint.failed": "A planta falhou: {error}",
+  "sell.failed": "Não foi possível vender: {error}",
   "error.tooManyBlueprints": "já tens vinte plantas — apaga uma",
   "error.blueprintSmall": "a planta é menor que o armazém inicial",
   "error.blueprintGone": "essa planta já não existe",

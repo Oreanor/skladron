@@ -46,6 +46,8 @@ export function useMapRefs() {
     /** Контейнер и установка, которые сейчас тащат. */
     dragDepot: useRef<{ cx: number; cy: number } | null>(null),
     dragGun: useRef<{ cx: number; cy: number; kind: GunKind } | null>(null),
+    /** Прошлый тап по установке или ящику: второй подряд по той же клетке продаёт. */
+    lastTap: useRef<{ x: number; y: number; at: number } | null>(null),
   };
 }
 
@@ -93,8 +95,13 @@ export interface MapActions {
   buyDepotAt: (x: number, y: number, kind: DepotKind) => Promise<void>;
   moveDepot: (from: { cx: number; cy: number }, x: number, y: number) => void;
   moveGun: (from: { cx: number; cy: number; kind: GunKind }, x: number, y: number) => void;
+  /** Продать установку или контейнер с этой клетки по номиналу. */
+  sellAt: (x: number, y: number) => void;
   commitDraft: () => void;
 }
+
+/** Сколько ждём второго тапа, мс. */
+const DOUBLE_TAP = 400;
 
 export function mapHandlers(m: MapRefs, a: MapActions) {
   const { p, tool, drafting, rerender } = a;
@@ -212,6 +219,21 @@ export function mapHandlers(m: MapRefs, a: MapActions) {
     }
   };
 
+  /**
+   * Взял и отпустил на той же клетке — это тап. Второй тап по ней же подряд
+   * продаёт то, что на ней стоит.
+   */
+  const tapped = (x: number, y: number) => {
+    const now = performance.now();
+    const last = m.lastTap.current;
+    if (last && last.x === x && last.y === y && now - last.at < DOUBLE_TAP) {
+      m.lastTap.current = null;
+      a.sellAt(x, y);
+      return;
+    }
+    m.lastTap.current = { x, y, at: now };
+  };
+
   const onUp = (pt: Pt) => {
     m.painting.current = false;
 
@@ -220,6 +242,7 @@ export function mapHandlers(m: MapRefs, a: MapActions) {
       m.dragDepot.current = null;
       const c = cellOf(pt);
       if (c.x !== fromDepot.cx || c.y !== fromDepot.cy) a.moveDepot(fromDepot, c.x, c.y);
+      else tapped(c.x, c.y);
       rerender();
       return;
     }
@@ -227,8 +250,9 @@ export function mapHandlers(m: MapRefs, a: MapActions) {
     if (fromGun) {
       m.dragGun.current = null;
       const c = cellOf(pt);
-      // Отпустил там же, откуда взял — просто передумал тащить.
+      // Отпустил там же, откуда взял — это тап, а не перенос.
       if (c.x !== fromGun.cx || c.y !== fromGun.cy) a.moveGun(fromGun, c.x, c.y);
+      else tapped(c.x, c.y);
       rerender();
       return;
     }

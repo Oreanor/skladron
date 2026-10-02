@@ -97,7 +97,14 @@ import TelegramDialog from "./lobby/TelegramDialog";
 import SummonRaidDialog from "./lobby/SummonRaidDialog";
 import NeedDrones from "./lobby/NeedDrones";
 import BlueprintsPanel, { BlueprintDialog } from "./lobby/BlueprintsPanel";
-import { MAX_BLUEPRINT_NAME, blueprintOf, rebuildCost, type Blueprint } from "@/lib/blueprint";
+import {
+  MAX_BLUEPRINT_NAME,
+  blueprintOf,
+  goodsValue,
+  installValue,
+  rebuildCost,
+  type Blueprint,
+} from "@/lib/blueprint";
 import AttackReportDialog from "./lobby/AttackReportDialog";
 import MessageDialog from "./lobby/MessageDialog";
 import BaseName from "./lobby/BaseName";
@@ -757,6 +764,45 @@ export default function Lobby({
     if (act(shiftGun(p, from, x, y))) touch();
   };
 
+  /**
+   * Двойной тап по установке или ящику — продать по номиналу, то есть по
+   * нынешней цене закупки. Установка уходит обычным сохранением склада:
+   * сервер сам видит, что её не стало, и возвращает цену. Ящик продаётся
+   * отдельно: вне покупки число дронов сохранением менять нельзя.
+   */
+  const sellAt = async (x: number, y: number) => {
+    const gun = p.guns.find((g) => g.cx === x && g.cy === y);
+    if (gun) {
+      const gain = installValue([gun], p.levels);
+      p.guns = p.guns.filter((g) => g !== gun);
+      p.credits += gain;
+      pushPriceTag(map, t, x, y, gain);
+      touch();
+      return;
+    }
+    const depot = p.depots.find((d) => d.cx === x && d.cy === y);
+    if (!depot) return;
+    await flushPersist();
+    const previousDepots = p.depots;
+    const previousCredits = p.credits;
+    const gain = goodsValue([depot], p.levels);
+    p.depots = p.depots.filter((d) => d !== depot);
+    p.credits += gain;
+    pushPriceTag(map, t, x, y, gain);
+    setVersion((v) => v + 1);
+    forceRender((v) => v + 1);
+    try {
+      const patch = await repo.sellDepot(p, x, y);
+      if (patch.credits !== undefined) p.credits = patch.credits;
+      forceRender((v) => v + 1);
+    } catch (e) {
+      p.depots = previousDepots;
+      p.credits = previousCredits;
+      setVersion((v) => v + 1);
+      setMessage(t("sell.failed", { error: explain(e, t) }));
+    }
+  };
+
   /** Основание идёт следом за именем: безымянных складов не заводим. */
   const found = async (rawName: string) => {
     if (intact < MIN_BASE_CELLS) return;
@@ -976,6 +1022,7 @@ export default function Lobby({
     buyDepotAt,
     moveDepot,
     moveGun,
+    sellAt,
     commitDraft,
   });
 

@@ -67,6 +67,7 @@ const es: Dict = {
   "blueprint.built": "Almacén reconstruido según «{name}»",
   "blueprint.saved": "Plano «{name}» guardado",
   "blueprint.failed": "El plano falló: {error}",
+  "sell.failed": "No se pudo vender: {error}",
   "error.tooManyBlueprints": "ya tienes veinte planos: borra uno",
   "error.blueprintSmall": "el plano es más pequeño que el almacén inicial",
   "error.blueprintGone": "ese plano ya no existe",

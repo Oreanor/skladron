@@ -68,6 +68,7 @@ const en = {
   "blueprint.built": "Warehouse rebuilt from «{name}»",
   "blueprint.saved": "Blueprint «{name}» saved",
   "blueprint.failed": "Blueprint failed: {error}",
+  "sell.failed": "Could not sell: {error}",
   "error.tooManyBlueprints": "you already have twenty blueprints — delete one",
   "error.blueprintSmall": "the blueprint is smaller than a starter warehouse",
   "error.blueprintGone": "this blueprint no longer exists",
