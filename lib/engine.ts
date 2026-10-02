@@ -150,6 +150,14 @@ export interface Missile {
   dx: number;
   dy: number;
   life: number;
+  /**
+   * В кого выпущен — id дрона или ракеты стрелка, 0 — ни в кого. Снаряд
+   * неуправляемый, и это не наводка, а заявка: пока снаряд летит к цели,
+   * остальные зенитки и ракетницы её не берут. Промахнулся — заявка снята.
+   */
+  target: number;
+  /** Ближе всего к цели он уже был на столько клеток: начал удаляться — промах. */
+  near: number;
 }
 
 /**
@@ -173,6 +181,12 @@ export interface Rocket {
   life: number;
   /** Сколько секунд до следующего клуба дыма. */
   smokeT: number;
+  /**
+   * Держит ли ракета цель за собой: пока держит, другие по ней не бьют.
+   * Проскочила мимо — отпускает, хоть и доворачивает дальше.
+   */
+  claims: boolean;
+  near: number;
 }
 
 /**
@@ -1452,11 +1466,11 @@ function stepSprays(s: GameState, dt: number) {
  * Сбитый пулемётом дрон ещё планирует к земле, но он уже посчитан — по
  * нему не стреляют, иначе один дрон уходил бы в счёт дважды.
  */
-function nearestDrone(s: GameState, x: number, y: number, reach: number) {
+function nearestDrone(s: GameState, x: number, y: number, reach: number, taken?: Set<number>) {
   let best: Drone | null = null;
   let bestD = reach * reach;
   for (const d of s.drones) {
-    if (d.hit || d.payload === "stealth") continue;
+    if (d.hit || d.payload === "stealth" || taken?.has(d.id)) continue;
     const dx = d.x - x;
     const dy = d.y - y;
     const dd = dx * dx + dy * dy;
@@ -1469,13 +1483,31 @@ function nearestDrone(s: GameState, x: number, y: number, reach: number) {
 }
 
 /** То, во что целится зенитка: где оно и куда летит. */
-type Mover = { x: number; y: number; vx: number; vy: number };
+type Mover = { id: number; x: number; y: number; vx: number; vy: number };
 
-/** Ближайшая цель зенитки: дрон или ракета стрелка. */
-function nearestTarget(s: GameState, x: number, y: number, reach: number): Mover | null {
-  let best: Mover | null = nearestDrone(s, x, y, reach);
+/**
+ * Кого уже взяли: в кого летит снаряд или ракета. Оборона бьёт сообща —
+ * по занятой цели вторая установка не стреляет, а берёт свободную.
+ */
+function takenTargets(s: GameState) {
+  const taken = new Set<number>();
+  for (const m of s.missiles) if (m.target) taken.add(m.target);
+  for (const r of s.rockets) if (r.claims) taken.add(r.target);
+  return taken;
+}
+
+/** Ближайшая свободная цель зенитки: дрон или ракета стрелка. */
+function nearestTarget(
+  s: GameState,
+  x: number,
+  y: number,
+  reach: number,
+  taken: Set<number>
+): Mover | null {
+  let best: Mover | null = nearestDrone(s, x, y, reach, taken);
   let bestD = best ? (best.x - x) ** 2 + (best.y - y) ** 2 : reach * reach;
   for (const r of s.foeRockets) {
+    if (taken.has(r.id)) continue;
     const dd = (r.x - x) ** 2 + (r.y - y) ** 2;
     if (dd < bestD) {
       bestD = dd;
@@ -1495,6 +1527,7 @@ function turnTurret(g: Gun, rate: number, dt: number) {
 }
 
 function stepGuns(s: GameState, dt: number) {
+  const taken = takenTargets(s);
   for (const g of s.guns) {
     if (!g.alive || g.spray || g.trap || g.rocket || g.balloon) continue;
 
@@ -1513,7 +1546,7 @@ function stepGuns(s: GameState, dt: number) {
     const ready = g.cd <= 0 && g.jammed <= 0;
     let best: Mover | null = null;
     if (g.jammed <= 0 && g.cd <= GUN.aimAhead) {
-      best = nearestTarget(s, gx, gy, gunRange(s) + 0.5);
+      best = nearestTarget(s, gx, gy, gunRange(s) + 0.5, taken);
       // Снаряд неуправляемый — целимся туда, где дрон окажется к встрече.
       if (best) g.aim = leadAngle(gx, gy, best, missileSpeed(s));
     }
@@ -1535,7 +1568,10 @@ function stepGuns(s: GameState, dt: number) {
       dx: Math.cos(g.angle),
       dy: Math.sin(g.angle),
       life: MISSILE.life,
+      target: best.id,
+      near: Infinity,
     });
+    taken.add(best.id);
     g.cd = GUN.cooldown / tempo;
   }
 }
@@ -1575,6 +1611,10 @@ function leadAngle(gx: number, gy: number, d: Mover, speed: number) {
  * сбивают того, в кого попали, а не того, в кого целились.
  */
 function stepMissiles(s: GameState, dt: number) {
+  // по номеру — и дроны, и ракеты стрелков: заявка бывает на тех и других
+  const byId = new Map<number, { x: number; y: number }>();
+  for (const d of s.drones) if (!d.hit) byId.set(d.id, d);
+  for (const r of s.foeRockets) byId.set(r.id, r);
   for (let i = s.missiles.length - 1; i >= 0; i--) {
     const m = s.missiles[i];
     m.life -= dt;
@@ -1585,6 +1625,16 @@ function stepMissiles(s: GameState, dt: number) {
     if (!s.drones.length) {
       s.missiles.splice(i, 1);
       continue;
+    }
+    // Заявка на цель: цели не стало или снаряд пролетел мимо — снимаем.
+    if (m.target) {
+      const t = byId.get(m.target);
+      if (!t) m.target = 0;
+      else {
+        const dist = Math.hypot(t.x - m.x, t.y - m.y);
+        if (dist > m.near + MISSILE.hitRadius) m.target = 0;
+        else m.near = Math.min(m.near, dist);
+      }
     }
     const speed = missileSpeed(s);
     m.x += m.dx * speed * dt;
@@ -1640,6 +1690,7 @@ function stepRockets(s: GameState, dt: number, dronesById: Map<number, Drone>) {
   // заново для каждой установки незачем, их там единицы.
   const busy = new Set<number>();
   for (const r of s.rockets) busy.add(r.from);
+  const taken = takenTargets(s);
 
   const tempo = rocketTempo(s);
   for (const g of s.guns) {
@@ -1651,8 +1702,9 @@ function stepRockets(s: GameState, dt: number, dronesById: Map<number, Drone>) {
     if (g.cd > 0 || g.jammed > 0 || busy.has(g.id)) continue;
     const gx = g.cx + 0.5;
     const gy = g.cy + 0.5;
-    const best = nearestDrone(s, gx, gy, rocketRange(s) + 0.5);
+    const best = nearestDrone(s, gx, gy, rocketRange(s) + 0.5, taken);
     if (!best) continue;
+    taken.add(best.id);
 
     const a = Math.atan2(best.y - gy, best.x - gx);
     g.aim = a;
@@ -1668,6 +1720,8 @@ function stepRockets(s: GameState, dt: number, dronesById: Map<number, Drone>) {
       dy: Math.sin(a + off),
       life: ROCKET.life,
       smokeT: 0,
+      claims: true,
+      near: Infinity,
     });
     busy.add(g.id);
     g.cd = ROCKET.cooldown / tempo;
@@ -1693,6 +1747,13 @@ function stepRockets(s: GameState, dt: number, dronesById: Map<number, Drone>) {
     // больше не рулит: летит как летела и уходит с поля, по чужим не бьёт.
     const found = dronesById.get(m.target);
     const t = found && !found.hit ? found : undefined;
+    // цели нет или ракета проскочила мимо — заявку снимаем, пусть берут другие
+    if (!t) m.claims = false;
+    else if (m.claims) {
+      const dist = Math.hypot(t.x - m.x, t.y - m.y);
+      if (dist > m.near + ROCKET.hitRadius) m.claims = false;
+      else m.near = Math.min(m.near, dist);
+    }
     if (t) {
       const a = Math.atan2(t.y - m.y, t.x - m.x);
       const ca = Math.atan2(m.dy, m.dx);
