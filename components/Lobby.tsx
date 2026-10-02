@@ -96,7 +96,7 @@ import { statusBar } from "./lobby/statusBar";
 import TelegramDialog from "./lobby/TelegramDialog";
 import SummonRaidDialog from "./lobby/SummonRaidDialog";
 import NeedDrones from "./lobby/NeedDrones";
-import BlueprintsPanel, { BlueprintDialog } from "./lobby/BlueprintsPanel";
+import BlueprintsPanel, { BlueprintDialog, NewBlueprintDialog } from "./lobby/BlueprintsPanel";
 import {
   MAX_BLUEPRINT_NAME,
   blueprintOf,
@@ -1606,14 +1606,13 @@ export default function Lobby({
       )}
 
       {namingBlueprint && (
-        <NameDialog
-          title={t("blueprint.nameTitle")}
-          subtitle={t("blueprint.nameHint")}
-          confirm={t("blueprint.save")}
-          initial={t("blueprint.defaultName", { n: blueprints.length + 1 })}
+        <NewBlueprintDialog
+          plan={blueprintOf(p)}
+          player={p}
+          defaultName={t("blueprint.defaultName", { n: blueprints.length + 1 })}
           maxLength={MAX_BLUEPRINT_NAME}
-          onCancel={() => setNamingBlueprint(false)}
-          onSubmit={(name) => void saveBlueprint(name)}
+          onClose={() => setNamingBlueprint(false)}
+          onAdd={(name) => void saveBlueprint(name)}
         />
       )}
 
