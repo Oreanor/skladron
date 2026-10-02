@@ -115,6 +115,17 @@ export const TOOLS: {
     icon: <Hammer className={ICON} />,
     countKind: "burnt",
   },
+  // Дроны — перед пушками: это единственное нападение, всё остальное — оборона.
+  {
+    id: "drones",
+    label: "tool.drones",
+    hint: "tool.dronesHint",
+    vars: { perCell: DRONES_PER_CELL },
+    priceKey: "tool.priceBox",
+    icon: <IconDrone />,
+    levelKind: "drones",
+    countKind: "drones",
+  },
   {
     id: "gun",
     label: "tool.gun",
@@ -132,16 +143,6 @@ export const TOOLS: {
     icon: <Rocket className={ICON} />,
     levelKind: "rockets",
     countKind: "rockets",
-  },
-  {
-    id: "drones",
-    label: "tool.drones",
-    hint: "tool.dronesHint",
-    vars: { perCell: DRONES_PER_CELL },
-    priceKey: "tool.priceBox",
-    icon: <IconDrone />,
-    levelKind: "drones",
-    countKind: "drones",
   },
   {
     id: "balloons",
