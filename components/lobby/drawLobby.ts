@@ -79,17 +79,25 @@ function pickedSpots({ p, tool }: LobbyScene): { cx: number; cy: number }[] {
  * показываем; тащим готовую — показываем круги её рода. В остальное время
  * ничьи: втроём они закрывают склад так, что на нём ничего не разобрать.
  */
-function coverageFor({ p, tool, m }: LobbyScene): CoverageKind[] {
+function coverageFor(s: LobbyScene): CoverageKind[] {
+  const { p, tool, m } = s;
   if (isBuildKind(tool)) return [tool];
-  // Между двумя кликами двойного клика установку уже отпустили, но круги
-  // не гасим, пока ждём второй: иначе они мигают на каждом клике.
-  const tap = m.lastTap.current;
-  const from =
-    m.dragGun.current ??
-    (tap && performance.now() - tap.at < DOUBLE_TAP ? { cx: tap.x, cy: tap.y } : null);
+  const from = m.dragGun.current ?? tapped(s, "gun");
   if (!from) return [];
   const g = p.guns.find((item) => item.cx === from.cx && item.cy === from.cy);
   return g ? [gunKind(g)] : [];
+}
+
+/**
+ * Что тапнули только что и ждут второго тапа двойного клика. Предмет уже
+ * отпустили, но подсветку, как при перетаскивании, не гасим: иначе она
+ * мигает на каждом клике.
+ */
+function tapped({ p, m }: LobbyScene, what: "gun" | "depot") {
+  const tap = m.lastTap.current;
+  if (!tap || performance.now() - tap.at >= DOUBLE_TAP) return null;
+  const list: { cx: number; cy: number }[] = what === "gun" ? p.guns : p.depots;
+  return list.find((q) => q.cx === tap.x && q.cy === tap.y) ?? null;
 }
 
 /** Подпись над установкой или контейнером под курсором. */
@@ -168,8 +176,9 @@ export function drawLobbyOverlay(
 
   // Установки и контейнеры переставляются одинаково: тянем и роняем. Видно
   // и куда можно, и куда нельзя.
-  const placing = isBuildKind(tool) || m.dragGun.current;
-  const stacking = tool === "drones" || tool === "balloons" || draggedDepot;
+  const placing = isBuildKind(tool) || m.dragGun.current || tapped(s, "gun");
+  const stacking =
+    tool === "drones" || tool === "balloons" || draggedDepot || tapped(s, "depot");
   if (placing || stacking) {
     drawFreeCells(
       ctx,
@@ -217,6 +226,13 @@ export function drawLobbyOverlay(
       }
     }
     drawDropTarget(ctx, CELL, hx, hy, ok, m.dragGun.current ? "#8ecae6" : "#f5c56f");
+  } else if (hover) {
+    // между кликами двойного клика рамка под предметом тоже не гаснет
+    const gun = tapped(s, "gun");
+    const box = gun ?? tapped(s, "depot");
+    if (box && box.cx === hx && box.cy === hy) {
+      drawDropTarget(ctx, CELL, hx, hy, true, gun ? "#8ecae6" : "#f5c56f");
+    }
   }
 
   // Клетка под курсором — сработает тут инструмент или нет. При раскладке
