@@ -23,46 +23,61 @@ export function drawDepots(
   cell: number,
   dim = false
 ) {
+  // Линии в долях клетки, а не в единицу: клетка — всего семь точек, и
+  // единичная обводка съедала седьмую часть ящика.
+  const thin = cell * 0.07;
+  const a = dim ? 0.5 : 1;
   for (const d of depots) {
     const x = d.cx * cell;
     const y = d.cy * cell;
     const balloons = d.kind === "balloon";
     const fill = balloons ? "118, 42, 46" : "122, 90, 46";
     const line = balloons ? "244, 140, 138" : "214, 168, 92";
-    ctx.fillStyle = `rgba(${fill}, ${dim ? 0.5 : 1})`;
+    ctx.fillStyle = `rgba(${fill}, ${a})`;
     ctx.fillRect(x, y, cell, cell);
-    ctx.strokeStyle = `rgba(${line}, ${dim ? 0.5 : 1})`;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x + 0.5, y + 0.5, cell - 1, cell - 1);
+    ctx.strokeStyle = `rgba(${line}, ${a})`;
+    ctx.lineWidth = thin;
+    ctx.strokeRect(x + thin / 2, y + thin / 2, cell - thin, cell - thin);
+    const mx = x + cell * 0.5;
 
     if (balloons) {
-      // Шар с верёвкой: кружок повыше середины и хвостик вниз.
+      // Шар: залитый кружок с бликом и тонкая верёвочка вниз.
+      const cy = y + cell * 0.4;
+      const r = cell * 0.24;
       ctx.beginPath();
-      ctx.arc(x + cell * 0.5, y + cell * 0.42, cell * 0.26, 0, Math.PI * 2);
+      ctx.moveTo(mx, cy + r);
+      ctx.lineTo(mx, y + cell * 0.84);
       ctx.stroke();
+      ctx.fillStyle = `rgba(${line}, ${a})`;
       ctx.beginPath();
-      ctx.moveTo(x + cell * 0.5, y + cell * 0.68);
-      ctx.lineTo(x + cell * 0.5, y + cell * 0.86);
-      ctx.stroke();
+      ctx.arc(mx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(255, 235, 230, ${0.8 * a})`;
+      ctx.beginPath();
+      ctx.arc(mx - r * 0.35, cy - r * 0.35, r * 0.3, 0, Math.PI * 2);
+      ctx.fill();
       continue;
     }
 
-    // винты по углам и корпус между ними
-    const r = cell * 0.13;
-    const off = cell * 0.28;
-    const rotors: [number, number][] = [
-      [off, off],
-      [cell - off, off],
-      [off, cell - off],
-      [cell - off, cell - off],
-    ];
+    // Дрон сверху: четыре луча от корпуса к винтам, винты залиты, корпус в центре.
+    const my = y + cell * 0.5;
+    const off = cell * 0.25;
     ctx.beginPath();
-    for (const [ox, oy] of rotors) {
-      ctx.moveTo(x + ox + r, y + oy);
-      ctx.arc(x + ox, y + oy, r, 0, Math.PI * 2);
+    for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      ctx.moveTo(mx, my);
+      ctx.lineTo(mx + dx * off, my + dy * off);
     }
     ctx.stroke();
-    ctx.fillRect(x + cell * 0.4, y + cell * 0.4, cell * 0.2, cell * 0.2);
+    ctx.fillStyle = `rgba(${line}, ${a})`;
+    ctx.beginPath();
+    for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      const rx = mx + dx * off;
+      const ry = my + dy * off;
+      ctx.moveTo(rx + cell * 0.11, ry);
+      ctx.arc(rx, ry, cell * 0.11, 0, Math.PI * 2);
+    }
+    ctx.fill();
+    ctx.fillRect(mx - cell * 0.09, my - cell * 0.09, cell * 0.18, cell * 0.18);
   }
 }
 
