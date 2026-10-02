@@ -78,7 +78,7 @@ const en: RuleSection[] = [
     title: "Recon",
     lines: [
       "Recon sorties spend drones from the same warehouse containers as raids.",
-      "A flight takes you over the rival's map under fog of war. The plane comes in from a random edge and uncovers a circle around itself; steer with the left and right arrows.",
+      "A flight takes you over the rival's map under fog of war. The plane comes in from a random edge and uncovers a circle around itself; steer with the left and right arrows. Or hold a finger on the map and the plane turns towards it.",
       "Their guns can shoot it down. Out of planes — the sortie is over.",
       "What you mapped stays yours, gaps and all — the «Map» button on the rival's card. But it goes stale: wherever they have rebuilt since your flight, the fog creeps back over that patch.",
     ],
@@ -164,7 +164,7 @@ const ru: RuleSection[] = [
     title: "Разведка",
     lines: [
       "На разведку тратятся те же дроны, что лежат в контейнерах склада.",
-      "Вылет уносит тебя на карту соперника под туманом войны. Самолёт заходит со случайного края и открывает круг вокруг себя; рулишь стрелками влево-вправо.",
+      "Вылет уносит тебя на карту соперника под туманом войны. Самолёт заходит со случайного края и открывает круг вокруг себя; рулишь стрелками влево-вправо. Или держи палец на карте — самолёт сам заворачивает к нему.",
       "Его могут сбить чужие пушки. Кончились дроны — вылет окончен.",
       "Снятое остаётся твоим вместе с пробелами — кнопка «Карта» в карточке соперника. Но данные стареют: где враг с тех пор перестраивался, тот участок снова затягивает туманом.",
     ],
@@ -250,7 +250,7 @@ const es: RuleSection[] = [
     title: "Exploración",
     lines: [
       "La exploración gasta drones de los mismos contenedores del almacén que los ataques.",
-      "El vuelo te lleva sobre el mapa del rival bajo niebla de guerra. El avión entra por un borde al azar y descubre un círculo a su alrededor; guía con las flechas.",
+      "El vuelo te lleva sobre el mapa del rival bajo niebla de guerra. El avión entra por un borde al azar y descubre un círculo a su alrededor; guía con las flechas. O mantén el dedo en el mapa y el avión gira hacia él.",
       "Sus cañones pueden derribarlo. Sin aviones, la salida termina.",
       "Lo cartografiado es tuyo, huecos incluidos: botón «Mapa» en la ficha del rival. Pero envejece: donde el rival haya reconstruido desde tu vuelo, la niebla vuelve a cubrir esa zona.",
     ],
@@ -336,7 +336,7 @@ const pt: RuleSection[] = [
     title: "Reconhecimento",
     lines: [
       "O reconhecimento gasta drones dos mesmos contentores do armazém que os ataques.",
-      "O voo leva-te sobre o mapa do rival sob nevoeiro de guerra. O avião entra por um bordo ao acaso e descobre um círculo à sua volta; guia com as setas.",
+      "O voo leva-te sobre o mapa do rival sob nevoeiro de guerra. O avião entra por um bordo ao acaso e descobre um círculo à sua volta; guia com as setas. Ou mantém o dedo no mapa e o avião vira para ele.",
       "Os canhões dele podem abatê-lo. Sem aviões, a saída acaba.",
       "O que mapeaste fica teu, falhas incluídas — botão «Mapa» na ficha do rival. Mas envelhece: onde ele reconstruiu depois do teu voo, o nevoeiro volta a cobrir essa zona.",
     ],
@@ -422,7 +422,7 @@ const fr: RuleSection[] = [
     title: "Reconnaissance",
     lines: [
       "La reconnaissance dépense les drones des mêmes conteneurs d’entrepôt que les raids.",
-      "Le vol t’emmène au-dessus de la carte du rival sous brouillard de guerre. L’avion entre par un bord au hasard et dégage un cercle autour de lui ; tu diriges avec les flèches.",
+      "Le vol t’emmène au-dessus de la carte du rival sous brouillard de guerre. L’avion entre par un bord au hasard et dégage un cercle autour de lui ; tu diriges avec les flèches. Ou garde le doigt sur la carte et l’avion tourne vers lui.",
       "Ses canons peuvent l’abattre. Plus d’avions, la sortie est finie.",
       "Ce que tu as cartographié reste à toi, trous compris — bouton « Carte » sur la fiche du rival. Mais cela vieillit : là où il a rebâti depuis ton vol, le brouillard revient sur la zone.",
     ],
@@ -508,7 +508,7 @@ const de: RuleSection[] = [
     title: "Aufklärung",
     lines: [
       "Aufklärung verbraucht dieselben Lagerdrohnen in Containern wie Angriffe.",
-      "Ein Flug führt dich über die Karte des Gegners im Nebel des Krieges. Das Flugzeug kommt von einer zufälligen Kante und deckt einen Kreis um sich auf; gesteuert wird mit den Pfeiltasten.",
+      "Ein Flug führt dich über die Karte des Gegners im Nebel des Krieges. Das Flugzeug kommt von einer zufälligen Kante und deckt einen Kreis um sich auf; gesteuert wird mit den Pfeiltasten. Oder halte den Finger auf der Karte, und das Flugzeug dreht dorthin.",
       "Seine Geschütze können es abschießen. Sind die Drohnen alle, ist der Einsatz vorbei.",
       "Das Kartierte bleibt deins, samt Lücken — Knopf «Karte» beim Gegner. Es veraltet aber: wo er seit deinem Flug umgebaut hat, kriecht der Nebel über dieses Feld zurück.",
     ],
@@ -594,7 +594,7 @@ const it: RuleSection[] = [
     title: "Ricognizione",
     lines: [
       "La ricognizione spende gli stessi droni di magazzino usati negli attacchi.",
-      "Il volo ti porta sulla mappa del rivale sotto la nebbia di guerra. L’aereo entra da un bordo a caso e scopre un cerchio attorno a sé; si guida con le frecce.",
+      "Il volo ti porta sulla mappa del rivale sotto la nebbia di guerra. L’aereo entra da un bordo a caso e scopre un cerchio attorno a sé; si guida con le frecce. Oppure tieni il dito sulla mappa e l’aereo gira verso di esso.",
       "I suoi cannoni possono abbatterlo. Finiti i ricognitori, la sortita è chiusa.",
       "Quello che hai mappato resta tuo, buchi compresi — pulsante «Mappa» nella scheda del rivale. Ma invecchia: dove lui ha ricostruito dopo il tuo volo, la nebbia torna su quella zona.",
     ],
