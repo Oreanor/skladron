@@ -209,8 +209,8 @@ export default function Lobby({
   const [summonRaidOpen, setSummonRaid] = useState(false);
   // дронов нет — вместо окна налёта предложение купить их
   const [needDrones, setNeedDrones] = useState(false);
-  // круги у всего склада — по галочке в углу карты; без неё только у того, что ставят
-  const [zones, setZones] = useZones("wb.lobbyZones", false);
+  // круги того, что ставят или тащат, — их можно убрать галочкой в углу карты
+  const [zones, setZones] = useZones("wb.lobbyZones", true);
   /** Чертежи: список, открытый в большом окне, ждущий подтверждения стройки и окно имени. */
   const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
   const [openBlueprint, setOpenBlueprint] = useState<Blueprint | null>(null);
