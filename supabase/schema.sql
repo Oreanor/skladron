@@ -2185,8 +2185,9 @@ end;
 $$;
 
 -- ---------- чертежи ----------
--- Сохранённая раскладка склада: клетки, установки и контейнеры. Чертёж —
--- только план, денег при сохранении не берут; всё проверяется и
+-- Сохранённая раскладка склада: клетки и установки. Дронов и шаров в
+-- чертеже нет — это товар, а не план: при стройке что лежит, то продаётся.
+-- Чертёж — только план, денег при сохранении не берут; всё проверяется и
 -- оплачивается при стройке.
 
 create table if not exists blueprints (
@@ -2195,7 +2196,6 @@ create table if not exists blueprints (
   name text not null,
   cells text not null,
   guns jsonb not null default '[]'::jsonb,
-  depots jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now()
 );
 create index if not exists blueprints_user on blueprints (user_id, created_at);
@@ -2226,8 +2226,8 @@ language sql immutable as $
   select count(*)::int from generate_series(0, octet_length(map) - 1) i where get_byte(map, i) = v;
 $;
 
-create or replace function save_blueprint(bp_name text, bp_cells text, bp_guns jsonb, bp_depots jsonb)
-returns table (id uuid, name text, cells text, guns jsonb, depots jsonb, created_at timestamptz)
+create or replace function save_blueprint(bp_name text, bp_cells text, bp_guns jsonb)
+returns table (id uuid, name text, cells text, guns jsonb, created_at timestamptz)
 language plpgsql security definer set search_path = public as $
 declare
   uid uuid := auth.uid();
@@ -2240,15 +2240,14 @@ begin
   -- в чертеже только земля и целые клетки: гарь и следы — не план
   if cells_with(bin, 0) + cells_with(bin, 1) <> 10000 then raise exception 'bad blueprint cells'; end if;
   if cells_with(bin, 1) < price('found') then raise exception 'blueprint too small'; end if;
-  if not guns_valid(bp_guns, bin, bp_depots) then raise exception 'bad gun placement'; end if;
-  if not depots_valid(bp_depots, bin, bp_guns) then raise exception 'bad depot placement'; end if;
+  if not guns_valid(bp_guns, bin, '[]'::jsonb) then raise exception 'bad gun placement'; end if;
   if (select count(*) from blueprints b where b.user_id = uid) >= 20 then
     raise exception 'too many blueprints';
   end if;
   return query
-    insert into blueprints as b (user_id, name, cells, guns, depots)
-    values (uid, clean, bp_cells, bp_guns, bp_depots)
-    returning b.id, b.name, b.cells, b.guns, b.depots, b.created_at;
+    insert into blueprints as b (user_id, name, cells, guns)
+    values (uid, clean, bp_cells, bp_guns)
+    returning b.id, b.name, b.cells, b.guns, b.created_at;
 end;
 $;
 
@@ -2262,9 +2261,9 @@ $;
 
 -- Перестройка по чертежу. Нынешний склад сносится и продаётся: целые
 -- клетки сверх бесплатных — по цене постройки, сгоревшие — во вторсырьё,
--- установки и товар — по нынешней цене закупки. На его месте ставится
--- чертёж по тем же ценам. Платится только разница, и она же может прийти
--- в плюс.
+-- установки, дроны и шары — по нынешней цене закупки. На его месте
+-- ставится чертёж по тем же ценам, без контейнеров. Платится только
+-- разница, и она же может прийти в плюс.
 create or replace function build_blueprint(bp uuid)
 returns table (credits int, drones int, intact int)
 language plpgsql security definer set search_path = public as $
@@ -2300,8 +2299,7 @@ begin
     raise exception 'battle is resolving';
   end if;
 
-  if not guns_valid(plan.guns, bin, plan.depots) then raise exception 'bad gun placement'; end if;
-  if not depots_valid(plan.depots, bin, plan.guns) then raise exception 'bad depot placement'; end if;
+  if not guns_valid(plan.guns, bin, '[]'::jsonb) then raise exception 'bad gun placement'; end if;
 
   new_cells := cells_with(bin, 1);
   sold := greatest(0, cells_with(cur, 1) - price('free')) * price('cell')
@@ -2310,7 +2308,6 @@ begin
         + goods_value(cur_depots, prof.levels);
   cost := greatest(0, new_cells - price('free')) * price('cell')
         + install_value(plan.guns, prof.levels)
-        + goods_value(plan.depots, prof.levels)
         - sold;
 
   if prof.credits < cost then
@@ -2320,14 +2317,14 @@ begin
   update bases
      set cells = bin,
          guns = plan.guns,
-         drone_cells = plan.depots,
+         drone_cells = '[]'::jsonb,
          intact_cells = new_cells,
          updated_at = now()
    where user_id = uid;
 
   update profiles
      set credits = profiles.credits - cost,
-         drones = depot_sum_kind(plan.depots, 'basic'),
+         drones = 0,
          founded = profiles.founded or new_cells >= price('found')
    where profiles.id = uid
    returning profiles.credits, profiles.drones into credits, drones;

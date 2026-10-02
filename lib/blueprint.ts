@@ -1,8 +1,9 @@
 // Чертежи склада: сохранённая раскладка и цена перестройки по ней.
 //
 // Перестройка — это снос нынешнего склада с продажей всего, что на нём
-// стоит и лежит, и постройка чертежа на его месте по тем же ценам. Платится
-// разница; вся арифметика повторяет build_blueprint в SQL слово в слово —
+// стоит и лежит, и постройка чертежа на его месте по тем же ценам. Дронов и
+// шаров в чертеже нет: это товар, а не план, — что лежит, то продаётся, а
+// склад встаёт без контейнеров. Платится разница; вся арифметика повторяет build_blueprint в SQL слово в слово —
 // окно показывает ровно то, что спишет сервер.
 
 import {
@@ -39,12 +40,11 @@ export interface Blueprint {
   /** Клетки в RLE: только земля и целые клетки склада. */
   cells: string;
   guns: Gun[];
-  depots: Depot[];
   createdAt: number;
 }
 
 /** Раскладка нынешнего склада как чертёж: гарь — снова склад, следы — трава. */
-export function blueprintOf(p: Pick<Player, "cells" | "guns" | "depots">) {
+export function blueprintOf(p: Pick<Player, "cells" | "guns">) {
   const cells = new Uint8Array(GRID * GRID);
   for (let i = 0; i < cells.length; i++) {
     const v = p.cells[i];
@@ -53,7 +53,6 @@ export function blueprintOf(p: Pick<Player, "cells" | "guns" | "depots">) {
   return {
     cells: encodeRle(cells),
     guns: p.guns.map((g) => (g.kind && g.kind !== "gun" ? { cx: g.cx, cy: g.cy, kind: g.kind } : { cx: g.cx, cy: g.cy })),
-    depots: p.depots.map((d) => (d.kind === "balloon" ? { cx: d.cx, cy: d.cy, n: d.n, kind: d.kind } : { cx: d.cx, cy: d.cy, n: d.n })),
   };
 }
 
@@ -84,8 +83,8 @@ export function goodsValue(depots: Depot[], lv: Levels) {
   );
 }
 
-/** Что входит в чертёж: площадь, установки по видам, дроны и шары. */
-export function blueprintCounts(b: Pick<Blueprint, "cells" | "guns" | "depots">) {
+/** Что входит в чертёж: площадь и установки по видам. */
+export function blueprintCounts(b: Pick<Blueprint, "cells" | "guns">) {
   const cells = decodeRle(b.cells);
   return {
     area: countCells(cells, G_BASE),
@@ -93,8 +92,6 @@ export function blueprintCounts(b: Pick<Blueprint, "cells" | "guns" | "depots">)
     rocket: countKind(b.guns, "rocket"),
     spray: countKind(b.guns, "spray"),
     trap: countKind(b.guns, "trap"),
-    drones: sumKind(b.depots, false),
-    balloons: sumKind(b.depots, true),
   };
 }
 
@@ -102,12 +99,11 @@ export function blueprintCounts(b: Pick<Blueprint, "cells" | "guns" | "depots">)
  * Перестройка по чертежу: сколько стоит сам чертёж, сколько выручено за
  * снесённый склад и сколько из этого придётся доплатить (минус — придёт).
  */
-export function rebuildCost(p: Player, b: Pick<Blueprint, "cells" | "guns" | "depots">) {
+export function rebuildCost(p: Player, b: Pick<Blueprint, "cells" | "guns">) {
   const plan = decodeRle(b.cells);
   const price =
     Math.max(0, countCells(plan, G_BASE) - STARTER_CELLS) * CELL_COST +
-    installValue(b.guns, p.levels) +
-    goodsValue(b.depots, p.levels);
+    installValue(b.guns, p.levels);
   const sold =
     Math.max(0, countCells(p.cells, G_BASE) - STARTER_CELLS) * CELL_COST +
     countCells(p.cells, G_BURNT) * SCRAP_REWARD +

@@ -86,8 +86,6 @@ const LEGEND: { key: keyof ReturnType<typeof blueprintCounts>; label: Key; color
   { key: "rocket", label: "tool.rocket", color: installColors("rocket").top },
   { key: "spray", label: "tool.spray", color: installColors("spray").top },
   { key: "trap", label: "tool.trap", color: installColors("trap").top },
-  { key: "drones", label: "tool.drones", color: "rgb(206, 170, 116)" },
-  { key: "balloons", label: "tool.balloons", color: "rgb(226, 150, 144)" },
 ];
 
 /** Карта чертежа и его состав, а под ними — то, что окну нужно сверх этого. */
@@ -95,7 +93,7 @@ function BlueprintBody({
   plan,
   children,
 }: {
-  plan: Pick<Blueprint, "cells" | "guns" | "depots">;
+  plan: Pick<Blueprint, "cells" | "guns">;
   children: ReactNode;
 }) {
   const t = useT();
@@ -198,7 +196,7 @@ export function NewBlueprintDialog({
   onAdd,
   onClose,
 }: {
-  plan: Pick<Blueprint, "cells" | "guns" | "depots">;
+  plan: Pick<Blueprint, "cells" | "guns">;
   player: Player;
   defaultName: string;
   maxLength: number;

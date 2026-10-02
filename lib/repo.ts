@@ -142,7 +142,7 @@ export interface Repo {
   /** Сохранённые чертежи, старые сверху. */
   blueprints(): Promise<Blueprint[]>;
   /** Сохранить раскладку под именем. Денег не берёт. */
-  saveBlueprint(name: string, plan: Pick<Blueprint, "cells" | "guns" | "depots">): Promise<Blueprint>;
+  saveBlueprint(name: string, plan: Pick<Blueprint, "cells" | "guns">): Promise<Blueprint>;
   deleteBlueprint(id: string): Promise<void>;
   /** Снести склад и построить чертёж на его месте; p обновляется. */
   buildBlueprint(p: Player, b: Blueprint): Promise<void>;
@@ -307,7 +307,7 @@ class LocalRepo implements Repo {
     return this.readBlueprints();
   }
 
-  async saveBlueprint(name: string, plan: Pick<Blueprint, "cells" | "guns" | "depots">) {
+  async saveBlueprint(name: string, plan: Pick<Blueprint, "cells" | "guns">) {
     const list = this.readBlueprints();
     if (list.length >= MAX_BLUEPRINTS) throw new Error("too many blueprints");
     const b: Blueprint = { id: `${Date.now().toString(36)}`, name, ...plan, createdAt: Date.now() };
@@ -331,7 +331,7 @@ class LocalRepo implements Repo {
     p.credits -= delta;
     p.cells = cells;
     p.guns = b.guns.map((g) => ({ ...g }));
-    p.depots = b.depots.map((d) => ({ ...d }));
+    p.depots = [];
     let intact = 0;
     for (const v of cells) if (v === G_BASE) intact++;
     if (intact >= STARTER_CELLS) p.founded = true;
@@ -816,18 +816,17 @@ class CloudRepo implements Repo {
   async blueprints() {
     const { data, error } = await this.db()
       .from("blueprints")
-      .select("id, name, cells, guns, depots, created_at")
+      .select("id, name, cells, guns, created_at")
       .order("created_at");
     if (error) throw error;
     return ((data ?? []) as BlueprintRow[]).map(blueprintFromRow);
   }
 
-  async saveBlueprint(name: string, plan: Pick<Blueprint, "cells" | "guns" | "depots">) {
+  async saveBlueprint(name: string, plan: Pick<Blueprint, "cells" | "guns">) {
     const { data, error } = await this.db().rpc("save_blueprint", {
       bp_name: name,
       bp_cells: plan.cells,
       bp_guns: plan.guns,
-      bp_depots: plan.depots,
     });
     if (error) throw error;
     const row = (data as BlueprintRow[] | null)?.[0];
@@ -1079,7 +1078,6 @@ interface BlueprintRow {
   name: string;
   cells: string;
   guns: Gun[];
-  depots: Depot[];
   created_at: string;
 }
 
@@ -1088,7 +1086,6 @@ const blueprintFromRow = (r: BlueprintRow): Blueprint => ({
   name: r.name,
   cells: r.cells,
   guns: r.guns,
-  depots: r.depots,
   createdAt: Date.parse(r.created_at),
 });
 
