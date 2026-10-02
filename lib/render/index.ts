@@ -371,13 +371,19 @@ export function drawFrame(
     ctx.fill();
   }
 
-  // снаряды зениток — короткие трассеры
+  // Снаряды зениток — короткие трассеры, парой, по одному из каждого
+  // ствола спарки. Пара только на картинке: в бою это один снаряд, и бьёт
+  // он как один.
   ctx.strokeStyle = COLORS.missile;
-  ctx.lineWidth = Math.max(1, cell * 0.25);
+  ctx.lineWidth = Math.max(0.6, cell * 0.14);
   ctx.beginPath();
   for (const m of s.missiles) {
-    ctx.moveTo((m.x - m.dx * 0.9) * cell, (m.y - m.dy * 0.9) * cell);
-    ctx.lineTo(m.x * cell, m.y * cell);
+    for (const side of [-1, 1]) {
+      const ox = -m.dy * side * 0.14;
+      const oy = m.dx * side * 0.14;
+      ctx.moveTo((m.x + ox - m.dx * 0.9) * cell, (m.y + oy - m.dy * 0.9) * cell);
+      ctx.lineTo((m.x + ox) * cell, (m.y + oy) * cell);
+    }
   }
   ctx.stroke();
 

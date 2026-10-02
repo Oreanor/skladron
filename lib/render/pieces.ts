@@ -394,21 +394,25 @@ function drawMount(
   body: string,
   plate: string,
   accent: string,
-  alive: boolean
+  alive: boolean,
+  /** Квадратная площадка вместо круглой — у ракетницы, чтобы и формой не путать с зениткой. */
+  square = false
 ) {
   const r = cell * 0.46;
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
+  const pad = (k: number) => {
+    ctx.beginPath();
+    if (square) ctx.roundRect(x - r * k, y - r * k, r * k * 2, r * k * 2, r * k * 0.25);
+    else ctx.arc(x, y, r * k, 0, Math.PI * 2);
+  };
+  pad(1);
   ctx.fillStyle = body;
   ctx.fill();
-  ctx.beginPath();
-  ctx.arc(x, y, r * 0.78, 0, Math.PI * 2);
+  pad(0.78);
   ctx.fillStyle = plate;
   ctx.fill();
   ctx.strokeStyle = accent;
   ctx.lineWidth = Math.max(0.55, cell * 0.1);
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
+  pad(1);
   ctx.stroke();
 
   // Четыре «болта» по краю площадки — чуть живее, чем голый круг.
@@ -430,8 +434,8 @@ function drawMount(
 }
 
 /**
- * Зенитка сверху: площадка, станина с коробами лент и спарка тонких
- * длинных стволов с дульными тормозами. Спарка тут не украшение — по ней
+ * Зенитка сверху: круглая площадка, станина и спарка коротких стволов с
+ * дульными тормозами. Спарка тут не украшение — по ней
  * зенитка и отличается от ракетницы, у которой на том же лафете короб
  * направляющих. На мелкой клетке от рисунка остаются два штриха наружу,
  * и этого хватает, чтобы прочитать «ствол смотрит туда».
@@ -476,15 +480,16 @@ export function drawTurret(
   ctx.fillStyle = accent;
   ctx.fillRect(-cell * 0.02, -cell * 0.26, cell * 0.2, cell * 0.52);
 
-  // Спарка: два тонких длинных ствола с дульными тормозами.
+  // Спарка: два ствола с дульными тормозами. Короткие — чуть за край
+  // площадки: длинные залезали на соседнюю клетку, а там обычно своя пушка.
   for (const side of [-1, 1]) {
     const oy = side * cell * 0.14;
     ctx.fillStyle = shade;
-    ctx.fillRect(cell * 0.1, oy - cell * 0.055, cell * 0.92, cell * 0.11);
+    ctx.fillRect(cell * 0.1, oy - cell * 0.055, cell * 0.48, cell * 0.11);
     ctx.fillStyle = accent;
-    ctx.fillRect(cell * 0.86, oy - cell * 0.1, cell * 0.16, cell * 0.2);
+    ctx.fillRect(cell * 0.47, oy - cell * 0.09, cell * 0.11, cell * 0.18);
     ctx.fillStyle = alive ? "#6aa8c4" : "#666";
-    ctx.fillRect(cell * 0.3, oy - cell * 0.018, cell * 0.52, cell * 0.036);
+    ctx.fillRect(cell * 0.2, oy - cell * 0.018, cell * 0.25, cell * 0.036);
   }
 
   // Колпак наводчика и блик прицела — центр, вокруг которого всё вертится.
@@ -501,7 +506,7 @@ export function drawTurret(
 }
 
 /**
- * Ракетница: тот же лафет, что у зенитки, но вместо спарки — короб
+ * Ракетница: квадратная площадка, а не круглая, как у зенитки, и вместо спарки — короб
  * направляющих с одной ракетой. Ракета в коробе видна, только пока
  * установка заряжена: пустой короб на карте и значит «перезаряжается».
  */
@@ -518,10 +523,10 @@ export function drawRocket(
   const y = (cy + 0.5) * cell;
   const body = alive ? COLORS.rocket : "#3f3f3f";
   const accent = alive ? COLORS.rocketTop : "#555";
-  const shade = alive ? "#0e211c" : "#2a2a2a";
-  const plate = alive ? "#1d4038" : "#363636";
+  const shade = alive ? "#1f0f05" : "#2a2a2a";
+  const plate = alive ? "#5a2e12" : "#363636";
 
-  drawMount(ctx, x, y, cell, body, plate, accent, alive);
+  drawMount(ctx, x, y, cell, body, plate, accent, alive, true);
   if (!alive) return;
 
   ctx.save();
@@ -540,23 +545,25 @@ export function drawRocket(
 
   // Короб направляющих: широкий, приподнятый, с рёбрами по бокам.
   ctx.fillStyle = plate;
-  ctx.fillRect(-cell * 0.08, -cell * 0.3, cell * 0.78, cell * 0.6);
+  // Короче клетки: ракета выглядывает из короба лишь носом и на соседнюю
+  // установку не залезает.
+  ctx.fillRect(-cell * 0.08, -cell * 0.3, cell * 0.52, cell * 0.6);
   ctx.fillStyle = accent;
-  ctx.fillRect(-cell * 0.08, -cell * 0.3, cell * 0.78, cell * 0.07);
-  ctx.fillRect(-cell * 0.08, cell * 0.23, cell * 0.78, cell * 0.07);
+  ctx.fillRect(-cell * 0.08, -cell * 0.3, cell * 0.52, cell * 0.07);
+  ctx.fillRect(-cell * 0.08, cell * 0.23, cell * 0.52, cell * 0.07);
 
   // Сама направляющая — тёмный жёлоб по оси.
   ctx.fillStyle = shade;
-  ctx.fillRect(-cell * 0.02, -cell * 0.13, cell * 0.8, cell * 0.26);
+  ctx.fillRect(-cell * 0.02, -cell * 0.13, cell * 0.48, cell * 0.26);
 
   if (loaded) {
     // Ракета в жёлобе: светлый корпус и красная головка наружу.
     ctx.fillStyle = "#dfe7ef";
-    ctx.fillRect(cell * 0.04, -cell * 0.09, cell * 0.76, cell * 0.18);
+    ctx.fillRect(cell * 0.04, -cell * 0.09, cell * 0.42, cell * 0.18);
     ctx.beginPath();
-    ctx.moveTo(cell * 0.78, -cell * 0.09);
-    ctx.lineTo(cell * 1.02, 0);
-    ctx.lineTo(cell * 0.78, cell * 0.09);
+    ctx.moveTo(cell * 0.45, -cell * 0.09);
+    ctx.lineTo(cell * 0.6, 0);
+    ctx.lineTo(cell * 0.45, cell * 0.09);
     ctx.closePath();
     ctx.fillStyle = COLORS.droneAccent;
     ctx.fill();
