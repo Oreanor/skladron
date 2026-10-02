@@ -2182,29 +2182,29 @@ revoke insert, update, delete on blueprints from anon, authenticated;
 
 -- Сколько стоят установки по нынешним ценам с учётом уровней.
 create or replace function install_value(g jsonb, lv jsonb) returns int
-language sql immutable as $
+language sql immutable as $$
   select gun_count(g, 'gun') * price_at(price('gun'), coalesce((lv->>'guns')::int, 1))
        + gun_count(g, 'rocket') * price_at(price('rocket'), coalesce((lv->>'rockets')::int, 1))
        + gun_count(g, 'spray') * price_at(price('spray'), coalesce((lv->>'sprays')::int, 1))
        + gun_count(g, 'trap') * price_at(price('trap'), coalesce((lv->>'traps')::int, 1))
        + gun_count(g, 'balloon') * price_at(price('balloon'), coalesce((lv->>'balloons')::int, 1));
-$;
+$$;
 
 -- Сколько стоит содержимое контейнеров по цене закупки.
 create or replace function goods_value(d jsonb, lv jsonb) returns int
-language sql immutable as $
+language sql immutable as $$
   select depot_sum_kind(d, 'basic') * price_at(price('drone'), coalesce((lv->>'drones')::int, 1));
-$;
+$$;
 
 -- Сколько клеток с таким значением на карте.
 create or replace function cells_with(map bytea, v int) returns int
-language sql immutable as $
+language sql immutable as $$
   select count(*)::int from generate_series(0, octet_length(map) - 1) i where get_byte(map, i) = v;
-$;
+$$;
 
 create or replace function save_blueprint(bp_name text, bp_cells text, bp_guns jsonb)
 returns table (id uuid, name text, cells text, guns jsonb, created_at timestamptz)
-language plpgsql security definer set search_path = public as $
+language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
   bin bytea := rle_decode(bp_cells);
@@ -2225,15 +2225,15 @@ begin
     values (uid, clean, bp_cells, bp_guns)
     returning b.id, b.name, b.cells, b.guns, b.created_at;
 end;
-$;
+$$;
 
 create or replace function delete_blueprint(bp uuid)
-returns void language plpgsql security definer set search_path = public as $
+returns void language plpgsql security definer set search_path = public as $$
 begin
   if auth.uid() is null then raise exception 'not authenticated'; end if;
   delete from blueprints b where b.id = bp and b.user_id = auth.uid();
 end;
-$;
+$$;
 
 -- Перестройка по чертежу. Нынешний склад сносится и продаётся: целые
 -- клетки сверх бесплатных — по цене постройки, сгоревшие — во вторсырьё,
@@ -2242,7 +2242,7 @@ $;
 -- разница, и она же может прийти в плюс.
 create or replace function build_blueprint(bp uuid)
 returns table (credits int, drones int, intact int)
-language plpgsql security definer set search_path = public as $
+language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
   prof profiles;
@@ -2308,7 +2308,7 @@ begin
   intact := new_cells;
   return next;
 end;
-$;
+$$;
 
 grant execute on function save_blueprint, delete_blueprint, build_blueprint to authenticated;
 
