@@ -256,7 +256,20 @@ export function placeDepot(p: Player, x: number, y: number): BuildResult {
   return done(cost);
 }
 
-/** Перенос контейнера на свободную клетку. Ничего не стоит. */
+/**
+ * Что стоит на клетке, куда роняют, переезжает туда, откуда взяли: перенос
+ * на занятую клетку — это обмен местами. Свободная — просто перенос.
+ */
+function swapInto(p: Player, from: { cx: number; cy: number }, x: number, y: number) {
+  p.guns = sanitizeGuns(
+    p.guns.map((g) => (g.cx === x && g.cy === y ? { ...g, cx: from.cx, cy: from.cy } : g))
+  );
+  p.depots = p.depots.map((d) =>
+    d.cx === x && d.cy === y ? { ...d, cx: from.cx, cy: from.cy } : d
+  );
+}
+
+/** Перенос контейнера: на свободную клетку или обменом с тем, что там стоит. Даром. */
 export function moveDepot(
   p: Player,
   from: { cx: number; cy: number },
@@ -264,19 +277,19 @@ export function moveDepot(
   y: number
 ): BuildResult {
   if (!onMap(x, y)) return skip;
+  if (x === from.cx && y === from.cy) return skip;
   if (p.cells[idx(x, y)] !== G_BASE) return no("depot.onlyIntact");
-  if (gunOn(p.guns, x, y)) return no("depot.gunThere");
-  if (p.depots.some((d) => (d.cx !== from.cx || d.cy !== from.cy) && d.cx === x && d.cy === y)) {
-    return no("depot.taken");
-  }
 
   const at = p.depots.findIndex((d) => d.cx === from.cx && d.cy === from.cy);
   if (at < 0) return skip;
-  p.depots = p.depots.map((d, i) => (i === at ? { ...d, cx: x, cy: y } : d));
+  const moving = p.depots[at];
+  p.depots = p.depots.filter((_, i) => i !== at);
+  swapInto(p, from, x, y);
+  p.depots = [...p.depots, { ...moving, cx: x, cy: y }];
   return done(0);
 }
 
-/** Перенос установки на другую целую клетку. Ничего не стоит. */
+/** Перенос установки: на свободную целую клетку или обменом с тем, что там стоит. Даром. */
 export function moveGun(
   p: Player,
   from: { cx: number; cy: number; kind: GunKind },
@@ -284,16 +297,16 @@ export function moveGun(
   y: number
 ): BuildResult {
   if (!onMap(x, y)) return skip;
+  if (x === from.cx && y === from.cy) return skip;
   if (p.cells[idx(x, y)] !== G_BASE) return no("gun.onlyIntact");
-  if (p.guns.some((g) => (g.cx !== from.cx || g.cy !== from.cy) && g.cx === x && g.cy === y)) {
-    return no("gun.gunThere");
-  }
-  if (depotOn(p.depots, x, y)) return no("gun.cellBusy");
 
   const at = p.guns.findIndex(
     (g) => g.cx === from.cx && g.cy === from.cy && gunKind(g) === from.kind
   );
   if (at < 0) return skip;
-  p.guns = sanitizeGuns(p.guns.map((g, i) => (i === at ? { ...g, cx: x, cy: y } : g)));
+  const moving = p.guns[at];
+  p.guns = p.guns.filter((_, i) => i !== at);
+  swapInto(p, from, x, y);
+  p.guns = sanitizeGuns([...p.guns, { ...moving, cx: x, cy: y }]);
   return done(0);
 }

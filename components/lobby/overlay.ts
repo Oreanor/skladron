@@ -78,11 +78,9 @@ export function dropAllowed(
 ) {
   if (from && cx === from.cx && cy === from.cy) return true;
   if (!onMap(cx, cy) || cells[idx(cx, cy)] !== G_BASE) return false;
-  const moved = (item: { cx: number; cy: number }) =>
-    !from || item.cx !== from.cx || item.cy !== from.cy;
-  if (guns.some((g) => moved(g) && g.cx === cx && g.cy === cy)) return false;
-  if (depots.some((d) => moved(d) && d.cx === cx && d.cy === cy)) return false;
-  return true;
+  // занятая клетка — не запрет: то, что на ней стоит, поменяется местами с переносимым
+  if (from) return true;
+  return !guns.some((g) => g.cx === cx && g.cy === cy) && !depots.some((d) => d.cx === cx && d.cy === cy);
 }
 
 /**
