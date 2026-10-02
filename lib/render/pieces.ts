@@ -46,8 +46,8 @@ export function drawDepots(
 
     if (balloons) {
       // Шар: залитый кружок с бликом и тонкая верёвочка вниз.
-      const cy = y + cell * 0.4;
-      const r = cell * 0.22;
+      const cy = y + cell * 0.42;
+      const r = cell * 0.27;
       ctx.lineWidth = cell * 0.05;
       ctx.beginPath();
       ctx.moveTo(mx, cy + r);
