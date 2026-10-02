@@ -31,8 +31,10 @@ export function drawDepots(
     const x = d.cx * cell;
     const y = d.cy * cell;
     const balloons = d.kind === "balloon";
-    const fill = balloons ? "118, 42, 46" : "92, 66, 34";
-    const line = balloons ? "244, 140, 138" : "226, 184, 110";
+    // Светлый ящик и приглушённый рисунок: тёмные ящики со светлым дроном
+    // на светлом полу рябили сплошным рядом.
+    const fill = balloons ? "226, 150, 144" : "206, 170, 116";
+    const line = balloons ? "156, 52, 56" : "128, 92, 50";
     ctx.fillStyle = `rgba(${fill}, ${a})`;
     ctx.beginPath();
     ctx.roundRect(x + gap, y + gap, cell - gap * 2, cell - gap * 2, cell * 0.1);
@@ -76,7 +78,7 @@ export function drawDepots(
     for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
       const rx = mx + dx * off;
       const ry = my + dy * off;
-      ctx.fillStyle = `rgba(${line}, ${0.28 * a})`;
+      ctx.fillStyle = `rgba(${line}, ${0.18 * a})`;
       ctx.beginPath();
       ctx.arc(rx, ry, disc, 0, Math.PI * 2);
       ctx.fill();
