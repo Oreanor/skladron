@@ -23,32 +23,34 @@ export function drawDepots(
   cell: number,
   dim = false
 ) {
-  // Линии в долях клетки, а не в единицу: клетка — всего семь точек, и
-  // единичная обводка съедала седьмую часть ящика.
-  const thin = cell * 0.07;
   const a = dim ? 0.5 : 1;
+  // Ящик меньше клетки: между соседями остаётся щель, и ряд контейнеров
+  // читается как ящики, а не сливается в одну плитку.
+  const gap = cell * 0.07;
   for (const d of depots) {
     const x = d.cx * cell;
     const y = d.cy * cell;
     const balloons = d.kind === "balloon";
-    const fill = balloons ? "118, 42, 46" : "122, 90, 46";
-    const line = balloons ? "244, 140, 138" : "214, 168, 92";
+    const fill = balloons ? "118, 42, 46" : "92, 66, 34";
+    const line = balloons ? "244, 140, 138" : "226, 184, 110";
     ctx.fillStyle = `rgba(${fill}, ${a})`;
-    ctx.fillRect(x, y, cell, cell);
-    ctx.strokeStyle = `rgba(${line}, ${a})`;
-    ctx.lineWidth = thin;
-    ctx.strokeRect(x + thin / 2, y + thin / 2, cell - thin, cell - thin);
+    ctx.beginPath();
+    ctx.roundRect(x + gap, y + gap, cell - gap * 2, cell - gap * 2, cell * 0.1);
+    ctx.fill();
     const mx = x + cell * 0.5;
+    const my = y + cell * 0.5;
+    ctx.fillStyle = `rgba(${line}, ${a})`;
+    ctx.strokeStyle = `rgba(${line}, ${a})`;
 
     if (balloons) {
       // Шар: залитый кружок с бликом и тонкая верёвочка вниз.
       const cy = y + cell * 0.4;
-      const r = cell * 0.24;
+      const r = cell * 0.22;
+      ctx.lineWidth = cell * 0.05;
       ctx.beginPath();
       ctx.moveTo(mx, cy + r);
-      ctx.lineTo(mx, y + cell * 0.84);
+      ctx.lineTo(mx, y + cell * 0.8);
       ctx.stroke();
-      ctx.fillStyle = `rgba(${line}, ${a})`;
       ctx.beginPath();
       ctx.arc(mx, cy, r, 0, Math.PI * 2);
       ctx.fill();
@@ -59,30 +61,37 @@ export function drawDepots(
       continue;
     }
 
-    // Дрон сверху: тонкие лучи крест-накрест, на концах — винты кольцами,
-    // в центре — корпус. Кольца, а не кляксы: залитые винты сливались с
-    // лучами в одно пятно.
-    const my = y + cell * 0.5;
-    const off = cell * 0.26;
-    const rr = cell * 0.13;
-    const corners = [[-1, -1], [1, -1], [-1, 1], [1, 1]];
-    ctx.lineWidth = cell * 0.06;
+    // Квадрокоптер сверху, с полями до края ящика: тонкие рамы крестом, на
+    // концах — прозрачный диск винта с лопастью поперёк рамы, в центре —
+    // корпус с камерой спереди.
+    const off = cell * 0.21;
+    const disc = cell * 0.14;
+    ctx.lineWidth = cell * 0.055;
     ctx.beginPath();
-    for (const [dx, dy] of corners) {
-      // луч доходит до кольца, а не протыкает его
-      const k = 1 - rr / (off * Math.SQRT2);
-      ctx.moveTo(mx, my);
-      ctx.lineTo(mx + dx * off * k, my + dy * off * k);
-    }
-    for (const [dx, dy] of corners) {
+    ctx.moveTo(mx - off, my - off);
+    ctx.lineTo(mx + off, my + off);
+    ctx.moveTo(mx + off, my - off);
+    ctx.lineTo(mx - off, my + off);
+    ctx.stroke();
+    for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
       const rx = mx + dx * off;
       const ry = my + dy * off;
-      ctx.moveTo(rx + rr, ry);
-      ctx.arc(rx, ry, rr, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${line}, ${0.28 * a})`;
+      ctx.beginPath();
+      ctx.arc(rx, ry, disc, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(${line}, ${a})`;
+      ctx.beginPath();
+      ctx.ellipse(rx, ry, disc, cell * 0.03, Math.atan2(dy, dx) + Math.PI / 2, 0, Math.PI * 2);
+      ctx.fill();
     }
-    ctx.stroke();
-    ctx.fillStyle = `rgba(${line}, ${a})`;
-    ctx.fillRect(mx - cell * 0.08, my - cell * 0.08, cell * 0.16, cell * 0.16);
+    ctx.beginPath();
+    ctx.roundRect(mx - cell * 0.1, my - cell * 0.13, cell * 0.2, cell * 0.26, cell * 0.07);
+    ctx.fill();
+    ctx.fillStyle = `rgba(${fill}, ${a})`;
+    ctx.beginPath();
+    ctx.arc(mx, my - cell * 0.06, cell * 0.035, 0, Math.PI * 2);
+    ctx.fill();
   }
 }
 
