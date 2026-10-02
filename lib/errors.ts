@@ -48,6 +48,11 @@ const RULES: [RegExp, Key][] = [
   [/too many unread messages/i, "error.tooManyUnread"],
   [/empty message/i, "error.emptyMessage"],
   [/competition is not open/i, "error.missionLocked"],
+
+  // чертежи
+  [/too many blueprints/i, "error.tooManyBlueprints"],
+  [/blueprint too small/i, "error.blueprintSmall"],
+  [/no such blueprint/i, "error.blueprintGone"],
   [/base name too long|empty base name/i, "error.baseName"],
 
   // Склад в игре и на сервере разошёлся: прислали карту, пушки или ящики,

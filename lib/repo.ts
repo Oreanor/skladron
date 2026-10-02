@@ -12,7 +12,14 @@ import {
   sanitizeGuns,
 } from "./base";
 
-import { CREDITS_START, LOAN_HOURS, MAX_LEVEL, loanDebt, upgradeCost } from "./economy";
+import {
+  CREDITS_START,
+  LOAN_HOURS,
+  MAX_LEVEL,
+  STARTER_CELLS,
+  loanDebt,
+  upgradeCost,
+} from "./economy";
 import { normalizeAvatarForStorage, type Avatar } from "./avatar";
 import { SIMULATION_VERSION } from "./tuning";
 import { notifyMessage } from "./notify";
@@ -37,6 +44,8 @@ import {
   type Player,
 } from "./player";
 import { takeDrones } from "./enemy";
+import { MAX_BLUEPRINTS, rebuildCost, type Blueprint } from "./blueprint";
+import { G_BASE, decodeRle } from "./base";
 import { cloudEnabled, supabase } from "./supabase";
 
 export interface Income {
@@ -130,6 +139,13 @@ export interface Repo {
   readMessages(email: string): Promise<void>;
   /** Язык игры — на нём бот пишет в телеграм. */
   setLocale(locale: string): Promise<void>;
+  /** Сохранённые чертежи, старые сверху. */
+  blueprints(): Promise<Blueprint[]>;
+  /** Сохранить раскладку под именем. Денег не берёт. */
+  saveBlueprint(name: string, plan: Pick<Blueprint, "cells" | "guns" | "depots">): Promise<Blueprint>;
+  deleteBlueprint(id: string): Promise<void>;
+  /** Снести склад и построить чертёж на его месте; p обновляется. */
+  buildBlueprint(p: Player, b: Blueprint): Promise<void>;
   /** Сколько непрочитанного и от кого: по этому в списке горит счётчик. */
   unread(): Promise<Record<string, number>>;
   /** Код привязки телеграма и то, привязан ли он уже. */
@@ -267,6 +283,53 @@ class LocalRepo implements Repo {
 
   // без сервера и бота нет — язык сообщать некому
   async setLocale() {}
+
+  // Без входа чертежи живут в браузере, как и сам склад.
+  private readBlueprints(): Blueprint[] {
+    try {
+      return JSON.parse(window.localStorage.getItem(BLUEPRINTS_KEY) ?? "[]") as Blueprint[];
+    } catch {
+      return [];
+    }
+  }
+
+  private writeBlueprints(list: Blueprint[]) {
+    try {
+      window.localStorage.setItem(BLUEPRINTS_KEY, JSON.stringify(list));
+    } catch {
+      // не сохранилось — живём до конца сессии
+    }
+  }
+
+  async blueprints() {
+    return this.readBlueprints();
+  }
+
+  async saveBlueprint(name: string, plan: Pick<Blueprint, "cells" | "guns" | "depots">) {
+    const list = this.readBlueprints();
+    if (list.length >= MAX_BLUEPRINTS) throw new Error("too many blueprints");
+    const b: Blueprint = { id: `${Date.now().toString(36)}`, name, ...plan, createdAt: Date.now() };
+    this.writeBlueprints([...list, b]);
+    return b;
+  }
+
+  async deleteBlueprint(id: string) {
+    this.writeBlueprints(this.readBlueprints().filter((b) => b.id !== id));
+  }
+
+  async buildBlueprint(p: Player, b: Blueprint) {
+    const { delta } = rebuildCost(p, b);
+    if (p.credits < delta) throw new Error("not enough credits");
+    const cells = decodeRle(b.cells);
+    p.credits -= delta;
+    p.cells = cells;
+    p.guns = b.guns.map((g) => ({ ...g }));
+    p.depots = b.depots.map((d) => ({ ...d }));
+    let intact = 0;
+    for (const v of cells) if (v === G_BASE) intact++;
+    if (intact >= STARTER_CELLS) p.founded = true;
+    localSave(p);
+  }
 
   async unread() {
     return {};
@@ -743,6 +806,41 @@ class CloudRepo implements Repo {
     if (error) throw error;
   }
 
+  async blueprints() {
+    const { data, error } = await this.db()
+      .from("blueprints")
+      .select("id, name, cells, guns, depots, created_at")
+      .order("created_at");
+    if (error) throw error;
+    return ((data ?? []) as BlueprintRow[]).map(blueprintFromRow);
+  }
+
+  async saveBlueprint(name: string, plan: Pick<Blueprint, "cells" | "guns" | "depots">) {
+    const { data, error } = await this.db().rpc("save_blueprint", {
+      bp_name: name,
+      bp_cells: plan.cells,
+      bp_guns: plan.guns,
+      bp_depots: plan.depots,
+    });
+    if (error) throw error;
+    const row = (data as BlueprintRow[] | null)?.[0];
+    if (!row) throw new Error("blueprint not saved");
+    return blueprintFromRow(row);
+  }
+
+  async deleteBlueprint(id: string) {
+    const { error } = await this.db().rpc("delete_blueprint", { bp: id });
+    if (error) throw error;
+  }
+
+  async buildBlueprint(p: Player, b: Blueprint) {
+    const { error } = await this.db().rpc("build_blueprint", { bp: b.id });
+    if (error) throw error;
+    // Склад целиком новый: берём его с сервера, а не собираем у себя.
+    await this.reloadBase(p);
+    p.founded ||= p.cells.reduce((n, v) => (v === G_BASE ? n + 1 : n), 0) >= STARTER_CELLS;
+  }
+
   async unread() {
     const { data, error } = await this.db().rpc("unread_messages");
     if (error) throw error;
@@ -959,6 +1057,26 @@ class CloudRepo implements Repo {
 }
 
 let repo: Repo | null = null;
+
+const BLUEPRINTS_KEY = "wb.blueprints";
+
+interface BlueprintRow {
+  id: string;
+  name: string;
+  cells: string;
+  guns: Gun[];
+  depots: Depot[];
+  created_at: string;
+}
+
+const blueprintFromRow = (r: BlueprintRow): Blueprint => ({
+  id: r.id,
+  name: r.name,
+  cells: r.cells,
+  guns: r.guns,
+  depots: r.depots,
+  createdAt: Date.parse(r.created_at),
+});
 
 export function getRepo(): Repo {
   if (!repo) repo = cloudEnabled ? new CloudRepo() : new LocalRepo();

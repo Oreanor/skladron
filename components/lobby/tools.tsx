@@ -61,7 +61,7 @@ export const isBuildKind = (t: ToolId | null): t is GunKind =>
 /** Кнопка «Апгрейд» карты не касается: она только открывает модалку. */
 export type ToolId = Tool | "upgrade" | "insurance" | "loan";
 /** Панели, которые на телефоне открываются шторкой снизу. */
-export type SheetId = "attacks" | "competitions" | "enemies" | "menu";
+export type SheetId = "attacks" | "competitions" | "blueprints" | "enemies" | "menu";
 /** Панели инструментов: они всплывают модалкой и вёрстку не разрывают. */
 export type ModalId = "upgrade" | "insurance" | "loan" | "telegram" | "avatar";
 
@@ -204,7 +204,7 @@ export const BOT_COUNT = 4;
 /** Потолок пробного налёта по ссылке: посмотреть режим, а не похоронить склад. */
 
 /** Панели правой колонки в порядке по умолчанию. */
-export const DEFAULT_PANELS = ["replays", "competitions", "enemies"];
+export const DEFAULT_PANELS = ["replays", "competitions", "blueprints", "enemies"];
 export const PANELS_KEY = "wb.panels.v1";
 
 export function readPanels(): {

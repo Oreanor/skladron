@@ -96,6 +96,8 @@ import { statusBar } from "./lobby/statusBar";
 import TelegramDialog from "./lobby/TelegramDialog";
 import SummonRaidDialog from "./lobby/SummonRaidDialog";
 import NeedDrones from "./lobby/NeedDrones";
+import BlueprintsPanel, { BlueprintDialog } from "./lobby/BlueprintsPanel";
+import { MAX_BLUEPRINT_NAME, blueprintOf, rebuildCost, type Blueprint } from "@/lib/blueprint";
 import AttackReportDialog from "./lobby/AttackReportDialog";
 import MessageDialog from "./lobby/MessageDialog";
 import BaseName from "./lobby/BaseName";
@@ -133,7 +135,7 @@ import AvatarView from "./Avatar";
 import { useSettings, useT } from "@/lib/i18n";
 import { explain, explainAlone } from "@/lib/errors";
 import type { Key } from "@/lib/i18n/dict";
-import { Trophy } from "lucide-react";
+import { DraftingCompass, Trophy } from "lucide-react";
 import {
   decodeRle,
   encodeRle,
@@ -194,7 +196,22 @@ export default function Lobby({
   const [summonRaidOpen, setSummonRaid] = useState(false);
   // дронов нет — вместо окна налёта предложение купить их
   const [needDrones, setNeedDrones] = useState(false);
+  /** Чертежи: список, открытый в большом окне, ждущий подтверждения стройки и окно имени. */
+  const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
+  const [openBlueprint, setOpenBlueprint] = useState<Blueprint | null>(null);
+  const [buildAsk, setBuildAsk] = useState<Blueprint | null>(null);
+  const [namingBlueprint, setNamingBlueprint] = useState(false);
   const [ready, setReady] = useState(false);
+  // чертежи грузим, когда склад уже на месте
+  useEffect(() => {
+    if (!ready) return;
+    void repo
+      .blueprints()
+      .then(setBlueprints)
+      .catch(() => {
+        // без списка чертежей играть можно
+      });
+  }, [repo, ready]);
   const [version, setVersion] = useState(0);
   const [sheet, setSheet] = useState<SheetId | null>(null);
   const [modal, setModal] = useState<ModalId | null>(null);
@@ -1061,6 +1078,48 @@ export default function Lobby({
 
 
   const income = shiftIncome(p);
+
+  // ---------- чертежи ----------
+
+  const saveBlueprint = async (name: string) => {
+    setNamingBlueprint(false);
+    try {
+      const b = await repo.saveBlueprint(name.trim(), blueprintOf(p));
+      setBlueprints((list) => [...list, b]);
+      setMessage(t("blueprint.saved", { name: b.name }));
+    } catch (e) {
+      setMessage(t("blueprint.failed", { error: explain(e, t) }));
+    }
+  };
+
+  const deleteBlueprint = async (b: Blueprint) => {
+    setOpenBlueprint(null);
+    setBlueprints((list) => list.filter((x) => x.id !== b.id));
+    try {
+      await repo.deleteBlueprint(b.id);
+    } catch (e) {
+      setMessage(t("blueprint.failed", { error: explain(e, t) }));
+      void repo.blueprints().then(setBlueprints).catch(() => {});
+    }
+  };
+
+  /** Снести склад и построить чертёж: сначала досохраняем правки, иначе они легли бы поверх. */
+  const buildBlueprint = async (b: Blueprint) => {
+    setBuildAsk(null);
+    setOpenBlueprint(null);
+    try {
+      await flushPersist();
+      await repo.buildBlueprint(p, b);
+      map.draft.current = null;
+      setVersion((v) => v + 1);
+      forceRender((v) => v + 1);
+      setMessage(t("blueprint.built", { name: b.name }));
+    } catch (e) {
+      setMessage(t("blueprint.failed", { error: explain(e, t) }));
+      await resyncBase();
+    }
+  };
+
   /** Дронов не хватило на налёт или разведку — к их покупке на карте. */
   const buyDrones = () => {
     setSheet(null);
@@ -1193,6 +1252,21 @@ export default function Lobby({
     </Button>
   );
 
+  const blueprintButton = (
+    <Button size="sm" onClick={() => setNamingBlueprint(true)}>
+      {t("blueprint.add")}
+    </Button>
+  );
+
+  const blueprintsBody = (
+    <BlueprintsPanel
+      list={blueprints}
+      player={p}
+      onOpen={setOpenBlueprint}
+      onBuild={setBuildAsk}
+    />
+  );
+
   const enemiesBody = (
     <Enemies
       onRemove={removeEnemy}
@@ -1229,6 +1303,7 @@ export default function Lobby({
     enemies: { title: "panel.enemies", body: enemiesBody },
     replays: { title: "panel.replays", action: summonButton, body: raidsBody },
     competitions: { title: "panel.competitions", body: competitionsBody },
+    blueprints: { title: "panel.blueprints", action: blueprintButton, body: blueprintsBody },
   };
 
   const baseNameBody = (
@@ -1307,6 +1382,9 @@ export default function Lobby({
           onClick={() => toggleSheet("competitions")}
         >
           <Trophy className="h-5 w-5" />
+        </IconButton>
+        <IconButton label={t("panel.blueprints")} onClick={() => toggleSheet("blueprints")}>
+          <DraftingCompass className="h-5 w-5" />
         </IconButton>
         <IconButton label={t("panel.enemies")} onClick={() => toggleSheet("enemies")}>
           <IconUsers />
@@ -1480,6 +1558,43 @@ export default function Lobby({
         />
       )}
 
+      {namingBlueprint && (
+        <NameDialog
+          title={t("blueprint.nameTitle")}
+          subtitle={t("blueprint.nameHint")}
+          confirm={t("blueprint.save")}
+          initial={t("blueprint.defaultName", { n: blueprints.length + 1 })}
+          maxLength={MAX_BLUEPRINT_NAME}
+          onCancel={() => setNamingBlueprint(false)}
+          onSubmit={(name) => void saveBlueprint(name)}
+        />
+      )}
+
+      {openBlueprint && (
+        <BlueprintDialog
+          blueprint={openBlueprint}
+          player={p}
+          onBuild={() => setBuildAsk(openBlueprint)}
+          onDelete={() => void deleteBlueprint(openBlueprint)}
+          onClose={() => setOpenBlueprint(null)}
+        />
+      )}
+
+      {buildAsk && (
+        <ConfirmDialog
+          title={t("blueprint.confirm", { name: buildAsk.name })}
+          subtitle={(() => {
+            const { delta } = rebuildCost(p, buildAsk);
+            return `${t("blueprint.hint")} ${t(delta > 0 ? "blueprint.pay" : "blueprint.refund", {
+              cost: fmt(Math.abs(delta)),
+            })}.`;
+          })()}
+          confirm={t("blueprint.build")}
+          onCancel={() => setBuildAsk(null)}
+          onConfirm={() => void buildBlueprint(buildAsk)}
+        />
+      )}
+
       {needDrones && (
         <NeedDrones
           what="raid"
@@ -1648,6 +1763,14 @@ export default function Lobby({
         onClose={() => setSheet(null)}
       >
         {competitionsBody}
+      </Sheet>
+      <Sheet
+        open={sheet === "blueprints"}
+        title={t("panel.blueprints")}
+        onClose={() => setSheet(null)}
+      >
+        <div className="mb-3 flex justify-end">{blueprintButton}</div>
+        {blueprintsBody}
       </Sheet>
       <Sheet open={sheet === "enemies"} title={t("panel.enemies")} onClose={() => setSheet(null)}>
         {enemiesBody}
