@@ -95,6 +95,7 @@ import { drawLobbyOverlay } from "./lobby/drawLobby";
 import { statusBar } from "./lobby/statusBar";
 import TelegramDialog from "./lobby/TelegramDialog";
 import SummonRaidDialog from "./lobby/SummonRaidDialog";
+import NeedDrones from "./lobby/NeedDrones";
 import AttackReportDialog from "./lobby/AttackReportDialog";
 import MessageDialog from "./lobby/MessageDialog";
 import BaseName from "./lobby/BaseName";
@@ -186,6 +187,8 @@ export default function Lobby({
   const [postCommentRaid, setPostCommentRaid] = useState<string | null>(null);
   /** Открыт ли планировщик пробного налёта на себя. */
   const [summonRaidOpen, setSummonRaid] = useState(false);
+  // дронов нет — вместо окна налёта предложение купить их
+  const [needDrones, setNeedDrones] = useState(false);
   const [ready, setReady] = useState(false);
   const [version, setVersion] = useState(0);
   const [sheet, setSheet] = useState<SheetId | null>(null);
@@ -1053,6 +1056,11 @@ export default function Lobby({
 
 
   const income = shiftIncome(p);
+  /** Дронов не хватило на налёт или разведку — к их покупке на карте. */
+  const buyDrones = () => {
+    setSheet(null);
+    pickTool("drones");
+  };
   const pickTool = (id: ToolId) => {
     // апгрейд ничего не рисует на карте — только открывает свою модалку
     if (id === "upgrade" || id === "insurance" || id === "loan") {
@@ -1175,7 +1183,7 @@ export default function Lobby({
   );
 
   const summonButton = (
-    <Button size="sm" onClick={() => setSummonRaid(true)}>
+    <Button size="sm" onClick={() => (drones < 1 ? setNeedDrones(true) : setSummonRaid(true))}>
       {t("attacks.summon")}
     </Button>
   );
@@ -1205,6 +1213,7 @@ export default function Lobby({
       }}
       unread={unread}
       onChanged={() => forceRender((v) => v + 1)}
+      onBuyDrones={buyDrones}
     />
   );
 
@@ -1466,9 +1475,21 @@ export default function Lobby({
         />
       )}
 
+      {needDrones && (
+        <NeedDrones
+          what="raid"
+          onClose={() => setNeedDrones(false)}
+          onBuy={() => {
+            setNeedDrones(false);
+            buyDrones();
+          }}
+        />
+      )}
+
       {summonRaidOpen && (
         <SummonRaidDialog
-          initial={suggestedRaid()}
+          // не больше, чем лежит на складе
+          initial={Math.max(1, Math.min(suggestedRaid(), drones))}
           enemies={p.enemies}
           drones={drones}
           credits={p.credits}

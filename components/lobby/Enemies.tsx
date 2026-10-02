@@ -12,6 +12,7 @@ import ScoutMap from "../scout/ScoutMap";
 import { Button, Card, ConfirmDialog, IconButton, Modal, inputClass } from "../ui";
 import Avatar from "../Avatar";
 import RaidPlanner, { newWave } from "./RaidPlanner";
+import NeedDrones from "./NeedDrones";
 import { useT } from "@/lib/i18n";
 
 
@@ -34,6 +35,8 @@ interface Props {
   /** Убрать из списка соперников. */
   onRemove: (enemy: Enemy) => void;
   onChanged: () => void;
+  /** Дронов нет — перейти к их покупке. */
+  onBuyDrones: () => void;
 }
 
 export default function Enemies({
@@ -49,12 +52,15 @@ export default function Enemies({
   unread,
   onRemove,
   onChanged,
+  onBuyDrones,
 }: Props) {
   const t = useT();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [target, setTarget] = useState<Enemy | null>(null);
   const [scoutTarget, setScoutTarget] = useState<Enemy | null>(null);
+  // Дронов нет: вместо окна налёта или разведки — предложение купить.
+  const [needDrones, setNeedDrones] = useState<"raid" | "scout" | null>(null);
   const [profile, setProfile] = useState<Enemy | null>(null);
   const [adding, setAdding] = useState(false);
 
@@ -134,17 +140,15 @@ export default function Enemies({
                     title={t("scout.button")}
                     className="h-9 w-9"
                     // разведка тратит дрон со склада: без дронов лететь некому
-                    disabled={drones < 1}
-                    onClick={() => setScoutTarget(e)}
+                    onClick={() => (drones < 1 ? setNeedDrones("scout") : setScoutTarget(e))}
                   >
                     <Plane className="h-4 w-4" />
                   </IconButton>
                   <IconButton
                     label={t("enemies.attack")}
                     title={t("enemies.attack")}
-                    disabled={drones < 10}
-                    className="h-9 w-9 border-red-800 bg-red-950/40 text-red-300 hover:bg-red-900/50 disabled:cursor-not-allowed disabled:opacity-40"
-                    onClick={() => setTarget(e)}
+                    className="h-9 w-9 border-red-800 bg-red-950/40 text-red-300 hover:bg-red-900/50"
+                    onClick={() => (drones < 1 ? setNeedDrones("raid") : setTarget(e))}
                   >
                     <Crosshair className="h-4 w-4" />
                   </IconButton>
@@ -164,6 +168,17 @@ export default function Enemies({
             onRemove(profile);
           }}
           fetchStale={fetchStale}
+        />
+      )}
+
+      {needDrones && (
+        <NeedDrones
+          what={needDrones}
+          onClose={() => setNeedDrones(null)}
+          onBuy={() => {
+            setNeedDrones(null);
+            onBuyDrones();
+          }}
         />
       )}
 

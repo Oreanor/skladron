@@ -25,10 +25,10 @@ import { Button, SectionTitle } from "../ui";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 
-/** Волна по умолчанию: одна группа простых дронов. */
+/** Волна по умолчанию: кольцо без вращения из одной группы простых дронов. */
 export const newWave = (n: number, delay = 0): WavePlan => ({
   pattern: "rings",
-  direction: 0,
+  direction: 2,
   delay,
   groups: [{ payload: "plain", n }],
 });
