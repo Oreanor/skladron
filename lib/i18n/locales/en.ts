@@ -208,7 +208,7 @@ const en = {
   "tool.sprayHint": "Puts out nearby fires",
   "tool.trapHint": "Holds drones by magnet",
   "tool.rocketHint": "Homing missiles",
-  "tool.dronesHint": "Drones for your raids",
+  "tool.dronesHint": "Drones and spare parts",
   "tool.balloonsHint": "Balloons that get in drones' way",
 
 
@@ -365,6 +365,7 @@ const en = {
   "payload.stealth": "Stealth",
   "payload.blower": "Balloon blower",
   "payload.turbo": "Turbo",
+  "payload.armor": "Armor",
   "raid.pattern": "Wave pattern",
   "raid.from": "From where",
   "raid.spin": "Spin",

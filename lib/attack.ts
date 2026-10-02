@@ -9,7 +9,7 @@ import { DRONE, GUN, PAYLOAD, RAID, SIMULATION_VERSION, WAVE } from "./tuning";
 /**
  * Что дрон несёт. Простой долетает и взрывается; тяжёлый берёт двойную
  * взрывчатку и поджигает кольцо вокруг цели, но тащится медленнее; турбо
- * летит быстрее; подавители не взрываются вовсе — кружат над обороной и
+ * летит быстрее; броня держит лишний снаряд зенитки; подавители не взрываются вовсе — кружат над обороной и
  * глушат её, пока не кончится топливо. Цифры у всех в PAYLOAD.
  */
 export type Payload =
@@ -20,7 +20,8 @@ export type Payload =
   | "demag"
   | "stealth"
   | "blower"
-  | "turbo";
+  | "turbo"
+  | "armor";
 export const PAYLOADS: Payload[] = [
   "plain",
   "heavy",
@@ -30,6 +31,7 @@ export const PAYLOADS: Payload[] = [
   "stealth",
   "blower",
   "turbo",
+  "armor",
 ];
 
 /** Группа внутри волны: сколько дронов и с какой начинкой. */

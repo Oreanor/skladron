@@ -207,7 +207,7 @@ const ru: Dict = {
   "tool.sprayHint": "Тушит пожары вокруг",
   "tool.trapHint": "Удерживает дроны магнитом",
   "tool.rocketHint": "Самонаводящиеся ракеты",
-  "tool.dronesHint": "Дроны для своих налётов",
+  "tool.dronesHint": "Дроны и запчасти",
   "tool.balloonsHint": "Воздушные шары, мешающие дронам",
 
 
@@ -365,6 +365,7 @@ const ru: Dict = {
   "payload.stealth": "Невидимка",
   "payload.blower": "Обдув шаров",
   "payload.turbo": "Турбо",
+  "payload.armor": "Броня",
   "raid.pattern": "Рисунок волн",
   "raid.from": "Откуда",
   "raid.spin": "Закручивание",

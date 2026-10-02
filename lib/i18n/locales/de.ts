@@ -207,7 +207,7 @@ const de: Dict = {
   "tool.sprayHint": "Löscht Brände ringsum",
   "tool.trapHint": "Hält Drohnen per Magnet",
   "tool.rocketHint": "Zielsuchende Raketen",
-  "tool.dronesHint": "Drohnen für eigene Angriffe",
+  "tool.dronesHint": "Drohnen und Ersatzteile",
   "tool.balloonsHint": "Ballons, die Drohnen behindern",
 
 
@@ -365,6 +365,7 @@ const de: Dict = {
   "payload.stealth": "Tarnkappe",
   "payload.blower": "Ballonbläser",
   "payload.turbo": "Turbo",
+  "payload.armor": "Panzerung",
   "raid.pattern": "Wellenmuster",
   "raid.from": "Von wo",
   "raid.spin": "Drehsinn",

@@ -15,6 +15,7 @@ import {
 } from "./base";
 import { mulberry32, type Payload, type SpawnTicket } from "./attack";
 import {
+  ARMOR,
   BALLOON,
   BLOW,
   DRONE,
@@ -81,6 +82,13 @@ export interface Drone {
   ti: number;
   wob: number;
   hit: boolean;
+  /**
+   * Сколько ещё снарядов зенитки дрон выдержит, прежде чем его собьёт
+   * следующий. У брони — один, у остальных ноль.
+   */
+  armor: number;
+  /** Броню уже пробило: дрон летит дальше, но дымит. */
+  dented: boolean;
   hx: number;
   hy: number;
   fuse: number;
@@ -791,6 +799,8 @@ function spawnDrone(s: GameState, t: SpawnTicket) {
     ti,
     wob: s.rnd() * Math.PI * 2,
     hit: false,
+    armor: (t.payload ?? "plain") === "armor" ? ARMOR.extraHits : 0,
+    dented: false,
     hx: 0,
     hy: 0,
     fuse: 0,
@@ -1119,6 +1129,16 @@ function stepHands(s: GameState, dt: number) {
 function stepDrones(s: GameState, dt: number, gunsById: Map<number, Gun>) {
   for (let i = s.drones.length - 1; i >= 0; i--) {
     const d = s.drones[i];
+
+    // Пробитая броня дымит, но дрон летит дальше своим курсом. Клубы
+    // ровные, без жребия: жребий боя на картинку не тратим.
+    if (d.dented && !d.hit) {
+      d.smokeT -= dt;
+      if (d.smokeT <= 0) {
+        d.smokeT = ARMOR.smokeEvery;
+        s.puffs.push({ x: d.x, y: d.y, t: 0, r: ARMOR.smokeSize, life: ARMOR.smokeLife });
+      }
+    }
 
     if (d.hit) {
       const step = DRONE.fallSpeed * dt;
@@ -1470,9 +1490,17 @@ function stepMissiles(s: GameState, dt: number) {
     );
     if (at >= 0) {
       const t = s.drones[at];
+      s.missiles.splice(i, 1);
+      // Броня держит снаряд: искра, дым — и дрон летит дальше.
+      if (t.armor > 0) {
+        t.armor--;
+        t.dented = true;
+        t.smokeT = 0;
+        s.booms.push({ x: t.x, y: t.y, t: 0, r: 0.6 });
+        continue;
+      }
       s.booms.push({ x: t.x, y: t.y, t: 0, r: 2 * PAYLOAD[t.payload].blast });
       s.drones.splice(at, 1);
-      s.missiles.splice(i, 1);
       s.result.killedByGuns++;
       continue;
     }

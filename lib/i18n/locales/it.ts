@@ -207,7 +207,7 @@ const it: Dict = {
   "tool.sprayHint": "Spegne gli incendi vicini",
   "tool.trapHint": "Trattiene droni col magnete",
   "tool.rocketHint": "Missili guidati",
-  "tool.dronesHint": "Droni per i tuoi attacchi",
+  "tool.dronesHint": "Droni e ricambi",
   "tool.balloonsHint": "Palloni che ostacolano i droni",
 
 
@@ -365,6 +365,7 @@ const it: Dict = {
   "payload.stealth": "Invisibile",
   "payload.blower": "Soffiatore di palloni",
   "payload.turbo": "Turbo",
+  "payload.armor": "Corazzato",
   "raid.pattern": "Schema delle ondate",
   "raid.from": "Da dove",
   "raid.spin": "Rotazione",
