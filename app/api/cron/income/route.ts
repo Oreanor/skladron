@@ -9,6 +9,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { sendTelegram as send, telegramReady } from "@/lib/server/telegram";
 import { nameOf } from "@/lib/server/battleNotify";
+import { tg, tgLocale, type TgLocale } from "@/lib/server/tgText";
 import { SHIFT_HOURS } from "@/lib/economy";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -24,22 +25,23 @@ type Row = {
   base_name: string | null;
   display_name: string | null;
   email: string | null;
+  locale: string | null;
 };
 
 type Shipment = { credits_added: number; days: number; sold_drones: number; sold_credits: number };
 
-const fmt = (n: number) => n.toLocaleString("ru-RU");
-
 /** Текст отчёта: что продано и сколько пришло всего. */
-function shipmentMessage(base: string, s: Shipment): string {
-  const rent = s.credits_added - s.sold_credits;
-  const lines = [
+function shipmentMessage(l: TgLocale, base: string, s: Shipment): string {
+  return [
     s.sold_drones > 0
-      ? `Со склада «${base}» отгружено ${fmt(s.sold_drones)} дронов на ${fmt(s.sold_credits)} кр.`
-      : `Склад «${base}»: дронов на отгрузку не было.`,
-    `Аренда за ${s.days * SHIFT_HOURS} ч — ${fmt(rent)} кр. Всего +${fmt(s.credits_added)} кр.`,
-  ];
-  return lines.join("\n");
+      ? tg(l, "shipmentSold", { base, drones: s.sold_drones, credits: s.sold_credits })
+      : tg(l, "shipmentNone", { base }),
+    tg(l, "shipmentRent", {
+      hours: s.days * SHIFT_HOURS,
+      rent: s.credits_added - s.sold_credits,
+      total: s.credits_added,
+    }),
+  ].join("\n");
 }
 
 const sleep = (ms: number) => new Promise((done) => setTimeout(done, ms));
@@ -58,7 +60,7 @@ export async function GET(request: Request) {
   for (let from = 0; ; from += page) {
     const { data, error } = await db
       .from("profiles")
-      .select("id, tg_chat_id, base_name, display_name, email")
+      .select("id, tg_chat_id, base_name, display_name, email, locale")
       .not("tg_chat_id", "is", null)
       .order("id")
       .range(from, from + page - 1);
@@ -83,7 +85,8 @@ export async function GET(request: Request) {
     const chat = Number(p.tg_chat_id);
     if (!Number.isFinite(chat)) continue;
     if (sent + failed > 0) await sleep(PAUSE_MS);
-    if (await send(chat, shipmentMessage(nameOf(p), s))) sent++;
+    const l = tgLocale(p.locale);
+    if (await send(chat, shipmentMessage(l, nameOf(p, l), s))) sent++;
     else failed++;
   }
 

@@ -3,6 +3,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { sendTelegram as reply } from "@/lib/server/telegram";
+import { tg, tgLocale } from "@/lib/server/tgText";
 
 // Телеграм присылает секрет в заголовке — им и отсекаем чужие запросы.
 const SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
@@ -20,15 +21,17 @@ export async function POST(request: Request) {
   if (!URL || !SERVICE) return new Response("not configured", { status: 500 });
 
   const update = (await request.json()) as {
-    message?: { chat?: { id?: number }; text?: string };
+    message?: { chat?: { id?: number }; text?: string; from?: { language_code?: string } };
   };
   const chatId = update.message?.chat?.id;
   const text = update.message?.text?.trim() ?? "";
   if (!chatId) return Response.json({ ok: true });
+  // профиля ещё не знаем — отвечаем на языке самого телеграма
+  const asked = tgLocale(update.message?.from?.language_code);
 
   const code = /^\/start\s+(\S+)/.exec(text)?.[1];
   if (!code) {
-    await reply(chatId, "Открой игру, зайди в меню и нажми «Телеграм» — там будет ссылка.");
+    await reply(chatId, tg(asked, "noCode"));
     return Response.json({ ok: true });
   }
 
@@ -37,15 +40,16 @@ export async function POST(request: Request) {
     .from("profiles")
     .update({ tg_chat_id: chatId })
     .eq("tg_code", code)
-    .select("base_name, email")
+    .select("base_name, email, locale")
     .maybeSingle();
 
   if (error || !data) {
-    await reply(chatId, "Такой ссылки не знаю. Возьми свежую в меню игры.");
+    await reply(chatId, tg(asked, "badCode"));
     return Response.json({ ok: true });
   }
 
-  const name = data.base_name ?? data.email ?? "склад";
-  await reply(chatId, `Готово. Буду писать сюда про налёты на «${name}» и про исход твоих.`);
+  const l = tgLocale(data.locale, update.message?.from?.language_code);
+  const name = data.base_name ?? data.email ?? tg(l, "base");
+  await reply(chatId, tg(l, "linked", { name }));
   return Response.json({ ok: true });
 }

@@ -11,6 +11,7 @@ import {
   notifyRivalMessage,
   notifySentRaid,
 } from "@/lib/server/battleNotify";
+import { tg, tgLocale } from "@/lib/server/tgText";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -49,14 +50,11 @@ export async function POST(request: Request) {
     }
     const { data: me } = await db
       .from("profiles")
-      .select("tg_chat_id")
+      .select("tg_chat_id, locale")
       .eq("id", uid)
       .maybeSingle();
     if (!me?.tg_chat_id) return Response.json({ ok: true, sent: false });
-    await send(
-      Number(me.tg_chat_id),
-      `Налёт на твой склад — ${drones} дронов в очереди.`
-    );
+    await send(Number(me.tg_chat_id), tg(tgLocale(me.locale), "testRaid", { drones }));
     return Response.json({ ok: true, sent: true });
   }
 

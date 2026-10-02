@@ -16,7 +16,7 @@ const RULES: [RegExp, Key][] = [
   // связь и вход
   [/failed to fetch|networkerror|load failed|fetch failed|network request failed/i, "error.network"],
   [/HTTP 5\d\d|not configured|internal server error|bad gateway|service unavailable/i, "error.server"],
-  [/not authenticated|unauthorized|jwt expired|invalid jwt|только после входа/i, "error.auth"],
+  [/not authenticated|unauthorized|jwt expired|invalid jwt/i, "error.auth"],
 
   // бой, который надо переиграть или который уже закрыт
   [/unsupported simulation version/i, "error.version"],

@@ -130,7 +130,7 @@ import { PostRaidCommentModal, RaidOpenerModal } from "./lobby/RaidCommentModals
 import MapCanvas from "./MapCanvas";
 import AccountMenu, { SettingsList } from "./AccountMenu";
 import AvatarView from "./Avatar";
-import { useT } from "@/lib/i18n";
+import { useSettings, useT } from "@/lib/i18n";
 import { explain, explainAlone } from "@/lib/errors";
 import type { Key } from "@/lib/i18n/dict";
 import { Trophy } from "lucide-react";
@@ -164,6 +164,7 @@ export default function Lobby({
   onSignOut: () => void;
 }) {
   const t = useT();
+  const { locale } = useSettings();
   /**
    * Опросы заводятся один раз на всю игру, а переводчик меняется вместе с
    * языком. Читаем его через ref, иначе интервалы замыкают самый первый t
@@ -172,6 +173,10 @@ export default function Lobby({
   const tRef = useRef(t);
   tRef.current = t;
   const repo = getRepo();
+  // Бот пишет на языке игры: сообщаем его серверу при входе и при смене.
+  useEffect(() => {
+    void repo.setLocale(locale).catch(() => {});
+  }, [repo, locale]);
   const playerRef = useRef<Player | null>(null);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [, forceRender] = useState(0);

@@ -3,6 +3,8 @@
 import type { Dict } from "../dict";
 
 const de: Dict = {
+  "meta.title": "Skladron — Lagerverteidigung",
+  "meta.description": "Bau ein Lager, verdiene an seiner Fläche, wehre Drohnenangriffe ab.",
   "tg.title": "Telegram",
   "tg.explain": "Verknüpfe Telegram — der Bot schreibt über Angriffe, und deine Ausgänge.",
   "tg.linked": "Telegram ist verknüpft: der Bot schreibt über Angriffe und ihre Ausgänge.",

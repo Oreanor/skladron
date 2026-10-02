@@ -3,6 +3,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendTelegram as send } from "./telegram";
+import { tg, tgLocale, type TgLocale } from "./tgText";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://skladron.vercel.app";
 
@@ -12,7 +13,14 @@ type ProfileRow = {
   display_name: string | null;
   email: string | null;
   tg_chat_id: string | null;
+  locale: string | null;
 };
+
+/** Поля профиля, нужные извещению: имя отправителя, чат и язык получателя. */
+const PEOPLE = "id, base_name, display_name, email, tg_chat_id, locale";
+
+/** На каком языке писать этому игроку. */
+const langOf = (p: { locale: string | null }) => tgLocale(p.locale);
 
 type AttackRow = {
   id: string;
@@ -27,20 +35,16 @@ type AttackRow = {
   resolved_notified_at: string | null;
 };
 
-export const nameOf = (p: {
-  base_name: string | null;
-  display_name: string | null;
-  email: string | null;
-}) => p.base_name ?? p.display_name ?? p.email?.split("@")[0] ?? "склад";
+export const nameOf = (
+  p: {
+    base_name: string | null;
+    display_name: string | null;
+    email: string | null;
+  },
+  l: TgLocale = "en"
+) => p.base_name ?? p.display_name ?? p.email?.split("@")[0] ?? tg(l, "base");
 
 
-/** Текст защитнику: на склад летит новый налёт. */
-export function sentRaidMessage(attackerName: string, drones: number): string {
-  return (
-    `На твой склад летит налёт от «${attackerName}» — ${drones} дронов. ` +
-    `Отбивай, когда готов: очередь не пропускается.`
-  );
-}
 
 /**
  * Атомарно занимает sent_notified_at и шлёт защитнику, если привязан Telegram.
@@ -63,7 +67,7 @@ export async function notifySentRaid(
 
   const { data: people } = await db
     .from("profiles")
-    .select("id, base_name, display_name, email, tg_chat_id")
+    .select(PEOPLE)
     .in("id", [attack.defender_id, attack.attacker_id]);
   const defender = people?.find((p) => p.id === attack.defender_id) as ProfileRow | undefined;
   const attacker = people?.find((p) => p.id === attack.attacker_id) as ProfileRow | undefined;
@@ -81,35 +85,30 @@ export async function notifySentRaid(
   if (claimError) return { sent: false, error: claimError.message };
   if (!claimed) return { sent: false };
 
+  const l = langOf(defender);
   await send(
     Number(defender.tg_chat_id),
-    sentRaidMessage(nameOf(attacker), attack.drones)
+    tg(l, "sentRaid", { attacker: nameOf(attacker, l), drones: attack.drones })
   );
   return { sent: true };
 }
 
 /** Текст для нападающего: исход с его точки зрения. */
-export function resolvedRaidMessage(
+function resolvedRaidMessage(
+  l: TgLocale,
   defenderName: string,
   attack: Pick<AttackRow, "id" | "result" | "loot" | "destroyed">
 ): string {
   const burned = (attack.result as { burned?: number } | null)?.burned ?? 0;
-  const loot = attack.loot ?? 0;
-  const replay = `${SITE}/replay/${attack.id}`;
-
-  if (attack.destroyed) {
-    return (
-      `«${defenderName}» отыграл защиту — склад выгорел дотла. Премия ${loot} кр. ` +
-      `Повтор боя: ${replay}`
-    );
-  }
-  if (burned === 0) {
-    return `«${defenderName}» отбил твой налёт без потерь. Повтор боя: ${replay}`;
-  }
-  return (
-    `«${defenderName}» отыграл защиту. Сгорело клеток: ${burned}, премия ${loot} кр. ` +
-    `Повтор боя: ${replay}`
-  );
+  const vars = {
+    defender: defenderName,
+    loot: attack.loot ?? 0,
+    burned,
+    replay: `${SITE}/replay/${attack.id}`,
+  };
+  if (attack.destroyed) return tg(l, "resolvedDestroyed", vars);
+  if (burned === 0) return tg(l, "resolvedClean", vars);
+  return tg(l, "resolvedBurned", vars);
 }
 
 /**
@@ -146,25 +145,21 @@ export async function notifyResolvedRaid(
 
   const { data: people } = await db
     .from("profiles")
-    .select("id, base_name, display_name, email, tg_chat_id")
+    .select(PEOPLE)
     .in("id", [attack.attacker_id, attack.defender_id]);
   const attacker = people?.find((p) => p.id === attack.attacker_id) as ProfileRow | undefined;
   const defender = people?.find((p) => p.id === attack.defender_id) as ProfileRow | undefined;
   if (!attacker?.tg_chat_id || !defender) return { sent: false };
 
-  await send(Number(attacker.tg_chat_id), resolvedRaidMessage(nameOf(defender), attack));
+  const l = langOf(attacker);
+  await send(Number(attacker.tg_chat_id), resolvedRaidMessage(l, nameOf(defender, l), attack));
   return { sent: true };
 }
 
 /** Короткое извещение о новой реплике по налёту. */
-export function raidCommentMessage(
-  authorName: string,
-  body: string,
-  attackId: string
-): string {
-  const replay = `${SITE}/replay/${attackId}`;
+function raidCommentMessage(l: TgLocale, authorName: string, body: string, attackId: string) {
   const text = body.length > 120 ? `${body.slice(0, 117)}…` : body;
-  return `«${authorName}» написал по налёту: «${text}» ${replay}`;
+  return tg(l, "raidComment", { author: authorName, text, replay: `${SITE}/replay/${attackId}` });
 }
 
 /**
@@ -198,26 +193,17 @@ export async function notifyRaidComment(
 
   const { data: people } = await db
     .from("profiles")
-    .select("id, base_name, display_name, email, tg_chat_id")
+    .select(PEOPLE)
     .in("id", [comment.author_id, recipient]);
   const author = people?.find((p) => p.id === comment.author_id) as ProfileRow | undefined;
   const to = people?.find((p) => p.id === recipient) as ProfileRow | undefined;
   if (!author || !to?.tg_chat_id) return { sent: false };
 
-  await send(
-    Number(to.tg_chat_id),
-    raidCommentMessage(nameOf(author), comment.body, attackId)
-  );
+  const l = langOf(to);
+  await send(Number(to.tg_chat_id), raidCommentMessage(l, nameOf(author, l), comment.body, attackId));
   return { sent: true };
 }
 
-/** Текст тому, кого добавили: с этого мига по нему можно летать. */
-export function rivalAddedMessage(fromName: string): string {
-  return (
-    `Склад «${fromName}» добавил тебя во враги — теперь он видит твой адрес ` +
-    `и может слать налёты. Он же появился и в твоём списке: ответить есть чем.`
-  );
-}
 
 /**
  * Извещение о новом знакомстве. Шлём один раз на пару: знакомство и
@@ -235,7 +221,7 @@ export async function notifyRivalAdded(
 ): Promise<{ sent: boolean; error?: string }> {
   const { data: people, error } = await db
     .from("profiles")
-    .select("id, base_name, display_name, email, tg_chat_id")
+    .select(PEOPLE)
     .in("id", [fromId, toId]);
   if (error) return { sent: false, error: error.message };
   const from = people?.find((p) => p.id === fromId) as ProfileRow | undefined;
@@ -248,15 +234,12 @@ export async function notifyRivalAdded(
   if (claimError) return { sent: false, error: claimError.message };
   if (!count) return { sent: false }; // уже писали про эту пару
 
-  await send(Number(to.tg_chat_id), rivalAddedMessage(nameOf(from)));
+  const l = langOf(to);
+  // С этого мига по тому, кого добавили, можно летать — ему и пишем.
+  await send(Number(to.tg_chat_id), tg(l, "rivalAdded", { from: nameOf(from, l) }));
   return { sent: true };
 }
 
-/** Текст того, кому написали. Саму реплику показываем: ради неё и пишем. */
-export function rivalMessageText(fromName: string, body: string): string {
-  const line = body.length > 300 ? `${body.slice(0, 300)}…` : body;
-  return `Сообщение от склада «${fromName}»:\n\n${line}`;
-}
 
 /**
  * Извещение о новой реплике в разговоре с соперником. Метки «уже слали»
@@ -277,12 +260,15 @@ export async function notifyRivalMessage(
 
   const { data: people } = await db
     .from("profiles")
-    .select("id, base_name, display_name, email, tg_chat_id")
+    .select(PEOPLE)
     .in("id", [message.from_id, message.to_id]);
   const from = people?.find((p) => p.id === message.from_id) as ProfileRow | undefined;
   const to = people?.find((p) => p.id === message.to_id) as ProfileRow | undefined;
   if (!from || !to?.tg_chat_id) return { sent: false };
 
-  await send(Number(to.tg_chat_id), rivalMessageText(nameOf(from), message.body));
+  // Саму реплику показываем: ради неё и пишем.
+  const l = langOf(to);
+  const text = message.body.length > 300 ? `${message.body.slice(0, 300)}…` : message.body;
+  await send(Number(to.tg_chat_id), tg(l, "rivalMessage", { from: nameOf(from, l), text }));
   return { sent: true };
 }

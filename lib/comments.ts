@@ -55,7 +55,7 @@ export async function loadComments(attackId: string): Promise<BattleComment[]> {
 
 export async function addComment(attackId: string, message: string): Promise<BattleComment> {
   const db = supabase();
-  if (!db) throw new Error("Supabase не настроен");
+  if (!db) throw new Error("supabase not configured");
   const { data, error } = await db.rpc("add_battle_comment", {
     target: attackId,
     message,

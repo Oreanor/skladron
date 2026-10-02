@@ -4,6 +4,8 @@
  */
 
 const en = {
+  "meta.title": "Skladron — Warehouse Defence",
+  "meta.description": "Build a warehouse, earn from its floor space, fight off drone raids.",
   "tg.title": "Telegram",
   "tg.explain": "Link Telegram and the bot will write about enemy raids, and your raid outcomes.",
   "tg.linked": "Telegram is linked — the bot will write about raids and their outcomes.",

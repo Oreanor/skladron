@@ -70,7 +70,7 @@ export default function MessageDialog({
     const err = await onSend(enemy.email, body);
     setBusy(false);
     if (err) {
-      setError(err);
+      setError(explainAlone(err, t));
       return;
     }
     setDraft("");

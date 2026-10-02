@@ -128,6 +128,8 @@ export interface Repo {
   sendMessage(email: string, body: string): Promise<string | null>;
   /** Отмечает прочитанным всё, что пришло от этого соперника. */
   readMessages(email: string): Promise<void>;
+  /** Язык игры — на нём бот пишет в телеграм. */
+  setLocale(locale: string): Promise<void>;
   /** Сколько непрочитанного и от кого: по этому в списке горит счётчик. */
   unread(): Promise<Record<string, number>>;
   /** Код привязки телеграма и то, привязан ли он уже. */
@@ -243,7 +245,7 @@ class LocalRepo implements Repo {
   }
 
   async sendAttack(): Promise<string | null> {
-    throw new Error("Атаки на друзей доступны после входа через Google");
+    throw new Error("not authenticated");
   }
 
   async queueCompetition(): Promise<string> {
@@ -258,10 +260,13 @@ class LocalRepo implements Repo {
   }
 
   async sendMessage() {
-    return "Переписка доступна после входа через Google";
+    return "not authenticated";
   }
 
   async readMessages() {}
+
+  // без сервера и бота нет — язык сообщать некому
+  async setLocale() {}
 
   async unread() {
     return {};
@@ -325,7 +330,7 @@ export async function publicReplay(id: string): Promise<{
   replay: ReplayData;
 } | null> {
   const db = supabase();
-  if (!db) throw new Error("Supabase не настроен");
+  if (!db) throw new Error("supabase not configured");
   const { data, error } = await db.rpc("public_replay", { attack_id: id });
   if (error) throw error;
   const row = (data as {
@@ -450,7 +455,7 @@ class CloudRepo implements Repo {
 
   private db() {
     const c = supabase();
-    if (!c) throw new Error("Supabase не настроен");
+    if (!c) throw new Error("supabase not configured");
     return c;
   }
 
@@ -733,6 +738,11 @@ class CloudRepo implements Repo {
     if (error) throw error;
   }
 
+  async setLocale(locale: string) {
+    const { error } = await this.db().rpc("set_locale", { l: locale });
+    if (error) throw error;
+  }
+
   async unread() {
     const { data, error } = await this.db().rpc("unread_messages");
     if (error) throw error;
@@ -894,7 +904,7 @@ class CloudRepo implements Repo {
     const db = this.db();
     const { data: session } = await db.auth.getSession();
     const token = session.session?.access_token;
-    if (!token) throw new Error("Бой засчитывается только после входа");
+    if (!token) throw new Error("not authenticated");
 
     const res = await fetch("/api/battle/resolve", {
       method: "POST",

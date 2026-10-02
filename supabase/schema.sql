@@ -354,6 +354,8 @@ create table if not exists profiles (
   -- телеграм: куда слать извещения и по какому коду привязывать
   tg_chat_id bigint,
   tg_code text,
+  -- язык игры: на нём пишет бот (set_locale)
+  locale text,
   -- Старший открытый номер состязания и лучшая попытка по каждому:
   -- {"<номер>": {"score": очки, "pct": уцелело %, "area": клеток до боя}}.
   competition_at int not null default 1,
@@ -1939,6 +1941,19 @@ end;
 $$;
 
 grant execute on function tg_code, tg_unlink to authenticated;
+
+-- Язык игрока: на нём бот пишет в телеграм. Клиент сообщает тот, что
+-- выбран в игре, — при входе и при каждой смене.
+create or replace function set_locale(l text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'not authenticated'; end if;
+  if l not in ('ru', 'en', 'es', 'pt', 'fr', 'de', 'it') then raise exception 'bad locale'; end if;
+  update profiles set locale = l where id = auth.uid();
+end;
+$$;
+
+grant execute on function set_locale to authenticated;
 
 -- ---------- разговор о бою ----------
 
