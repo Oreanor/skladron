@@ -18,6 +18,7 @@ import {
   ARMOR,
   BALLOON,
   BLOW,
+  SHOOTER,
   DRONE,
   FIRE,
   FX,
@@ -95,6 +96,8 @@ export interface Drone {
   armor: number;
   /** Броню уже пробило: дрон летит дальше, но дымит. */
   dented: boolean;
+  /** Стрелок уже пустил свою ракету. */
+  fired: boolean;
   hx: number;
   hy: number;
   fuse: number;
@@ -124,6 +127,19 @@ export interface Drone {
   heldUntil: number;
   /** И секунда, раньше которой его не схватят снова. */
   grabAt: number;
+}
+
+/**
+ * Ракета стрелка: летит прямо в клетку склада и поджигает её. Её видят
+ * зенитки и сбивают с упреждением, как дрона, а шар на пути её лопает.
+ */
+export interface FoeRocket {
+  id: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  ti: number;
 }
 
 /** Снаряд зенитки: неуправляемый, летит прямо, куда выпустили. */
@@ -232,6 +248,8 @@ export interface BattleResult {
   rocketsLost: number;
   /** Сколько дронов разбилось о шары: ни пушки, ни руки тут ни при чём. */
   killedByBalloons: number;
+  /** Сколько ракет стрелков сбили на подлёте. В счёт дронов не идут. */
+  foeRocketsDown: number;
   dronesLost: number; // сгорело в контейнерах на складе
   depotsLost: number; // сколько контейнеров сгорело вместе с клетками
 }
@@ -246,6 +264,8 @@ export interface GameState {
   drones: Drone[];
   missiles: Missile[];
   rockets: Rocket[];
+  /** Ракеты стрелков, летящие в склад. */
+  foeRockets: FoeRocket[];
   balloons: Balloon[];
   booms: Boom[];
   shots: Shot[];
@@ -384,6 +404,7 @@ export function createBattle(
     drones: [],
     missiles: [],
     rockets: [],
+    foeRockets: [],
     balloons: [],
     booms: [],
     shots: [],
@@ -422,6 +443,7 @@ export function createBattle(
       trapsLost: 0,
       rocketsLost: 0,
       killedByBalloons: 0,
+      foeRocketsDown: 0,
       dronesLost: 0,
       depotsLost: 0,
     },
@@ -437,6 +459,39 @@ export function createBattle(
     else s.gunBlocks.set(k, [g]);
   }
   return s;
+}
+
+/**
+ * Стрелок дошёл до своей дальности — пускает ракету в свою же цель. Сам он
+ * летит дальше: цель к его прилёту уже горит, и он берёт другую, как любой
+ * дрон, чья клетка сгорела.
+ */
+function shoot(s: GameState, d: Drone, droneSpeed: number) {
+  const dx = d.tx - d.x;
+  const dy = d.ty - d.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist > SHOOTER.range || dist < 0.5) return;
+  d.fired = true;
+  const v = droneSpeed * SHOOTER.speed;
+  s.foeRockets.push({ id: s.nextId++, x: d.x, y: d.y, vx: (dx / dist) * v, vy: (dy / dist) * v, ti: d.ti });
+}
+
+/** Ракеты стрелков: летят прямо, долетели — клетка горит. */
+function stepFoeRockets(s: GameState, dt: number) {
+  for (let i = s.foeRockets.length - 1; i >= 0; i--) {
+    const r = s.foeRockets[i];
+    const tx = (r.ti % GRID) + 0.5;
+    const ty = ((r.ti / GRID) | 0) + 0.5;
+    const left = Math.hypot(tx - r.x, ty - r.y);
+    const step = Math.hypot(r.vx, r.vy) * dt;
+    if (left <= step) {
+      crash(s, { x: tx, y: ty, payload: "plain" });
+      s.foeRockets.splice(i, 1);
+      continue;
+    }
+    r.x += r.vx * dt;
+    r.y += r.vy * dt;
+  }
 }
 
 /** Шаг золотого угла: соседние шары расходятся, не складываясь в лучи. */
@@ -656,7 +711,7 @@ function aimTick(s: GameState) {
  * рвётся и при падении — склад горит тем же крестом, что и на цели, а земля
  * обугливается одной клеткой; разрыв крупнее.
  */
-function crash(s: GameState, d: Drone) {
+function crash(s: GameState, d: Pick<Drone, "x" | "y" | "payload">) {
   const cx = Math.max(0, Math.min(GRID - 1, Math.floor(d.x)));
   const cy = Math.max(0, Math.min(GRID - 1, Math.floor(d.y)));
   const ring = PAYLOAD[d.payload].ring;
@@ -833,6 +888,7 @@ function spawnDrone(s: GameState, t: SpawnTicket) {
     hit: false,
     armor: (t.payload ?? "plain") === "armor" ? ARMOR.extraHits : 0,
     dented: false,
+    fired: false,
     hx: 0,
     hy: 0,
     fuse: 0,
@@ -1247,6 +1303,7 @@ function stepDrones(s: GameState, dt: number, gunsById: Map<number, Gun>) {
     }
     const step =
       DRONE.speed * levelBonus(s.droneLevel, DRONE.perLevel) * PAYLOAD[d.payload].speed * dt;
+    if (d.payload === "shooter" && !d.fired) shoot(s, d, step / dt);
     const px = d.x | 0;
     const py = d.y | 0;
 
@@ -1411,6 +1468,23 @@ function nearestDrone(s: GameState, x: number, y: number, reach: number) {
   return best;
 }
 
+/** То, во что целится зенитка: где оно и куда летит. */
+type Mover = { x: number; y: number; vx: number; vy: number };
+
+/** Ближайшая цель зенитки: дрон или ракета стрелка. */
+function nearestTarget(s: GameState, x: number, y: number, reach: number): Mover | null {
+  let best: Mover | null = nearestDrone(s, x, y, reach);
+  let bestD = best ? (best.x - x) ** 2 + (best.y - y) ** 2 : reach * reach;
+  for (const r of s.foeRockets) {
+    const dd = (r.x - x) ** 2 + (r.y - y) ** 2;
+    if (dd < bestD) {
+      bestD = dd;
+      best = r;
+    }
+  }
+  return best;
+}
+
 /** Доворот башни к цели за такт. Одинаков у зенитки и у ракетницы. */
 function turnTurret(g: Gun, rate: number, dt: number) {
   let da = g.aim - g.angle;
@@ -1437,9 +1511,9 @@ function stepGuns(s: GameState, dt: number) {
     // доворачиваем ствол на точку упреждения. Подавителя зенитка берёт на
     // общих основаниях; заглушённая — цель не ищет, башня просто шевелится.
     const ready = g.cd <= 0 && g.jammed <= 0;
-    let best: Drone | null = null;
+    let best: Mover | null = null;
     if (g.jammed <= 0 && g.cd <= GUN.aimAhead) {
-      best = nearestDrone(s, gx, gy, gunRange(s) + 0.5);
+      best = nearestTarget(s, gx, gy, gunRange(s) + 0.5);
       // Снаряд неуправляемый — целимся туда, где дрон окажется к встрече.
       if (best) g.aim = leadAngle(gx, gy, best, missileSpeed(s));
     }
@@ -1474,7 +1548,7 @@ const missileSpeed = (s: GameState) => MISSILE.speed * levelBonus(s.gunLevel, GU
  * полетит как летит. Решаем |p + v·t| = speed·t и берём самое раннее t > 0.
  * Догнать нельзя — стреляем, куда он сейчас.
  */
-function leadAngle(gx: number, gy: number, d: Drone, speed: number) {
+function leadAngle(gx: number, gy: number, d: Mover, speed: number) {
   const px = d.x - gx;
   const py = d.y - gy;
   const a = d.vx * d.vx + d.vy * d.vy - speed * speed;
@@ -1522,6 +1596,17 @@ function stepMissiles(s: GameState, dt: number) {
     const at = s.drones.findIndex(
       (d) => !d.hit && (d.x - m.x) * (d.x - m.x) + (d.y - m.y) * (d.y - m.y) < hit
     );
+    const foe = s.foeRockets.findIndex(
+      (r) => (r.x - m.x) * (r.x - m.x) + (r.y - m.y) * (r.y - m.y) < hit
+    );
+    if (foe >= 0) {
+      const r = s.foeRockets[foe];
+      s.booms.push({ x: r.x, y: r.y, t: 0, r: 1.2 });
+      s.foeRockets.splice(foe, 1);
+      s.missiles.splice(i, 1);
+      s.result.foeRocketsDown++;
+      continue;
+    }
     if (at >= 0) {
       const t = s.drones[at];
       s.missiles.splice(i, 1);
@@ -1799,6 +1884,15 @@ function stepBalloons(s: GameState, dt: number) {
     s.booms.push({ x: m.x, y: m.y, t: 0, r: 1 });
     s.rockets.splice(i, 1);
   }
+  for (let i = s.foeRockets.length - 1; i >= 0; i--) {
+    const r = s.foeRockets[i];
+    const b = hitAt(r.x, r.y, 0);
+    if (!b) continue;
+    popped.add(b.id);
+    s.booms.push({ x: r.x, y: r.y, t: 0, r: 1 });
+    s.foeRockets.splice(i, 1);
+    s.result.foeRocketsDown++;
+  }
 
   if (popped.size) {
     s.balloons = s.balloons.filter((b) => !popped.has(b.id));
@@ -1894,6 +1988,7 @@ export function update(s: GameState, dt: number) {
   for (const d of s.drones) dronesById.set(d.id, d);
   stepMissiles(s, dt);
   stepRockets(s, dt, dronesById);
+  stepFoeRockets(s, dt);
   stepLaunchers(s);
   stepBalloons(s, dt);
   stepFire(s, dt);
@@ -1910,6 +2005,7 @@ export function update(s: GameState, dt: number) {
     s.drones.length === 0 &&
     s.fire.size === 0 &&
     s.rockets.length === 0 &&
+    s.foeRockets.length === 0 &&
     s.missiles.length === 0;
   if (quiet) s.phase = s.baseOk > 0 ? "won" : "lost";
 }

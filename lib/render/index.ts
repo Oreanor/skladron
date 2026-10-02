@@ -412,6 +412,32 @@ export function drawFrame(
   // Ракеты ракетниц. Их мало и живут они долго, так что рисуем как предмет:
   // корпус, красная головка и факел из сопла. Дымный след за ними сыплется
   // в общую кучу клубов и нарисован выше.
+  // Ракеты стрелков: тёмный корпус и красный факел — чужие, не спутать с нашими.
+  for (const r of s.foeRockets) {
+    const len = cell * 0.5;
+    const f = 0.6 + 0.4 * Math.sin(now / 35 + r.id);
+    ctx.save();
+    ctx.translate(r.x * cell, r.y * cell);
+    ctx.rotate(Math.atan2(r.vy, r.vx));
+    ctx.beginPath();
+    ctx.moveTo(-len * 0.35, -cell * 0.11);
+    ctx.lineTo(-len * (0.8 + f * 0.7), 0);
+    ctx.lineTo(-len * 0.35, cell * 0.11);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(255, 82, 64, 0.9)";
+    ctx.fill();
+    ctx.fillStyle = "#26201c";
+    ctx.fillRect(-len * 0.4, -cell * 0.1, len * 0.8, cell * 0.2);
+    ctx.beginPath();
+    ctx.moveTo(len * 0.4, -cell * 0.1);
+    ctx.lineTo(len * 0.62, 0);
+    ctx.lineTo(len * 0.4, cell * 0.1);
+    ctx.closePath();
+    ctx.fillStyle = COLORS.payload.shooter;
+    ctx.fill();
+    ctx.restore();
+  }
+
   for (const m of s.rockets) {
     const len = cell * 0.55;
     // Факел пульсирует — по мигающему хвосту ракета видна и на пёстром фоне.

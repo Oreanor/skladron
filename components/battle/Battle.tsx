@@ -388,6 +388,7 @@ const PAYLOAD_KEYS: Record<Payload, Key> = {
   blower: "payload.blower",
   turbo: "payload.turbo",
   armor: "payload.armor",
+  shooter: "payload.shooter",
 };
 
 function PayloadLegend({

@@ -402,6 +402,7 @@ const ru: Dict = {
   "payload.blower": "Обдув шаров",
   "payload.turbo": "Турбо",
   "payload.armor": "Броня",
+  "payload.shooter": "Стрелок",
   "raid.pattern": "Рисунок волн",
   "raid.from": "Откуда",
   "raid.spin": "Закручивание",

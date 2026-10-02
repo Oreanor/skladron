@@ -402,6 +402,7 @@ const en = {
   "payload.blower": "Balloon blower",
   "payload.turbo": "Turbo",
   "payload.armor": "Armor",
+  "payload.shooter": "Shooter",
   "raid.pattern": "Wave pattern",
   "raid.from": "From where",
   "raid.spin": "Spin",

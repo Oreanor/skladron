@@ -21,7 +21,8 @@ export type Payload =
   | "stealth"
   | "blower"
   | "turbo"
-  | "armor";
+  | "armor"
+  | "shooter";
 export const PAYLOADS: Payload[] = [
   "plain",
   "heavy",
@@ -32,6 +33,7 @@ export const PAYLOADS: Payload[] = [
   "blower",
   "turbo",
   "armor",
+  "shooter",
 ];
 
 /** Группа внутри волны: сколько дронов и с какой начинкой. */

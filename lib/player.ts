@@ -201,7 +201,12 @@ export function load(): Player {
     const s = JSON.parse(raw) as Stored;
     if (s.v !== 2) return newPlayer();
     const { v: _v, cells, ...rest } = s;
-    return { ...rest, cells: regrowGround(decodeCells(cells)) };
+    // у старого сохранения может не быть новых классов — дополняем первыми
+    return {
+      ...rest,
+      levels: { ...startLevels(), ...rest.levels },
+      cells: regrowGround(decodeCells(cells)),
+    };
   } catch {
     return newPlayer();
   }

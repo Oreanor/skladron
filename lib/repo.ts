@@ -38,6 +38,7 @@ import {
   collectIncome as localIncome,
   load as localLoad,
   newPlayer,
+  startLevels,
   save as localSave,
   wipe as localWipe,
   type Player,
@@ -552,7 +553,7 @@ class CloudRepo implements Repo {
       lastIncomeAt: Date.parse(row.last_income_at),
       createdAt: Date.parse(row.created_at),
       stats: row.stats,
-      levels: row.levels,
+      levels: fullLevels(row.levels),
       loan: row.loan,
       loanDue: row.loan_due ? Date.parse(row.loan_due) : null,
       cells: decodePgBytea(b.cells),
@@ -867,7 +868,7 @@ class CloudRepo implements Repo {
     const { data, error } = await this.db().rpc("upgrade", { kind });
     if (error) throw error;
     const row = (data as { credits: number; levels: Player["levels"] }[] | null)?.[0];
-    return row ? { credits: row.credits, levels: row.levels } : {};
+    return row ? { credits: row.credits, levels: fullLevels(row.levels) } : {};
   }
   async reloadBase(p: Player) {
     const db = this.db();
@@ -883,7 +884,7 @@ class CloudRepo implements Repo {
     p.depots = b.drone_cells;
     const row = prof as { credits: number; levels: Player["levels"] };
     p.credits = row.credits;
-    p.levels = row.levels;
+    p.levels = fullLevels(row.levels);
   }
 
 
@@ -1068,6 +1069,15 @@ class CloudRepo implements Repo {
 }
 
 let repo: Repo | null = null;
+
+/**
+ * Уровни с сервера, дополненные первыми: у профиля, заведённого до нового
+ * класса, его ключа нет, и цена с радиусом считались бы от пустоты — NaN.
+ */
+const fullLevels = (lv: Partial<Player["levels"]> | null): Player["levels"] => ({
+  ...startLevels(),
+  ...(lv ?? {}),
+});
 
 const BLUEPRINTS_KEY = "wb.blueprints";
 

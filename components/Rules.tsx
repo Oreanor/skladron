@@ -36,7 +36,7 @@ import {
 } from "@/lib/economy";
 
 import { DRONES_PER_CELL } from "@/lib/base";
-import { BALLOON, FIRE, GUN, RAID, ROCKET, SPRAY, TRAP } from "@/lib/tuning";
+import { BALLOON, FIRE, GUN, RAID, ROCKET, SHOOTER, SPRAY, TRAP } from "@/lib/tuning";
 import { RULES } from "@/lib/i18n/rules";
 import { useSettings } from "@/lib/i18n";
 import { Button, Modal, SectionTitle } from "./ui";
@@ -64,6 +64,7 @@ const values: Record<string, string> = {
   balloon: String(BALLOON_COST),
   balloonRange: String(BALLOON.range),
   balloonCount: String(BALLOON.count),
+  shooterRange: String(SHOOTER.range),
   gunRange: String(GUN.range),
   reload: String(GUN.cooldown),
   spread: String(FIRE.spread),

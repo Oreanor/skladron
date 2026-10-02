@@ -90,13 +90,14 @@ const PAYLOAD_FROM: readonly [Payload, number][] = [
   ["blower", 10],
   ["jammer", 16],
   ["foamer", 22],
+  ["shooter", 20],
   ["armor", 26],
   ["stealth", 32],
   ["demag", 40],
 ];
 
 /** Начинки, что сами жгут склад: основа любой волны. */
-const STRIKERS: readonly Payload[] = ["plain", "turbo", "heavy", "armor", "stealth", "blower"];
+const STRIKERS: readonly Payload[] = ["plain", "turbo", "heavy", "shooter", "armor", "stealth", "blower"];
 
 /** Сколько волн: 8–10, от зерна номера. */
 const waveCountOf = (rnd: () => number) => 8 + Math.floor(rnd() * 3);

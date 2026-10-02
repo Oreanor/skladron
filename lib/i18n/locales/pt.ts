@@ -402,6 +402,7 @@ const pt: Dict = {
   "payload.blower": "Soprador de balões",
   "payload.turbo": "Turbo",
   "payload.armor": "Blindado",
+  "payload.shooter": "Atirador",
   "raid.pattern": "Padrão das vagas",
   "raid.from": "De onde",
   "raid.spin": "Rotação",
