@@ -131,9 +131,8 @@ export function drawBalloons(
 }
 
 /**
- * Пусковая установка шаров сверху: круглая площадка, а на ней тесной гроздью
- * уложенные шары — сразу видно, что это запас, который выпустят разом, а не
- * ствол. Круглая, чтобы не путать с квадратными ящиками дронов.
+ * Пусковая установка шаров сверху: круглая площадка и на ней шар — знак
+ * того, что тут лежит запас, который выпустят разом, а не ствол. Круглая, чтобы не путать с квадратными ящиками дронов.
  */
 export function drawBalloonPad(
   ctx: CanvasRenderingContext2D,
@@ -154,28 +153,23 @@ export function drawBalloonPad(
   ctx.stroke();
   if (!alive) return;
 
-  // гроздь: шесть шаров по кругу и один в середине
-  const small = cell * 0.13;
-  const spots: [number, number][] = [[0, 0]];
-  for (let k = 0; k < 6; k++) {
-    const a = (k * Math.PI) / 3 + Math.PI / 6;
-    spots.push([Math.cos(a) * cell * 0.24, Math.sin(a) * cell * 0.24]);
-  }
+  // Один шар крупно — знак, а не пересчёт: семь мелких на клетке рябили.
+  const br = cell * 0.27;
+  const by = y - cell * 0.03;
   ctx.beginPath();
-  for (const [dx, dy] of spots) {
-    ctx.moveTo(x + dx + small, y + dy);
-    ctx.arc(x + dx, y + dy, small, 0, Math.PI * 2);
-  }
+  ctx.arc(x, by, br, 0, Math.PI * 2);
   ctx.fillStyle = COLORS.balloon;
   ctx.fill();
   ctx.strokeStyle = COLORS.balloonDark;
-  ctx.lineWidth = Math.max(0.4, cell * 0.04);
+  ctx.lineWidth = Math.max(0.4, cell * 0.05);
   ctx.stroke();
+  // пипка снизу и блик сверху слева — по ним круг и читается шаром
   ctx.beginPath();
-  for (const [dx, dy] of spots) {
-    ctx.moveTo(x + dx - small * 0.3 + small * 0.32, y + dy - small * 0.3);
-    ctx.arc(x + dx - small * 0.3, y + dy - small * 0.3, small * 0.32, 0, Math.PI * 2);
-  }
+  ctx.arc(x, by + br * 0.95, br * 0.2, 0, Math.PI * 2);
+  ctx.fillStyle = COLORS.balloonDark;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x - br * 0.35, by - br * 0.35, br * 0.28, 0, Math.PI * 2);
   ctx.fillStyle = COLORS.balloonGlare;
   ctx.fill();
 }
@@ -245,9 +239,11 @@ export function drawSpray(
   const y = (cy + 0.5) * cell;
   const r = cell * 0.44;
   const body = alive ? COLORS.spray : "#3f3f3f";
-  const accent = alive ? COLORS.sprayTop : "#555";
-  const shade = alive ? "#3a1412" : "#2a2a2a";
-  const metal = alive ? "#c45a52" : "#666";
+  // Площадка и обод чёрные, красный только бак: рядом с розово-красной
+  // пусковой шаров огнетушитель иначе читался таким же красным кругом.
+  const accent = alive ? "#2e2e2e" : "#555";
+  const shade = alive ? "#141414" : "#2a2a2a";
+  const metal = alive ? "#9aa0a6" : "#666";
 
   if (alive && wet > 0) {
     // Струи дышат: все разом то короче, то длиннее, от половины до полного
