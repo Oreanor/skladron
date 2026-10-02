@@ -19,6 +19,7 @@ import {
 } from "@/lib/scout";
 import { useT } from "@/lib/i18n";
 import MapCanvas, { CELL, SIZE } from "../MapCanvas";
+import { useZones } from "../ZonesToggle";
 import InstallCounts from "./InstallCounts";
 import { Button, Chip, ChipBar, Row } from "../ui";
 
@@ -67,6 +68,7 @@ export default function Scout({
   const stateRef = useRef<ScoutState | null>(null);
   const [hud, setHud] = useState<Hud | null>(null);
   const [done, setDone] = useState<ScoutOutcome | null>(null);
+  const [zones, setZones] = useZones("wb.scoutZones", true);
   const finished = useRef(false);
 
   if (!stateRef.current) {
@@ -189,7 +191,7 @@ export default function Scout({
     // пушки показываем только там, где туман уже снят
     const known: Gun[] = s.guns.filter((g) => s.seen[g.cy * GRID + g.cx]);
     if (known.length) {
-      drawCoverage(ctx, known, CELL, s.gunRange);
+      if (zones) drawCoverage(ctx, known, CELL, s.gunRange);
       for (const g of known) {
         const paint = installColors(gunKind(g));
         ctx.fillStyle = paint.body;
@@ -257,6 +259,7 @@ export default function Scout({
           sceneVersion={0}
           overlay={overlay}
           cursor="default"
+          zones={{ on: zones, onChange: setZones }}
         >
           {done && (
             <div className="absolute inset-0 z-20 flex items-center justify-center overflow-y-auto bg-neutral-950/90 p-4 sm:p-6">

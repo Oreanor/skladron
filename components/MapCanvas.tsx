@@ -12,6 +12,7 @@ import {
 } from "@/lib/render";
 import { Button } from "./ui";
 import { useT } from "@/lib/i18n";
+import ZonesToggle from "./ZonesToggle";
 
 export const CELL = 7; // px на клетку в логических координатах
 export const SIZE = GRID * CELL;
@@ -48,6 +49,12 @@ export interface MapCanvasProps {
   className?: string;
   /** Накладки поверх карты: например всплывающее сообщение. */
   children?: ReactNode;
+  /**
+   * Галочка «Зоны действия» в левом нижнем углу. Карта сама кругов не
+   * рисует — их рисует overlay владельца, — а только держит переключатель
+   * на одном и том же месте на всех картах.
+   */
+  zones?: { on: boolean; onChange: (on: boolean) => void };
 }
 
 /** Масштаб, при котором окно заполнено картой без пустых полей. */
@@ -74,6 +81,7 @@ export default function MapCanvas({
   fit = false,
   className = "",
   children,
+  zones,
 }: MapCanvasProps) {
   const t = useT();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -429,6 +437,13 @@ export default function MapCanvas({
         >
           {t("map.wholeMap")}
         </Button>
+      )}
+      {zones && (
+        <ZonesToggle
+          on={zones.on}
+          onChange={zones.onChange}
+          className="absolute bottom-2 left-2 z-10 rounded bg-black/50 px-2 py-1 text-white"
+        />
       )}
       {children}
     </div>

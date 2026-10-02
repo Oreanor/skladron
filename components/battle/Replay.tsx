@@ -14,7 +14,7 @@ import { SIM } from "@/lib/tuning";
 import { fmt } from "@/lib/economy";
 import { useT } from "@/lib/i18n";
 import { explainAlone } from "@/lib/errors";
-import ZonesToggle, { useZones } from "./ZonesToggle";
+import { useZones } from "../ZonesToggle";
 import MapCanvas, { CELL } from "../MapCanvas";
 import { Button, Chip, ChipBar, inputClass } from "../ui";
 import Avatar from "../Avatar";
@@ -301,6 +301,7 @@ export default function Replay({
             sceneVersion={version}
             overlay={overlay}
             cursor="default"
+            zones={{ on: zones, onChange: setZones }}
           />
           {hud.done && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-neutral-950/70">
@@ -324,7 +325,6 @@ export default function Replay({
             {v}×
           </Button>
         ))}
-        <ZonesToggle on={zones} onChange={setZones} className="ml-2" />
         {shareId && (
           <Button
             className="ml-auto"

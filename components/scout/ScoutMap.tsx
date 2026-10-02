@@ -11,6 +11,7 @@ import { drawCoverage, installColors } from "@/lib/render";
 import type { ScoutSnapshot } from "@/lib/enemy";
 import { seenGuns } from "@/lib/scout";
 import MapCanvas, { CELL, SIZE } from "../MapCanvas";
+import { useZones } from "../ZonesToggle";
 import { drawHoverLabel } from "@/lib/render";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
@@ -37,6 +38,7 @@ export default function ScoutMap({
   const t = useT();
   /** Клетка под курсором: над установкой на ней всплывает подпись. */
   const hover = useRef<{ x: number; y: number } | null>(null);
+  const [zones, setZones] = useZones("wb.scoutZones", true);
   const { cells, seen, guns } = useMemo(
     () => ({
       cells: decodeRle(snapshot.cells),
@@ -70,7 +72,7 @@ export default function ScoutMap({
 
   const overlay = (ctx: CanvasRenderingContext2D, _now: number, view: { zoom: number }) => {
     if (visible.length) {
-      drawCoverage(ctx, visible, CELL);
+      if (zones) drawCoverage(ctx, visible, CELL);
       for (const g of visible) {
         const paint = installColors(gunKind(g));
         ctx.fillStyle = paint.body;
@@ -98,6 +100,7 @@ export default function ScoutMap({
       scene={scene}
       sceneVersion={0}
       overlay={overlay}
+      zones={{ on: zones, onChange: setZones }}
       onMove={(p) => {
         hover.current = { x: Math.floor(p.x), y: Math.floor(p.y) };
       }}

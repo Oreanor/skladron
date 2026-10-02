@@ -16,7 +16,7 @@ import {
 import { drawFrame, COLORS } from "@/lib/render";
 import { goodsValue, insurance, defenseBounty, fmt } from "@/lib/economy";
 import MapCanvas, { type Pt } from "../MapCanvas";
-import ZonesToggle, { useZones } from "./ZonesToggle";
+import { useZones } from "../ZonesToggle";
 import { Button, Chip, ChipBar, IconButton, Panel, Row } from "../ui";
 import { encodeTrace, type Frame } from "@/lib/replay";
 import type { BattleOutcome } from "@/lib/outcome";
@@ -210,6 +210,7 @@ export default function Battle({
           scene={scene}
           sceneVersion={version}
           cursor="none"
+          zones={{ on: zones, onChange: setZones }}
           overlay={(ctx, now) => drawFrame(ctx, s, 7, hoverRef.current, now, zones)}
           onMove={(p) => {
             hoverRef.current = toCell(p);
@@ -270,7 +271,6 @@ export default function Battle({
           <div className="absolute inset-x-2 top-12 z-10 rounded-md border border-neutral-700 bg-neutral-950/95 p-3 text-xs leading-relaxed text-neutral-400 lg:hidden">
             <p className="mb-2 font-semibold text-neutral-300">{t("panel.payloads")}</p>
             <PayloadLegend t={t} counts={hud?.byPayload} />
-            <ZonesToggle on={zones} onChange={setZones} className="mt-3 border-t border-neutral-800 pt-3" />
           </div>
         )}
 
@@ -370,7 +370,6 @@ export default function Battle({
 
         <Panel title={t("panel.payloads")}>
           <PayloadLegend t={t} counts={hud?.byPayload} />
-          <ZonesToggle on={zones} onChange={setZones} className="mt-3 border-t border-neutral-800 pt-3" />
         </Panel>
 
       </aside>
