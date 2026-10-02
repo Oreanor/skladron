@@ -53,7 +53,6 @@ const values: Record<string, string> = {
   gun: String(GUN_COST),
   spray: String(SPRAY_COST),
   sprayRange: String(SPRAY.range),
-  sprayTank: String(SPRAY.tank),
   rocket: String(ROCKET_COST),
   rocketRange: String(ROCKET.range),
   rocketReload: String(ROCKET.cooldown),

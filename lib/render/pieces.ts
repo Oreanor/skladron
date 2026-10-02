@@ -196,14 +196,12 @@ export function drawSpray(
   angle: number,
   wet: number,
   alive = true,
-  range: number = SPRAY.range,
-  /** Сколько воды осталось в баке, от нуля до единицы. */
-  tank = 1
+  range: number = SPRAY.range
 ) {
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
   const r = cell * 0.44;
-  const body = alive ? (tank > 0 ? COLORS.spray : "#2a2f33") : "#3f3f3f";
+  const body = alive ? COLORS.spray : "#3f3f3f";
   const accent = alive ? COLORS.sprayTop : "#555";
   const shade = alive ? "#3a1412" : "#2a2a2a";
   const metal = alive ? "#c45a52" : "#666";
@@ -277,16 +275,6 @@ export function drawSpray(
     ctx.beginPath();
     ctx.arc(x, y, cell * 0.06, 0, Math.PI * 2);
     ctx.fill();
-  }
-
-  // Остаток воды — дугой по ободу, и только когда бак начат: полный бак
-  // рисовался голубым кольцом вокруг красной установки, как чужая обводка.
-  if (alive && tank > 0 && tank < 1) {
-    ctx.beginPath();
-    ctx.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * tank);
-    ctx.strokeStyle = "rgba(121, 199, 255, 0.85)";
-    ctx.lineWidth = Math.max(0.5, cell * 0.08);
-    ctx.stroke();
   }
 }
 

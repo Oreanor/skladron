@@ -57,8 +57,6 @@ export interface Gun {
   rocket: boolean;
   /** Сколько ещё секунд крутиться и лить. */
   wet: number;
-  /** Сколько секунд воды осталось в баке. */
-  tank: number;
   /**
    * Сколько ещё секунд установка заглушена. Пока больше нуля — не стреляет и
    * не льёт. Ставится каждый кадр, пока рядом висит подавитель, и сама
@@ -348,7 +346,6 @@ export function createBattle(
       trap: gunKind(g) === "trap",
       rocket: gunKind(g) === "rocket",
       wet: 0,
-      tank: SPRAY.tank,
       jammed: 0,
     })),
     // Шары налёт расходует целиком: контейнеры вскрываются на первой же
@@ -1313,11 +1310,10 @@ function stepSprays(s: GameState, dt: number) {
         break;
       }
     }
-    if (fireNear && g.tank > 0) g.wet = SPRAY.hold;
-    if (g.wet <= 0 || g.tank <= 0) continue;
+    if (fireNear) g.wet = SPRAY.hold;
+    if (g.wet <= 0) continue;
 
     g.wet -= dt;
-    g.tank -= dt;
     g.angle += SPRAY.spin * dt;
     for (let j = 0; j < SPRAY.jets; j++) {
       const a = g.angle + (j * Math.PI * 2) / SPRAY.jets;

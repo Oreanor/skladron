@@ -302,8 +302,8 @@ export function drawFrame(
         // кончился — у всех: симуляция встала, пока последний очаг ещё
         // заливали. По нему одному струи висели бы и в паузе перед итогом,
         // и в конце повтора.
-        const pouring = s.phase === "playing" && g.tank > 0 && g.jammed <= 0 ? g.wet : 0;
-        drawSpray(ctx, g.cx, g.cy, cell, g.angle, pouring, g.alive, reach, g.tank / SPRAY.tank);
+        const pouring = s.phase === "playing" && g.jammed <= 0 ? g.wet : 0;
+        drawSpray(ctx, g.cx, g.cy, cell, g.angle, pouring, g.alive, reach);
         break;
       }
       case "rocket":
