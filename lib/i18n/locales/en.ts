@@ -172,7 +172,7 @@ const en = {
   "scout.mapped": "mapped",
   "scout.lost": "shot down",
   "scout.underFire": "under fire",
-  "scout.steerHint": "← → steer the plane",
+  "scout.steerHint": "Hold a finger or the mouse on the map and the plane turns there; or ← →",
   "scout.over": "Over {name}",
   "scout.reportTitle": "{name}: what we mapped",
   "scout.reportHint": "The map stays available with the gaps you left. Fly again to refresh it.",

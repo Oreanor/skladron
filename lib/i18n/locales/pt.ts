@@ -171,7 +171,7 @@ const pt: Dict = {
   "scout.mapped": "mapeado",
   "scout.lost": "abatidos",
   "scout.underFire": "sob fogo",
-  "scout.steerHint": "← → leme",
+  "scout.steerHint": "Mantém o dedo ou o rato no mapa e o avião vira para lá; ou ← →",
   "scout.over": "Sobre {name}",
   "scout.reportTitle": "{name}: o que foi mapeado",
   "scout.reportHint": "O mapa fica disponível com as falhas que sobraram. Só um novo voo o actualiza.",

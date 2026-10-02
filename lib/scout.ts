@@ -39,6 +39,11 @@ export interface ScoutState {
   left: number; // сколько разведчиков ещё в запасе
   plane: ScoutPlane | null;
   steer: -1 | 0 | 1;
+  /**
+   * Куда держат палец (или мышь) на карте, в клетках. Пока держат, самолёт
+   * сам доворачивает туда — на телефоне это руль удобнее кнопок.
+   */
+  aim: { x: number; y: number } | null;
   /** Полёт закончился: разведчики кончились и последний сошёл с карты. */
   done: boolean;
   lost: number; // сколько сбили
@@ -86,6 +91,7 @@ export function createScout(
     left: planes,
     plane: null,
     steer: 0,
+    aim: null,
     done: false,
     lost: 0,
     time: 0,
@@ -180,7 +186,16 @@ export function updateScout(s: ScoutState, dt: number) {
     return;
   }
 
-  p.heading += s.steer * SCOUT.turn * dt;
+  if (s.aim) {
+    // доворачиваем к пальцу с той же скоростью, что и кнопками
+    let da = Math.atan2(s.aim.y - p.y, s.aim.x - p.x) - p.heading;
+    while (da > Math.PI) da -= Math.PI * 2;
+    while (da < -Math.PI) da += Math.PI * 2;
+    const turn = SCOUT.turn * dt;
+    p.heading += Math.max(-turn, Math.min(turn, da));
+  } else {
+    p.heading += s.steer * SCOUT.turn * dt;
+  }
   p.x += Math.cos(p.heading) * s.speed * dt;
   p.y += Math.sin(p.heading) * s.speed * dt;
 

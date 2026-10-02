@@ -171,7 +171,7 @@ const fr: Dict = {
   "scout.mapped": "cartographié",
   "scout.lost": "abattus",
   "scout.underFire": "sous le feu",
-  "scout.steerHint": "← → gouverne",
+  "scout.steerHint": "Garde le doigt ou la souris sur la carte et l’avion y tourne ; ou ← →",
   "scout.over": "Au-dessus de {name}",
   "scout.reportTitle": "{name} : ce qui est cartographié",
   "scout.reportHint": "La carte reste disponible avec les trous laissés. Seul un nouveau vol la met à jour.",

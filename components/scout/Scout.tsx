@@ -258,8 +258,17 @@ export default function Scout({
           scene={scene}
           sceneVersion={0}
           overlay={overlay}
-          cursor="default"
+          cursor="pointer"
           zones={{ on: zones, onChange: setZones }}
+          // держишь палец или кнопку мыши — самолёт заворачивает туда
+          onDown={(pt, button) => {
+            if (button === 0) s.aim = { x: pt.x, y: pt.y };
+          }}
+          onMove={(pt) => {
+            if (s.aim) s.aim = { x: pt.x, y: pt.y };
+          }}
+          onUp={() => (s.aim = null)}
+          onLeave={() => (s.aim = null)}
         >
           {done && (
             <div className="absolute inset-0 z-20 flex items-center justify-center overflow-y-auto bg-neutral-950/90 p-4 sm:p-6">
@@ -304,7 +313,12 @@ export default function Scout({
           {hud?.danger && <Chip label={t("scout.underFire")} value="!" tone="text-red-300" />}
         </ChipBar>
 
-        {/* на телефоне стрелок нет — руль кнопками под картой */}
+        {/* как рулить — и на телефоне: там подсказку из нижней полосы не видно */}
+        <p className={`text-xs lg:hidden ${hud?.danger ? "text-red-400" : "text-neutral-500"}`}>
+          {hud?.danger ? t("scout.underFire") : t("scout.steerHint")}
+        </p>
+
+        {/* на телефоне стрелок клавиатуры нет — руль ещё и кнопками под картой */}
         <div className="flex shrink-0 gap-2 lg:hidden">
           {steerButton(-1, <ChevronLeft className="h-6 w-6" />)}
           {steerButton(1, <ChevronRight className="h-6 w-6" />)}

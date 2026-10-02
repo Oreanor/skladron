@@ -171,7 +171,7 @@ const ru: Dict = {
   "scout.mapped": "снято",
   "scout.lost": "сбито",
   "scout.underFire": "под огнём",
-  "scout.steerHint": "← → руль",
+  "scout.steerHint": "Держи палец или мышь на карте — самолёт завернёт туда; ещё ← →",
   "scout.over": "Над складом {name}",
   "scout.reportTitle": "{name}: что сняли",
   "scout.reportHint": "Карта остаётся доступной с теми пробелами, что вышли. Обновить — только новым вылетом.",

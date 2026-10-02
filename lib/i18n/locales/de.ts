@@ -171,7 +171,7 @@ const de: Dict = {
   "scout.mapped": "kartiert",
   "scout.lost": "abgeschossen",
   "scout.underFire": "unter Beschuss",
-  "scout.steerHint": "← → steuern",
+  "scout.steerHint": "Finger oder Maus auf der Karte halten — das Flugzeug dreht dorthin; oder ← →",
   "scout.over": "Über {name}",
   "scout.reportTitle": "{name}: was kartiert wurde",
   "scout.reportHint": "Die Karte bleibt mit den entstandenen Lücken erhalten. Auffrischen geht nur mit einem neuen Flug.",
