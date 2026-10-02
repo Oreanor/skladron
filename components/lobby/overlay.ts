@@ -158,9 +158,8 @@ export function drawPicked(
 ) {
   if (!spots.length) return;
   const pulse = 0.72 + 0.28 * Math.sin(now / 260);
-  // Снаружи клетки: путь чуть больше самой клетки, линия тонкая.
-  const outset = cell * 0.1;
-  const side = cell + outset * 2;
+  // По самому краю клетки: линия идёт серединой по границе, наполовину
+  // внутри и наполовину снаружи, а не вынесена наружу.
 
   ctx.save();
   ctx.lineJoin = "round";
@@ -172,7 +171,7 @@ export function drawPicked(
     ctx.lineWidth = pass.width;
     ctx.beginPath();
     for (const s of spots) {
-      ctx.rect(s.cx * cell - outset, s.cy * cell - outset, side, side);
+      ctx.rect(s.cx * cell, s.cy * cell, cell, cell);
     }
     ctx.stroke();
   }
