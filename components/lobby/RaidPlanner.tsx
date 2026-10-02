@@ -203,6 +203,21 @@ export default function RaidPlanner({
                   ))}
                 </select>
               )}
+              {/* у кольца — крутится ли оно и куда */}
+              {wave.pattern === "rings" && (
+                <select
+                  value={Math.min(wave.direction, 2)}
+                  aria-label={t("raid.spin")}
+                  onChange={(e) => patch(wi, { direction: Number(e.target.value) })}
+                  className={`${selectClass} w-full`}
+                >
+                  {[2, 0, 1].map((i) => (
+                    <option key={i} value={i}>
+                      {t(i === 2 ? "spin.none" : (`spin.${i}` as Key))}
+                    </option>
+                  ))}
+                </select>
+              )}
               {/* сторона важна только тем формам, что заходят от края */}
               {(wave.pattern === "swarm" || wave.pattern === "lines") && (
                 <select

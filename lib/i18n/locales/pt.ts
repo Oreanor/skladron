@@ -373,6 +373,7 @@ const pt: Dict = {
   "flight.many": "em grupos de {n}",
   "spin.0": "no sentido horário",
   "spin.1": "no sentido anti-horário",
+  "spin.none": "sem rotação",
   "raid.send": "Enviar {n} drones",
   "raid.sending": "A enviar…",
   "raid.notEnough": "Não foi possível reunir essa quantidade de drones",

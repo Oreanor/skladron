@@ -373,6 +373,7 @@ const en = {
   "flight.many": "in flights of {n}",
   "spin.0": "clockwise",
   "spin.1": "counter-clockwise",
+  "spin.none": "no spin",
   "raid.send": "Send {n} drones",
   "raid.sending": "Sending…",
   "raid.notEnough": "Could not gather that many drones",
