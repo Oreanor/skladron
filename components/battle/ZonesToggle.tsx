@@ -2,8 +2,9 @@
 
 /*
  * Галочка «Зоны действия»: круги пушек, огнетушителей и ловушек. В гуще боя
- * они мешают видеть рой, поэтому их можно убрать — и в бою, и в повторе.
- * Выбор помнится: кому мешают, тому мешают всегда.
+ * они мешают видеть рой, поэтому их можно убрать — и в бою, и в повторе. В
+ * лобби своя галочка: там круги по умолчанию видны только у того, что
+ * сейчас ставят, а с ней — у всего склада. Выбор помнится.
  */
 
 import { useState } from "react";
@@ -11,19 +12,20 @@ import { useT } from "@/lib/i18n";
 
 const KEY = "wb.battleZones";
 
-/** Показывать ли круги — и как это поменять. Одно на бой и повтор. */
-export function useZones(): [boolean, (on: boolean) => void] {
+/** Показывать ли круги — и как это поменять. Бой и повтор делят одну галочку, у лобби своя. */
+export function useZones(key = KEY, fallback = true): [boolean, (on: boolean) => void] {
   const [zones, setZones] = useState(() => {
     try {
-      return window.localStorage.getItem(KEY) !== "0";
+      const v = window.localStorage.getItem(key);
+      return v === null ? fallback : v !== "0";
     } catch {
-      return true;
+      return fallback;
     }
   });
   const set = (on: boolean) => {
     setZones(on);
     try {
-      window.localStorage.setItem(KEY, on ? "1" : "0");
+      window.localStorage.setItem(key, on ? "1" : "0");
     } catch {
       // приватный режим — просто не запомним
     }

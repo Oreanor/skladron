@@ -131,6 +131,7 @@ import {
 } from "./lobby/tools";
 import Scout, { type ScoutOutcome } from "./scout/Scout";
 import Replay from "./battle/Replay";
+import ZonesToggle, { useZones } from "./battle/ZonesToggle";
 import Rules from "./Rules";
 import { postRaidComment } from "@/lib/comments";
 import {
@@ -208,6 +209,8 @@ export default function Lobby({
   const [summonRaidOpen, setSummonRaid] = useState(false);
   // дронов нет — вместо окна налёта предложение купить их
   const [needDrones, setNeedDrones] = useState(false);
+  // круги у всего склада — по галочке в углу карты; без неё только у того, что ставят
+  const [zones, setZones] = useZones("wb.lobbyZones", false);
   /** Чертежи: список, открытый в большом окне, ждущий подтверждения стройки и окно имени. */
   const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
   const [openBlueprint, setOpenBlueprint] = useState<Blueprint | null>(null);
@@ -1042,6 +1045,7 @@ export default function Lobby({
       p,
       tool,
       m: map,
+      zones,
       draftAfford,
       draftConnects,
       hasBuilding,
@@ -1546,7 +1550,13 @@ export default function Lobby({
             onRightClick={hand.onRightClick}
             onLeave={hand.onLeave}
             cursor={map.dragDepot.current || map.dragGun.current ? "grabbing" : "crosshair"}
-          />
+          >
+            <ZonesToggle
+              on={zones}
+              onChange={setZones}
+              className="absolute bottom-2 left-2 rounded bg-black/50 px-2 py-1 text-white"
+            />
+          </MapCanvas>
 
         </div>
 

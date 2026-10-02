@@ -51,6 +51,8 @@ export interface LobbyScene {
   p: Player;
   tool: Tool;
   m: MapRefs;
+  /** Галочка «зоны действия»: круги у всего склада, а не только у того, что ставят. */
+  zones: boolean;
   /** Рамки хватает денег и она пристыкована к складу — красить ли её красным. */
   draftAfford: boolean;
   draftConnects: boolean;
@@ -77,6 +79,7 @@ function pickedSpots({ p, tool }: LobbyScene): { cx: number; cy: number }[] {
  */
 function coverageFor(s: LobbyScene): CoverageKind[] {
   const { p, tool, m } = s;
+  if (s.zones) return ["gun", "rocket", "spray", "trap", "balloon"];
   if (isBuildKind(tool)) return [tool];
   const from = m.dragGun.current ?? tapped(s, "gun");
   if (!from) return [];
