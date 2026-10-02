@@ -11,12 +11,12 @@
  */
 
 import { useState, type ReactNode } from "react";
-import { Building2, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { fmt } from "@/lib/economy";
 import { blueprintCounts, rebuildCost, type Blueprint } from "@/lib/blueprint";
 import type { Player } from "@/lib/player";
 import { COLORS, installColors } from "@/lib/render";
-import { Button, IconButton, Modal, inputClass } from "../ui";
+import { Button, IconButton, IconCrane, Modal, inputClass } from "../ui";
 import BlueprintPreview from "./BlueprintPreview";
 import { useT, type Translate } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
@@ -70,7 +70,7 @@ export default function BlueprintsPanel({
               disabled={!afford}
               onClick={() => onBuild(b)}
             >
-              <Building2 className="h-4 w-4" />
+              <IconCrane className="h-4 w-4" />
             </IconButton>
           </li>
         );
