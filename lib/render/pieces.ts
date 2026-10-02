@@ -523,8 +523,8 @@ export function drawRocket(
   const y = (cy + 0.5) * cell;
   const body = alive ? COLORS.rocket : "#3f3f3f";
   const accent = alive ? COLORS.rocketTop : "#555";
-  const shade = alive ? "#1f0f05" : "#2a2a2a";
-  const plate = alive ? "#5a2e12" : "#363636";
+  const shade = alive ? "#0c1d0e" : "#2a2a2a";
+  const plate = alive ? "#2a4a2c" : "#363636";
 
   drawMount(ctx, x, y, cell, body, plate, accent, alive, true);
   if (!alive) return;
