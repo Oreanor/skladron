@@ -59,25 +59,30 @@ export function drawDepots(
       continue;
     }
 
-    // Дрон сверху: четыре луча от корпуса к винтам, винты залиты, корпус в центре.
+    // Дрон сверху: тонкие лучи крест-накрест, на концах — винты кольцами,
+    // в центре — корпус. Кольца, а не кляксы: залитые винты сливались с
+    // лучами в одно пятно.
     const my = y + cell * 0.5;
-    const off = cell * 0.25;
+    const off = cell * 0.26;
+    const rr = cell * 0.13;
+    const corners = [[-1, -1], [1, -1], [-1, 1], [1, 1]];
+    ctx.lineWidth = cell * 0.06;
     ctx.beginPath();
-    for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    for (const [dx, dy] of corners) {
+      // луч доходит до кольца, а не протыкает его
+      const k = 1 - rr / (off * Math.SQRT2);
       ctx.moveTo(mx, my);
-      ctx.lineTo(mx + dx * off, my + dy * off);
+      ctx.lineTo(mx + dx * off * k, my + dy * off * k);
+    }
+    for (const [dx, dy] of corners) {
+      const rx = mx + dx * off;
+      const ry = my + dy * off;
+      ctx.moveTo(rx + rr, ry);
+      ctx.arc(rx, ry, rr, 0, Math.PI * 2);
     }
     ctx.stroke();
     ctx.fillStyle = `rgba(${line}, ${a})`;
-    ctx.beginPath();
-    for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
-      const rx = mx + dx * off;
-      const ry = my + dy * off;
-      ctx.moveTo(rx + cell * 0.11, ry);
-      ctx.arc(rx, ry, cell * 0.11, 0, Math.PI * 2);
-    }
-    ctx.fill();
-    ctx.fillRect(mx - cell * 0.09, my - cell * 0.09, cell * 0.18, cell * 0.18);
+    ctx.fillRect(mx - cell * 0.08, my - cell * 0.08, cell * 0.16, cell * 0.16);
   }
 }
 
@@ -274,12 +279,13 @@ export function drawSpray(
     ctx.fill();
   }
 
-  // Остаток воды — дугой по ободу: пустой бак виден сразу.
-  if (alive && tank > 0) {
+  // Остаток воды — дугой по ободу, и только когда бак начат: полный бак
+  // рисовался голубым кольцом вокруг красной установки, как чужая обводка.
+  if (alive && tank > 0 && tank < 1) {
     ctx.beginPath();
     ctx.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * tank);
     ctx.strokeStyle = "rgba(121, 199, 255, 0.85)";
-    ctx.lineWidth = Math.max(0.7, cell * 0.12);
+    ctx.lineWidth = Math.max(0.5, cell * 0.08);
     ctx.stroke();
   }
 }
