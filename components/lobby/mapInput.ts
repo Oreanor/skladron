@@ -101,7 +101,7 @@ export interface MapActions {
 }
 
 /** Сколько ждём второго тапа, мс. */
-const DOUBLE_TAP = 400;
+export const DOUBLE_TAP = 400;
 
 export function mapHandlers(m: MapRefs, a: MapActions) {
   const { p, tool, drafting, rerender } = a;

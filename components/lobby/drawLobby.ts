@@ -42,7 +42,7 @@ import {
   dropAllowed,
   onMap,
 } from "./overlay";
-import type { MapRefs } from "./mapInput";
+import { DOUBLE_TAP, type MapRefs } from "./mapInput";
 import { isBuildKind, type Tool } from "./tools";
 
 /** Клетка карты лобби в пикселях холста. */
@@ -81,7 +81,12 @@ function pickedSpots({ p, tool }: LobbyScene): { cx: number; cy: number }[] {
  */
 function coverageFor({ p, tool, m }: LobbyScene): CoverageKind[] {
   if (isBuildKind(tool)) return [tool];
-  const from = m.dragGun.current;
+  // Между двумя кликами двойного клика установку уже отпустили, но круги
+  // не гасим, пока ждём второй: иначе они мигают на каждом клике.
+  const tap = m.lastTap.current;
+  const from =
+    m.dragGun.current ??
+    (tap && performance.now() - tap.at < DOUBLE_TAP ? { cx: tap.x, cy: tap.y } : null);
   if (!from) return [];
   const g = p.guns.find((item) => item.cx === from.cx && item.cy === from.cy);
   return g ? [gunKind(g)] : [];
