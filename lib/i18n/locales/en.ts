@@ -146,6 +146,8 @@ const en = {
   "upgrade.spraysEffect": "+25% extinguishing radius per level",
   "upgrade.traps": "Traps",
   "upgrade.trapsEffect": "+25% capture radius per level",
+  "upgrade.balloons": "Balloons",
+  "upgrade.balloonsEffect": "+25% radius and +2 balloons per level",
   "upgrade.level": "lvl {level}",
   "upgrade.buy": "{cost} cr",
   "upgrade.max": "max",
@@ -234,7 +236,7 @@ const en = {
   "tool.trap": "Trap",
   "tool.rocket": "Launcher",
   "tool.drones": "Drones",
-  "tool.balloons": "Balloons",
+  "tool.balloon": "Balloons",
   "tool.price": "{cost} cr",
   "tool.areaHint": "Build new ground",
   "tool.repairHint": "Repair burnt cells",
@@ -243,7 +245,7 @@ const en = {
   "tool.trapHint": "Holds drones by magnet",
   "tool.rocketHint": "Homing missiles",
   "tool.dronesHint": "Drones and spare parts",
-  "tool.balloonsHint": "Balloons that get in drones' way",
+  "tool.balloonHint": "One-shot: throws out balloons when a drone comes near",
 
 
   "panel.base": "Warehouse",
@@ -447,7 +449,6 @@ const en = {
 
   "map.wholeMap": "Whole map",
   "map.hover.drones": "Drones · {n}",
-  "map.hover.balloons": "Balloons · {n}",
 
   "menu.language": "Language",
   "menu.theme": "Theme",

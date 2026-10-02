@@ -18,12 +18,11 @@ import {
   type CoverageKind,
   type View,
 } from "@/lib/render";
-import { gunRange, rocketRange, sprayRange, trapRange } from "@/lib/engine";
+import { balloonRange, gunRange, rocketRange, sprayRange, trapRange } from "@/lib/engine";
 import {
   GRID,
   G_BASE,
   G_BURNT,
-  depotKind,
   gunKind,
   idx,
   isBuilding,
@@ -67,10 +66,7 @@ export interface LobbyScene {
  */
 function pickedSpots({ p, tool }: LobbyScene): { cx: number; cy: number }[] {
   if (isBuildKind(tool)) return p.guns.filter((g) => gunKind(g) === tool);
-  if (tool === "drones" || tool === "balloons") {
-    const want = tool === "balloons" ? "balloon" : "basic";
-    return p.depots.filter((d) => depotKind(d) === want);
-  }
+  if (tool === "drones") return p.depots;
   return [];
 }
 
@@ -111,18 +107,14 @@ function hoverLabel({ p, t }: LobbyScene, hx: number, hy: number): string | null
         return t("tool.trap");
       case "rocket":
         return t("tool.rocket");
+      case "balloon":
+        return t("tool.balloon");
       default:
         return t("tool.gun");
     }
   }
   const depot = p.depots.find((item) => item.cx === hx && item.cy === hy);
-  // Подпись по виду контейнера: на ящике с шарами «Дроны» — ровно та
-  // ошибка, которую подпись и должна была снимать.
-  if (depot) {
-    return t(depotKind(depot) === "balloon" ? "map.hover.balloons" : "map.hover.drones", {
-      n: depot.n,
-    });
-  }
+  if (depot) return t("map.hover.drones", { n: depot.n });
   return null;
 }
 
@@ -145,6 +137,7 @@ export function drawLobbyOverlay(
     sprayRange({ sprayLevel: p.levels.sprays }),
     trapRange({ trapLevel: p.levels.traps }),
     rocketRange({ rocketLevel: p.levels.rockets }),
+    balloonRange({ balloonLevel: p.levels.balloons }),
     coverageFor(s)
   );
 
@@ -178,7 +171,7 @@ export function drawLobbyOverlay(
   // и куда можно, и куда нельзя.
   const placing = isBuildKind(tool) || m.dragGun.current || tapped(s, "gun");
   const stacking =
-    tool === "drones" || tool === "balloons" || draggedDepot || tapped(s, "depot");
+    tool === "drones" || draggedDepot || tapped(s, "depot");
   if (placing || stacking) {
     drawFreeCells(
       ctx,

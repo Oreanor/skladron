@@ -21,6 +21,7 @@ const KIND_LABEL: Record<ReturnType<typeof gunKind>, Key> = {
   rocket: "tool.rocket",
   spray: "tool.spray",
   trap: "tool.trap",
+  balloon: "tool.balloon",
 };
 
 export default function ScoutMap({

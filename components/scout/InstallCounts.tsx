@@ -11,12 +11,13 @@ import type { ScoutCounts } from "@/lib/scout";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 
-const KINDS = ["gun", "rocket", "spray", "trap"] as const;
+const KINDS = ["gun", "rocket", "spray", "trap", "balloon"] as const;
 const LABEL: Record<(typeof KINDS)[number], Key> = {
   gun: "tool.gun",
   rocket: "tool.rocket",
   spray: "tool.spray",
   trap: "tool.trap",
+  balloon: "tool.balloon",
 };
 
 export default function InstallCounts({ counts }: { counts: ScoutCounts }) {

@@ -58,7 +58,7 @@ export default function BlueprintsPanel({
             <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onOpen(b)}>
               <div className="truncate font-semibold text-neutral-100">{b.name}</div>
               <div className="font-mono text-[11px] text-neutral-500">
-                {t("blueprint.line", { area: fmt(n.area), installs: n.gun + n.rocket + n.spray + n.trap })}
+                {t("blueprint.line", { area: fmt(n.area), installs: n.gun + n.rocket + n.spray + n.trap + n.balloon })}
                 {" · "}
                 <span className={afford ? "text-emerald-300" : "text-red-400"}>{deltaText(t, delta)}</span>
               </div>
@@ -86,6 +86,7 @@ const LEGEND: { key: keyof ReturnType<typeof blueprintCounts>; label: Key; color
   { key: "rocket", label: "tool.rocket", color: installColors("rocket").top },
   { key: "spray", label: "tool.spray", color: installColors("spray").top },
   { key: "trap", label: "tool.trap", color: installColors("trap").top },
+  { key: "balloon", label: "tool.balloon", color: installColors("balloon").top },
 ];
 
 /** Карта чертежа и его состав, а под ними — то, что окну нужно сверх этого. */

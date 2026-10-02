@@ -18,11 +18,9 @@ import {
   G_GROUND,
   GRID,
   type Depot,
-  type DepotKind,
   type Gun,
   type GunKind,
   type Rect,
-  BALLOONS_PER_CELL,
   DRONES_PER_CELL,
   applyRect,
   gunKind,
@@ -38,7 +36,7 @@ import {
   newCellsIn,
 } from "./base";
 import {
-  BALLOON_UNIT_COST,
+  BALLOON_COST,
   CELL_COST,
   DRONE_UNIT_COST,
   GUN_COST,
@@ -85,20 +83,16 @@ export function gunCost(levels: Levels, kind: GunKind): number {
       return priceAt(TRAP_COST, levels.traps);
     case "rocket":
       return priceAt(ROCKET_COST, levels.rockets);
+    case "balloon":
+      return priceAt(BALLOON_COST, levels.balloons);
     default:
       return priceAt(GUN_COST, levels.guns);
   }
 }
 
-/** Сколько штук лежит в одном контейнере этого рода. */
-export const depotSize = (kind: DepotKind) =>
-  kind === "balloon" ? BALLOONS_PER_CELL : DRONES_PER_CELL;
-
-/** Во что обойдётся полный контейнер. У шаров прокачки нет, цена одна. */
-export function depotCost(levels: Levels, kind: DepotKind): number {
-  return kind === "balloon"
-    ? BALLOON_UNIT_COST * BALLOONS_PER_CELL
-    : priceAt(DRONE_UNIT_COST, levels.drones) * DRONES_PER_CELL;
+/** Во что обойдётся полный контейнер дронов. */
+export function depotCost(levels: Levels): number {
+  return priceAt(DRONE_UNIT_COST, levels.drones) * DRONES_PER_CELL;
 }
 
 // ---------- клетки ----------
@@ -248,21 +242,16 @@ export function placeGun(p: Player, x: number, y: number, kind: GunKind): BuildR
  * на месте, деньги списаны. Сервер об этом узнаёт отдельно, и если он
  * откажет, лобби откатывает по сохранённому слепку.
  */
-export function placeDepot(p: Player, x: number, y: number, kind: DepotKind): BuildResult {
+export function placeDepot(p: Player, x: number, y: number): BuildResult {
   if (!onMap(x, y)) return skip;
   if (p.cells[idx(x, y)] !== G_BASE) return no("depot.onlyIntact");
   if (gunOn(p.guns, x, y)) return no("depot.gunThere");
   if (depotOn(p.depots, x, y)) return skip;
 
-  const cost = depotCost(p.levels, kind);
+  const cost = depotCost(p.levels);
   if (p.credits < cost) return no("depot.noCredits", { cost });
 
-  p.depots = [
-    ...p.depots,
-    kind === "balloon"
-      ? { cx: x, cy: y, n: BALLOONS_PER_CELL, kind: "balloon" as const }
-      : { cx: x, cy: y, n: DRONES_PER_CELL },
-  ];
+  p.depots = [...p.depots, { cx: x, cy: y, n: DRONES_PER_CELL }];
   p.credits -= cost;
   return done(cost);
 }

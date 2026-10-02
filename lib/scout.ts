@@ -230,7 +230,7 @@ export function seenShare(seen: Uint8Array) {
 }
 
 /** Сколько установок каждого вида видно на снятой карте. */
-export type ScoutCounts = Record<"gun" | "rocket" | "spray" | "trap", number>;
+export type ScoutCounts = Record<"gun" | "rocket" | "spray" | "trap" | "balloon", number>;
 
 /**
  * Установки, которые разведка действительно видела: те, что под туманом,
@@ -241,7 +241,7 @@ export function seenGuns(guns: Gun[], seen: Uint8Array): Gun[] {
 }
 
 export function scoutCounts(guns: Gun[]): ScoutCounts {
-  const out: ScoutCounts = { gun: 0, rocket: 0, spray: 0, trap: 0 };
+  const out: ScoutCounts = { gun: 0, rocket: 0, spray: 0, trap: 0, balloon: 0 };
   for (const g of guns) out[gunKind(g)]++;
   return out;
 }

@@ -81,8 +81,8 @@ console.log('— отказ не трогает склад —');
     ['ракетница', null, (p) => { const c = freeCell(p); return B.placeGun(p, c.x, c.y, 'rocket'); }],
     ['огнетушитель', null, (p) => { const c = freeCell(p); return B.placeGun(p, c.x, c.y, 'spray'); }],
     ['ловушка', null, (p) => { const c = freeCell(p); return B.placeGun(p, c.x, c.y, 'trap'); }],
-    ['дроны', null, (p) => { const c = freeCell(p); return B.placeDepot(p, c.x, c.y, 'basic'); }],
-    ['шары', null, (p) => { const c = freeCell(p); return B.placeDepot(p, c.x, c.y, 'balloon'); }],
+    ['шары', null, (p) => { const c = freeCell(p); return B.placeGun(p, c.x, c.y, 'balloon'); }],
+    ['дроны', null, (p) => { const c = freeCell(p); return B.placeDepot(p, c.x, c.y); }],
   ];
   for (const [name, prepare, act] of cases) {
     const p = player(0);
@@ -110,9 +110,9 @@ console.log('\n— списывается ровно названная цена
   c = freeCell(p);
   take(B.placeGun(p, c.x, c.y, 'trap'));
   c = freeCell(p);
-  take(B.placeDepot(p, c.x, c.y, 'basic'));
+  take(B.placeDepot(p, c.x, c.y));
   c = freeCell(p);
-  take(B.placeDepot(p, c.x, c.y, 'balloon'));
+  take(B.placeGun(p, c.x, c.y, 'balloon'));
   const g = groundNear(p);
   take(B.buildOne(p, g.x, g.y, true));
 
@@ -124,8 +124,8 @@ console.log('\n— списывается ровно названная цена
     spent[1] === B.gunCost(p.levels, 'rocket') &&
     spent[2] === B.gunCost(p.levels, 'spray') &&
     spent[3] === B.gunCost(p.levels, 'trap') &&
-    spent[4] === B.depotCost(p.levels, 'basic') &&
-    spent[5] === B.depotCost(p.levels, 'balloon'),
+    spent[4] === B.depotCost(p.levels) &&
+    spent[5] === B.gunCost(p.levels, 'balloon'),
     spent.join(', '));
 }
 
@@ -142,12 +142,12 @@ console.log('\n— перенос ничего не стоит —');
     JSON.stringify(p.guns));
 
   const c = freeCell(p);
-  B.placeDepot(p, c.x, c.y, 'balloon');
+  B.placeDepot(p, c.x, c.y);
   const d = freeCell(p);
   const was = p.credits;
   const r2 = B.moveDepot(p, { cx: c.x, cy: c.y }, d.x, d.y);
   check('контейнер переехал даром', r2.ok && r2.spent === 0 && p.credits === was);
-  check('и остался шарами', BASE.balloonCount(p.depots) === 10);
+  check('и дронов в нём столько же', BASE.droneCount(p.depots) === 10);
 }
 
 console.log('\n— снос платит, а склад надвое не рвёт —');
@@ -207,6 +207,7 @@ console.log('\n— прокачка дорожает по формуле —');
     ['rocket', E.ROCKET_COST, 'rockets'],
     ['spray', E.SPRAY_COST, 'sprays'],
     ['trap', E.TRAP_COST, 'traps'],
+    ['balloon', E.BALLOON_COST, 'balloons'],
   ]) {
     let okAll = true;
     for (let lv = 1; lv <= 10; lv++) {
@@ -218,11 +219,8 @@ console.log('\n— прокачка дорожает по формуле —');
   }
   p.levels.drones = 10;
   check('дроны: контейнер дорожает с уровнем',
-    B.depotCost(p.levels, 'basic') === E.priceAt(E.DRONE_UNIT_COST, 10) * 10,
-    String(B.depotCost(p.levels, 'basic')));
-  check('шары: цена от уровней не зависит',
-    B.depotCost(p.levels, 'balloon') === E.BALLOON_UNIT_COST * 10,
-    String(B.depotCost(p.levels, 'balloon')));
+    B.depotCost(p.levels) === E.priceAt(E.DRONE_UNIT_COST, 10) * 10,
+    String(B.depotCost(p.levels)));
 }
 
 console.log('\n— занятая клетка занята —');

@@ -15,7 +15,7 @@
 
 import { useRef } from "react";
 import { fmt } from "@/lib/economy";
-import { normRect, gunKind, type DepotKind, type GunKind, type Rect } from "@/lib/base";
+import { normRect, gunKind, type GunKind, type Rect } from "@/lib/base";
 import type { Player } from "@/lib/player";
 import type { Translate } from "@/lib/i18n";
 import type { Pt } from "../MapCanvas";
@@ -92,7 +92,7 @@ export interface MapActions {
   repairAt: (x: number, y: number) => void;
   scrapAt: (x: number, y: number) => void;
   gunAt: (x: number, y: number, kind: GunKind) => void;
-  buyDepotAt: (x: number, y: number, kind: DepotKind) => Promise<void>;
+  buyDepotAt: (x: number, y: number) => Promise<void>;
   moveDepot: (from: { cx: number; cy: number }, x: number, y: number) => void;
   moveGun: (from: { cx: number; cy: number; kind: GunKind }, x: number, y: number) => void;
   /** Продать установку или контейнер с этой клетки по номиналу. */
@@ -136,8 +136,8 @@ export function mapHandlers(m: MapRefs, a: MapActions) {
       return;
     }
 
-    if (tool === "drones" || tool === "balloons") {
-      void a.buyDepotAt(c.x, c.y, tool === "balloons" ? "balloon" : "basic");
+    if (tool === "drones") {
+      void a.buyDepotAt(c.x, c.y);
       return;
     }
     if (isBuildKind(tool)) {

@@ -234,6 +234,7 @@ export interface SnapLevels {
   rockets?: number;
   sprays?: number;
   traps?: number;
+  balloons?: number;
   mg?: number;
   water?: number;
 }

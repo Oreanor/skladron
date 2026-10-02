@@ -4,7 +4,6 @@
 
 import {
   type Depot,
-  type DepotKind,
   GRID,
   G_BASE,
   type Gun,
@@ -12,7 +11,6 @@ import {
   applyRect,
   emptyCells,
   encodeCells,
-  depotKind,
   normRect,
 } from "./base";
 import { mulberry32 } from "./attack";
@@ -159,16 +157,10 @@ export function makeEnemy(
   };
 }
 
-/**
- * Снимает из контейнеров, начиная с последних. Возвращает, сколько взял.
- *
- * Вид обязателен по умолчанию, а не «если передали»: без него вылет
- * съедал бы и шары заграждения, лежащие в тех же контейнерах.
- */
-export function takeDrones(depots: Depot[], count: number, kind: DepotKind = "basic") {
+/** Снимает из контейнеров, начиная с последних. Возвращает, сколько взял. */
+export function takeDrones(depots: Depot[], count: number) {
   let left = count;
   for (let i = depots.length - 1; i >= 0 && left > 0; i--) {
-    if (depotKind(depots[i]) !== kind) continue;
     const take = Math.min(depots[i].n, left);
     depots[i].n -= take;
     left -= take;

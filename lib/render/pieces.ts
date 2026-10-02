@@ -19,7 +19,7 @@ import { COLORS } from "./colors";
  */
 export function drawDepots(
   ctx: CanvasRenderingContext2D,
-  depots: { cx: number; cy: number; n: number; kind?: string }[],
+  depots: { cx: number; cy: number; n: number }[],
   cell: number,
   dim = false
 ) {
@@ -30,11 +30,10 @@ export function drawDepots(
   for (const d of depots) {
     const x = d.cx * cell;
     const y = d.cy * cell;
-    const balloons = d.kind === "balloon";
     // Светлый ящик и приглушённый рисунок: тёмные ящики со светлым дроном
     // на светлом полу рябили сплошным рядом.
-    const fill = balloons ? "226, 150, 144" : "206, 170, 116";
-    const line = balloons ? "156, 52, 56" : "128, 92, 50";
+    const fill = "206, 170, 116";
+    const line = "128, 92, 50";
     ctx.fillStyle = `rgba(${fill}, ${a})`;
     ctx.beginPath();
     ctx.roundRect(x + gap, y + gap, cell - gap * 2, cell - gap * 2, cell * 0.1);
@@ -43,25 +42,6 @@ export function drawDepots(
     const my = y + cell * 0.5;
     ctx.fillStyle = `rgba(${line}, ${a})`;
     ctx.strokeStyle = `rgba(${line}, ${a})`;
-
-    if (balloons) {
-      // Шар: залитый кружок с бликом и тонкая верёвочка вниз.
-      const cy = y + cell * 0.42;
-      const r = cell * 0.27;
-      ctx.lineWidth = cell * 0.05;
-      ctx.beginPath();
-      ctx.moveTo(mx, cy + r);
-      ctx.lineTo(mx, y + cell * 0.8);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(mx, cy, r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = `rgba(255, 235, 230, ${0.8 * a})`;
-      ctx.beginPath();
-      ctx.arc(mx - r * 0.35, cy - r * 0.35, r * 0.3, 0, Math.PI * 2);
-      ctx.fill();
-      continue;
-    }
 
     // Квадрокоптер сверху, с полями до края ящика: тонкие рамы крестом, на
     // концах — прозрачный диск винта с лопастью поперёк рамы, в центре —
@@ -103,10 +83,12 @@ export function drawDepots(
  */
 export function drawBalloons(
   ctx: CanvasRenderingContext2D,
-  balloons: { id: number; x: number; y: number }[],
+  all: { id: number; x: number; y: number; wait?: number }[],
   cell: number
 ) {
   const r = cell * 0.5;
+  // ещё не выпущенные сидят в установке — их не видно
+  const balloons = all.some((b) => (b.wait ?? 0) > 0) ? all.filter((b) => (b.wait ?? 0) <= 0) : all;
 
   // Тела одним проходом: цвет у всех один, а смена fillStyle стоит дороже
   // самой заливки — шаров над складом бывают сотни.
@@ -146,6 +128,56 @@ export function drawBalloons(
   ctx.lineCap = "round";
   ctx.stroke();
   ctx.lineCap = "butt";
+}
+
+/**
+ * Пусковая установка шаров сверху: круглая площадка, а на ней тесной гроздью
+ * уложенные шары — сразу видно, что это запас, который выпустят разом, а не
+ * ствол. Круглая, чтобы не путать с квадратными ящиками дронов.
+ */
+export function drawBalloonPad(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  cell: number,
+  alive = true
+) {
+  const x = (cx + 0.5) * cell;
+  const y = (cy + 0.5) * cell;
+  const r = cell * 0.46;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = alive ? COLORS.balloonPad : "#3f3f3f";
+  ctx.fill();
+  ctx.strokeStyle = alive ? COLORS.balloonPadTop : "#555";
+  ctx.lineWidth = Math.max(0.55, cell * 0.09);
+  ctx.stroke();
+  if (!alive) return;
+
+  // гроздь: шесть шаров по кругу и один в середине
+  const small = cell * 0.13;
+  const spots: [number, number][] = [[0, 0]];
+  for (let k = 0; k < 6; k++) {
+    const a = (k * Math.PI) / 3 + Math.PI / 6;
+    spots.push([Math.cos(a) * cell * 0.24, Math.sin(a) * cell * 0.24]);
+  }
+  ctx.beginPath();
+  for (const [dx, dy] of spots) {
+    ctx.moveTo(x + dx + small, y + dy);
+    ctx.arc(x + dx, y + dy, small, 0, Math.PI * 2);
+  }
+  ctx.fillStyle = COLORS.balloon;
+  ctx.fill();
+  ctx.strokeStyle = COLORS.balloonDark;
+  ctx.lineWidth = Math.max(0.4, cell * 0.04);
+  ctx.stroke();
+  ctx.beginPath();
+  for (const [dx, dy] of spots) {
+    ctx.moveTo(x + dx - small * 0.3 + small * 0.32, y + dy - small * 0.3);
+    ctx.arc(x + dx - small * 0.3, y + dy - small * 0.3, small * 0.32, 0, Math.PI * 2);
+  }
+  ctx.fillStyle = COLORS.balloonGlare;
+  ctx.fill();
 }
 
 /**

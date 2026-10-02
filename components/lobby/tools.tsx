@@ -26,7 +26,7 @@ import {
   LOAN_RATE,
   REPAIR_COST,
   SCRAP_REWARD,
-  BALLOON_UNIT_COST,
+  BALLOON_COST,
   ROCKET_COST,
   SPRAY_COST,
   TRAP_COST,
@@ -34,8 +34,8 @@ import {
   CELL_COST,
   type UpgradeKind,
 } from "@/lib/economy";
-import { BALLOONS_PER_CELL, DRONES_PER_CELL, type GunKind } from "@/lib/base";
-import { ROCKET, SPRAY, TRAP } from "@/lib/tuning";
+import { DRONES_PER_CELL, type GunKind } from "@/lib/base";
+import { BALLOON, ROCKET, SPRAY, TRAP } from "@/lib/tuning";
 import type { Key } from "@/lib/i18n/dict";
 import { IconBalloon, IconDrone } from "../ui";
 
@@ -47,8 +47,8 @@ export type Tool =
   | "rocket"
   | "spray"
   | "trap"
-  | "drones"
-  | "balloons";
+  | "balloon"
+  | "drones";
 /**
  * Инструменты, которые ставят на клетку предмет: у них общий путь — цена
  * по уровню, круг покрытия, подсветка уже стоящего, перетаскивание.
@@ -56,7 +56,7 @@ export type Tool =
  * один забытый «или» уже стоил того, что ракетница не ставилась вовсе.
  */
 export const isBuildKind = (t: ToolId | null): t is GunKind =>
-  t === "gun" || t === "rocket" || t === "spray" || t === "trap";
+  t === "gun" || t === "rocket" || t === "spray" || t === "trap" || t === "balloon";
 
 /** Кнопка «Апгрейд» карты не касается: она только открывает модалку. */
 export type ToolId = Tool | "upgrade" | "insurance" | "loan";
@@ -145,15 +145,6 @@ export const TOOLS: {
     countKind: "rockets",
   },
   {
-    id: "balloons",
-    label: "tool.balloons",
-    hint: "tool.balloonsHint",
-    vars: { perCell: BALLOONS_PER_CELL, cost: BALLOON_UNIT_COST * BALLOONS_PER_CELL },
-    priceKey: "tool.priceBox",
-    icon: <IconBalloon />,
-    countKind: "balloons",
-  },
-  {
     id: "spray",
     label: "tool.spray",
     hint: "tool.sprayHint",
@@ -170,6 +161,15 @@ export const TOOLS: {
     icon: <Magnet className={ICON} />,
     levelKind: "traps",
     countKind: "traps",
+  },
+  {
+    id: "balloon",
+    label: "tool.balloon",
+    hint: "tool.balloonHint",
+    vars: { cost: BALLOON_COST, range: BALLOON.range, count: BALLOON.count },
+    icon: <IconBalloon />,
+    levelKind: "balloons",
+    countKind: "balloons",
   },
   {
     id: "insurance",

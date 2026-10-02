@@ -9,7 +9,7 @@
 -- Версия боевого движка. Должна совпадать с SIMULATION_VERSION в
 -- lib/tuning.ts: по ней отсекаются бои, посчитанные прежней геометрией волн.
 create or replace function sim_version() returns int
-language sql immutable as $$ select 25 $$;
+language sql immutable as $$ select 26 $$;
 
 -- держим в одном месте, чтобы клиент и сервер не разъезжались
 create or replace function price(kind text) returns int
@@ -24,8 +24,8 @@ language sql immutable as $$
     when 'rocket' then 200  -- ракетница вдвое дороже зенитки: и достаёт вдвое дальше
     when 'drones' then 1000
     when 'drone'  then 25
-    -- Шар стоит пятёрку: контейнер на десяток — полсотни. Прокачки нет.
-    when 'balloon' then 5
+    -- Пусковая шаров: разовая — выбрасывает шары и пропадает, оттого дешевле зенитки.
+    when 'balloon' then 80
     when 'income' then 10  -- кредитов в сутки с каждой целой клетки
     when 'sale'   then 2   -- отгрузка идёт вдвое дороже закупки
     when 'loot'   then 50   -- нападавшему за каждую сожжённую клетку склада
@@ -128,14 +128,10 @@ language sql immutable as $$
 $$;
 
 -- Во сколько обходится товар на складе: по нему считается суточный доход и
--- страховая выплата за сгоревшее. Шары считаются по своей цене.
+-- страховая выплата за сгоревшее.
 create or replace function depot_value(d jsonb) returns int
 language sql immutable as $$
-  select coalesce(sum(
-    (e->>'n')::int
-    * case when coalesce(e->>'kind', 'basic') = 'balloon'
-             then price('balloon') else price('drone') end
-  ), 0)::int
+  select coalesce(sum((e->>'n')::int * price('drone')), 0)::int
   from jsonb_array_elements(coalesce(d, '[]'::jsonb)) e;
 $$;
 
@@ -147,16 +143,10 @@ language sql immutable as $$
    where coalesce(e->>'kind', 'basic') = want;
 $$;
 
--- Никакой вид не должен меняться, кроме одного разрешённого: иначе покупкой
--- дронов можно было бы завести себе шаров.
-create or replace function depots_only_changed(
-  before jsonb, after jsonb, kind text, delta int
-) returns boolean language sql immutable as $$
-  select bool_and(
-    depot_sum_kind(after, k) =
-      depot_sum_kind(before, k) + case when k = kind then delta else 0 end
-  )
-  from unnest(array['basic', 'balloon']) as k;
+-- Дронов в контейнерах стало ровно на delta больше: вне покупки — столько же.
+create or replace function depots_only_changed(before jsonb, after jsonb, delta int)
+returns boolean language sql immutable as $$
+  select depot_sum_kind(after, 'basic') = depot_sum_kind(before, 'basic') + delta;
 $$;
 
 -- контейнеры обязаны стоять на целых клетках, по одному на клетку, не поверх пушек
@@ -180,7 +170,7 @@ begin
        where key not in ('cx', 'cy', 'n', 'kind')
     ) then return false; end if;
     if e->>'cx' is null or e->>'cy' is null or e->>'n' is null then return false; end if;
-    if coalesce(e->>'kind', 'basic') not in ('basic', 'balloon') then
+    if coalesce(e->>'kind', 'basic') <> 'basic' then
       return false;
     end if;
     begin
@@ -225,7 +215,7 @@ begin
        where key not in ('cx', 'cy', 'kind')
     ) then return false; end if;
     if e->>'cx' is null or e->>'cy' is null then return false; end if;
-    if coalesce(e->>'kind', 'gun') not in ('gun', 'rocket', 'spray', 'trap') then
+    if coalesce(e->>'kind', 'gun') not in ('gun', 'rocket', 'spray', 'trap', 'balloon') then
       return false;
     end if;
     begin
@@ -346,7 +336,7 @@ create table if not exists profiles (
     '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,"wipes":0,"raids":0,"looted":0}'::jsonb,
   -- уровни классов: с ними растут скорость дронов, дальнобойность пушек и обзор разведки
   levels jsonb not null default
-    '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb,
+    '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"balloons":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb,
   -- заём: сколько отдать и когда
   loan int not null default 0,
   loan_due timestamptz,
@@ -979,15 +969,8 @@ begin
   sale := drones_out * price_at(price('drone'), coalesce((prof.levels->>'drones')::int, 1))
          * price('sale');
 
-  -- Уходят только дроны. Шары остаются на складе: они не товар, а
-  -- заграждение, и отгружать их некуда.
   update bases
-     set drone_cells = coalesce((
-           select jsonb_agg(e order by ord)
-             from jsonb_array_elements(coalesce(drone_cells, '[]'::jsonb))
-                  with ordinality as t(e, ord)
-            where coalesce(e->>'kind', 'basic') = 'balloon'
-         ), '[]'::jsonb),
+     set drone_cells = '[]'::jsonb,
          updated_at = now()
    where user_id = uid and jsonb_array_length(drone_cells) > 0;
 
@@ -1042,10 +1025,12 @@ declare
   rockets_added int;
   sprays_added int;
   traps_added int;
+  balloons_added int;
   guns_gone int;
   rockets_gone int;
   sprays_gone int;
   traps_gone int;
+  balloons_gone int;
   cost int;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
@@ -1070,7 +1055,7 @@ begin
 
   -- вне боя дронов не прибавляется: контейнеры можно только переставлять
   -- вне покупки ни один вид не меняется: ящики можно только переставлять
-  if not depots_only_changed(cur_depots, new_depots, 'basic', 0) then
+  if not depots_only_changed(cur_depots, new_depots, 0) then
     raise exception 'drone count may only change on purchase';
   end if;
   if not guns_valid(new_guns, bin, new_depots) then
@@ -1107,6 +1092,7 @@ begin
   rockets_added := greatest(0, gun_count(new_guns, 'rocket') - gun_count(cur_guns, 'rocket'));
   sprays_added := greatest(0, gun_count(new_guns, 'spray') - gun_count(cur_guns, 'spray'));
   traps_added := greatest(0, gun_count(new_guns, 'trap') - gun_count(cur_guns, 'trap'));
+  balloons_added := greatest(0, gun_count(new_guns, 'balloon') - gun_count(cur_guns, 'balloon'));
   -- Проданные установки — по виду и по нынешней цене закупки: двойной клик
   -- на складе продаёт по номиналу. Считаем по известным видам, а не по
   -- длине массива: иначе неизвестный kind давал бы бесплатный возврат.
@@ -1114,6 +1100,7 @@ begin
   rockets_gone := greatest(0, gun_count(cur_guns, 'rocket') - gun_count(new_guns, 'rocket'));
   sprays_gone := greatest(0, gun_count(cur_guns, 'spray') - gun_count(new_guns, 'spray'));
   traps_gone := greatest(0, gun_count(cur_guns, 'trap') - gun_count(new_guns, 'trap'));
+  balloons_gone := greatest(0, gun_count(cur_guns, 'balloon') - gun_count(new_guns, 'balloon'));
 
   -- первые price('free') клеток склада бесплатны, считаем от того, что уже стоит
   free_left := greatest(0, price('free') - claimed);
@@ -1125,10 +1112,12 @@ begin
         + rockets_added * price_at(price('rocket'), coalesce((prof.levels->>'rockets')::int, 1))
         + sprays_added * price_at(price('spray'), coalesce((prof.levels->>'sprays')::int, 1))
         + traps_added * price_at(price('trap'), coalesce((prof.levels->>'traps')::int, 1))
+        + balloons_added * price_at(price('balloon'), coalesce((prof.levels->>'balloons')::int, 1))
         - guns_gone * price_at(price('gun'), coalesce((prof.levels->>'guns')::int, 1))
         - rockets_gone * price_at(price('rocket'), coalesce((prof.levels->>'rockets')::int, 1))
         - sprays_gone * price_at(price('spray'), coalesce((prof.levels->>'sprays')::int, 1))
         - traps_gone * price_at(price('trap'), coalesce((prof.levels->>'traps')::int, 1))
+        - balloons_gone * price_at(price('balloon'), coalesce((prof.levels->>'balloons')::int, 1))
         - scrapped * price('scrap');
 
   if prof.credits < cost then
@@ -1171,7 +1160,7 @@ declare
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   if kind not in
-     ('drones', 'guns', 'rockets', 'sprays', 'traps', 'mg', 'water', 'insurance') then
+     ('drones', 'guns', 'rockets', 'sprays', 'traps', 'balloons', 'mg', 'water', 'insurance') then
     raise exception 'bad upgrade kind';
   end if;
 
@@ -1197,11 +1186,8 @@ $$;
 
 -- ---------- закупка в контейнеры ----------
 
--- Дроны и шары кладутся на склад одним и тем же движением, так что и
--- функция одна. amount — сколько штук докупить.
-create or replace function buy_depot(
-  amount int, new_depots jsonb, depot_kind text default 'basic'
-)
+-- Закупка дронов в контейнеры. amount — сколько штук докупить.
+create or replace function buy_depot(amount int, new_depots jsonb)
 returns table (credits int, drones int)
 language plpgsql security definer set search_path = public as $$
 declare
@@ -1215,17 +1201,7 @@ begin
   if amount is null or amount < 1 or amount > 100000 then
     raise exception 'bad drone amount';
   end if;
-  if depot_kind not in ('basic', 'balloon') then
-    raise exception 'bad depot kind';
-  end if;
-  -- Шары не качаются: их цена одна на всю игру, дроны дорожают с уровнем.
-  select case when depot_kind = 'balloon'
-              then amount * price('balloon')
-              else amount * price_at(
-                     price('drone'),
-                     coalesce((p.levels->>'drones')::int, 1)
-                   )
-         end
+  select amount * price_at(price('drone'), coalesce((p.levels->>'drones')::int, 1))
     into cost
     from profiles p where p.id = uid;
 
@@ -1244,7 +1220,7 @@ begin
   end if;
 
   -- купленное обязано лечь на склад: ровно запрошенное число новых дронов
-  if not depots_only_changed(cur_depots, new_depots, depot_kind, amount) then
+  if not depots_only_changed(cur_depots, new_depots, amount) then
     raise exception 'depots must hold exactly the purchased items';
   end if;
   if not depots_valid(new_depots, cur, cur_guns) then
@@ -2174,7 +2150,7 @@ begin
          loan_due = null,
          founded = true,
          last_income_at = now(),
-         levels = '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb,
+         levels = '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"balloons":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb,
          stats = '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,
                    "wipes":0,"raids":0,"looted":0}'::jsonb
    where id = uid;
@@ -2210,14 +2186,14 @@ language sql immutable as $
   select gun_count(g, 'gun') * price_at(price('gun'), coalesce((lv->>'guns')::int, 1))
        + gun_count(g, 'rocket') * price_at(price('rocket'), coalesce((lv->>'rockets')::int, 1))
        + gun_count(g, 'spray') * price_at(price('spray'), coalesce((lv->>'sprays')::int, 1))
-       + gun_count(g, 'trap') * price_at(price('trap'), coalesce((lv->>'traps')::int, 1));
+       + gun_count(g, 'trap') * price_at(price('trap'), coalesce((lv->>'traps')::int, 1))
+       + gun_count(g, 'balloon') * price_at(price('balloon'), coalesce((lv->>'balloons')::int, 1));
 $;
 
 -- Сколько стоит содержимое контейнеров по цене закупки.
 create or replace function goods_value(d jsonb, lv jsonb) returns int
 language sql immutable as $
-  select depot_sum_kind(d, 'basic') * price_at(price('drone'), coalesce((lv->>'drones')::int, 1))
-       + depot_sum_kind(d, 'balloon') * price('balloon');
+  select depot_sum_kind(d, 'basic') * price_at(price('drone'), coalesce((lv->>'drones')::int, 1));
 $;
 
 -- Сколько клеток с таким значением на карте.

@@ -145,6 +145,8 @@ const pt: Dict = {
   "upgrade.spraysEffect": "+25% de raio de extinção por nível",
   "upgrade.traps": "Armadilhas",
   "upgrade.trapsEffect": "+25% de raio de captura por nível",
+  "upgrade.balloons": "Balões",
+  "upgrade.balloonsEffect": "+25% de raio e +2 balões por nível",
   "upgrade.level": "nív. {level}",
   "upgrade.buy": "{cost} cr",
   "upgrade.max": "máx",
@@ -233,7 +235,7 @@ const pt: Dict = {
   "tool.trap": "Armadilha",
   "tool.rocket": "Lançador",
   "tool.drones": "Drones",
-  "tool.balloons": "Balões",
+  "tool.balloon": "Balões",
   "tool.price": "{cost} cr",
   "tool.areaHint": "Construir terreno novo",
   "tool.repairHint": "Reparar células queimadas",
@@ -242,7 +244,7 @@ const pt: Dict = {
   "tool.trapHint": "Prende drones com íman",
   "tool.rocketHint": "Mísseis guiados",
   "tool.dronesHint": "Drones e peças",
-  "tool.balloonsHint": "Balões que atrapalham os drones",
+  "tool.balloonHint": "De uso único: lança balões quando um drone se aproxima",
 
 
   "panel.base": "Armazém",
@@ -447,7 +449,6 @@ const pt: Dict = {
 
   "map.wholeMap": "Mapa inteiro",
   "map.hover.drones": "Drones · {n}",
-  "map.hover.balloons": "Balões · {n}",
 
   "menu.language": "Idioma",
   "menu.theme": "Tema",

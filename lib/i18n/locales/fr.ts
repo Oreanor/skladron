@@ -145,6 +145,8 @@ const fr: Dict = {
   "upgrade.spraysEffect": "+25 % de rayon d’extinction par niveau",
   "upgrade.traps": "Pièges",
   "upgrade.trapsEffect": "+25 % de rayon de capture par niveau",
+  "upgrade.balloons": "Ballons",
+  "upgrade.balloonsEffect": "+25 % de rayon et +2 ballons par niveau",
   "upgrade.level": "niv. {level}",
   "upgrade.buy": "{cost} cr",
   "upgrade.max": "max",
@@ -233,7 +235,7 @@ const fr: Dict = {
   "tool.trap": "Piège",
   "tool.rocket": "Lance-roquettes",
   "tool.drones": "Drones",
-  "tool.balloons": "Ballons",
+  "tool.balloon": "Ballons",
   "tool.price": "{cost} cr",
   "tool.areaHint": "Bâtir de nouvelles cases",
   "tool.repairHint": "Réparer les cases brûlées",
@@ -242,7 +244,7 @@ const fr: Dict = {
   "tool.trapHint": "Retient les drones par aimant",
   "tool.rocketHint": "Missiles guidés",
   "tool.dronesHint": "Drones et pièces détachées",
-  "tool.balloonsHint": "Ballons qui gênent les drones",
+  "tool.balloonHint": "À usage unique : lâche des ballons quand un drone approche",
 
 
   "panel.base": "Entrepôt",
@@ -447,7 +449,6 @@ const fr: Dict = {
 
   "map.wholeMap": "Toute la carte",
   "map.hover.drones": "Drones · {n}",
-  "map.hover.balloons": "Ballons · {n}",
 
   "menu.language": "Langue",
   "menu.theme": "Thème",

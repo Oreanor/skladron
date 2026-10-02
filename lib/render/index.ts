@@ -9,6 +9,7 @@ import {
 } from "../base";
 import {
   aimMode,
+  balloonRange,
   gunRange,
   rocketRange,
   sprayRange,
@@ -16,9 +17,10 @@ import {
   trapRange,
   type GameState,
 } from "../engine";
-import { BLOW, FX, GUN, ROCKET, SPRAY, SUPPRESS, TRAP } from "../tuning";
+import { BALLOON, BLOW, FX, GUN, ROCKET, SPRAY, SUPPRESS, TRAP } from "../tuning";
 import { COLORS } from "./colors";
 import {
+  drawBalloonPad,
   drawBalloons,
   drawDepots,
   drawRocket,
@@ -30,6 +32,7 @@ import {
 // Палитра и сами предметы живут в render/: их правят отдельно от кадра боя.
 export { COLORS, installColors } from "./colors";
 export {
+  drawBalloonPad,
   drawBalloons,
   drawDepots,
   drawRocket,
@@ -143,6 +146,9 @@ export function drawStatic(
       case "rocket":
         drawRocket(ctx, g.cx, g.cy, cell, angle, g.alive !== false);
         break;
+      case "balloon":
+        drawBalloonPad(ctx, g.cx, g.cy, cell, g.alive !== false);
+        break;
       default:
         drawTurret(ctx, g.cx, g.cy, cell, angle, g.alive !== false);
         break;
@@ -151,7 +157,7 @@ export function drawStatic(
 }
 
 /** Чьи круги покрытия показывать: зениток, ракетниц, огнетушителей, ловушек. */
-export type CoverageKind = "gun" | "rocket" | "spray" | "trap";
+export type CoverageKind = "gun" | "rocket" | "spray" | "trap" | "balloon";
 
 export function drawCoverage(
   ctx: CanvasRenderingContext2D,
@@ -164,18 +170,20 @@ export function drawCoverage(
         kind?: string;
         spray?: boolean;
         trap?: boolean;
+        balloon?: boolean;
       }[],
   cell: number,
   range: number = GUN.range,
   spraysRange: number = SPRAY.range,
   trapsRange: number = TRAP.range,
   rocketsRange: number = ROCKET.range,
+  balloonsRange: number = BALLOON.range,
   /**
    * Чьи круги рисовать. Пусто — ничьи: три набора кругов разом закрывают
    * склад так, что на нём уже ничего не разглядеть, поэтому в лобби видны
    * только круги того, что сейчас ставят.
    */
-  show: readonly CoverageKind[] = ["gun", "rocket", "spray", "trap"]
+  show: readonly CoverageKind[] = ["gun", "rocket", "spray", "trap", "balloon"]
 ) {
   if (!show.length) return;
   const live = guns.filter((g) => (g as { alive?: boolean }).alive !== false);
@@ -185,8 +193,11 @@ export function drawCoverage(
     spray?: boolean;
     trap?: boolean;
     rocket?: boolean;
+    balloon?: boolean;
   }): CoverageKind =>
-    g.kind === "trap" || g.trap === true
+    g.kind === "balloon" || g.balloon === true
+      ? "balloon"
+      : g.kind === "trap" || g.trap === true
       ? "trap"
       : g.kind === "spray" || g.spray === true
         ? "spray"
@@ -210,13 +221,18 @@ export function drawCoverage(
       fill: COLORS.trapRange,
       stroke: COLORS.trapRangeLine,
     },
+    balloon: {
+      r: balloonsRange,
+      fill: COLORS.balloonRange,
+      stroke: COLORS.balloonRangeLine,
+    },
   } as const;
 
   // Слой пересобираем, только когда поменялся набор живых установок или их
   // дальность: в бою это гибель установки, в лобби — постройка и
   // перестановка. В остальные кадры — одна готовая картинка.
   const key =
-    `${cell}|${show.join()}|${range}|${rocketsRange}|${spraysRange}|${trapsRange}|` +
+    `${cell}|${show.join()}|${range}|${rocketsRange}|${spraysRange}|${trapsRange}|${balloonsRange}|` +
     live.map((g) => `${g.cx},${g.cy},${kindOf(g)}`).join(";");
   let cached = coverageLayers.get(ctx.canvas);
   if (!cached || cached.key !== key) {
@@ -289,7 +305,9 @@ export function drawFrame(
 
   const reach = sprayRange(s);
   const trapsReach = trapRange(s);
-  if (zones) drawCoverage(ctx, s.guns, cell, gunRange(s), reach, trapsReach, rocketRange(s));
+  if (zones) {
+    drawCoverage(ctx, s.guns, cell, gunRange(s), reach, trapsReach, rocketRange(s), balloonRange(s));
+  }
   // Ракета в воздухе — значит направляющая пуста: по ней видно, кто сейчас
   // перезаряжается, а кто готов пустить.
   const launched = new Set<number>();
@@ -308,6 +326,10 @@ export function drawFrame(
       }
       case "rocket":
         drawRocket(ctx, g.cx, g.cy, cell, g.angle, g.alive, !launched.has(g.id));
+        break;
+      case "balloon":
+        // выпустила шары — на её месте ничего не осталось
+        if (!g.spent) drawBalloonPad(ctx, g.cx, g.cy, cell, g.alive);
         break;
       case "trap": {
         let held = 0;

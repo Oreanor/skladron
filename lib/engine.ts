@@ -31,7 +31,7 @@ import {
   TRAP,
   WAVE,
 } from "./tuning";
-import { depotKind, gunKind } from "./base";
+import { gunKind } from "./base";
 
 export { GRID, G_BASE, G_FIRE, G_GROUND, G_SCORCH, idx, isBuilding };
 export { G_BURNT } from "./base";
@@ -56,6 +56,12 @@ export interface Gun {
    * и держит в воздухе одну ракету за раз.
    */
   rocket: boolean;
+  /**
+   * Пусковая установка шаров: не стреляет, а один раз выбрасывает весь
+   * запас, когда в её круг входит дрон. После выпуска её нет — spent.
+   */
+  balloon: boolean;
+  spent: boolean;
   /** Сколько ещё секунд крутиться и лить. */
   wet: number;
   /**
@@ -167,6 +173,12 @@ export interface Balloon {
   ang: number;
   want: number;
   next: number;
+  /** Сколько ещё ждёт выпуска: пока ждёт, его нет ни на карте, ни в бою. */
+  wait: number;
+  /** Летит к своей точке в круге установки; долетел — дальше дрейфует. */
+  fly: boolean;
+  tx: number;
+  ty: number;
 }
 
 export interface Boom {
@@ -272,6 +284,7 @@ export interface GameState {
   sprayLevel: number;
   trapLevel: number;
   rocketLevel: number;
+  balloonLevel: number;
   mgLevel: number;
   waterLevel: number;
   dirty: boolean;
@@ -294,6 +307,14 @@ export const trapRange = (s: { trapLevel: number }) =>
 export const rocketRange = (s: { rocketLevel: number }) =>
   ROCKET.range * levelBonus(s.rocketLevel, ROCKET.perLevel);
 
+/** Радиус круга пусковой установки шаров с учётом уровня. */
+export const balloonRange = (s: { balloonLevel: number }) =>
+  BALLOON.range * levelBonus(s.balloonLevel, BALLOON.perLevel);
+
+/** Сколько шаров выбрасывает установка этого уровня: каждый уровень — ещё два. */
+export const balloonCount = (level: number) =>
+  BALLOON.count + BALLOON.countPerLevel * (Math.max(1, level) - 1);
+
 /**
  * Темп установки с учётом уровня: во столько раз быстрее она перезаряжается
  * и водит стволом. Один множитель на оба дела — «прокачанная пушка резвее»
@@ -312,6 +333,7 @@ export interface BattleLevels {
   sprays?: number;
   traps?: number;
   rockets?: number;
+  balloons?: number;
   mg?: number;
   water?: number;
   /**
@@ -353,12 +375,12 @@ export function createBattle(
       spray: gunKind(g) === "spray",
       trap: gunKind(g) === "trap",
       rocket: gunKind(g) === "rocket",
+      balloon: gunKind(g) === "balloon",
+      spent: false,
       wet: 0,
       jammed: 0,
     })),
-    // Шары налёт расходует целиком: контейнеры вскрываются на первой же
-    // секунде, и на склад после боя они не возвращаются.
-    depots: depots.filter((d) => depotKind(d) !== "balloon").map((d) => ({ ...d })),
+    depots: depots.map((d) => ({ ...d })),
     drones: [],
     missiles: [],
     rockets: [],
@@ -376,6 +398,7 @@ export function createBattle(
     sprayLevel: levels.sprays ?? 1,
     trapLevel: levels.traps ?? 1,
     rocketLevel: levels.rockets ?? 1,
+    balloonLevel: levels.balloons ?? 1,
     mgLevel: levels.mg ?? 1,
     waterLevel: levels.water ?? 1,
     planAt: 0,
@@ -413,47 +436,53 @@ export function createBattle(
     if (cell) cell.push(g);
     else s.gunBlocks.set(k, [g]);
   }
-  releaseBalloons(s, depots, baseCells);
   return s;
 }
 
+/** Шаг золотого угла: соседние шары расходятся, не складываясь в лучи. */
+const GOLDEN = Math.PI * (3 - Math.sqrt(5));
+
 /**
- * Выпускает шары из контейнеров — все разом, на первой же секунде боя.
- * Разносит их не по всей карте, а над складом и вокруг него с запасом:
- * заграждение имеет смысл там, куда рой идёт, а не у края поля.
+ * Пусковые установки шаров. Как только в круг установки входит дрон, она
+ * выбрасывает весь запас почти разом и пропадает. Точки шаров раскладываем
+ * по кругу ровно, но без узора: радиус — по равным долям площади, угол — по
+ * золотому сечению, и то и другое с дрожью. Так круг закрыт целиком, а не
+ * кольцом по краю и не кучей в середине.
  */
-function releaseBalloons(s: GameState, depots: Depot[], baseCells: number[]) {
-  let n = 0;
-  for (const d of depots) if (depotKind(d) === "balloon") n += d.n;
-  if (!n || !baseCells.length) return;
+function stepLaunchers(s: GameState) {
+  const r = balloonRange(s);
+  const r2 = r * r;
+  for (const g of s.guns) {
+    if (!g.balloon || !g.alive || g.spent) continue;
+    const gx = g.cx + 0.5;
+    const gy = g.cy + 0.5;
+    const near = s.drones.some(
+      (d) => !d.hit && (d.x - gx) * (d.x - gx) + (d.y - gy) * (d.y - gy) <= r2
+    );
+    if (!near) continue;
 
-  let x0 = GRID;
-  let y0 = GRID;
-  let x1 = 0;
-  let y1 = 0;
-  for (const i of baseCells) {
-    const x = i % GRID;
-    const y = (i / GRID) | 0;
-    if (x < x0) x0 = x;
-    if (x > x1) x1 = x;
-    if (y < y0) y0 = y;
-    if (y > y1) y1 = y;
-  }
-  x0 = Math.max(0, x0 - BALLOON.margin);
-  y0 = Math.max(0, y0 - BALLOON.margin);
-  x1 = Math.min(GRID, x1 + 1 + BALLOON.margin);
-  y1 = Math.min(GRID, y1 + 1 + BALLOON.margin);
-
-  for (let k = 0; k < n; k++) {
-    const ang = s.rnd() * Math.PI * 2;
-    s.balloons.push({
-      id: s.nextId++,
-      x: x0 + s.rnd() * (x1 - x0),
-      y: y0 + s.rnd() * (y1 - y0),
-      ang,
-      want: ang,
-      next: s.rnd() * BALLOON.rethink,
-    });
+    g.spent = true;
+    g.alive = false;
+    const n = balloonCount(s.balloonLevel);
+    const turn = s.rnd() * Math.PI * 2;
+    for (let k = 0; k < n; k++) {
+      const rr = r * Math.sqrt((k + 0.25 + s.rnd() * 0.5) / n);
+      const a = turn + k * GOLDEN + (s.rnd() - 0.5) * 0.5;
+      const ang = s.rnd() * Math.PI * 2;
+      s.balloons.push({
+        id: s.nextId++,
+        x: gx,
+        y: gy,
+        tx: Math.max(0, Math.min(GRID, gx + Math.cos(a) * rr)),
+        ty: Math.max(0, Math.min(GRID, gy + Math.sin(a) * rr)),
+        fly: true,
+        wait: s.rnd() * BALLOON.spread,
+        ang,
+        want: ang,
+        next: BALLOON.rethink * (0.5 + s.rnd()),
+      });
+    }
+    s.dirty = true;
   }
 }
 
@@ -531,6 +560,9 @@ function killGun(s: GameState, g: Gun) {
       break;
     case "rocket":
       s.result.rocketsLost++;
+      break;
+    case "balloon":
+      // разовая установка: сгорела до выпуска — шаров не будет, и только
       break;
     default:
       s.result.gunsLost++;
@@ -820,8 +852,10 @@ function spawnDrone(s: GameState, t: SpawnTicket) {
  * Род установки. Ракетница числится по зенитному ведомству: глушилка
  * пушек накрывает и её — обе стреляют по одной и той же радарной картинке.
  */
-type GunClass = "gun" | "spray" | "trap";
-const gunClass = (g: Gun): GunClass => (g.trap ? "trap" : g.spray ? "spray" : "gun");
+type GunClass = "gun" | "spray" | "trap" | "balloon";
+// У пусковой шаров свой род: её не глушит ни одна начинка.
+const gunClass = (g: Gun): GunClass =>
+  g.balloon ? "balloon" : g.trap ? "trap" : g.spray ? "spray" : "gun";
 
 /**
  * Кого глушит эта начинка. Раньше здесь был булев ответ «зенитки или
@@ -1388,7 +1422,7 @@ function turnTurret(g: Gun, rate: number, dt: number) {
 
 function stepGuns(s: GameState, dt: number) {
   for (const g of s.guns) {
-    if (!g.alive || g.spray || g.trap || g.rocket) continue;
+    if (!g.alive || g.spray || g.trap || g.rocket || g.balloon) continue;
 
     // Заглушённая зенитка не стреляет. Башню всё равно доворачиваем — по
     // шевелящемуся стволу видно, что пушка жива, просто её глушат.
@@ -1628,6 +1662,27 @@ function stepBalloons(s: GameState, dt: number) {
   if (!s.balloons.length) return;
 
   for (const b of s.balloons) {
+    if (b.wait > 0) {
+      b.wait -= dt;
+      continue;
+    }
+    if (b.fly) {
+      // К своей точке — быстро, у самой точки плавно гасит ход, а там уже
+      // дрейфует, как все.
+      const dx = b.tx - b.x;
+      const dy = b.ty - b.y;
+      const dist = Math.hypot(dx, dy);
+      const step = Math.min(dist, Math.min(BALLOON.flySpeed, 0.4 + dist * BALLOON.flyEase) * dt);
+      if (dist < 0.05 || step >= dist) {
+        b.x = b.tx;
+        b.y = b.ty;
+        b.fly = false;
+      } else {
+        b.x += (dx / dist) * step;
+        b.y += (dy / dist) * step;
+      }
+      continue;
+    }
     b.next -= dt;
     if (b.next <= 0) {
       b.next = BALLOON.rethink * (0.5 + s.rnd());
@@ -1680,6 +1735,7 @@ function stepBalloons(s: GameState, dt: number) {
   // в свою клетку и восемь соседних.
   const at = new Map<number, Balloon[]>();
   for (const b of s.balloons) {
+    if (b.wait > 0) continue; // ещё не выпущен
     const key = ((b.y | 0) << 8) | (b.x | 0);
     const cellList = at.get(key);
     if (cellList) cellList.push(b);
@@ -1838,6 +1894,7 @@ export function update(s: GameState, dt: number) {
   for (const d of s.drones) dronesById.set(d.id, d);
   stepMissiles(s, dt);
   stepRockets(s, dt, dronesById);
+  stepLaunchers(s);
   stepBalloons(s, dt);
   stepFire(s, dt);
   stepEffects(s, dt);
@@ -1878,7 +1935,9 @@ export function settle(s: GameState) {
     guns: s.guns
       .filter((g) => g.alive)
       .map((g) =>
-        g.trap
+        g.balloon
+          ? { cx: g.cx, cy: g.cy, kind: "balloon" as const }
+          : g.trap
           ? { cx: g.cx, cy: g.cy, kind: "trap" as const }
           : g.spray
             ? { cx: g.cx, cy: g.cy, kind: "spray" as const }

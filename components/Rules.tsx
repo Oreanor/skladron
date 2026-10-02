@@ -5,7 +5,7 @@
 
 import {
   CELL_COST,
-  BALLOON_UNIT_COST,
+  BALLOON_COST,
   CELL_LOOT_REWARD,
   attackLoot,
   CREDITS_START,
@@ -35,8 +35,8 @@ import {
   fmt,
 } from "@/lib/economy";
 
-import { BALLOONS_PER_CELL, DRONES_PER_CELL } from "@/lib/base";
-import { FIRE, GUN, RAID, ROCKET, SPRAY, TRAP } from "@/lib/tuning";
+import { DRONES_PER_CELL } from "@/lib/base";
+import { BALLOON, FIRE, GUN, RAID, ROCKET, SPRAY, TRAP } from "@/lib/tuning";
 import { RULES } from "@/lib/i18n/rules";
 import { useSettings } from "@/lib/i18n";
 import { Button, Modal, SectionTitle } from "./ui";
@@ -61,7 +61,9 @@ const values: Record<string, string> = {
   trapCap: String(TRAP.capacity),
   perCell: String(DRONES_PER_CELL),
   droneBox: String(DRONE_UNIT_COST * DRONES_PER_CELL),
-  balloonBox: String(BALLOON_UNIT_COST * BALLOONS_PER_CELL),
+  balloon: String(BALLOON_COST),
+  balloonRange: String(BALLOON.range),
+  balloonCount: String(BALLOON.count),
   gunRange: String(GUN.range),
   reload: String(GUN.cooldown),
   spread: String(FIRE.spread),

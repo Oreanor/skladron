@@ -8,7 +8,6 @@ import {
   decodeCells,
   decodePgBytea,
   encodeRle,
-  type DepotKind,
   sanitizeGuns,
 } from "./base";
 
@@ -109,7 +108,7 @@ export interface Repo {
    */
   reloadBase(p: Player): Promise<void>;
   /** Докупка в контейнеры: дроны или шары, счёт в штуках. */
-  buyDepot(p: Player, amount: number, kind: DepotKind): Promise<Partial<Player>>;
+  buyDepot(p: Player, amount: number): Promise<Partial<Player>>;
   /**
    * Состязание на свой склад: сервер ставит его в очередь как налёт на
    * самого себя, и бой идёт той же дорогой, что живой. Возвращает id налёта.
@@ -257,7 +256,7 @@ class LocalRepo implements Repo {
     return { credits: p.credits, levels: p.levels };
   }
 
-  async buyDepot(p: Player, _amount: number, _kind: DepotKind) {
+  async buyDepot(p: Player) {
     localSave(p);
     return {};
   }
@@ -889,10 +888,9 @@ class CloudRepo implements Repo {
 
 
 
-  async buyDepot(p: Player, amount: number, kind: DepotKind) {
+  async buyDepot(p: Player, amount: number) {
     const { data, error } = await this.db().rpc("buy_depot", {
       amount,
-      depot_kind: kind,
       new_depots: p.depots,
     });
     if (error) throw error;

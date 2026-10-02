@@ -408,80 +408,79 @@ console.log("\n— премия нападавшему растёт с доле�
 console.log("\n— шары заграждения —");
 {
   const ord = (waves) => order(waves, { seed: 313 });
-  const packs = (n) => {
+  // пусковые установки шаров — это установки, а не ящики
+  const pads = (n) => {
     const out = [];
     const o = ((GRID - 30) / 2) | 0;
     for (let k = 0; k < n; k++) {
-      out.push({ cx: o + 1 + (k % 8) * 3, cy: o + 1 + ((k / 8) | 0) * 3, n: 10, kind: "balloon" });
+      out.push({ cx: o + 1 + (k % 8) * 3, cy: o + 2 + ((k / 8) | 0) * 3, kind: "balloon" });
     }
     return out;
   };
+  const run = (s) => {
+    const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);
+    let steps = 0;
+    while (steps < cap && s.phase === "playing") { E.update(s, T.SIM.step); steps++; }
+    return steps;
+  };
   const raid = [wave("swarm", [g("plain", 60)])];
+  const range = E.balloonRange({ balloonLevel: 1 });
 
-  // Пять контейнеров — полсотни шаров в воздухе с первой секунды.
+  // До боя шаров нет, а как только дрон вошёл в круг — установка выбросила
+  // свой запас и пропала.
   {
-    const s = E.createBattle(base(), [], packs(5), A.buildPlan(ord(raid)), { seed: 313 });
-    check("контейнеры вскрываются разом", s.balloons.length === 50,
-      `в воздухе ${s.balloons.length}`);
-    check("контейнеры с шарами на складе не остаются", s.depots.length === 0,
-      `осталось ${s.depots.length}`);
+    const s = E.createBattle(base(), pads(1), [], A.buildPlan(ord(raid)), { seed: 313 });
+    check("до дронов шаров нет", s.balloons.length === 0, `в воздухе ${s.balloons.length}`);
+    const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);
+    let steps = 0;
+    while (steps < cap && s.phase === "playing" && !s.guns[0].spent) { E.update(s, T.SIM.step); steps++; }
+    check("дрон вошёл в круг — шары выпущены", s.guns[0].spent && s.balloons.length === T.BALLOON.count,
+      `выпущено ${s.balloons.length}`);
+    // долетели до своих точек — смотрим, как легли
+    for (let k = 0; k < 120; k++) E.update(s, T.SIM.step);
+    const gx = s.guns[0].cx + 0.5;
+    const gy = s.guns[0].cy + 0.5;
+    const d = s.balloons.map((q) => Math.hypot(q.x - gx, q.y - gy));
+    const far = Math.max(...d);
+    const mean = d.reduce((x, y) => x + y, 0) / Math.max(1, d.length);
+    check("шары ложатся по кругу установки, а не за ним", far <= range + 0.6,
+      `дальний ${far.toFixed(2)} при радиусе ${range}`);
+    check("кругом целиком, а не кольцом по краю и не кучей", mean > range * 0.45 && mean < range * 0.85,
+      `в среднем ${mean.toFixed(2)} от центра при радиусе ${range}`);
+    const out = E.settle(s);
+    check("выпустившая установка со склада ушла", out.guns.length === 0, JSON.stringify(out.guns));
+  }
+
+  // Каждый уровень — шире круг и на два шара больше.
+  {
+    const s = E.createBattle(base(), pads(1), [], A.buildPlan(ord(raid)), { seed: 313, balloons: 3 });
+    run(s);
+    check("третий уровень выпускает на четыре шара больше", E.balloonCount(3) === T.BALLOON.count + 4,
+      String(E.balloonCount(3)));
+    check("и круг у него шире", E.balloonRange({ balloonLevel: 3 }) > range);
   }
 
   // Дроны об них бьются, склад при этом цел.
   {
-    const s = E.createBattle(base(), [], packs(8), A.buildPlan(ord(raid)), { seed: 313 });
-    const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);
-    let steps = 0;
-    while (steps < cap && s.phase === "playing") { E.update(s, T.SIM.step); steps++; }
+    const s = E.createBattle(base(), pads(8), [], A.buildPlan(ord(raid)), { seed: 313 });
+    run(s);
     E.settle(s);
     check("дроны бьются о шары", s.result.killedByBalloons > 0,
       `разбилось ${s.result.killedByBalloons} из ${A.raidTotal(raid)}`);
-    check("шары не жгут склад", s.result.killedByBalloons <= 80 - s.balloons.length,
-      `лопнуло ${80 - s.balloons.length}, сбито ${s.result.killedByBalloons}`);
     const acc =
       s.result.killedByGuns + s.result.killedByMg + s.result.killedByBalloons + s.result.leaked;
     check("счёт сходится и с шарами", acc === A.raidTotal(raid),
       `учтено ${acc}/${A.raidTotal(raid)}`);
   }
 
-  // Своим же снарядам шары мешают: под сплошным заграждением зенитки
-  // снимают меньше, чем в чистом небе.
-  {
-    const guns = spread(30, 7);
-    const kills = (depots) => {
-      const s = E.createBattle(base(), guns, depots, A.buildPlan(ord(raid)), {
-        seed: 313, guns: 2,
-      });
-      const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);
-      let steps = 0;
-      while (steps < cap && s.phase === "playing") { E.update(s, T.SIM.step); steps++; }
-      return s.result.killedByGuns;
-    };
-    const clear = kills([]);
-    const walled = kills(packs(8));
-    check("сплошное заграждение мешает и своим пушкам", walled < clear,
-      `в чистом небе ${clear}, под шарами ${walled}`);
-  }
-
   // Обдув: шары не лопаются, а расходятся, и рой проходит.
   {
-    const traps = [];
-    const o = ((GRID - 30) / 2) | 0;
-    const balloons = [];
-    for (let k = 0; k < 8; k++) {
-      balloons.push({
-        cx: o + 1 + (k % 6) * 2, cy: o + 1 + ((k / 6) | 0) * 2, n: 10, kind: "balloon",
-      });
-    }
     const through = (payload) => {
       const waves = [wave("swarm", [g(payload, 60)])];
-      const s = E.createBattle(base(), traps, balloons,
-        A.buildPlan(ord(waves)), { seed: 505 });
-      const born = s.balloons.length;
-      const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);
-      let steps = 0;
-      while (steps < cap && s.phase === "playing") { E.update(s, T.SIM.step); steps++; }
+      const s = E.createBattle(base(), pads(8), [], A.buildPlan(ord(waves)), { seed: 505 });
+      run(s);
       E.settle(s);
+      const born = s.guns.filter((q) => q.spent).length * T.BALLOON.count;
       return { hit: s.result.killedByBalloons, left: s.balloons.length, born };
     };
     const plain = through("plain");
@@ -498,9 +497,7 @@ console.log("\n— шары заграждения —");
     const waves = [wave("rings", [g("blower", 30)])];
     const s = E.createBattle(base(), spread(30, 9), [],
       A.buildPlan(ord(waves)), { seed: 505, guns: 2 });
-    const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);
-    let steps = 0;
-    while (steps < cap && s.phase === "playing") { E.update(s, T.SIM.step); steps++; }
+    run(s);
     E.settle(s);
     const acc =
       s.result.killedByGuns + s.result.killedByMg + s.result.killedByBalloons + s.result.leaked;
@@ -511,11 +508,9 @@ console.log("\n— шары заграждения —");
 
   // Бой не должен подвиснуть из-за того, что шары висят вечно.
   {
-    const s = E.createBattle(base(), spread(30, 7), packs(6),
+    const s = E.createBattle(base(), [...spread(30, 7), ...pads(6)], [],
       A.buildPlan(ord([wave("rings", [g("plain", 40)])])), { seed: 313, guns: 2 });
-    const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);
-    let steps = 0;
-    while (steps < cap && s.phase === "playing") { E.update(s, T.SIM.step); steps++; }
+    const steps = run(s);
     check("шары не держат бой открытым", s.phase !== "playing",
       `фаза ${s.phase} за ${(steps * T.SIM.step).toFixed(1)} c, шаров осталось ${s.balloons.length}`);
   }

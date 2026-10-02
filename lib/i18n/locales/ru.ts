@@ -145,6 +145,8 @@ const ru: Dict = {
   "upgrade.spraysEffect": "+25% к радиусу тушения за уровень",
   "upgrade.traps": "Ловушки",
   "upgrade.trapsEffect": "+25% к радиусу захвата за уровень",
+  "upgrade.balloons": "Шары",
+  "upgrade.balloonsEffect": "+25% к радиусу и +2 шара за уровень",
   "upgrade.level": "ур. {level}",
   "upgrade.buy": "{cost} кр",
   "upgrade.max": "предел",
@@ -233,7 +235,7 @@ const ru: Dict = {
   "tool.trap": "Ловушка",
   "tool.rocket": "Ракетница",
   "tool.drones": "Дроны",
-  "tool.balloons": "Шары",
+  "tool.balloon": "Шары",
   "tool.price": "{cost} кр",
   "tool.areaHint": "Построить новые площади",
   "tool.repairHint": "Ремонт сгоревших клеток",
@@ -242,7 +244,7 @@ const ru: Dict = {
   "tool.trapHint": "Удерживает дроны магнитом",
   "tool.rocketHint": "Самонаводящиеся ракеты",
   "tool.dronesHint": "Дроны и запчасти",
-  "tool.balloonsHint": "Воздушные шары, мешающие дронам",
+  "tool.balloonHint": "Разовая: выбрасывает шары, когда рядом дрон",
 
 
   "panel.base": "Склад",
@@ -447,7 +449,6 @@ const ru: Dict = {
 
   "map.wholeMap": "Вся карта",
   "map.hover.drones": "Дроны · {n}",
-  "map.hover.balloons": "Шары · {n}",
 
   "menu.language": "Язык",
   "menu.theme": "Тема",

@@ -10,9 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import {
+  DRONES_PER_CELL,
   GRID,
-  balloonCount,
-  type DepotKind,
   droneCount,
   countFreeCells,
   countKind,
@@ -69,13 +68,19 @@ import {
 import type { Account } from "./AuthGate";
 import Enemies, { EnemyProfile } from "./lobby/Enemies";
 import { type View } from "@/lib/render";
-import { rocketRange, rocketTempo, sprayRange, trapRange } from "@/lib/engine";
+import {
+  balloonCount,
+  balloonRange,
+  rocketRange,
+  rocketTempo,
+  sprayRange,
+  trapRange,
+} from "@/lib/engine";
 import { RAID, ROCKET } from "@/lib/tuning";
 import {
   applyDraft,
   buildOne as buildCell,
   depotCost,
-  depotSize,
   draftPlan,
   gunCost,
   moveDepot as shiftDepot,
@@ -518,8 +523,7 @@ export default function Lobby({
    */
   const toolPrice = (item: (typeof TOOLS)[number]) => {
     if (isBuildKind(item.id)) return gunCost(p.levels, item.id);
-    if (item.id === "drones") return depotCost(p.levels, "basic");
-    if (item.id === "balloons") return depotCost(p.levels, "balloon");
+    if (item.id === "drones") return depotCost(p.levels);
     return item.vars.cost;
   };
 
@@ -537,6 +541,12 @@ export default function Lobby({
       return { ...item.vars, range: Math.round(sprayRange({ sprayLevel: p.levels.sprays })) };
     if (item.id === "trap")
       return { ...item.vars, range: Math.round(trapRange({ trapLevel: p.levels.traps })) };
+    if (item.id === "balloon")
+      return {
+        ...item.vars,
+        range: Math.round(balloonRange({ balloonLevel: p.levels.balloons })),
+        count: balloonCount(p.levels.balloons),
+      };
     if (item.id === "drones") return { ...item.vars, cost: toolPrice(item) };
     return item.vars;
   };
@@ -549,7 +559,7 @@ export default function Lobby({
     sprays: countKind(p.guns, "spray"),
     traps: countKind(p.guns, "trap"),
     drones,
-    balloons: balloonCount(p.depots),
+    balloons: countKind(p.guns, "balloon"),
     // у кредита в углу висит долг, а если долгов нет — ничего
     loan: p.loan || undefined,
   };
@@ -569,6 +579,7 @@ export default function Lobby({
           rockets: p.levels.rockets,
           sprays: p.levels.sprays,
           traps: p.levels.traps,
+          balloons: p.levels.balloons,
           mg: p.levels.mg,
           water: p.levels.water,
         }}
@@ -733,16 +744,16 @@ export default function Lobby({
    * появился ящик, деньги списались. Ставим сразу, не дожидаясь сервера, а
    * откажет — возвращаем как было.
    */
-  const buyDepotAt = async (x: number, y: number, kind: DepotKind = "basic") => {
+  const buyDepotAt = async (x: number, y: number) => {
     const previousDepots = p.depots;
     const previousCredits = p.credits;
-    if (!act(placeDepot(p, x, y, kind), { x, y })) return;
+    if (!act(placeDepot(p, x, y), { x, y })) return;
     if (p.depots === previousDepots) return; // клетка уже занята своим же ящиком
 
     setVersion((v) => v + 1);
     forceRender((v) => v + 1);
     try {
-      const patch = await repo.buyDepot(p, depotSize(kind), kind);
+      const patch = await repo.buyDepot(p, DRONES_PER_CELL);
       if (patch.credits !== undefined) p.credits = patch.credits;
       forceRender((v) => v + 1);
     } catch (e) {

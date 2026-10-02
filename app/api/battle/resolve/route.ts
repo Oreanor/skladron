@@ -34,7 +34,7 @@ interface ClaimRow {
   cells: string;
   guns: Gun[];
   depots: Depot[];
-  levels: Record<"guns" | "rockets" | "sprays" | "traps" | "mg" | "water", number>;
+  levels: Record<"guns" | "rockets" | "sprays" | "traps" | "balloons" | "mg" | "water", number>;
   drones: number;
   pattern: Pattern;
   direction: number;
@@ -144,6 +144,7 @@ export async function POST(request: Request) {
         rockets: snap.levels.rockets,
         sprays: snap.levels.sprays,
         traps: snap.levels.traps,
+        balloons: snap.levels.balloons,
         mg: snap.levels.mg,
         water: snap.levels.water,
       },

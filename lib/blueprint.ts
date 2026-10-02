@@ -17,7 +17,7 @@ import {
   type Gun,
 } from "./base";
 import {
-  BALLOON_UNIT_COST,
+  BALLOON_COST,
   CELL_COST,
   DRONE_UNIT_COST,
   GUN_COST,
@@ -62,8 +62,6 @@ const countCells = (cells: Uint8Array, v: number) => {
   return n;
 };
 
-const sumKind = (depots: Depot[], balloons: boolean) =>
-  depots.reduce((n, d) => ((d.kind === "balloon") === balloons ? n + d.n : n), 0);
 
 /** Установки по нынешней цене закупки с учётом уровней. */
 export function installValue(guns: Gun[], lv: Levels) {
@@ -71,16 +69,14 @@ export function installValue(guns: Gun[], lv: Levels) {
     countKind(guns, "gun") * priceAt(GUN_COST, lv.guns) +
     countKind(guns, "rocket") * priceAt(ROCKET_COST, lv.rockets) +
     countKind(guns, "spray") * priceAt(SPRAY_COST, lv.sprays) +
-    countKind(guns, "trap") * priceAt(TRAP_COST, lv.traps)
+    countKind(guns, "trap") * priceAt(TRAP_COST, lv.traps) +
+    countKind(guns, "balloon") * priceAt(BALLOON_COST, lv.balloons)
   );
 }
 
 /** Содержимое контейнеров по цене закупки. */
 export function goodsValue(depots: Depot[], lv: Levels) {
-  return (
-    sumKind(depots, false) * priceAt(DRONE_UNIT_COST, lv.drones) +
-    sumKind(depots, true) * BALLOON_UNIT_COST
-  );
+  return depots.reduce((n, d) => n + d.n, 0) * priceAt(DRONE_UNIT_COST, lv.drones);
 }
 
 /** Что входит в чертёж: площадь и установки по видам. */
@@ -92,6 +88,7 @@ export function blueprintCounts(b: Pick<Blueprint, "cells" | "guns">) {
     rocket: countKind(b.guns, "rocket"),
     spray: countKind(b.guns, "spray"),
     trap: countKind(b.guns, "trap"),
+    balloon: countKind(b.guns, "balloon"),
   };
 }
 

@@ -145,6 +145,8 @@ const it: Dict = {
   "upgrade.spraysEffect": "+25% di raggio di spegnimento per livello",
   "upgrade.traps": "Trappole",
   "upgrade.trapsEffect": "+25% di raggio di cattura per livello",
+  "upgrade.balloons": "Palloni",
+  "upgrade.balloonsEffect": "+25% di raggio e +2 palloni per livello",
   "upgrade.level": "liv. {level}",
   "upgrade.buy": "{cost} cr",
   "upgrade.max": "max",
@@ -233,7 +235,7 @@ const it: Dict = {
   "tool.trap": "Trappola",
   "tool.rocket": "Lanciarazzi",
   "tool.drones": "Droni",
-  "tool.balloons": "Palloni",
+  "tool.balloon": "Palloni",
   "tool.price": "{cost} cr",
   "tool.areaHint": "Costruire nuovo terreno",
   "tool.repairHint": "Riparare celle bruciate",
@@ -242,7 +244,7 @@ const it: Dict = {
   "tool.trapHint": "Trattiene droni col magnete",
   "tool.rocketHint": "Missili guidati",
   "tool.dronesHint": "Droni e ricambi",
-  "tool.balloonsHint": "Palloni che ostacolano i droni",
+  "tool.balloonHint": "Monouso: lancia palloni quando arriva un drone",
 
 
   "panel.base": "Magazzino",
@@ -447,7 +449,6 @@ const it: Dict = {
 
   "map.wholeMap": "Tutta la mappa",
   "map.hover.drones": "Droni · {n}",
-  "map.hover.balloons": "Palloni · {n}",
 
   "menu.language": "Lingua",
   "menu.theme": "Tema",

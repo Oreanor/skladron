@@ -12,11 +12,10 @@ export const ROCKET_COST = 200;
 export const TRAP_COST = 200;
 export const DRONE_UNIT_COST = 25; // ударный дрон дороже разведчика
 /**
- * Шар стоит пятёрку: контейнер на десяток — полсотни. Прокачки у шаров нет
- * и не будет — они не стреляют и не наводятся, вся их польза в том, что
- * они просто висят.
+ * Пусковая установка шаров. Разовая: выбрасывает шары, когда в её круг
+ * входит дрон, и пропадает, — оттого дешевле зенитки.
  */
-export const BALLOON_UNIT_COST = 5;
+export const BALLOON_COST = 80;
 /** Сколько платят за сданные во вторсырьё остатки сгоревшей клетки. */
 export const SCRAP_REWARD = 5;
 
@@ -85,11 +84,8 @@ export const insuranceShare = (level: number) =>
   Math.min(1, Math.max(0, level - 1) * INSURANCE_PER_LEVEL);
 
 /** Во что обошлось то, что лежит в контейнерах. */
-export const goodsValue = (depots: { n: number; kind?: string }[]) =>
-  depots.reduce(
-    (sum, d) => sum + d.n * (d.kind === "balloon" ? BALLOON_UNIT_COST : DRONE_UNIT_COST),
-    0
-  );
+export const goodsValue = (depots: { n: number }[]) =>
+  depots.reduce((sum, d) => sum + d.n * DRONE_UNIT_COST, 0);
 
 /** Страховая выплата: расчистка клеток плюс доля стоимости потерянного. */
 export const insurance = (
@@ -138,6 +134,7 @@ export type UpgradeKind =
   | "rockets"
   | "sprays"
   | "traps"
+  | "balloons"
   | "mg"
   | "water"
   | "insurance";
@@ -147,6 +144,7 @@ export const UPGRADE_KINDS: UpgradeKind[] = [
   "rockets",
   "sprays",
   "traps",
+  "balloons",
   "mg",
   "water",
   "insurance",

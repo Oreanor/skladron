@@ -145,6 +145,8 @@ const de: Dict = {
   "upgrade.spraysEffect": "+25 % Löschradius je Stufe",
   "upgrade.traps": "Fallen",
   "upgrade.trapsEffect": "+25 % Fangradius je Stufe",
+  "upgrade.balloons": "Ballons",
+  "upgrade.balloonsEffect": "+25 % Radius und +2 Ballons je Stufe",
   "upgrade.level": "St. {level}",
   "upgrade.buy": "{cost} Cr",
   "upgrade.max": "max",
@@ -233,7 +235,7 @@ const de: Dict = {
   "tool.trap": "Falle",
   "tool.rocket": "Raketenwerfer",
   "tool.drones": "Drohnen",
-  "tool.balloons": "Ballons",
+  "tool.balloon": "Ballons",
   "tool.price": "{cost} Cr",
   "tool.areaHint": "Neue Fläche bauen",
   "tool.repairHint": "Verbrannte Felder reparieren",
@@ -242,7 +244,7 @@ const de: Dict = {
   "tool.trapHint": "Hält Drohnen per Magnet",
   "tool.rocketHint": "Zielsuchende Raketen",
   "tool.dronesHint": "Drohnen und Ersatzteile",
-  "tool.balloonsHint": "Ballons, die Drohnen behindern",
+  "tool.balloonHint": "Einmalig: wirft Ballons aus, wenn eine Drohne naht",
 
 
   "panel.base": "Lager",
@@ -447,7 +449,6 @@ const de: Dict = {
 
   "map.wholeMap": "Ganze Karte",
   "map.hover.drones": "Drohnen · {n}",
-  "map.hover.balloons": "Ballons · {n}",
 
   "menu.language": "Sprache",
   "menu.theme": "Design",

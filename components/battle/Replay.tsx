@@ -39,6 +39,7 @@ export interface ReplayData {
     rockets?: number;
     sprays?: number;
     traps?: number;
+    balloons?: number;
     mg?: number;
     water?: number;
   };

@@ -13,8 +13,11 @@ export const idx = (x: number, y: number) => y * GRID + x;
 export const isBuilding = (v: number) =>
   v === G_BASE || v === G_FIRE || v === G_BURNT;
 
-/** Что стоит на клетке склада: зенитка, ракетница, огнетушитель, ловушка. */
-export type GunKind = "gun" | "rocket" | "spray" | "trap";
+/**
+ * Что стоит на клетке склада: зенитка, ракетница, огнетушитель, ловушка и
+ * пусковая установка шаров.
+ */
+export type GunKind = "gun" | "rocket" | "spray" | "trap" | "balloon";
 
 export interface Gun {
   cx: number;
@@ -32,8 +35,10 @@ export const gunKind = (g: {
   spray?: boolean;
   trap?: boolean;
   rocket?: boolean;
+  balloon?: boolean;
 }): GunKind => {
   if (g.kind) return g.kind;
+  if (g.balloon) return "balloon";
   if (g.trap) return "trap";
   if (g.spray) return "spray";
   if (g.rocket) return "rocket";
@@ -42,33 +47,16 @@ export const gunKind = (g: {
 export const countKind = (guns: Gun[], kind: GunKind) =>
   guns.reduce((n, g) => (gunKind(g) === kind ? n + 1 : n), 0);
 
-/**
- * Что лежит в контейнере. Шары занимают клетку так же, как дроны, и
- * покупаются тем же движением — разница только в цене и в том, что налёт
- * их расходует.
- */
-export type DepotKind = "basic" | "balloon";
-
+/** Контейнер с дронами на клетке склада. */
 export interface Depot {
   cx: number;
   cy: number;
   n: number;
-  /** Без поля — обычный контейнер с дронами. */
-  kind?: DepotKind;
 }
 
 export const DRONES_PER_CELL = 10;
-/** Шаров в контейнере столько же, сколько дронов: десяток. */
-export const BALLOONS_PER_CELL = 10;
 
-export const depotKind = (d: Depot): DepotKind =>
-  d.kind === "balloon" ? "balloon" : "basic";
-
-export const droneCount = (depots: Depot[]) =>
-  depots.reduce((sum, d) => (depotKind(d) === "basic" ? sum + d.n : sum), 0);
-
-export const balloonCount = (depots: Depot[]) =>
-  depots.reduce((sum, d) => (depotKind(d) === "balloon" ? sum + d.n : sum), 0);
+export const droneCount = (depots: Depot[]) => depots.reduce((sum, d) => sum + d.n, 0);
 
 /**
  * Пушки/огнетушители/ловушки для save_base: только cx/cy/kind.

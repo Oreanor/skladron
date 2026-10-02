@@ -145,6 +145,8 @@ const es: Dict = {
   "upgrade.spraysEffect": "+25% de radio de extinción por nivel",
   "upgrade.traps": "Trampas",
   "upgrade.trapsEffect": "+25% de radio de captura por nivel",
+  "upgrade.balloons": "Globos",
+  "upgrade.balloonsEffect": "+25% de radio y +2 globos por nivel",
   "upgrade.level": "niv. {level}",
   "upgrade.buy": "{cost} cr",
   "upgrade.max": "máx",
@@ -233,7 +235,7 @@ const es: Dict = {
   "tool.trap": "Trampa",
   "tool.rocket": "Lanzadera",
   "tool.drones": "Drones",
-  "tool.balloons": "Globos",
+  "tool.balloon": "Globos",
   "tool.price": "{cost} cr",
   "tool.areaHint": "Construir terreno nuevo",
   "tool.repairHint": "Reparar celdas quemadas",
@@ -242,7 +244,7 @@ const es: Dict = {
   "tool.trapHint": "Retiene drones con imán",
   "tool.rocketHint": "Misiles guiados",
   "tool.dronesHint": "Drones y repuestos",
-  "tool.balloonsHint": "Globos que estorban a los drones",
+  "tool.balloonHint": "De un solo uso: suelta globos cuando se acerca un dron",
 
 
   "panel.base": "Almacén",
@@ -447,7 +449,6 @@ const es: Dict = {
 
   "map.wholeMap": "Todo el mapa",
   "map.hover.drones": "Drones · {n}",
-  "map.hover.balloons": "Globos · {n}",
 
   "menu.language": "Idioma",
   "menu.theme": "Tema",

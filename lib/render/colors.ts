@@ -28,6 +28,12 @@ export const COLORS = {
   trapTop: "#e0b84a",
   trapRange: "rgba(224, 184, 74, 0.14)",
   trapRangeLine: "rgba(232, 196, 90, 0.5)",
+  // Пусковая шаров — розовая: с красным огнетушителем рядом не спутать, а
+  // сами шары на ней и в воздухе красные. Розовым же обведён её круг.
+  balloonPad: "#3a1622",
+  balloonPadTop: "#f9a8c4",
+  balloonRange: "rgba(249, 168, 196, 0.12)",
+  balloonRangeLine: "rgba(249, 168, 196, 0.5)",
   range: "rgba(120, 200, 255, 0.16)",
   rangeLine: "rgba(140, 215, 255, 0.55)",
   drone: "#2b2b2b",
@@ -95,8 +101,10 @@ export const COLORS = {
 };
 
 /** Цвета маркера установки на карте разведки — те же, что и в бою. */
-export function installColors(kind: "gun" | "rocket" | "spray" | "trap") {
+export function installColors(kind: "gun" | "rocket" | "spray" | "trap" | "balloon") {
   switch (kind) {
+    case "balloon":
+      return { body: COLORS.balloonPad, top: COLORS.balloonPadTop };
     case "rocket":
       return { body: COLORS.rocket, top: COLORS.rocketTop };
     case "spray":
