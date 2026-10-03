@@ -128,6 +128,7 @@ const en = {
   "rules.colSurcharge": "Surcharge",
   "rules.colSpeed": "Speed",
   "rules.colFrom": "Missions from #",
+  "rules.grows": "{a} ({b} at level 10)",
   "income.sold": " · shipped out: {drones} drones for {dronesValue} cr",
   "replay.watch": "Watch replay",
   "replay.again": "Replay",

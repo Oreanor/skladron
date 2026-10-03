@@ -33,13 +33,22 @@ import {
 } from "@/lib/economy";
 
 import { DRONES_PER_CELL } from "@/lib/base";
-import { BALLOON, FIRE, GUN, RAID, ROCKET, SHOOTER, SPRAY, TRAP } from "@/lib/tuning";
+import { FIRE, GUN, RAID, ROCKET, SHOOTER, TRAP } from "@/lib/tuning";
 import { RULES } from "@/lib/i18n/rules";
 import { useSettings } from "@/lib/i18n";
 import { Button, Modal, SectionTitle } from "./ui";
 import type { ReactNode } from "react";
 import { BALLOON_TOP, GUN_TOP, MAX_LEVEL, MIN_BASE_CELLS, ROCKET_TOP, SPRAY_TOP, TRAP_TOP, dronePrice, priceAt, shownLevel } from "@/lib/economy";
-import { balloonRange, gunRange, rocketRange, sprayRange, trapRange } from "@/lib/engine";
+import {
+  balloonCount,
+  balloonRange,
+  gunRange,
+  gunTempo,
+  rocketRange,
+  rocketTempo,
+  sprayRange,
+  trapRange,
+} from "@/lib/engine";
 import { PAYLOAD } from "@/lib/tuning";
 import { PAYLOADS } from "@/lib/attack";
 import { PAYLOAD_FROM } from "@/lib/competition";
@@ -55,21 +64,13 @@ const values: Record<string, string> = {
   repair: String(REPAIR_COST),
   gun: String(GUN_COST),
   spray: String(SPRAY_COST),
-  sprayRange: String(SPRAY.range),
   rocket: String(ROCKET_COST),
-  rocketRange: String(ROCKET.range),
-  rocketReload: String(ROCKET.cooldown),
   trap: String(TRAP_COST),
-  trapRange: String(TRAP.range),
   trapCap: String(TRAP.capacity),
   perCell: String(DRONES_PER_CELL),
   droneBox: String(DRONE_UNIT_COST * DRONES_PER_CELL),
   balloon: String(BALLOON_COST),
-  balloonRange: String(BALLOON.range),
-  balloonCount: String(BALLOON.count),
   shooterRange: String(SHOOTER.range),
-  gunRange: String(GUN.range),
-  reload: String(GUN.cooldown),
   spread: String(FIRE.spread),
   maxRaid: String(RAID.max),
   loot: String(CELL_LOOT_REWARD),
@@ -89,11 +90,12 @@ const values: Record<string, string> = {
   loanHours: String(LOAN_HOURS),
 };
 
-const fill = (line: string) => line.replace(/\{(\w+)\}/g, (m, key) => values[key] ?? m);
+const fill = (line: string, extra: Record<string, string> = {}) =>
+  line.replace(/\{(\w+)\}/g, (m, key) => extra[key] ?? values[key] ?? m);
 
 /** Строка правил: числа из прайса, а **так** — жирным (начало шага). */
-const rich = (line: string): ReactNode =>
-  fill(line)
+const rich = (line: string, extra: Record<string, string>): ReactNode =>
+  fill(line, extra)
     .split(/\*\*(.+?)\*\*/)
     .map((part, i) => (i % 2 ? <b key={i} className="text-neutral-100">{part}</b> : part));
 
@@ -111,6 +113,21 @@ const TD = "border-b border-neutral-800 px-2 py-1";
 
 export default function Rules({ onClose }: { onClose: () => void }) {
   const { locale, t } = useSettings();
+  // Что растёт с прокачкой, пишем от нулевого уровня до десятого: одно число
+  // «радиус 6» читалось как радиус навсегда.
+  const num = (v: number) => (Math.round(v * 10) / 10).toLocaleString(locale);
+  const grow = (at: (lv: number) => number) =>
+    t("rules.grows", { a: num(at(1)), b: num(at(MAX_LEVEL)) });
+  const leveled: Record<string, string> = {
+    gunRange: grow((lv) => gunRange({ gunLevel: lv })),
+    reload: grow((lv) => GUN.cooldown / gunTempo({ gunLevel: lv })),
+    rocketRange: grow((lv) => rocketRange({ rocketLevel: lv })),
+    rocketReload: grow((lv) => ROCKET.cooldown / rocketTempo({ rocketLevel: lv })),
+    sprayRange: grow((lv) => sprayRange({ sprayLevel: lv })),
+    trapRange: grow((lv) => trapRange({ trapLevel: lv })),
+    balloonRange: grow((lv) => balloonRange({ balloonLevel: lv })),
+    balloonCount: grow((lv) => balloonCount(lv)),
+  };
   const sections = RULES[locale] ?? RULES.en;
 
   return (
@@ -133,13 +150,13 @@ export default function Rules({ onClose }: { onClose: () => void }) {
             {section.steps ? (
               <ol className="list-decimal space-y-2 pl-5">
                 {section.lines.map((line, i) => (
-                  <li key={i}>{rich(line)}</li>
+                  <li key={i}>{rich(line, leveled)}</li>
                 ))}
               </ol>
             ) : (
               <ul className="list-disc space-y-1 pl-4">
                 {section.lines.map((line, i) => (
-                  <li key={i}>{rich(line)}</li>
+                  <li key={i}>{rich(line, leveled)}</li>
                 ))}
               </ul>
             )}

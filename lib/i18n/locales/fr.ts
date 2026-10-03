@@ -127,6 +127,7 @@ const fr: Dict = {
   "rules.colSurcharge": "Surcoût",
   "rules.colSpeed": "Vitesse",
   "rules.colFrom": "En missions dès la n°",
+  "rules.grows": "{a} ({b} au niveau 10)",
   "income.sold": " · expédié : {drones} drones pour {dronesValue} cr",
   "replay.watch": "Voir le replay",
   "replay.again": "Rejouer",

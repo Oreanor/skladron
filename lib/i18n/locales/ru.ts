@@ -127,6 +127,7 @@ const ru: Dict = {
   "rules.colSurcharge": "Надбавка",
   "rules.colSpeed": "Скорость",
   "rules.colFrom": "В миссиях с №",
+  "rules.grows": "{a} (на 10-м уровне — {b})",
   "income.sold": " · отгружено: {drones} дронов на {dronesValue} кр",
   "replay.watch": "Смотреть реплей",
   "replay.again": "Ещё раз",

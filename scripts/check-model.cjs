@@ -166,7 +166,8 @@ console.log('\n— версия правил боя одна на обе сто�
 console.log('\n— в правилах нет подстановок без значений —');
 {
   const used = new Set([...rules.matchAll(/\{(\w+)\}/g)].map((m) => m[1]));
-  const known = new Set([...rulesUi.matchAll(/^  (\w+):/gm)].map((m) => m[1]));
+  // значения бывают и в прайсе (два пробела), и в растущих с уровнем (глубже)
+  const known = new Set([...rulesUi.matchAll(/^ +(\w+):/gm)].map((m) => m[1]));
   const orphan = [...used].filter((v) => !known.has(v));
   if (orphan.length) fail('нет значения для ' + orphan.join(', '));
   else pass(`${used.size} подстановок`);
