@@ -37,6 +37,13 @@ import { BALLOON, FIRE, GUN, RAID, ROCKET, SHOOTER, SPRAY, TRAP } from "@/lib/tu
 import { RULES } from "@/lib/i18n/rules";
 import { useSettings } from "@/lib/i18n";
 import { Button, Modal, SectionTitle } from "./ui";
+import type { ReactNode } from "react";
+import { BALLOON_TOP, GUN_TOP, MAX_LEVEL, ROCKET_TOP, SPRAY_TOP, TRAP_TOP, dronePrice, priceAt, shownLevel } from "@/lib/economy";
+import { balloonRange, gunRange, rocketRange, sprayRange, trapRange } from "@/lib/engine";
+import { PAYLOAD } from "@/lib/tuning";
+import { PAYLOADS } from "@/lib/attack";
+import { PAYLOAD_FROM } from "@/lib/competition";
+import type { Key } from "@/lib/i18n/dict";
 
 const values: Record<string, string> = {
   credits: fmt(CREDITS_START),
@@ -82,6 +89,24 @@ const values: Record<string, string> = {
 
 const fill = (line: string) => line.replace(/\{(\w+)\}/g, (m, key) => values[key] ?? m);
 
+/** Строка правил: числа из прайса, а **так** — жирным (начало шага). */
+const rich = (line: string): ReactNode =>
+  fill(line)
+    .split(/\*\*(.+?)\*\*/)
+    .map((part, i) => (i % 2 ? <b key={i} className="text-neutral-100">{part}</b> : part));
+
+/** Установки: цена и радиус на нулевом и десятом уровне. */
+const INSTALLS: { label: Key; base: number; top: number; range: (lv: number) => number }[] = [
+  { label: "tool.gun", base: GUN_COST, top: GUN_TOP, range: (lv) => gunRange({ gunLevel: lv }) },
+  { label: "tool.rocket", base: ROCKET_COST, top: ROCKET_TOP, range: (lv) => rocketRange({ rocketLevel: lv }) },
+  { label: "tool.spray", base: SPRAY_COST, top: SPRAY_TOP, range: (lv) => sprayRange({ sprayLevel: lv }) },
+  { label: "tool.trap", base: TRAP_COST, top: TRAP_TOP, range: (lv) => trapRange({ trapLevel: lv }) },
+  { label: "tool.balloon", base: BALLOON_COST, top: BALLOON_TOP, range: (lv) => balloonRange({ balloonLevel: lv }) },
+];
+const one = (v: number) => (Math.round(v * 10) / 10).toString();
+const TH = "border-b border-neutral-700 px-2 py-1 text-left font-normal text-neutral-500";
+const TD = "border-b border-neutral-800 px-2 py-1";
+
 export default function Rules({ onClose }: { onClose: () => void }) {
   const { locale, t } = useSettings();
   const sections = RULES[locale] ?? RULES.en;
@@ -103,13 +128,121 @@ export default function Rules({ onClose }: { onClose: () => void }) {
             <div className="mb-1">
               <SectionTitle>{section.title}</SectionTitle>
             </div>
-            <ul className="list-disc space-y-1 pl-4">
-              {section.lines.map((line, i) => (
-                <li key={i}>{fill(line)}</li>
-              ))}
-            </ul>
+            {section.steps ? (
+              <ol className="list-decimal space-y-2 pl-5">
+                {section.lines.map((line, i) => (
+                  <li key={i}>{rich(line)}</li>
+                ))}
+              </ol>
+            ) : (
+              <ul className="list-disc space-y-1 pl-4">
+                {section.lines.map((line, i) => (
+                  <li key={i}>{rich(line)}</li>
+                ))}
+              </ul>
+            )}
           </section>
         ))}
+
+        {/* справочные таблички: числа прямо из прайса и движка */}
+        <section>
+          <div className="mb-1">
+            <SectionTitle>{t("rules.tableInstalls")}</SectionTitle>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full font-mono text-xs">
+              <thead>
+                <tr>
+                  <th className={TH} />
+                  <th className={TH}>{t("rules.colPrice")}</th>
+                  <th className={TH}>{t("rules.colRadius")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {INSTALLS.map((row) => (
+                  <tr key={row.label}>
+                    <td className={`${TD} text-neutral-200`}>{t(row.label)}</td>
+                    <td className={TD}>
+                      {row.base} → {row.top}
+                    </td>
+                    <td className={TD}>
+                      {one(row.range(1))} → {one(row.range(MAX_LEVEL))}
+                    </td>
+                  </tr>
+                ))}
+                <tr>
+                  <td className={`${TD} text-neutral-200`}>{t("income.boxRow")}</td>
+                  <td className={TD}>
+                    {dronePrice(1) * DRONES_PER_CELL} → {dronePrice(MAX_LEVEL) * DRONES_PER_CELL}
+                  </td>
+                  <td className={TD}>—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-1">
+            <SectionTitle>{t("rules.tablePrices")}</SectionTitle>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full font-mono text-xs">
+              <thead>
+                <tr>
+                  <th className={TH}>{t("rules.colLevel")}</th>
+                  {INSTALLS.map((row) => (
+                    <th key={row.label} className={TH}>
+                      {t(row.label)}
+                    </th>
+                  ))}
+                  <th className={TH}>{t("income.boxRow")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: MAX_LEVEL }, (_, i) => i + 1).map((lv) => (
+                  <tr key={lv}>
+                    <td className={`${TD} text-neutral-500`}>{shownLevel(lv)}</td>
+                    {INSTALLS.map((row) => (
+                      <td key={row.label} className={TD}>
+                        {priceAt(row.base, row.top, lv)}
+                      </td>
+                    ))}
+                    <td className={TD}>{dronePrice(lv) * DRONES_PER_CELL}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-1">
+            <SectionTitle>{t("rules.tablePayloads")}</SectionTitle>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full font-mono text-xs">
+              <thead>
+                <tr>
+                  <th className={TH} />
+                  <th className={TH}>{t("rules.colSurcharge")}</th>
+                  <th className={TH}>{t("rules.colSpeed")}</th>
+                  <th className={TH}>{t("rules.colFrom")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {PAYLOADS.map((p) => (
+                  <tr key={p}>
+                    <td className={`${TD} text-neutral-200`}>{t(`payload.${p}` as Key)}</td>
+                    <td className={TD}>+{Math.round(PAYLOAD[p].cost * 100)}%</td>
+                    <td className={TD}>×{PAYLOAD[p].speed}</td>
+                    <td className={TD}>{PAYLOAD_FROM.find(([q]) => q === p)?.[1] ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </Modal>
   );

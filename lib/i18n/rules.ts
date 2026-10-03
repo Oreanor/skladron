@@ -6,9 +6,22 @@ import type { Locale } from "./dict";
 export interface RuleSection {
   title: string;
   lines: string[];
+  /** Пункты по порядку — нумерованным списком: так читаются шаги «с чего начать». */
+  steps?: boolean;
 }
 
 const en: RuleSection[] = [
+  {
+    title: "Getting started",
+    steps: true,
+    lines: [
+      "**Build the warehouse.** Take «Area» and drag a frame out from the starter {starter}×{starter} square — the warehouse can be any size and shape, as long as it is in one piece. A cell costs {cell} cr. A bigger warehouse has more room for installations and containers, but also more to burn. Once you have at least 25 cells, name the warehouse and it is founded.",
+      "**Set up the defence.** Without guns the warehouse cannot be defended: drones fly at cells and set them alight. A gun ({gun} cr) shoots everything within {gunRange} cells on its own; a launcher ({rocket} cr) fires a missile that steers onto its target. Place them so their circles cover the approaches. Helping them are sprinklers (put out fire around them), traps (hold drones by magnet) and balloons (a one-shot barrage in the swarm's way). While a tool is selected, its installations' circles show on the map.",
+      "**Buy drones.** The «Drones» tool puts a container of {perCell} on a free cell for {droneBox} cr. Drones are both goods and weapons: every midnight, London time, everything stored is sold at double the purchase price — that is your income. You also send them on raids and on recon.",
+      "**Play the missions.** The «Missions» panel is a hundred battles on your own warehouse against ever stronger waves: free, any time, with a bonus for every drone beaten off. In battle the guns fire by themselves, while you finish drones off with the mouse and put out fires with the hose. The number of your last mission passed is your level, and rivals see it.",
+      "**Add rivals and raid them.** Enter a rival's e-mail in «Rivals», scout their warehouse with one drone, then build a raid from waves and warheads. Every cell you burn pays {loot} cr, and more the harder you hit. The rival defends on their side, and you get a report and a replay.",
+    ],
+  },
   {
     title: "The warehouse and the money",
     lines: [
@@ -91,9 +104,34 @@ const en: RuleSection[] = [
       "A level applies to everything at once — to what is already in stock and to everything bought later.",
     ],
   },
+  {
+    title: "Tips",
+    lines: [
+      "Overlap the guns' circles: one gun on an approach cannot keep up with a swarm.",
+      "Do not pile everything together — fire spreads to neighbouring cells and eats containers and guns alike.",
+      "Put sprinklers deep inside: they save what breaks through the defence.",
+      "Place balloons on the approaches, not in the middle — there their circle goes off before the swarm reaches the warehouse.",
+      "Scout before a raid: you see where the guns are thick and on which side there is a gap.",
+      "Drones you are not using go out with the nightly shipment: a container pays back double.",
+      "Short of money — play missions: they pay for every drone beaten off.",
+      "Upgrades make things dearer but stronger — upgrade what you have most of.",
+      "A battle counts only when finished: reload mid-battle and you can defend the raid again.",
+    ],
+  },
 ];
 
 const ru: RuleSection[] = [
+  {
+    title: "С чего начать",
+    steps: true,
+    lines: [
+      "**Построй склад.** Возьми «Площадь» и тяни рамку от стартового квадрата {starter}×{starter} — склад может быть любой величины и формы, лишь бы цельный. Клетка стоит {cell} кр. Чем больше склад, тем больше места под установки и ящики, но и гореть есть чему. Набралось хотя бы 25 клеток — дай складу имя, и он основан.",
+      "**Поставь оборону.** Без пушек склад не защитить: дроны летят на клетки и поджигают их. Зенитка ({gun} кр) сама бьёт всё, что в радиусе {gunRange} клеток; ракетница ({rocket} кр) пускает ракету, которая доворачивает на цель. Ставь их так, чтобы круги перекрывали подходы. В помощь им — огнетушители (тушат пожар вокруг себя), ловушки (держат дронов магнитом) и шары (разовое заграждение на пути роя). Пока инструмент выбран, круги его установок видны на карте.",
+      "**Купи дронов.** Инструмент «Дроны» ставит на свободную клетку ящик на {perCell} штук за {droneBox} кр. Дроны — и товар, и оружие: каждую полночь по Лондону всё, что лежит на складе, продаётся вдвое дороже закупки — это твой доход. Их же ты шлёшь в налёты и на разведку.",
+      "**Проходи миссии.** Панель «Миссии» — сто боёв на своём складе против всё более сильных волн: бесплатно, в любое время, с премией за каждого отбитого дрона. В бою пушки стреляют сами, а ты добиваешь дронов мышью и тушишь пожары брандспойтом. Номер последней пройденной миссии — твой уровень, его видят соперники.",
+      "**Добавь врагов и устраивай налёты.** Впиши почту соперника в «Врагах», разведай его склад одним дроном, потом собери налёт из волн и начинок. За каждую сожжённую клетку — премия {loot} кр, и тем щедрее, чем сильнее разгром. Соперник отбивается у себя, а ты получаешь отчёт и повтор боя.",
+    ],
+  },
   {
     title: "Склад и деньги",
     lines: [
@@ -176,9 +214,34 @@ const ru: RuleSection[] = [
       "Уровень достаётся всему классу разом — и тому, что уже на складе, и тому, что купишь потом.",
     ],
   },
+  {
+    title: "Советы",
+    lines: [
+      "Перекрывай круги зениток: одна пушка на подходе не успевает за роем.",
+      "Не сваливай всё в одну кучу — огонь перекидывается на соседние клетки, и пожар съест и ящики, и пушки.",
+      "Огнетушители ставь вглубь склада: они спасают то, что прорвалось сквозь оборону.",
+      "Шары ставь на подходах, а не в середине — там их круг срабатывает раньше, чем рой дойдёт до склада.",
+      "Перед налётом разведай склад: видно, где пушки стоят густо, а с какой стороны дыра.",
+      "Не пускаешь дронов в дело — пусть уходят с ночной отгрузкой: ящик возвращает вдвое.",
+      "Не хватает денег — проходи миссии: они платят за каждого отбитого дрона.",
+      "Прокачка дорожит вещи, но делает их сильнее — качай то, чего у тебя больше всего.",
+      "Бой засчитывается, только если доигран: обновил страницу посреди боя — налёт можно отбить заново.",
+    ],
+  },
 ];
 
 const es: RuleSection[] = [
+  {
+    title: "Cómo empezar",
+    steps: true,
+    lines: [
+      "**Construye el almacén.** Toma «Superficie» y arrastra un marco desde el cuadrado inicial de {starter}×{starter}: el almacén puede tener cualquier tamaño y forma, siempre que sea de una pieza. Una celda cuesta {cell} cr. Un almacén mayor tiene más sitio para instalaciones y contenedores, pero también más que arder. Con al menos 25 celdas, ponle nombre y queda fundado.",
+      "**Monta la defensa.** Sin cañones el almacén no se defiende: los drones vuelan hacia las celdas y las incendian. El cañón ({gun} cr) dispara solo a todo lo que esté a {gunRange} celdas; la lanzadera ({rocket} cr) lanza un misil que corrige hacia su objetivo. Colócalos para que sus círculos cubran los accesos. Les ayudan los extintores (apagan el fuego a su alrededor), las trampas (retienen drones con un imán) y los globos (una barrera de un solo uso en el camino del enjambre). Con una herramienta elegida, los círculos de sus instalaciones se ven en el mapa.",
+      "**Compra drones.** La herramienta «Drones» pone en una celda libre un contenedor de {perCell} por {droneBox} cr. Los drones son mercancía y arma a la vez: cada medianoche, hora de Londres, todo lo almacenado se vende al doble del precio de compra: ese es tu ingreso. También los envías a ataques y a explorar.",
+      "**Juega las misiones.** El panel «Misiones» son cien combates en tu propio almacén contra oleadas cada vez más fuertes: gratis, cuando quieras, con premio por cada dron rechazado. En combate los cañones disparan solos, y tú rematas drones con el ratón y apagas incendios con la manguera. El número de tu última misión superada es tu nivel, y los rivales lo ven.",
+      "**Añade rivales y atácalos.** Escribe el correo de un rival en «Rivales», explora su almacén con un dron y luego arma un ataque de oleadas y cargas. Cada celda quemada paga {loot} cr, y más cuanto mayor sea el destrozo. El rival se defiende en su lado y tú recibes un informe y la repetición.",
+    ],
+  },
   {
     title: "El almacén y el dinero",
     lines: [
@@ -261,9 +324,34 @@ const es: RuleSection[] = [
       "El nivel vale para toda la clase a la vez: lo que ya tienes y lo que compres después.",
     ],
   },
+  {
+    title: "Consejos",
+    lines: [
+      "Solapa los círculos de los cañones: uno solo en un acceso no puede con un enjambre.",
+      "No lo amontones todo: el fuego pasa a las celdas vecinas y se come contenedores y cañones.",
+      "Pon los extintores hacia dentro: salvan lo que atraviesa la defensa.",
+      "Coloca los globos en los accesos, no en el centro: ahí su círculo salta antes de que el enjambre llegue al almacén.",
+      "Explora antes de atacar: ves dónde hay muchos cañones y por qué lado hay un hueco.",
+      "Los drones que no uses salen con el envío nocturno: un contenedor devuelve el doble.",
+      "¿Falta dinero? Juega misiones: pagan por cada dron rechazado.",
+      "Mejorar encarece las cosas pero las hace más fuertes: mejora lo que más tengas.",
+      "Un combate solo cuenta si se termina: si recargas a mitad, puedes defender el ataque otra vez.",
+    ],
+  },
 ];
 
 const pt: RuleSection[] = [
+  {
+    title: "Por onde começar",
+    steps: true,
+    lines: [
+      "**Constrói o armazém.** Escolhe «Área» e arrasta um retângulo a partir do quadrado inicial de {starter}×{starter} — o armazém pode ter qualquer tamanho e forma, desde que seja inteiro. Uma célula custa {cell} cr. Um armazém maior tem mais espaço para instalações e contentores, mas também mais para arder. Com pelo menos 25 células, dá-lhe um nome e fica fundado.",
+      "**Monta a defesa.** Sem canhões o armazém não se defende: os drones voam para as células e incendeiam-nas. O canhão ({gun} cr) dispara sozinho em tudo a {gunRange} células; o lançador ({rocket} cr) lança um míssil que corrige para o alvo. Coloca-os de modo a que os círculos cubram os acessos. Ajudam-nos os extintores (apagam o fogo à volta), as armadilhas (prendem drones com um íman) e os balões (uma barreira de uso único no caminho do enxame). Com uma ferramenta escolhida, os círculos das suas instalações aparecem no mapa.",
+      "**Compra drones.** A ferramenta «Drones» põe numa célula livre um contentor de {perCell} por {droneBox} cr. Os drones são mercadoria e arma: todas as meias-noites, hora de Londres, tudo o que está guardado vende-se ao dobro da compra — é esse o teu rendimento. Também os mandas em ataques e em reconhecimento.",
+      "**Joga as missões.** O painel «Missões» são cem combates no teu próprio armazém contra vagas cada vez mais fortes: grátis, quando quiseres, com prémio por cada drone repelido. Em combate os canhões disparam sozinhos, e tu acabas com drones com o rato e apagas fogos com a mangueira. O número da última missão passada é o teu nível, e os rivais veem-no.",
+      "**Adiciona rivais e ataca-os.** Escreve o e-mail de um rival em «Rivais», faz o reconhecimento do armazém dele com um drone e depois monta um ataque de vagas e cargas. Cada célula queimada paga {loot} cr, e mais quanto maior a destruição. O rival defende-se do lado dele e tu recebes um relatório e a repetição.",
+    ],
+  },
   {
     title: "O armazém e o dinheiro",
     lines: [
@@ -346,9 +434,34 @@ const pt: RuleSection[] = [
       "O nível vale para toda a classe de uma vez: o que já tens e o que comprares depois.",
     ],
   },
+  {
+    title: "Conselhos",
+    lines: [
+      "Sobrepõe os círculos dos canhões: um só num acesso não aguenta um enxame.",
+      "Não amontoes tudo: o fogo passa às células vizinhas e come contentores e canhões.",
+      "Põe os extintores mais para dentro: salvam o que atravessa a defesa.",
+      "Coloca os balões nos acessos, não no meio — aí o círculo dispara antes de o enxame chegar ao armazém.",
+      "Faz reconhecimento antes de atacar: vês onde há muitos canhões e de que lado há uma falha.",
+      "Os drones que não usares saem com a expedição da noite: um contentor rende o dobro.",
+      "Falta dinheiro? Joga missões: pagam por cada drone repelido.",
+      "Melhorar encarece as coisas mas torna-as mais fortes — melhora o que tens em maior número.",
+      "Um combate só conta quando termina: recarregaste a meio — podes defender o ataque de novo.",
+    ],
+  },
 ];
 
 const fr: RuleSection[] = [
+  {
+    title: "Pour commencer",
+    steps: true,
+    lines: [
+      "**Bâtis l’entrepôt.** Prends « Surface » et tire un cadre depuis le carré de départ {starter}×{starter} — l’entrepôt peut avoir n’importe quelle taille et forme, tant qu’il est d’un seul tenant. Une case coûte {cell} cr. Plus il est grand, plus il y a de place pour les installations et les conteneurs, mais aussi plus à brûler. À partir de 25 cases, donne-lui un nom et il est fondé.",
+      "**Monte la défense.** Sans canons, l’entrepôt ne se défend pas : les drones foncent sur les cases et les embrasent. Le canon ({gun} cr) tire seul sur tout ce qui est à {gunRange} cases ; le lance-roquettes ({rocket} cr) tire un missile qui se dirige vers sa cible. Place-les pour que leurs cercles couvrent les approches. Ils sont aidés par les extincteurs (éteignent le feu autour d’eux), les pièges (retiennent les drones par aimant) et les ballons (un barrage à usage unique sur le chemin de l’essaim). Quand un outil est choisi, les cercles de ses installations s’affichent sur la carte.",
+      "**Achète des drones.** L’outil « Drones » pose sur une case libre un conteneur de {perCell} pour {droneBox} cr. Les drones sont à la fois marchandise et arme : chaque minuit, heure de Londres, tout ce qui est stocké se vend au double du prix d’achat — c’est ton revenu. Tu les envoies aussi en raid et en reconnaissance.",
+      "**Joue les missions.** Le panneau « Missions », ce sont cent combats sur ton propre entrepôt contre des vagues toujours plus fortes : gratuit, quand tu veux, avec une prime par drone repoussé. En combat, les canons tirent seuls, et toi tu achèves les drones à la souris et éteins les incendies à la lance. Le numéro de ta dernière mission réussie est ton niveau, et les rivaux le voient.",
+      "**Ajoute des rivaux et lance des raids.** Saisis l’e-mail d’un rival dans « Rivaux », repère son entrepôt avec un drone, puis compose un raid de vagues et de charges. Chaque case brûlée rapporte {loot} cr, et davantage plus le saccage est grand. Le rival se défend de son côté, et tu reçois un rapport et la rediffusion.",
+    ],
+  },
   {
     title: "L’entrepôt et l’argent",
     lines: [
@@ -431,9 +544,34 @@ const fr: RuleSection[] = [
       "Le niveau vaut pour toute la classe d’un coup : ce que tu as déjà et ce que tu achèteras ensuite.",
     ],
   },
+  {
+    title: "Conseils",
+    lines: [
+      "Fais se chevaucher les cercles des canons : un seul canon sur une approche ne suit pas un essaim.",
+      "N’entasse pas tout au même endroit : le feu passe aux cases voisines et dévore conteneurs et canons.",
+      "Place les extincteurs vers l’intérieur : ils sauvent ce qui perce la défense.",
+      "Mets les ballons sur les approches, pas au centre — là leur cercle se déclenche avant que l’essaim n’atteigne l’entrepôt.",
+      "Fais une reconnaissance avant un raid : tu vois où les canons sont serrés et de quel côté il y a une faille.",
+      "Les drones que tu n’utilises pas partent avec l’expédition de la nuit : un conteneur rapporte le double.",
+      "Pas assez d’argent ? Joue les missions : elles paient chaque drone repoussé.",
+      "Les améliorations renchérissent les objets mais les rendent plus forts — améliore ce que tu as le plus.",
+      "Un combat ne compte que s’il va au bout : recharge en plein combat et tu peux défendre le raid à nouveau.",
+    ],
+  },
 ];
 
 const de: RuleSection[] = [
+  {
+    title: "So fängst du an",
+    steps: true,
+    lines: [
+      "**Bau das Lager.** Nimm «Fläche» und zieh einen Rahmen vom Startquadrat {starter}×{starter} aus — das Lager kann jede Größe und Form haben, solange es zusammenhängt. Ein Feld kostet {cell} Cr. Ein größeres Lager hat mehr Platz für Anlagen und Container, aber auch mehr, was brennen kann. Ab 25 Feldern gib ihm einen Namen, dann ist es gegründet.",
+      "**Stell die Verteidigung auf.** Ohne Geschütze ist das Lager nicht zu halten: Drohnen fliegen auf die Felder und setzen sie in Brand. Das Geschütz ({gun} Cr) schießt von selbst auf alles im Umkreis von {gunRange} Feldern; der Raketenwerfer ({rocket} Cr) feuert eine Rakete, die auf ihr Ziel lenkt. Stell sie so, dass ihre Kreise die Zugänge abdecken. Helfen können Löschanlagen (löschen das Feuer ringsum), Fallen (halten Drohnen per Magnet) und Ballons (eine Einweg-Sperre im Weg des Schwarms). Ist ein Werkzeug gewählt, zeigt die Karte die Kreise seiner Anlagen.",
+      "**Kauf Drohnen.** Das Werkzeug «Drohnen» stellt einen Container mit {perCell} Stück für {droneBox} Cr auf ein freies Feld. Drohnen sind Ware und Waffe zugleich: jede Mitternacht Londoner Zeit wird alles Eingelagerte zum doppelten Einkaufspreis verkauft — das ist dein Einkommen. Du schickst sie auch auf Angriffe und zur Aufklärung.",
+      "**Spiel die Missionen.** Das Panel «Missionen» sind hundert Kämpfe auf deinem eigenen Lager gegen immer stärkere Wellen: kostenlos, jederzeit, mit Prämie für jede abgewehrte Drohne. Im Kampf schießen die Geschütze selbst, du erledigst Drohnen mit der Maus und löschst Brände mit dem Wasserwerfer. Die Nummer deiner letzten bestandenen Mission ist deine Stufe, und Gegner sehen sie.",
+      "**Füg Gegner hinzu und greif an.** Trag die E-Mail eines Gegners unter «Gegner» ein, klär sein Lager mit einer Drohne auf und stell dann einen Angriff aus Wellen und Ladungen zusammen. Jedes verbrannte Feld bringt {loot} Cr, und mehr, je härter der Schlag. Der Gegner verteidigt sich bei sich, du bekommst einen Bericht und die Wiederholung.",
+    ],
+  },
   {
     title: "Lager und Geld",
     lines: [
@@ -516,9 +654,34 @@ const de: RuleSection[] = [
       "Eine Stufe gilt für die ganze Klasse auf einmal — für Vorhandenes und für später Gekauftes.",
     ],
   },
+  {
+    title: "Tipps",
+    lines: [
+      "Lass die Kreise der Geschütze überlappen: ein einzelnes Geschütz an einem Zugang kommt gegen einen Schwarm nicht an.",
+      "Stapel nicht alles auf einen Haufen — Feuer springt auf Nachbarfelder über und frisst Container wie Geschütze.",
+      "Stell Löschanlagen ins Innere: sie retten, was durch die Verteidigung bricht.",
+      "Setz Ballons an die Zugänge, nicht in die Mitte — dort löst ihr Kreis aus, bevor der Schwarm das Lager erreicht.",
+      "Klär vor einem Angriff auf: du siehst, wo die Geschütze dicht stehen und auf welcher Seite eine Lücke ist.",
+      "Drohnen, die du nicht einsetzt, gehen mit dem nächtlichen Versand raus: ein Container bringt das Doppelte.",
+      "Knapp bei Kasse? Spiel Missionen: sie zahlen für jede abgewehrte Drohne.",
+      "Upgrades verteuern die Dinge, machen sie aber stärker — rüste auf, wovon du am meisten hast.",
+      "Ein Kampf zählt nur zu Ende gespielt: lädst du mittendrin neu, kannst du den Angriff noch einmal abwehren.",
+    ],
+  },
 ];
 
 const it: RuleSection[] = [
+  {
+    title: "Da dove cominciare",
+    steps: true,
+    lines: [
+      "**Costruisci il magazzino.** Prendi «Superficie» e trascina un riquadro dal quadrato iniziale {starter}×{starter} — il magazzino può avere qualsiasi grandezza e forma, purché tutto d’un pezzo. Una cella costa {cell} cr. Un magazzino più grande ha più spazio per installazioni e container, ma anche più roba che brucia. Con almeno 25 celle dagli un nome ed è fondato.",
+      "**Prepara la difesa.** Senza cannoni il magazzino non si difende: i droni volano sulle celle e le incendiano. Il cannone ({gun} cr) spara da solo a tutto ciò che è entro {gunRange} celle; il lanciarazzi ({rocket} cr) lancia un missile che vira sul bersaglio. Mettili in modo che i cerchi coprano gli accessi. Li aiutano gli estintori (spengono il fuoco intorno), le trappole (trattengono i droni con una calamita) e i palloni (uno sbarramento monouso sul cammino dello sciame). Con uno strumento scelto, i cerchi delle sue installazioni compaiono sulla mappa.",
+      "**Compra droni.** Lo strumento «Droni» mette su una cella libera un container da {perCell} per {droneBox} cr. I droni sono merce e arma insieme: ogni mezzanotte, ora di Londra, tutto ciò che è stoccato si vende al doppio dell’acquisto — è il tuo reddito. Li mandi anche negli attacchi e in ricognizione.",
+      "**Gioca le missioni.** Il pannello «Missioni» sono cento combattimenti sul tuo magazzino contro ondate sempre più forti: gratis, quando vuoi, con un premio per ogni drone respinto. In battaglia i cannoni sparano da soli, e tu finisci i droni col mouse e spegni gli incendi con la lancia. Il numero dell’ultima missione superata è il tuo livello, e i rivali lo vedono.",
+      "**Aggiungi rivali e attaccali.** Scrivi l’e-mail di un rivale in «Rivali», esplora il suo magazzino con un drone, poi componi un attacco di ondate e cariche. Ogni cella bruciata paga {loot} cr, e di più quanto più forte è la distruzione. Il rivale si difende dalla sua parte, e tu ricevi un resoconto e il replay.",
+    ],
+  },
   {
     title: "Il magazzino e i soldi",
     lines: [
@@ -599,6 +762,20 @@ const it: RuleSection[] = [
       "I droni volano più veloci e vedono più lontano in ricognizione, i cannoni arrivano più lontano e sparano prima, la mitragliatrice mira meglio, la manichetta copre di più, gli estintori bagnano un cerchio più ampio, le trappole afferrano più lontano. Palloni — un cerchio più ampio e due palloni in più per livello.",
       "I lanciarazzi crescono allo stesso modo: più gittata e missile più veloce a ogni livello.",
       "Il livello vale per tutta la classe in una volta: per ciò che hai già e per ciò che comprerai poi.",
+    ],
+  },
+  {
+    title: "Consigli",
+    lines: [
+      "Sovrapponi i cerchi dei cannoni: uno solo su un accesso non regge uno sciame.",
+      "Non ammucchiare tutto insieme — il fuoco passa alle celle vicine e divora container e cannoni.",
+      "Metti gli estintori verso l’interno: salvano ciò che sfonda la difesa.",
+      "Piazza i palloni sugli accessi, non al centro — lì il loro cerchio scatta prima che lo sciame arrivi al magazzino.",
+      "Esplora prima di attaccare: vedi dove i cannoni sono fitti e da che parte c’è un buco.",
+      "I droni che non usi partono con la spedizione notturna: un container rende il doppio.",
+      "Mancano soldi? Gioca le missioni: pagano ogni drone respinto.",
+      "I potenziamenti rincarano le cose ma le rendono più forti — potenzia ciò che hai di più.",
+      "Un combattimento conta solo se finito: ricarichi a metà e puoi difendere di nuovo l’attacco.",
     ],
   },
 ];

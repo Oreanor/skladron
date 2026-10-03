@@ -85,7 +85,7 @@ const PATTERNS: readonly Pattern[] = ["drip", "lines", "random", "sweep", "rings
  * Начинки по мере того, как кампания их открывает: с какого номера каждая
  * может попасть в волну. Пустые и турбо — с первой миссии.
  */
-const PAYLOAD_FROM: readonly [Payload, number][] = [
+export const PAYLOAD_FROM: readonly [Payload, number][] = [
   ["plain", 1],
   ["turbo", 1],
   ["heavy", 6],
