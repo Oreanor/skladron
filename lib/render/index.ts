@@ -282,6 +282,44 @@ const coverageLayers = new WeakMap<
 >();
 
 
+/**
+ * Лопнувший шар: белая вспышка, расходящееся кольцо и шесть красных клочков
+ * резины, разлетающихся и гаснущих. Разлёт — по номеру шара, без жребия:
+ * картинка боя случайностью не пользуется.
+ */
+export function drawPops(ctx: CanvasRenderingContext2D, pops: { id: number; x: number; y: number; t: number }[], cell: number) {
+  for (const p of pops) {
+    const k = Math.min(1, p.t / FX.popLife);
+    const x = p.x * cell;
+    const y = p.y * cell;
+    const fade = 1 - k;
+    if (k < 0.3) {
+      ctx.fillStyle = `rgba(255, 245, 235, ${(1 - k / 0.3) * 0.9})`;
+      ctx.beginPath();
+      ctx.arc(x, y, cell * (0.45 + k), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = `rgba(214, 40, 40, ${fade * 0.8})`;
+    ctx.lineWidth = Math.max(0.6, cell * 0.12 * fade);
+    ctx.beginPath();
+    ctx.arc(x, y, cell * (0.5 + 0.7 * k), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(214, 40, 40, ${fade})`;
+    for (let j = 0; j < 6; j++) {
+      const a = p.id * 1.7 + (j * Math.PI) / 3;
+      const d = cell * (0.4 + 1.4 * k);
+      const sx = x + Math.cos(a) * d;
+      const sy = y + Math.sin(a) * d;
+      const sz = cell * 0.22 * (1 - 0.5 * k);
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(a + k * 6);
+      ctx.fillRect(-sz / 2, -sz / 4, sz, sz / 2);
+      ctx.restore();
+    }
+  }
+}
+
 /** Динамика боя: прицел, огонь, дроны, ракеты, взрывы. */
 export function drawFrame(
   ctx: CanvasRenderingContext2D,
@@ -346,6 +384,7 @@ export function drawFrame(
   }
 
   drawBalloons(ctx, s.balloons, cell);
+  drawPops(ctx, s.pops, cell);
 
   // прицел красим тем же правилом, по которому игра и стреляет: захваченный
   // дрон делает его стрелковым даже над складом

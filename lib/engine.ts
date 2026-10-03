@@ -218,6 +218,14 @@ export interface Boom {
   r: number;
 }
 
+/** Лопнувший шар — только для картинки: где и как давно, id — для разлёта клочков. */
+export interface Pop {
+  id: number;
+  x: number;
+  y: number;
+  t: number;
+}
+
 export interface Shot {
   x: number;
   y: number;
@@ -282,6 +290,7 @@ export interface GameState {
   foeRockets: FoeRocket[];
   balloons: Balloon[];
   booms: Boom[];
+  pops: Pop[];
   shots: Shot[];
   puffs: Puff[];
   holes: Hole[];
@@ -421,6 +430,7 @@ export function createBattle(
     foeRockets: [],
     balloons: [],
     booms: [],
+    pops: [],
     shots: [],
     puffs: [],
     holes: [],
@@ -1956,6 +1966,9 @@ function stepBalloons(s: GameState, dt: number) {
   }
 
   if (popped.size) {
+    for (const b of s.balloons) {
+      if (popped.has(b.id)) s.pops.push({ id: b.id, x: b.x, y: b.y, t: 0 });
+    }
     s.balloons = s.balloons.filter((b) => !popped.has(b.id));
   }
 }
@@ -2006,6 +2019,10 @@ function stepEffects(s: GameState, dt: number) {
   for (let i = s.booms.length - 1; i >= 0; i--) {
     s.booms[i].t += dt;
     if (s.booms[i].t > FX.boomLife) s.booms.splice(i, 1);
+  }
+  for (let i = s.pops.length - 1; i >= 0; i--) {
+    s.pops[i].t += dt;
+    if (s.pops[i].t > FX.popLife) s.pops.splice(i, 1);
   }
   for (let i = s.shots.length - 1; i >= 0; i--) {
     s.shots[i].t += dt;
