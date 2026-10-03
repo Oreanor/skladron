@@ -285,13 +285,14 @@ $$;
 
 -- Цена с учётом прокачки: что летит дальше и быстрее, то и дороже.
 -- Делим нацело — округление вниз, как и на клиенте.
--- Цена вещи на этом уровне: от price(kind) на первом до price(kind_top) на
--- десятом, ровными ступеньками, с округлением вниз. Та же арифметика на клиенте.
+-- Цена вещи на этом уровне: от price(kind) на нулевом (хранится единицей)
+-- до price(kind_top) на десятом (хранится одиннадцатью), ровными
+-- ступеньками в десятую часть разницы. Та же арифметика на клиенте.
 create or replace function price_at(kind text, level int) returns int
 language sql immutable as $$
   select price(kind)
        + ((coalesce(price(kind || '_top'), price(kind)) - price(kind))
-          * (least(10, greatest(1, coalesce(level, 1))) - 1)) / 9;
+          * (least(11, greatest(1, coalesce(level, 1))) - 1)) / 10;
 $$;
 
 -- Снимает со склада нужное число дронов заданного вида. Пустые ящики
@@ -1190,7 +1191,7 @@ begin
     from profiles p where p.id = uid for update;
   if cur is null then raise exception 'no profile'; end if;
   -- у страховки потолок свой: пятый уровень покрывает потери целиком
-  if cur >= (case when kind = 'insurance' then 5 else 10 end) then
+  if cur >= (case when kind = 'insurance' then 5 else 11 end) then
     raise exception 'already at max level';
   end if;
   cost := price('upgrade');

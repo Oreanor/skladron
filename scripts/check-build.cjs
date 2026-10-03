@@ -210,14 +210,14 @@ console.log('\n— прокачка дорожает по формуле —');
     ['balloon', E.BALLOON_COST, 'balloons', 150],
   ]) {
     let okAll = true;
-    for (let lv = 1; lv <= 10; lv++) {
+    for (let lv = 1; lv <= 11; lv++) {
       p.levels[level] = lv;
       if (B.gunCost(p.levels, kind) !== E.priceAt(base, top, lv)) okAll = false;
     }
     p.levels[level] = 1;
-    check(`${kind}: цена по уровню, до ${top} на десятом`, okAll && B.gunCost({ ...p.levels, [level]: 10 }, kind) === top);
+    check(`${kind}: цена по уровню, до ${top} на десятом`, okAll && B.gunCost({ ...p.levels, [level]: 11 }, kind) === top);
   }
-  p.levels.drones = 10;
+  p.levels.drones = 11;
   check('дроны: контейнер дорожает с уровнем',
     B.depotCost(p.levels) === 300,
     String(B.depotCost(p.levels)));

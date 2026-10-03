@@ -26,6 +26,7 @@ import {
   SHIFT_HOURS,
   SCRAP_REWARD,
   dronePrice,
+  shownLevel,
   loanDebt,
   MIN_BASE_CELLS,
   maxLevel,
@@ -1207,7 +1208,7 @@ export default function Lobby({
       if (patch.credits !== undefined) p.credits = patch.credits;
       p.levels = patch.levels ?? { ...p.levels, [kind]: level + 1 };
       setMessage(
-        t("upgrade.done", { name: t(`upgrade.${kind}` as Key), level: p.levels[kind] })
+        t("upgrade.done", { name: t(`upgrade.${kind}` as Key), level: shownLevel(p.levels[kind]) })
       );
       forceRender((v) => v + 1);
     } catch (e) {

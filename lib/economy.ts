@@ -125,7 +125,15 @@ export const defenseBounty = (drones: number, burned: number) => {
  * шаг ровный, чтобы прикидывать в уме.
  */
 export const UPGRADE_STEP = 5000;
-export const MAX_LEVEL = 10;
+/**
+ * Ступеней прокачки одиннадцать. Хранятся они с единицы, как и раньше, а
+ * игроку показываются с нуля — от 0 до 10 (shownLevel): так цена растёт
+ * ровно на десятую часть разницы за ступень и выходит круглой.
+ */
+export const MAX_LEVEL = 11;
+
+/** Уровень, каким его видит игрок: хранимый минус один, от нуля. */
+export const shownLevel = (level: number) => Math.max(0, level - 1);
 
 /** Цена следующего уровня. Одна и та же на всех ступенях. */
 export const upgradeCost = (_level: number) => UPGRADE_STEP;

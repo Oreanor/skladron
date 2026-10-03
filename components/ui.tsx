@@ -11,6 +11,7 @@ import {
 // а не руками в JSX. Реэкспортируем, чтобы места вызова не менялись.
 export { IconBalloon, IconCrane, IconDrone, IconMenu, IconTarget, IconUsers } from "./icons";
 import { useT } from "@/lib/i18n";
+import { shownLevel } from "@/lib/economy";
 
 /*
  * Общая мелочь интерфейса. Цвет = роль, не вкус.
@@ -532,7 +533,7 @@ export function ToolButton({
       {/* уровень пишем всегда, даже первый: сразу видно, что качается */}
       {level !== undefined && (
         <span className="absolute right-1 top-1 font-mono text-[9px] leading-tight text-amber-300">
-          {t("upgrade.level", { level })}
+          {t("upgrade.level", { level: shownLevel(level) })}
         </span>
       )}
       {icon}

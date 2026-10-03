@@ -19,7 +19,7 @@ import {
   type WavePlan,
 } from "@/lib/attack";
 import { DRONE, PAYLOAD } from "@/lib/tuning";
-import { MAX_LEVEL, fmt, levelBonus } from "@/lib/economy";
+import { MAX_LEVEL, fmt, levelBonus, shownLevel } from "@/lib/economy";
 import { Plus, X } from "lucide-react";
 import { Button, SectionTitle } from "../ui";
 import { useT } from "@/lib/i18n";
@@ -105,12 +105,13 @@ export default function RaidPlanner({
           </div>
           <input
             type="number"
-            min={1}
-            max={MAX_LEVEL}
-            value={droneLevel}
+            min={0}
+            max={shownLevel(MAX_LEVEL)}
+            value={shownLevel(droneLevel)}
             aria-label={t("raid.droneLevel")}
+            // в поле уровень с нуля, как везде у игрока; хранится с единицы
             onChange={(e) =>
-              onDroneLevel(Math.max(1, Math.min(MAX_LEVEL, Number(e.target.value) || 1)))
+              onDroneLevel(Math.max(1, Math.min(MAX_LEVEL, (Number(e.target.value) || 0) + 1)))
             }
             className={numberClass}
           />

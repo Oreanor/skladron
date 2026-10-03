@@ -22,6 +22,7 @@ import {
   insuranceShare,
   loanDebt,
   maxLevel,
+  shownLevel,
   upgradeCost,
   type UpgradeKind,
 } from "@/lib/economy";
@@ -64,7 +65,7 @@ export function UpgradeDialog({
                 <span className="min-w-0 truncate text-neutral-200">
                   {t(`upgrade.${kind}` as Key)}
                   <span className="ml-2 font-mono text-xs text-amber-300">
-                    {t("upgrade.level", { level })}
+                    {t("upgrade.level", { level: shownLevel(level) })}
                   </span>
                 </span>
                 <Button
@@ -101,7 +102,7 @@ export function InsuranceDialog({
 
   return (
     <Modal
-      title={`${t("tool.insurance")} · ${t("upgrade.level", { level })}`}
+      title={`${t("tool.insurance")} · ${t("upgrade.level", { level: shownLevel(level) })}`}
       onClose={onClose}
       footer={
         <div className="flex flex-wrap justify-center gap-2">
