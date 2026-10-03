@@ -4,7 +4,6 @@
 import {
   CREDITS_START,
   REPAIR_COST,
-  INCOME_PER_CELL,
   saleValue,
   STARTER_SIDE,
   accrue,
@@ -173,16 +172,6 @@ export function saleOf(p: Player) {
   const dronesValue = saleValue(drones, p.levels.drones);
   return { drones, dronesValue };
 }
-
-/**
- * Сколько принесёт ближайшая смена: аренда со всей целой площади плюс
- * отгрузка того, что к тому времени будет лежать на складе. Смена — это
- * двенадцать часов, то есть за сутки столько набегает дважды.
- */
-export const shiftIncome = (p: Player) => {
-  const sale = saleOf(p);
-  return intactCells(p) * INCOME_PER_CELL + sale.dronesValue;
-};
 
 /** Склад выгорел полностью и чинить не на что — дальше только заново. */
 export function isDoomed(p: Player, intact = intactCells(p)) {

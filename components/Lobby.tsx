@@ -49,7 +49,6 @@ import {
 import {
   MAX_BASE_NAME,
   burntCells,
-  shiftIncome,
   intactCells,
   isDoomed,
   normName,
@@ -101,6 +100,7 @@ import { statusBar } from "./lobby/statusBar";
 import TelegramDialog from "./lobby/TelegramDialog";
 import SummonRaidDialog from "./lobby/SummonRaidDialog";
 import NeedDrones from "./lobby/NeedDrones";
+import IncomeLine from "./lobby/IncomeLine";
 import BlueprintsPanel, { BlueprintDialog, NewBlueprintDialog } from "./lobby/BlueprintsPanel";
 import {
   MAX_BLUEPRINT_NAME,
@@ -1135,7 +1135,6 @@ export default function Lobby({
   };
 
 
-  const income = shiftIncome(p);
 
   // ---------- чертежи ----------
 
@@ -1425,9 +1424,7 @@ export default function Lobby({
     <div className="flex min-h-0 flex-1 flex-col gap-2 lg:gap-3">
       {/* шапка телефона: счётчики одной строкой плюс кнопки панелей */}
       <div className="order-1 flex shrink-0 items-center gap-2 lg:hidden">
-        <span className="min-w-0 flex-1 truncate font-mono text-sm text-emerald-300">
-          {t("stat.creditsLine", { credits: fmt(p.credits), income: fmt(income) })}
-        </span>
+        <IncomeLine p={p} className="flex-1" />
         <IconButton
           label={t("panel.replays")}
           badge={p.incoming.filter((a) => !a.competitionStage).length}
@@ -1461,9 +1458,7 @@ export default function Lobby({
           className="max-w-[14rem] shrink-0 text-xl font-black uppercase leading-none tracking-tight"
           onCommit={rename}
         />
-        <span className="shrink-0 font-mono text-sm text-emerald-300">
-          {t("stat.creditsLine", { credits: fmt(p.credits), income: fmt(income) })}
-        </span>
+        <IncomeLine p={p} className="shrink-0" />
         {/* остальная строка — поле для всего, что игра говорит игроку */}
         <div
           className={`flex min-h-[2.25rem] min-w-0 flex-1 items-center gap-x-3 gap-y-1 rounded-md border px-3 py-1 text-sm ${barTone}`}
