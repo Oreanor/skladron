@@ -39,6 +39,7 @@ const en: RuleSection[] = [
     lines: [
       "Raids queue up and are fought strictly in order — you cannot skip or reorder them.",
       "Take as long as you need to prepare; the first raid in the queue waits for you, and only that one can be fought.",
+      "A battle counts only once it is played to the end. Reload the page or close the tab mid-battle and it does not count: the raid stays first in the queue, the warehouse is untouched, and you can defend again.",
       "In battle the guns work by themselves — {gunRange} cells of range, {reload} s to reload. Your mouse is the machine gun when a drone is in the crosshair — over the warehouse too; otherwise over the warehouse it is the fire hose. A gun shell is unguided: the gun leads its target and fires only once the turret has turned. Installations work together — none fires at a target that already has a shell or missile on its way, and a miss frees it again.",
       "Fire spreads to neighbouring cells every {spread} s. A container on a burning cell is lost with the drones inside; a gun there dies too.",
     ],
@@ -123,6 +124,7 @@ const ru: RuleSection[] = [
     lines: [
       "Налёты встают в очередь и отбиваются строго по порядку — переставить и пропустить нельзя.",
       "Готовься сколько нужно: первый в очереди ждёт, но отбить можно только его.",
+      "Бой засчитывается, только когда доигран до конца. Обновил страницу или закрыл вкладку посреди боя — он не в счёт: налёт остаётся первым в очереди, склад цел, и отбивать можно заново.",
       "В бою пушки работают сами — радиус {gunRange} клеток, перезарядка {reload} с. Дрон в перекрестье — мышь бьёт очередью, хоть над складом; нет дрона — над складом брандспойт, над землёй пулемёт. Снаряд зенитки неуправляемый: она бьёт с упреждением и стреляет, только довернув башню. Установки бьют сообща — по цели, в которую уже летит снаряд или ракета, другие не стреляют, а промах её снова отпускает.",
       "Огонь перекидывается на соседние клетки каждые {spread} с. Контейнер на горящей клетке пропадает вместе с дронами, пушка там же гибнет.",
     ],
@@ -207,6 +209,7 @@ const es: RuleSection[] = [
     lines: [
       "Los ataques hacen cola y se combaten en orden estricto: no puedes saltarte ninguno ni cambiar el orden.",
       "Tómate el tiempo que necesites: el primero en la cola espera, pero solo ese se puede combatir.",
+      "Un combate solo cuenta si se juega hasta el final. Si recargas la página o cierras la pestaña a mitad, no cuenta: el ataque sigue primero en la cola, el almacén queda intacto y puedes defenderte de nuevo.",
       "En combate los cañones actúan solos: {gunRange} celdas de alcance, {reload} s de recarga. Con un dron en el punto de mira el ratón dispara la ametralladora, incluso sobre el almacén; si no hay dron, sobre el almacén va la manguera y sobre el suelo la ametralladora. El proyectil del cañón no es guiado: apunta con anticipación y dispara solo cuando la torreta ha girado. Las instalaciones actúan juntas: ninguna dispara a un objetivo al que ya va un proyectil o misil, y si falla queda libre otra vez.",
       "El fuego pasa a las celdas vecinas cada {spread} s. Un contenedor en una celda ardiendo se pierde con sus drones; un cañón allí también muere.",
     ],
@@ -291,6 +294,7 @@ const pt: RuleSection[] = [
     lines: [
       "Os ataques formam fila e são travados por ordem estrita — não podes saltar nem reordenar.",
       "Prepara-te o tempo que precisares: o primeiro na fila espera, mas só esse se pode travar.",
+      "Um combate só conta quando é jogado até ao fim. Recarregaste a página ou fechaste o separador a meio — não conta: o ataque continua primeiro na fila, o armazém fica intacto e podes defender de novo.",
       "Em combate os canhões trabalham sozinhos — {gunRange} células de alcance, {reload} s de recarga. Com um drone na mira o rato dispara a metralhadora, mesmo sobre o armazém; sem drone, sobre o armazém vai a mangueira e sobre o chão a metralhadora. O projéctil do canhão não é guiado: aponta com antecipação e só dispara depois de a torre rodar. As instalações atuam em conjunto — nenhuma dispara contra um alvo a que já vai um projéctil ou míssil, e um falhanço liberta-o de novo.",
       "O fogo passa às células vizinhas a cada {spread} s. Um contentor numa célula a arder perde-se com os drones; um canhão ali também morre.",
     ],
@@ -375,6 +379,7 @@ const fr: RuleSection[] = [
     lines: [
       "Les raids font la queue et se jouent strictement dans l’ordre — pas de saut ni de réordonnancement.",
       "Prends le temps qu’il te faut : le premier attend, mais seul lui peut être combattu.",
+      "Un combat ne compte que s’il est joué jusqu’au bout. Recharge la page ou ferme l’onglet en plein combat et il ne compte pas : le raid reste premier dans la file, l’entrepôt est intact et tu peux te défendre à nouveau.",
       "Au combat les canons agissent seuls — {gunRange} cases de portée, {reload} s de recharge. Un drone dans le viseur et la souris tire à la mitrailleuse, même au-dessus de l’entrepôt ; sinon c’est la lance sur l’entrepôt et la mitrailleuse au sol. L’obus du canon n’est pas guidé : le canon vise en avance et ne tire qu’une fois la tourelle tournée. Les installations agissent ensemble — aucune ne tire sur une cible déjà visée par un obus ou un missile, et un raté la libère à nouveau.",
       "Le feu gagne les cases voisines toutes les {spread} s. Un conteneur sur une case en feu est perdu avec ses drones ; un canon y meurt aussi.",
     ],
@@ -459,6 +464,7 @@ const de: RuleSection[] = [
     lines: [
       "Angriffe stellen sich in eine Schlange und werden streng der Reihe nach abgewehrt — überspringen oder umsortieren geht nicht.",
       "Nimm dir die Vorbereitungszeit, die du brauchst: der Erste in der Schlange wartet, aber nur ihn kannst du abwehren.",
+      "Ein Kampf zählt erst, wenn er zu Ende gespielt ist. Lädst du die Seite neu oder schließt den Tab mitten im Kampf, zählt er nicht: der Angriff bleibt an erster Stelle, das Lager bleibt heil, und du kannst erneut verteidigen.",
       "Im Gefecht arbeiten die Geschütze allein — {gunRange} Felder Reichweite, {reload} s Nachladen. Ist eine Drohne im Fadenkreuz, feuert die Maus das MG — auch über dem Lager; sonst über dem Lager der Löschschlauch, über dem Boden das MG. Das Geschoss ist ungelenkt: das Geschütz hält vor und feuert erst, wenn der Turm herumgeschwenkt ist. Die Anlagen arbeiten zusammen — keine schießt auf ein Ziel, zu dem schon ein Geschoss oder eine Rakete unterwegs ist, und ein Fehlschuss gibt es wieder frei.",
       "Feuer springt alle {spread} s auf Nachbarfelder über. Ein Container auf brennendem Feld geht mit seinen Drohnen verloren, ein Geschütz dort ebenfalls.",
     ],
@@ -543,6 +549,7 @@ const it: RuleSection[] = [
     lines: [
       "Gli attacchi si mettono in coda e si affrontano rigorosamente in ordine — non si salta né si riordina.",
       "Prenditi tutto il tempo che ti serve: il primo in coda aspetta, ma si può affrontare solo quello.",
+      "Un combattimento conta solo se giocato fino alla fine. Ricarichi la pagina o chiudi la scheda a metà e non conta: l’attacco resta primo in coda, il magazzino è intatto e puoi difenderti di nuovo.",
       "In battaglia i cannoni lavorano da soli — {gunRange} celle di gittata, {reload} s di ricarica. Con un drone nel mirino il mouse spara la mitragliatrice, anche sopra il magazzino; senza drone, sul magazzino c’è la manichetta e sul terreno la mitragliatrice. La granata del cannone non è guidata: il cannone mira in anticipo e spara solo dopo aver girato la torretta. Le installazioni lavorano insieme — nessuna spara a un bersaglio verso cui vola già una granata o un missile, e un colpo mancato lo libera di nuovo.",
       "Il fuoco passa alle celle vicine ogni {spread} s. Un container su una cella in fiamme si perde con i suoi droni; anche un cannone lì muore.",
     ],
