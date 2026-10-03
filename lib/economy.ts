@@ -48,7 +48,7 @@ export const SALE_PERCENT = 150;
  */
 export const saleValue = (drones: number, droneLevel: number) =>
   Math.floor((drones * priceAt(DRONE_UNIT_COST, droneLevel) * SALE_PERCENT) / 100);
-export const INCOME_CAP_SHIFTS = 28; // потолок накопления — две недели смен
+export const INCOME_CAP_SHIFTS = 14; // потолок накопления — две недели смен
 export const CELL_LOOT_REWARD = 50; // нападавшему за каждую сожжённую клетку склада
 /**
  * Насколько щедрее платят за близкий к полному разгром, процентов сверху
@@ -185,26 +185,37 @@ export const STARTER_CELLS = STARTER_SIDE * STARTER_SIDE;
 export const MIN_BASE_CELLS = STARTER_CELLS; // меньше стартового склада не основываемся
 
 /**
- * Смена — двенадцать часов. Столько живёт товар на складе и за столько же
- * набегает аренда: две отгрузки в сутки.
+ * Смена — сутки: аренда и отгрузка приходят в полночь по Лондону, у всех
+ * разом. Так день в игре идёт день в день, а не вдвое быстрее.
  */
-export const SHIFT_HOURS = 12;
-export const SHIFT_MS = SHIFT_HOURS * 60 * 60 * 1000;
+export const SHIFT_HOURS = 24;
+export const SHIFT_ZONE = "Europe/London";
 
+const londonDate = new Intl.DateTimeFormat("en-CA", {
+  timeZone: SHIFT_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/** Номер лондонских суток, в которые попадает этот миг. */
+export function londonDay(ms: number) {
+  const [y, m, d] = londonDate.format(ms).split("-").map(Number);
+  return Math.round(Date.UTC(y, m - 1, d) / 86_400_000);
+}
 
 /**
- * Сколько кредитов накопилось с прошлого начисления.
- * Считаем по целым суткам UTC, остаток переносим на следующий заход.
+ * Сколько кредитов накопилось с прошлого начисления: столько, сколько
+ * лондонских полуночей прошло. Та же арифметика, что в collect_income_for.
  */
 export function accrue(intactCells: number, lastIncomeAt: number, now: number) {
-  const shifts = Math.floor((now - lastIncomeAt) / SHIFT_MS);
+  const shifts = londonDay(now) - londonDay(lastIncomeAt);
   if (shifts <= 0) return { credits: 0, days: 0, nextAt: lastIncomeAt };
   const paid = Math.min(shifts, INCOME_CAP_SHIFTS);
   return {
     credits: paid * intactCells * INCOME_PER_CELL,
     days: paid,
-    // сдвигаем на все прошедшие сутки, иначе сверх потолка копилось бы дальше
-    nextAt: lastIncomeAt + shifts * SHIFT_MS,
+    nextAt: now,
   };
 }
 

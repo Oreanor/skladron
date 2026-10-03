@@ -39,7 +39,7 @@ const ru: Dict = {
   "replays.incoming": "Налёт от",
   "replays.pending": "{drones} дронов, не отыгран",
   "tool.priceBox": "{cost} кр/{perCell} шт",
-  "stat.creditsLine": "{credits} (+{income} кр/12ч)",
+  "stat.creditsLine": "{credits} (+{income} кр/сутки)",
   "tool.loan": "Кредит",
   "tool.loanHint": "Взять кредиты в долг",
   "panel.replays": "Журнал боёв",

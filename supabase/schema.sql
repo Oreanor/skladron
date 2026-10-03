@@ -950,14 +950,16 @@ begin
     into intact, cur_depots
     from bases b where b.user_id = uid for update;
 
-  -- смена — двенадцать часов, отгрузка дважды в сутки
-  passed := floor(extract(epoch from (now() - prof.last_income_at)) / 43200);
+  -- Смена — сутки: аренда и отгрузка приходят в полночь по Лондону.
+  -- Сколько лондонских полуночей прошло с прошлой выплаты, столько и смен.
+  passed := (now() at time zone 'Europe/London')::date
+          - (prof.last_income_at at time zone 'Europe/London')::date;
   if passed <= 0 then
     return query select 0, 0, 0, 0;
     return;
   end if;
 
-  paid := least(passed, 28);
+  paid := least(passed, 14);
   -- Аренда идёт с каждой целой клетки за каждые сутки.
   gain := paid * coalesce(intact, 0) * price('income');
 
@@ -978,7 +980,7 @@ begin
   update profiles
      set credits = credits + gain + sale,
          drones = 0,
-         last_income_at = prof.last_income_at + (passed * 12 || ' hours')::interval
+         last_income_at = now()
    where id = uid;
 
   return query select gain + sale, paid, drones_out, sale;
