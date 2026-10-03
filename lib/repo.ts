@@ -75,7 +75,7 @@ export interface Repo {
    * Как называются склады по этим адресам. Врага зовут именем его склада,
    * а не выдумкой клиента, поэтому имя всегда спрашиваем у сервера.
    */
-  baseNames(emails: string[]): Promise<Map<string, { name: string; avatar: Avatar }>>;
+  baseNames(emails: string[]): Promise<Map<string, { name: string; avatar: Avatar; level: number }>>;
   /** Сменить своё лицо: номер готового, адрес своей картинки или null. */
   setAvatar(p: Player, value: Avatar): Promise<void>;
   /**
@@ -201,7 +201,7 @@ class LocalRepo implements Repo {
   }
 
   async baseNames(_emails: string[]) {
-    return new Map<string, { name: string; avatar: Avatar }>();
+    return new Map<string, { name: string; avatar: Avatar; level: number }>();
   }
 
   async setAvatar(p: Player, value: Avatar) {
@@ -574,6 +574,7 @@ class CloudRepo implements Repo {
         if (!actual) continue;
         e.name = actual.name;
         e.avatar = actual.avatar;
+        e.level = actual.level;
       }
     } catch {
       // имена — украшение списка, из-за них вход в игру ломаться не должен
@@ -698,14 +699,15 @@ class CloudRepo implements Repo {
   }
 
   async baseNames(emails: string[]) {
-    const out = new Map<string, { name: string; avatar: Avatar }>();
+    const out = new Map<string, { name: string; avatar: Avatar; level: number }>();
     if (!emails.length) return out;
     const { data, error } = await this.db().rpc("base_names", { emails });
     if (error) throw error;
-    const rows = (data as { email: string; name: string; avatar: string | null }[] | null) ?? [];
+    const rows =
+      (data as { email: string; name: string; avatar: string | null; level: number | null }[] | null) ?? [];
     for (const row of rows) {
       if (row.email && row.name) {
-        out.set(row.email.toLowerCase(), { name: row.name, avatar: row.avatar });
+        out.set(row.email.toLowerCase(), { name: row.name, avatar: row.avatar, level: row.level ?? 0 });
       }
     }
     return out;

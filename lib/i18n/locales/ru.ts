@@ -361,6 +361,8 @@ const ru: Dict = {
   "enemies.remove": "Удалить из врагов",
   "enemies.removeConfirm": "Удалить {name} из врагов?",
   "enemies.removeNote": "Счёт, кто у кого сколько сжёг, пропадёт. Добавить обратно можно по почте.",
+  "enemies.levelShort": "ур.{n}",
+  "enemies.level": "Уровень",
   "enemies.burnedByMe": "Я сжёг у него",
   "enemies.burnedByThem": "Он сжёг у меня",
   "enemies.lastRaid": "Его последний налёт",

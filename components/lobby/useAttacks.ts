@@ -160,9 +160,10 @@ export function useAttacks(o: AttacksOptions): Attacks {
         for (const e of cur.enemies) {
           const actual = names.get(e.email.toLowerCase());
           if (!actual) continue;
-          if (actual.name !== e.name || actual.avatar !== e.avatar) {
+          if (actual.name !== e.name || actual.avatar !== e.avatar || actual.level !== e.level) {
             e.name = actual.name;
             e.avatar = actual.avatar;
+            e.level = actual.level;
             changed = true;
           }
         }

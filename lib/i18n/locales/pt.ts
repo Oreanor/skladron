@@ -361,6 +361,8 @@ const pt: Dict = {
   "enemies.remove": "Remover dos inimigos",
   "enemies.removeConfirm": "Remover {name} dos inimigos?",
   "enemies.removeNote": "A contagem de queimas perde-se. Podes voltar a adicioná-lo por e-mail.",
+  "enemies.levelShort": "nív.{n}",
+  "enemies.level": "Nível",
   "enemies.burnedByMe": "Eu queimei neles",
   "enemies.burnedByThem": "Queimaram em mim",
   "enemies.lastRaid": "O último ataque deles",

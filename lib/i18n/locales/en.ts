@@ -362,6 +362,8 @@ const en = {
   "enemies.remove": "Remove from enemies",
   "enemies.removeConfirm": "Remove {name} from enemies?",
   "enemies.removeNote": "The burn tally goes with them. You can add them back by email.",
+  "enemies.levelShort": "lv.{n}",
+  "enemies.level": "Level",
   "enemies.burnedByMe": "I burned on them",
   "enemies.burnedByThem": "They burned on me",
   "enemies.lastRaid": "Their last raid",

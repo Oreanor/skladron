@@ -361,6 +361,8 @@ const fr: Dict = {
   "enemies.remove": "Retirer des ennemis",
   "enemies.removeConfirm": "Retirer {name} des ennemis ?",
   "enemies.removeNote": "Le décompte des cases brûlées disparaît. Tu peux le rajouter par e-mail.",
+  "enemies.levelShort": "niv.{n}",
+  "enemies.level": "Niveau",
   "enemies.burnedByMe": "J’ai brûlé chez eux",
   "enemies.burnedByThem": "Ils ont brûlé chez moi",
   "enemies.lastRaid": "Leur dernier raid",

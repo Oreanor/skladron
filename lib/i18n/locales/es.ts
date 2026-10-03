@@ -361,6 +361,8 @@ const es: Dict = {
   "enemies.remove": "Quitar de enemigos",
   "enemies.removeConfirm": "¿Quitar a {name} de enemigos?",
   "enemies.removeNote": "Se pierde el recuento de quemas. Puedes volver a añadirlo por correo.",
+  "enemies.levelShort": "niv.{n}",
+  "enemies.level": "Nivel",
   "enemies.burnedByMe": "Yo les quemé",
   "enemies.burnedByThem": "Me quemaron",
   "enemies.lastRaid": "Su último ataque",

@@ -120,6 +120,10 @@ export default function Enemies({
                     </div>
                   </div>
                 </button>
+                {/* уровень — по правому краю, перед кнопками */}
+                <span className="shrink-0 font-mono text-xs text-neutral-400">
+                  {t("enemies.levelShort", { n: e.level ?? 0 })}
+                </span>
                 <div className="flex shrink-0 gap-2">
                   {/*
                     Карта переехала внутрь карточки соперника: там ей место
@@ -292,6 +296,10 @@ export function EnemyProfile({
               size="lg"
             />
             <dl className="space-y-1.5 font-mono text-sm">
+              <div className="flex justify-between gap-3">
+                <dt className="text-neutral-500">{t("enemies.level")}</dt>
+                <dd className="text-neutral-200">{enemy.level ?? 0}</dd>
+              </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-neutral-500">{t("enemies.burnedByMe")}</dt>
                 <dd className="text-neutral-200">{enemy.burnedByMe}</dd>

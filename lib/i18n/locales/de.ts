@@ -361,6 +361,8 @@ const de: Dict = {
   "enemies.remove": "Aus Feinden entfernen",
   "enemies.removeConfirm": "{name} aus den Feinden entfernen?",
   "enemies.removeNote": "Die Brandbilanz geht verloren. Per E-Mail kannst du ihn wieder hinzufügen.",
+  "enemies.levelShort": "St.{n}",
+  "enemies.level": "Stufe",
   "enemies.burnedByMe": "Von mir bei ihnen verbrannt",
   "enemies.burnedByThem": "Von ihnen bei mir verbrannt",
   "enemies.lastRaid": "Ihr letzter Angriff",
