@@ -104,6 +104,7 @@ const de: Dict = {
   "replay.share": "Link kopieren",
   "replay.copied": "Link kopiert",
   "replay.gone": "Diese Wiederholung gibt es nicht mehr.",
+  "replay.tooOld": "Dieser Kampf lief nach zu alten Regeln — es gibt keine Wiederholung.",
   "replay.open": "Spiel öffnen",
   "tool.insurance": "Versicherung",
   "tool.insuranceHint": "Ersetzt Verluste im Kampf",

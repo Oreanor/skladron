@@ -5,12 +5,10 @@
 // действий — и прокручиваем бой тем же движком, теми же шагами.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { buildPlan, type AttackOrder } from "@/lib/attack";
+import type { AttackOrder } from "@/lib/attack";
 import { G_BURNT, decodeCells, type Depot, type Gun } from "@/lib/base";
-import { createBattle, setAim, setFiring, update, type GameState } from "@/lib/engine";
-import { drawFrame } from "@/lib/render";
-import { decodeTrace } from "@/lib/replay";
-import { SIM } from "@/lib/tuning";
+import type { GameState } from "@/lib/engine";
+import { simFor, type Sim } from "@/lib/sim";
 import { fmt } from "@/lib/economy";
 import { useT } from "@/lib/i18n";
 import { explainAlone } from "@/lib/errors";
@@ -143,12 +141,15 @@ function Talk({ battleId }: { battleId: string }) {
   );
 }
 
-export default function Replay({
+function ReplayView({
+  sim,
   name,
   replay,
   shareId,
   onClose,
 }: {
+  /** Движок той версии, по которой бой шёл. */
+  sim: Sim;
   /** Чей склад отбивался — его и показываем в шапке. */
   name: string;
   replay: ReplayData;
@@ -167,17 +168,17 @@ export default function Replay({
   const speedRef = useRef(speed);
   speedRef.current = speed;
 
-  const frames = useMemo(() => decodeTrace(replay.trace), [replay.trace]);
+  const frames = useMemo(() => sim.decodeTrace(replay.trace), [sim, replay.trace]);
   /** Шкала бара — длина записи. Хвост tailFrames в знаменатель не кладём:
    *  бой обычно кончается около конца записи, и бар прыгал с ~35% в 100%. */
   const progressSteps = Math.max(1, frames.length);
 
   const makeState = () =>
-    createBattle(
+    sim.createBattle(
       decodeCells(replay.cells),
       replay.guns as Gun[],
       replay.depots as Depot[],
-      buildPlan(replay.order),
+      sim.buildPlan(replay.order),
       { ...replay.levels, drones: replay.order.droneLevel, seed: replay.order.seed }
     );
 
@@ -213,19 +214,19 @@ export default function Replay({
       carry += dt * speedRef.current;
 
       let guard = 0;
-      while (carry >= SIM.step && guard++ < 32 && cur.phase === "playing") {
+      while (carry >= sim.SIM.step && guard++ < 32 && cur.phase === "playing") {
         // Запись кончилась — доигрываем хвост без рук защитника и на этом
         // всё: дожигать склад, которого он не терял, повтор не должен.
-        if (frames.length && step >= frames.length + SIM.tailFrames) {
+        if (frames.length && step >= frames.length + sim.SIM.tailFrames) {
           finish(cur.baseOk > 0);
           break;
         }
-        carry -= SIM.step;
+        carry -= sim.SIM.step;
         // руки защитника: что он делал на этом шаге, то и повторяем
         const f = frames[step++] ?? null;
-        setAim(cur, f ? { x: f.x + 0.5, y: f.y + 0.5 } : null);
-        setFiring(cur, Boolean(f?.firing));
-        update(cur, SIM.step);
+        sim.setAim(cur, f ? { x: f.x + 0.5, y: f.y + 0.5 } : null);
+        sim.setFiring(cur, Boolean(f?.firing));
+        sim.update(cur, sim.SIM.step);
         // Движок мог закончить бой (склад пал или всё потухло) — огонь на
         // кадре всё ещё мигает, пока не свести его в пепел, как settle().
         if (cur.phase !== "playing") {
@@ -248,7 +249,7 @@ export default function Replay({
         if (done) progress = 1;
         else if (step < progressSteps) progress = (step / progressSteps) * 0.97;
         else {
-          const tail = Math.min(1, (step - progressSteps) / Math.max(1, SIM.tailFrames));
+          const tail = Math.min(1, (step - progressSteps) / Math.max(1, sim.SIM.tailFrames));
           progress = 0.97 + 0.03 * tail;
         }
         setHud({
@@ -262,7 +263,7 @@ export default function Replay({
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [run, frames, progressSteps]);
+  }, [run, frames, progressSteps, sim]);
 
   const restart = () => {
     state.current = makeState();
@@ -272,7 +273,7 @@ export default function Replay({
   };
 
   const overlay = (ctx: CanvasRenderingContext2D, now: number) => {
-    drawFrame(ctx, s, CELL, null, now, zones);
+    sim.drawFrame(ctx, s, CELL, null, now, zones);
   };
 
   return (
@@ -346,4 +347,33 @@ export default function Replay({
       </div>
     </div>
   );
+}
+
+/**
+ * Повтор боя. Бой прогоняется заново по слепку склада и записи рук, а
+ * правила с тех пор могли поменяться, — поэтому берём движок той версии, по
+ * которой бой шёл: нынешний или замороженный в lib/sims.
+ */
+export default function Replay(props: {
+  name: string;
+  replay: ReplayData;
+  shareId?: string;
+  onClose?: () => void;
+}) {
+  const t = useT();
+  const version = props.replay.order.simulationVersion;
+  const [sim, setSim] = useState<Sim | null | "loading">("loading");
+  useEffect(() => {
+    let alive = true;
+    simFor(version)
+      .then((found) => alive && setSim(found))
+      .catch(() => alive && setSim(null));
+    return () => {
+      alive = false;
+    };
+  }, [version]);
+
+  if (sim === "loading") return <p className="p-6 text-sm text-neutral-500">{t("app.loading")}</p>;
+  if (!sim) return <p className="p-6 text-sm text-neutral-400">{t("replay.tooOld")}</p>;
+  return <ReplayView sim={sim} {...props} />;
 }

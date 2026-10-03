@@ -104,6 +104,7 @@ const ru: Dict = {
   "replay.share": "Скопировать ссылку",
   "replay.copied": "Ссылка скопирована",
   "replay.gone": "Этого повтора больше нет.",
+  "replay.tooOld": "Этот бой сыгран по слишком старым правилам — повтора у него нет.",
   "replay.open": "Открыть игру",
   "tool.insurance": "Страховка",
   "tool.insuranceHint": "Возмещает потери в бою",

@@ -104,6 +104,7 @@ const it: Dict = {
   "replay.share": "Copia link",
   "replay.copied": "Link copiato",
   "replay.gone": "Questa replica non è più disponibile.",
+  "replay.tooOld": "Questo combattimento è stato giocato con regole troppo vecchie: niente replay.",
   "replay.open": "Apri il gioco",
   "tool.insurance": "Assicurazione",
   "tool.insuranceHint": "Copre le perdite in battaglia",

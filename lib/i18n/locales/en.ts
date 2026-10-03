@@ -105,6 +105,7 @@ const en = {
   "replay.share": "Copy link",
   "replay.copied": "Link copied",
   "replay.gone": "This replay is no longer available.",
+  "replay.tooOld": "This battle was played under rules too old to replay.",
   "replay.open": "Open the game",
   "tool.insurance": "Insurance",
   "tool.insuranceHint": "Covers battle losses",
