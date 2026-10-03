@@ -5,9 +5,8 @@
 // показывается на телефоне внутри шторки меню.
 
 import { useEffect, useRef, useState } from "react";
-import { BarChart3, UserRound, BookOpen, LogOut, Moon, RotateCcw, Send, Sun } from "lucide-react";
-import { LOCALES, LOCALE_NAMES, useSettings, type Locale } from "@/lib/i18n";
-import { SectionTitle } from "./ui";
+import { BarChart3, UserRound, BookOpen, LogOut, RotateCcw, Send } from "lucide-react";
+import { LOCALES, LOCALE_NAMES, useSettings, type Locale, type Theme } from "@/lib/i18n";
 import AvatarView from "./Avatar";
 import type { Avatar } from "@/lib/avatar";
 
@@ -23,41 +22,15 @@ export function initials(name: string | null, email: string | null) {
   return ([...local].slice(0, 2).join("") || "?").toUpperCase();
 }
 
+/** Строка настройки: подпись слева, список справа. */
+const SETTING = "flex items-center justify-between gap-3 px-2 py-1.5 text-sm";
+const SELECT =
+  "min-w-0 cursor-pointer rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-sm " +
+  "text-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500";
+
 const ROW =
   "flex w-full cursor-pointer items-center gap-2 rounded px-2 py-2 text-left text-sm " +
   "text-neutral-300 transition hover:bg-neutral-800";
-
-/** Переключатель темы: одна кнопка вместо двух строк списка. */
-function ThemeSwitch() {
-  const { theme, setTheme, t } = useSettings();
-  const light = theme === "light";
-
-  return (
-    <button
-      role="switch"
-      aria-checked={light}
-      aria-label={t("menu.theme")}
-      onClick={() => setTheme(light ? "dark" : "light")}
-      className={`${ROW} justify-between`}
-    >
-      <span className="flex items-center gap-2">
-        {light ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        {light ? t("menu.themeLight") : t("menu.themeDark")}
-      </span>
-      <span
-        className={`relative h-5 w-9 shrink-0 rounded-full transition ${
-          light ? "bg-emerald-500" : "bg-neutral-700"
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 h-4 w-4 rounded-full bg-neutral-100 transition-all ${
-            light ? "left-[1.125rem]" : "left-0.5"
-          }`}
-        />
-      </span>
-    </button>
-  );
-}
 
 /** Язык, тема и выход — одинаковые и в выпадашке, и в мобильной шторке. */
 export function SettingsList({
@@ -80,20 +53,18 @@ export function SettingsList({
   onRestart?: () => void;
   onSignOut?: () => void;
 }) {
-  const { locale, setLocale, t } = useSettings();
+  const { locale, setLocale, theme, setTheme, t } = useSettings();
 
   return (
     <>
 
-      <div className="px-2 pb-1 pt-2">
-        <SectionTitle>{t("menu.language")}</SectionTitle>
-      </div>
-      <div className="px-2 pb-1">
+      {/* язык и тема — строками «подпись: список», без отдельных заголовков */}
+      <label className={SETTING}>
+        <span className="text-neutral-400">{t("menu.language")}:</span>
         <select
           value={locale}
-          aria-label={t("menu.language")}
           onChange={(e) => setLocale(e.target.value as Locale)}
-          className="w-full cursor-pointer rounded-md border border-neutral-700 bg-neutral-950 px-2 py-2 text-sm text-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500"
+          className={SELECT}
         >
           {LOCALES.map((l: Locale) => (
             <option key={l} value={l}>
@@ -101,12 +72,18 @@ export function SettingsList({
             </option>
           ))}
         </select>
-      </div>
-
-      <div className="mt-1 border-t border-neutral-800 px-2 pb-1 pt-2">
-        <SectionTitle>{t("menu.theme")}</SectionTitle>
-      </div>
-      <ThemeSwitch />
+      </label>
+      <label className={SETTING}>
+        <span className="text-neutral-400">{t("menu.theme")}:</span>
+        <select
+          value={theme}
+          onChange={(e) => setTheme(e.target.value as Theme)}
+          className={SELECT}
+        >
+          <option value="dark">{t("menu.themeDark")}</option>
+          <option value="light">{t("menu.themeLight")}</option>
+        </select>
+      </label>
 
       {(onAvatar || onTelegram || onRules || onStats) && (
         <div className="mt-1 border-t border-neutral-800 pt-1">
