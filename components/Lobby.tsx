@@ -21,12 +21,11 @@ import {
 import {
   CELL_COST,
   STARTER_SIDE,
-  DRONE_UNIT_COST,
   LOAN_MIN,
   saleValue,
   SHIFT_HOURS,
   SCRAP_REWARD,
-  priceAt,
+  dronePrice,
   loanDebt,
   MIN_BASE_CELLS,
   maxLevel,
@@ -509,7 +508,7 @@ export default function Lobby({
 
   const { intact, burnt, drones } = counts;
   /** Во что обходится дрон при нынешнем уровне: от него считается надбавка. */
-  const droneCost = priceAt(DRONE_UNIT_COST, p.levels.drones);
+  const droneCost = dronePrice(p.levels.drones);
   // то же самое, но под ключи кнопок: у каждой в углу своё число
   /** Во что обойдётся то, что ставит этот инструмент, с учётом прокачки. */
   /** Секунды показываем с одним знаком и без хвостового нуля. */

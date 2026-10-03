@@ -36,7 +36,13 @@ language sql immutable as $$
     when 'free'   then 25   -- стартовая площадь 5×5 достаётся даром
     when 'found'  then 25   -- столько же нужно, чтобы основаться
     when 'upgrade' then 5000 -- апгрейд на любую ступень стоит одинаково
-    when 'price_step' then 10 -- на столько процентов дорожает вещь за уровень
+    -- Цена на десятом уровне: с первого до десятого вещь дорожает ровно.
+    when 'gun_top'     then 200
+    when 'rocket_top'  then 400
+    when 'spray_top'   then 300
+    when 'trap_top'    then 400
+    when 'balloon_top' then 150
+    when 'drone_top'   then 30
     when 'loan_min'   then 1000  -- меньше этого банк не выдаёт
     when 'loan_max'   then 10000 -- потолок займа = стартовая казна
     when 'loan_rate'  then 10    -- процент за сутки
@@ -279,9 +285,13 @@ $$;
 
 -- Цена с учётом прокачки: что летит дальше и быстрее, то и дороже.
 -- Делим нацело — округление вниз, как и на клиенте.
-create or replace function price_at(base int, level int) returns int
+-- Цена вещи на этом уровне: от price(kind) на первом до price(kind_top) на
+-- десятом, ровными ступеньками, с округлением вниз. Та же арифметика на клиенте.
+create or replace function price_at(kind text, level int) returns int
 language sql immutable as $$
-  select (base * (100 + price('price_step') * greatest(0, coalesce(level, 1) - 1))) / 100;
+  select price(kind)
+       + ((coalesce(price(kind || '_top'), price(kind)) - price(kind))
+          * (least(10, greatest(1, coalesce(level, 1))) - 1)) / 9;
 $$;
 
 -- Снимает со склада нужное число дронов заданного вида. Пустые ящики
@@ -599,7 +609,7 @@ begin
   -- по цене дрона на нынешнем уровне, той же, по какой он и покупался.
   select waves_surcharge(
            attack_waves,
-           price_at(price('drone'), coalesce((p.levels->>'drones')::int, 1))
+           price_at('drone', coalesce((p.levels->>'drones')::int, 1))
          )
     into surcharge
     from profiles p where p.id = uid;
@@ -968,7 +978,7 @@ begin
   -- прокачка съедала бы маржу — на десятом уровне дрон обходился в 47, а
   -- уходил за те же 50.
   drones_out := depot_sum_kind(cur_depots, 'basic');
-  sale := (drones_out * price_at(price('drone'), coalesce((prof.levels->>'drones')::int, 1))
+  sale := (drones_out * price_at('drone', coalesce((prof.levels->>'drones')::int, 1))
           * price('sale')) / 100;
 
   update bases
@@ -1110,16 +1120,16 @@ begin
 
   cost := paid * price('cell')
         + repaired * price('repair')
-        + guns_added * price_at(price('gun'), coalesce((prof.levels->>'guns')::int, 1))
-        + rockets_added * price_at(price('rocket'), coalesce((prof.levels->>'rockets')::int, 1))
-        + sprays_added * price_at(price('spray'), coalesce((prof.levels->>'sprays')::int, 1))
-        + traps_added * price_at(price('trap'), coalesce((prof.levels->>'traps')::int, 1))
-        + balloons_added * price_at(price('balloon'), coalesce((prof.levels->>'balloons')::int, 1))
-        - guns_gone * price_at(price('gun'), coalesce((prof.levels->>'guns')::int, 1))
-        - rockets_gone * price_at(price('rocket'), coalesce((prof.levels->>'rockets')::int, 1))
-        - sprays_gone * price_at(price('spray'), coalesce((prof.levels->>'sprays')::int, 1))
-        - traps_gone * price_at(price('trap'), coalesce((prof.levels->>'traps')::int, 1))
-        - balloons_gone * price_at(price('balloon'), coalesce((prof.levels->>'balloons')::int, 1))
+        + guns_added * price_at('gun', coalesce((prof.levels->>'guns')::int, 1))
+        + rockets_added * price_at('rocket', coalesce((prof.levels->>'rockets')::int, 1))
+        + sprays_added * price_at('spray', coalesce((prof.levels->>'sprays')::int, 1))
+        + traps_added * price_at('trap', coalesce((prof.levels->>'traps')::int, 1))
+        + balloons_added * price_at('balloon', coalesce((prof.levels->>'balloons')::int, 1))
+        - guns_gone * price_at('gun', coalesce((prof.levels->>'guns')::int, 1))
+        - rockets_gone * price_at('rocket', coalesce((prof.levels->>'rockets')::int, 1))
+        - sprays_gone * price_at('spray', coalesce((prof.levels->>'sprays')::int, 1))
+        - traps_gone * price_at('trap', coalesce((prof.levels->>'traps')::int, 1))
+        - balloons_gone * price_at('balloon', coalesce((prof.levels->>'balloons')::int, 1))
         - scrapped * price('scrap');
 
   if prof.credits < cost then
@@ -1203,7 +1213,7 @@ begin
   if amount is null or amount < 1 or amount > 100000 then
     raise exception 'bad drone amount';
   end if;
-  select amount * price_at(price('drone'), coalesce((p.levels->>'drones')::int, 1))
+  select amount * price_at('drone', coalesce((p.levels->>'drones')::int, 1))
     into cost
     from profiles p where p.id = uid;
 
@@ -2185,17 +2195,17 @@ revoke insert, update, delete on blueprints from anon, authenticated;
 -- Сколько стоят установки по нынешним ценам с учётом уровней.
 create or replace function install_value(g jsonb, lv jsonb) returns int
 language sql immutable as $$
-  select gun_count(g, 'gun') * price_at(price('gun'), coalesce((lv->>'guns')::int, 1))
-       + gun_count(g, 'rocket') * price_at(price('rocket'), coalesce((lv->>'rockets')::int, 1))
-       + gun_count(g, 'spray') * price_at(price('spray'), coalesce((lv->>'sprays')::int, 1))
-       + gun_count(g, 'trap') * price_at(price('trap'), coalesce((lv->>'traps')::int, 1))
-       + gun_count(g, 'balloon') * price_at(price('balloon'), coalesce((lv->>'balloons')::int, 1));
+  select gun_count(g, 'gun') * price_at('gun', coalesce((lv->>'guns')::int, 1))
+       + gun_count(g, 'rocket') * price_at('rocket', coalesce((lv->>'rockets')::int, 1))
+       + gun_count(g, 'spray') * price_at('spray', coalesce((lv->>'sprays')::int, 1))
+       + gun_count(g, 'trap') * price_at('trap', coalesce((lv->>'traps')::int, 1))
+       + gun_count(g, 'balloon') * price_at('balloon', coalesce((lv->>'balloons')::int, 1));
 $$;
 
 -- Сколько стоит содержимое контейнеров по цене закупки.
 create or replace function goods_value(d jsonb, lv jsonb) returns int
 language sql immutable as $$
-  select depot_sum_kind(d, 'basic') * price_at(price('drone'), coalesce((lv->>'drones')::int, 1));
+  select depot_sum_kind(d, 'basic') * price_at('drone', coalesce((lv->>'drones')::int, 1));
 $$;
 
 -- Сколько клеток с таким значением на карте.

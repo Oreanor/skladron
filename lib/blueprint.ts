@@ -16,18 +16,8 @@ import {
   type Depot,
   type Gun,
 } from "./base";
-import {
-  BALLOON_COST,
-  CELL_COST,
-  DRONE_UNIT_COST,
-  GUN_COST,
-  ROCKET_COST,
-  SCRAP_REWARD,
-  SPRAY_COST,
-  STARTER_CELLS,
-  TRAP_COST,
-  priceAt,
-} from "./economy";
+import { CELL_COST, SCRAP_REWARD, STARTER_CELLS, dronePrice } from "./economy";
+import { gunCost } from "./build";
 import type { Levels, Player } from "./player";
 
 /** Больше чертежей держать не дают: их всё равно листать глазами. */
@@ -66,17 +56,17 @@ const countCells = (cells: Uint8Array, v: number) => {
 /** Установки по нынешней цене закупки с учётом уровней. */
 export function installValue(guns: Gun[], lv: Levels) {
   return (
-    countKind(guns, "gun") * priceAt(GUN_COST, lv.guns) +
-    countKind(guns, "rocket") * priceAt(ROCKET_COST, lv.rockets) +
-    countKind(guns, "spray") * priceAt(SPRAY_COST, lv.sprays) +
-    countKind(guns, "trap") * priceAt(TRAP_COST, lv.traps) +
-    countKind(guns, "balloon") * priceAt(BALLOON_COST, lv.balloons)
+    countKind(guns, "gun") * gunCost(lv, "gun") +
+    countKind(guns, "rocket") * gunCost(lv, "rocket") +
+    countKind(guns, "spray") * gunCost(lv, "spray") +
+    countKind(guns, "trap") * gunCost(lv, "trap") +
+    countKind(guns, "balloon") * gunCost(lv, "balloon")
   );
 }
 
 /** Содержимое контейнеров по цене закупки. */
 export function goodsValue(depots: Depot[], lv: Levels) {
-  return depots.reduce((n, d) => n + d.n, 0) * priceAt(DRONE_UNIT_COST, lv.drones);
+  return depots.reduce((n, d) => n + d.n, 0) * dronePrice(lv.drones);
 }
 
 /** Что входит в чертёж: площадь и установки по видам. */

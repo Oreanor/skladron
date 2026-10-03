@@ -38,13 +38,18 @@ import {
 import {
   BALLOON_COST,
   CELL_COST,
-  DRONE_UNIT_COST,
   GUN_COST,
   REPAIR_COST,
   ROCKET_COST,
   SCRAP_REWARD,
   SPRAY_COST,
   TRAP_COST,
+  BALLOON_TOP,
+  GUN_TOP,
+  ROCKET_TOP,
+  SPRAY_TOP,
+  TRAP_TOP,
+  dronePrice,
   priceAt,
 } from "./economy";
 import type { Levels, Player } from "./player";
@@ -78,21 +83,21 @@ const onMap = (x: number, y: number) => x >= 0 && y >= 0 && x < GRID && y < GRID
 export function gunCost(levels: Levels, kind: GunKind): number {
   switch (kind) {
     case "spray":
-      return priceAt(SPRAY_COST, levels.sprays);
+      return priceAt(SPRAY_COST, SPRAY_TOP, levels.sprays);
     case "trap":
-      return priceAt(TRAP_COST, levels.traps);
+      return priceAt(TRAP_COST, TRAP_TOP, levels.traps);
     case "rocket":
-      return priceAt(ROCKET_COST, levels.rockets);
+      return priceAt(ROCKET_COST, ROCKET_TOP, levels.rockets);
     case "balloon":
-      return priceAt(BALLOON_COST, levels.balloons);
+      return priceAt(BALLOON_COST, BALLOON_TOP, levels.balloons);
     default:
-      return priceAt(GUN_COST, levels.guns);
+      return priceAt(GUN_COST, GUN_TOP, levels.guns);
   }
 }
 
 /** Во что обойдётся полный контейнер дронов. */
 export function depotCost(levels: Levels): number {
-  return priceAt(DRONE_UNIT_COST, levels.drones) * DRONES_PER_CELL;
+  return dronePrice(levels.drones) * DRONES_PER_CELL;
 }
 
 // ---------- клетки ----------

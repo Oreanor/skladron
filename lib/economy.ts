@@ -42,7 +42,7 @@ export const SALE_PERCENT = 200;
  * collect_income_for на сервере: округляем вниз всю сумму, а не каждого дрона.
  */
 export const saleValue = (drones: number, droneLevel: number) =>
-  Math.floor((drones * priceAt(DRONE_UNIT_COST, droneLevel) * SALE_PERCENT) / 100);
+  Math.floor((drones * dronePrice(droneLevel) * SALE_PERCENT) / 100);
 export const CELL_LOOT_REWARD = 50; // нападавшему за каждую сожжённую клетку склада
 /**
  * Насколько щедрее платят за близкий к полному разгром, процентов сверху
@@ -158,18 +158,23 @@ export const maxLevel = (kind: UpgradeKind) =>
 
 /** Прибавка за уровень: первый уровень — множитель 1. */
 /**
- * На столько дорожает единица товара за каждый уровень. Держим низко:
- * прокачка и так стоит по 5000 за ступень, а вещи должны оставаться
- * покупаемыми — иначе десятый уровень некому будет закупать.
+ * Цена на десятом уровне. С первого до десятого вещь дорожает ровно, по
+ * одинаковой ступеньке за уровень, и округляется вниз — та же целая
+ * арифметика, что в price_at на сервере.
  */
-export const PRICE_PER_LEVEL = 0.1;
+export const GUN_TOP = 200;
+export const ROCKET_TOP = 400;
+export const SPRAY_TOP = 300;
+export const TRAP_TOP = 400;
+export const BALLOON_TOP = 150;
+export const DRONE_TOP = 30;
 
-/**
- * Цена с учётом прокачки: что летит дальше и быстрее, то и стоит дороже.
- * Округляем вниз — лишняя копейка на больших закупках ни к чему.
- */
-export const priceAt = (base: number, level: number) =>
-  Math.floor(base * levelBonus(level, PRICE_PER_LEVEL));
+/** Цена на этом уровне: от base на первом до top на десятом. */
+export const priceAt = (base: number, top: number, level: number) =>
+  base + Math.floor(((top - base) * (Math.min(MAX_LEVEL, Math.max(1, level)) - 1)) / (MAX_LEVEL - 1));
+
+/** Один дрон на этом уровне. */
+export const dronePrice = (level: number) => priceAt(DRONE_UNIT_COST, DRONE_TOP, level);
 
 export const levelBonus = (level: number, perLevel: number) =>
   1 + perLevel * (Math.max(1, level) - 1);

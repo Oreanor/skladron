@@ -202,24 +202,24 @@ console.log('\n— оторванный кусок склада не прист�
 console.log('\n— прокачка дорожает по формуле —');
 {
   const p = player();
-  for (const [kind, base, level] of [
-    ['gun', E.GUN_COST, 'guns'],
-    ['rocket', E.ROCKET_COST, 'rockets'],
-    ['spray', E.SPRAY_COST, 'sprays'],
-    ['trap', E.TRAP_COST, 'traps'],
-    ['balloon', E.BALLOON_COST, 'balloons'],
+  for (const [kind, base, level, top] of [
+    ['gun', E.GUN_COST, 'guns', 200],
+    ['rocket', E.ROCKET_COST, 'rockets', 400],
+    ['spray', E.SPRAY_COST, 'sprays', 300],
+    ['trap', E.TRAP_COST, 'traps', 400],
+    ['balloon', E.BALLOON_COST, 'balloons', 150],
   ]) {
     let okAll = true;
     for (let lv = 1; lv <= 10; lv++) {
       p.levels[level] = lv;
-      if (B.gunCost(p.levels, kind) !== E.priceAt(base, lv)) okAll = false;
+      if (B.gunCost(p.levels, kind) !== E.priceAt(base, top, lv)) okAll = false;
     }
     p.levels[level] = 1;
-    check(`${kind}: цена по уровню`, okAll);
+    check(`${kind}: цена по уровню, до ${top} на десятом`, okAll && B.gunCost({ ...p.levels, [level]: 10 }, kind) === top);
   }
   p.levels.drones = 10;
   check('дроны: контейнер дорожает с уровнем',
-    B.depotCost(p.levels) === E.priceAt(E.DRONE_UNIT_COST, 10) * 10,
+    B.depotCost(p.levels) === 300,
     String(B.depotCost(p.levels)));
 }
 
