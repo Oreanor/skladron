@@ -38,7 +38,7 @@ import { RULES } from "@/lib/i18n/rules";
 import { useSettings } from "@/lib/i18n";
 import { Button, Modal, SectionTitle } from "./ui";
 import type { ReactNode } from "react";
-import { BALLOON_TOP, GUN_TOP, MAX_LEVEL, MIN_BASE_CELLS, ROCKET_TOP, SPRAY_TOP, TRAP_TOP, dronePrice, priceAt, shownLevel } from "@/lib/economy";
+import { BALLOON_TOP, GUN_TOP, MAX_LEVEL, MIN_BASE_CELLS, ROCKET_TOP, SPRAY_TOP, TRAP_TOP, dronePrice } from "@/lib/economy";
 import {
   balloonCount,
   balloonRange,
@@ -221,42 +221,6 @@ export default function Rules({ onClose }: { onClose: () => void }) {
                   </td>
                   <td className={TD}>—</td>
                 </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section>
-          <div className="mb-1">
-            <SectionTitle>{t("rules.tablePrices")}</SectionTitle>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full font-mono text-xs">
-              <thead>
-                <tr>
-                  <th className={TH}>{t("rules.colLevel")}</th>
-                  {INSTALLS.map((row) => (
-                    <th key={row.label} className={TH} title={t(row.label)}>
-                      <PieceIcon kind={row.kind} />
-                    </th>
-                  ))}
-                  <th className={TH} title={t("income.boxRow")}>
-                    <PieceIcon kind="depot" />
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({ length: MAX_LEVEL }, (_, i) => i + 1).map((lv) => (
-                  <tr key={lv}>
-                    <td className={`${TD} text-neutral-500`}>{shownLevel(lv)}</td>
-                    {INSTALLS.map((row) => (
-                      <td key={row.label} className={TD}>
-                        {priceAt(row.base, row.top, lv)}
-                      </td>
-                    ))}
-                    <td className={TD}>{dronePrice(lv) * DRONES_PER_CELL}</td>
-                  </tr>
-                ))}
               </tbody>
             </table>
           </div>
