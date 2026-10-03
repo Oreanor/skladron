@@ -53,6 +53,7 @@ import { PAYLOAD } from "@/lib/tuning";
 import { PAYLOADS } from "@/lib/attack";
 import { PAYLOAD_FROM } from "@/lib/competition";
 import type { Key } from "@/lib/i18n/dict";
+import PieceIcon, { type PieceKind } from "./PieceIcon";
 
 const values: Record<string, string> = {
   credits: fmt(CREDITS_START),
@@ -100,12 +101,12 @@ const rich = (line: string, extra: Record<string, string>): ReactNode =>
     .map((part, i) => (i % 2 ? <b key={i} className="text-neutral-100">{part}</b> : part));
 
 /** Установки: цена и радиус на нулевом и десятом уровне. */
-const INSTALLS: { label: Key; base: number; top: number; range: (lv: number) => number }[] = [
-  { label: "tool.gun", base: GUN_COST, top: GUN_TOP, range: (lv) => gunRange({ gunLevel: lv }) },
-  { label: "tool.rocket", base: ROCKET_COST, top: ROCKET_TOP, range: (lv) => rocketRange({ rocketLevel: lv }) },
-  { label: "tool.spray", base: SPRAY_COST, top: SPRAY_TOP, range: (lv) => sprayRange({ sprayLevel: lv }) },
-  { label: "tool.trap", base: TRAP_COST, top: TRAP_TOP, range: (lv) => trapRange({ trapLevel: lv }) },
-  { label: "tool.balloon", base: BALLOON_COST, top: BALLOON_TOP, range: (lv) => balloonRange({ balloonLevel: lv }) },
+const INSTALLS: { kind: PieceKind; label: Key; base: number; top: number; range: (lv: number) => number }[] = [
+  { kind: "gun", label: "tool.gun", base: GUN_COST, top: GUN_TOP, range: (lv) => gunRange({ gunLevel: lv }) },
+  { kind: "rocket", label: "tool.rocket", base: ROCKET_COST, top: ROCKET_TOP, range: (lv) => rocketRange({ rocketLevel: lv }) },
+  { kind: "spray", label: "tool.spray", base: SPRAY_COST, top: SPRAY_TOP, range: (lv) => sprayRange({ sprayLevel: lv }) },
+  { kind: "trap", label: "tool.trap", base: TRAP_COST, top: TRAP_TOP, range: (lv) => trapRange({ trapLevel: lv }) },
+  { kind: "balloon", label: "tool.balloon", base: BALLOON_COST, top: BALLOON_TOP, range: (lv) => balloonRange({ balloonLevel: lv }) },
 ];
 const one = (v: number) => (Math.round(v * 10) / 10).toString();
 const TH = "border-b border-neutral-700 px-2 py-1 text-left font-normal text-neutral-500";
@@ -180,7 +181,12 @@ export default function Rules({ onClose }: { onClose: () => void }) {
               <tbody>
                 {INSTALLS.map((row) => (
                   <tr key={row.label}>
-                    <td className={`${TD} text-neutral-200`}>{t(row.label)}</td>
+                    <td className={`${TD} text-neutral-200`}>
+                      <span className="flex items-center gap-2">
+                        <PieceIcon kind={row.kind} />
+                        {t(row.label)}
+                      </span>
+                    </td>
                     <td className={TD}>
                       {row.base} → {row.top}
                     </td>
@@ -190,7 +196,12 @@ export default function Rules({ onClose }: { onClose: () => void }) {
                   </tr>
                 ))}
                 <tr>
-                  <td className={`${TD} text-neutral-200`}>{t("income.boxRow")}</td>
+                  <td className={`${TD} text-neutral-200`}>
+                      <span className="flex items-center gap-2">
+                        <PieceIcon kind="depot" />
+                        {t("income.boxRow")}
+                      </span>
+                    </td>
                   <td className={TD}>
                     {dronePrice(1) * DRONES_PER_CELL} → {dronePrice(MAX_LEVEL) * DRONES_PER_CELL}
                   </td>
@@ -211,11 +222,13 @@ export default function Rules({ onClose }: { onClose: () => void }) {
                 <tr>
                   <th className={TH}>{t("rules.colLevel")}</th>
                   {INSTALLS.map((row) => (
-                    <th key={row.label} className={TH}>
-                      {t(row.label)}
+                    <th key={row.label} className={TH} title={t(row.label)}>
+                      <PieceIcon kind={row.kind} />
                     </th>
                   ))}
-                  <th className={TH}>{t("income.boxRow")}</th>
+                  <th className={TH} title={t("income.boxRow")}>
+                    <PieceIcon kind="depot" />
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -252,7 +265,12 @@ export default function Rules({ onClose }: { onClose: () => void }) {
               <tbody>
                 {PAYLOADS.map((p) => (
                   <tr key={p}>
-                    <td className={`${TD} text-neutral-200`}>{t(`payload.${p}` as Key)}</td>
+                    <td className={`${TD} text-neutral-200`}>
+                      <span className="flex items-center gap-2">
+                        <PieceIcon payload={p} />
+                        {t(`payload.${p}` as Key)}
+                      </span>
+                    </td>
                     <td className={TD}>+{Math.round(PAYLOAD[p].cost * 100)}%</td>
                     <td className={TD}>×{PAYLOAD[p].speed}</td>
                     <td className={TD}>{PAYLOAD_FROM.find(([q]) => q === p)?.[1] ?? "—"}</td>
