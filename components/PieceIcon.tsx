@@ -21,14 +21,15 @@ export type PieceKind = "gun" | "rocket" | "spray" | "trap" | "balloon" | "depot
 
 /** Клетка картинки в точках холста: предмет рисуется на одной клетке с полями. */
 const CELL = 10;
-/** Корпус дрона на картинке: виден и на тёмной, и на светлой теме. */
+/** Сколько клеток на сторону картинки: чуть больше одной — предмет крупно, с полями. */
+const VIEW = 1.4;
+/** Корпус дрона на картинке — серый: рядом с тёмными установками чёрный терялся. */
 const FRAME = "#8a8f98";
 
 function drawDrone(ctx: CanvasRenderingContext2D, color: string) {
-  // как дрон в бою: крест рам, четыре винта и цветная боеголовка в середине;
-  // корпус серый, а не чёрный, — на тёмном окне чёрный пропадал
-  const c = CELL * 1;
-  const r = CELL * 0.55;
+  // как дрон в бою: крест рам, четыре винта и цветная боеголовка в середине
+  const c = (CELL * VIEW) / 2;
+  const r = CELL * 0.4;
   ctx.strokeStyle = FRAME;
   ctx.lineWidth = CELL * 0.14;
   ctx.beginPath();
@@ -70,16 +71,17 @@ export default function PieceIcon({
     canvas.height = Math.round(px * dpr);
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    // холст — две клетки на сторону, предмет — в средней
-    const k = (px * dpr) / (CELL * 2);
+    const k = (px * dpr) / (CELL * VIEW);
     ctx.setTransform(k, 0, 0, k, 0, 0);
-    ctx.clearRect(0, 0, CELL * 2, CELL * 2);
+    // всё стоит на клетке склада — как на карте
+    ctx.fillStyle = COLORS.base;
+    ctx.fillRect(0, 0, CELL * VIEW, CELL * VIEW);
     if (payload) {
       drawDrone(ctx, COLORS.payload[payload] ?? COLORS.droneAccent);
       return;
     }
     // установки рисуются по клетке: сдвигаем так, чтобы клетка (0,0) легла в середину
-    ctx.translate(CELL * 0.5, CELL * 0.5);
+    ctx.translate((CELL * (VIEW - 1)) / 2, (CELL * (VIEW - 1)) / 2);
     const angle = -Math.PI / 4;
     switch (kind) {
       case "rocket":
@@ -101,5 +103,5 @@ export default function PieceIcon({
         drawTurret(ctx, 0, 0, CELL, angle, true);
     }
   }, [kind, payload]);
-  return <canvas ref={ref} aria-hidden className={`inline-block h-6 w-6 shrink-0 align-middle ${className}`} />;
+  return <canvas ref={ref} aria-hidden className={`inline-block h-6 w-6 shrink-0 rounded-sm align-middle ${className}`} />;
 }
