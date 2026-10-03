@@ -94,11 +94,25 @@ const values: Record<string, string> = {
 const fill = (line: string, extra: Record<string, string> = {}) =>
   line.replace(/\{(\w+)\}/g, (m, key) => extra[key] ?? values[key] ?? m);
 
-/** Строка правил: числа из прайса, а **так** — жирным (начало шага). */
-const rich = (line: string, extra: Record<string, string>): ReactNode =>
+/**
+ * Строка правил: числа из прайса, а **так** — жирным (начало шага). У шагов
+ * после жирного заголовка — перенос: заголовок стоит отдельной строкой.
+ */
+const rich = (line: string, extra: Record<string, string>, step = false): ReactNode =>
   fill(line, extra)
     .split(/\*\*(.+?)\*\*/)
-    .map((part, i) => (i % 2 ? <b key={i} className="text-neutral-100">{part}</b> : part));
+    .map((part, i) =>
+      i % 2 ? (
+        <span key={i}>
+          <b className="text-neutral-100">{part}</b>
+          {step && <br />}
+        </span>
+      ) : step && i > 0 ? (
+        part.replace(/^\s+/, "")
+      ) : (
+        part
+      )
+    );
 
 /** Установки: цена и радиус на нулевом и десятом уровне. */
 const INSTALLS: { kind: PieceKind; label: Key; base: number; top: number; range: (lv: number) => number }[] = [
@@ -151,7 +165,7 @@ export default function Rules({ onClose }: { onClose: () => void }) {
             {section.steps ? (
               <ol className="list-decimal space-y-2 pl-5">
                 {section.lines.map((line, i) => (
-                  <li key={i}>{rich(line, leveled)}</li>
+                  <li key={i}>{rich(line, leveled, true)}</li>
                 ))}
               </ol>
             ) : (
