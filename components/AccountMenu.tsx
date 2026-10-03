@@ -73,32 +73,32 @@ export function SettingsList({
           ))}
         </select>
       </label>
-      {/* тема — переключателем: луна слева, солнце справа */}
+      {/* тема — две кнопки-иконки: луна и солнце, выбранная подсвечена */}
       <div className={SETTING}>
         <span className="text-neutral-400">{t("menu.theme")}:</span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={theme === "light"}
-          aria-label={theme === "light" ? t("menu.themeLight") : t("menu.themeDark")}
-          title={theme === "light" ? t("menu.themeLight") : t("menu.themeDark")}
-          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-          className="flex cursor-pointer items-center gap-1.5 text-neutral-400"
-        >
-          <Moon className={`h-4 w-4 ${theme === "dark" ? "text-neutral-100" : ""}`} />
-          <span
-            className={`relative h-5 w-9 shrink-0 rounded-full transition ${
-              theme === "light" ? "bg-amber-400" : "bg-neutral-700"
-            }`}
-          >
-            <span
-              className={`absolute top-0.5 h-4 w-4 rounded-full bg-neutral-100 transition-all ${
-                theme === "light" ? "left-[1.125rem]" : "left-0.5"
-              }`}
-            />
-          </span>
-          <Sun className={`h-4 w-4 ${theme === "light" ? "text-amber-500" : ""}`} />
-        </button>
+        <div className="flex gap-1">
+          {(["dark", "light"] as const).map((v) => {
+            const on = theme === v;
+            const Icon = v === "dark" ? Moon : Sun;
+            return (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={on}
+                aria-label={t(v === "dark" ? "menu.themeDark" : "menu.themeLight")}
+                title={t(v === "dark" ? "menu.themeDark" : "menu.themeLight")}
+                onClick={() => setTheme(v)}
+                className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border transition ${
+                  on
+                    ? "border-neutral-500 bg-neutral-800 text-neutral-100"
+                    : "border-transparent text-neutral-500 hover:text-neutral-300"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {(onAvatar || onTelegram || onRules || onStats) && (
