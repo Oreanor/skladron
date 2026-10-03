@@ -113,17 +113,19 @@ export default function Enemies({
                   onClick={() => setProfile(e)}
                 >
                   <Avatar avatar={e.avatar ?? null} name={e.name} email={e.email} />
-                  <div className="min-w-0">
-                    <div className="truncate font-medium text-neutral-200">{e.name}</div>
+                  <div className="min-w-0 flex-1">
+                    {/* уровень — в строке ника, по правому краю; почту он не сжимает */}
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="truncate font-medium text-neutral-200">{e.name}</span>
+                      <span className="shrink-0 font-mono text-xs text-neutral-400">
+                        {t("enemies.levelShort", { n: e.level ?? 0 })}
+                      </span>
+                    </div>
                     <div className="truncate font-mono text-[11px] text-neutral-500">
                       {e.email}
                     </div>
                   </div>
                 </button>
-                {/* уровень — по правому краю, перед кнопками */}
-                <span className="shrink-0 font-mono text-xs text-neutral-400">
-                  {t("enemies.levelShort", { n: e.level ?? 0 })}
-                </span>
                 <div className="flex shrink-0 gap-2">
                   {/*
                     Карта переехала внутрь карточки соперника: там ей место
