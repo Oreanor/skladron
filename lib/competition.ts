@@ -192,9 +192,10 @@ export function buildCompetition(stage: number): CompetitionPlan {
 
   const waves: WavePlan[] = sizes.map((size, i) => {
     const f = count > 1 ? i / (count - 1) : 0;
-    // рисунок: ранние волны — из простых, поздние — из тяжёлых; номер
-    // сдвигает весь выбор к тяжёлым
-    const hard = Math.min(1, f * 0.7 + p * 0.6);
+    // Рисунок: в первых миссиях ранние волны — из простых, поздние — из
+    // тяжёлых, а к 25-й открыты все, и дальше рисунки выпадают поровну. Иначе
+    // последние в списке (цветок, рой) за всю кампанию встречались единицами.
+    const hard = Math.min(1, f * 0.5 + p * 4);
     const reach = Math.max(2, Math.round(2 + hard * (PATTERNS.length - 2)));
     const pattern = pick(PATTERNS.slice(0, reach), rnd);
     const wave: WavePlan = {
