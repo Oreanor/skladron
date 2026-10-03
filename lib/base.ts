@@ -331,16 +331,20 @@ export function burntCellsIn(cells: Uint8Array, r: Rect) {
   return n;
 }
 
-/** Сносит сгоревшие клетки в рамке: остаётся голая земля. */
+/**
+ * Сносит клетки склада в рамке — и сгоревшие, и целые: остаётся голая земля.
+ * Отдаёт, сколько снесено тех и других.
+ */
 export function scrapRect(cells: Uint8Array, r: Rect) {
-  let n = 0;
+  let burnt = 0;
+  let whole = 0;
   forEachCell(r, (_x, _y, i) => {
-    if (cells[i] === G_BURNT) {
-      cells[i] = G_GROUND;
-      n++;
-    }
+    if (cells[i] === G_BURNT) burnt++;
+    else if (cells[i] === G_BASE) whole++;
+    else return;
+    cells[i] = G_GROUND;
   });
-  return n;
+  return { burnt, whole };
 }
 
 /** Чинит все сгоревшие клетки внутри рамки. Возвращает, сколько починил. */

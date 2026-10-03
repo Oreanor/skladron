@@ -38,6 +38,7 @@ import {
 import {
   BALLOON_COST,
   CELL_COST,
+  MIN_BASE_CELLS,
   GUN_COST,
   REPAIR_COST,
   ROCKET_COST,
@@ -115,15 +116,30 @@ export function buildOne(p: Player, x: number, y: number, hasBuilding: boolean):
   return done(CELL_COST);
 }
 
-/** Снос одной сгоревшей клетки. Если она держит склад вместе — не даём. */
+/** Сколько клеток занимает склад — целых и сгоревших. */
+const footprint = (cells: Uint8Array) => {
+  let n = 0;
+  for (let i = 0; i < cells.length; i++) if (cells[i] === G_BASE || cells[i] === G_BURNT) n++;
+  return n;
+};
+
+/**
+ * Снос одной клетки склада — сгоревшей или целой, лишь бы на ней ничего не
+ * стояло: SCRAP_REWARD кр во вторсырьё. Меньше стартового склада не
+ * сносим — там бесплатные клетки, и их сносили бы и строили заново ради
+ * денег. Держит склад вместе — тоже не даём.
+ */
 export function scrapAt(p: Player, x: number, y: number): BuildResult {
   if (!onMap(x, y)) return skip;
   const i = idx(x, y);
-  if (p.cells[i] !== G_BURNT) return skip;
+  const was = p.cells[i];
+  if (was !== G_BURNT && was !== G_BASE) return skip;
+  if (gunOn(p.guns, x, y) || depotOn(p.depots, x, y)) return no("scrap.busy");
 
   const cells = p.cells.slice();
   cells[i] = G_GROUND;
   if (!isWhole(cells)) return no("scrap.splits");
+  if (footprint(p.cells) - 1 < MIN_BASE_CELLS) return no("scrap.tooSmall", { n: MIN_BASE_CELLS });
 
   p.cells = cells;
   p.credits += SCRAP_REWARD;
@@ -155,6 +171,10 @@ export interface DraftPlan {
   cost: number;
   /** Не разорвёт ли склад и пристраивается ли к нему. */
   connects: boolean;
+  /** Снос: в рамке стоит установка или ящик — сносить нельзя, пока не уберёшь. */
+  busy: boolean;
+  /** Снос оставил бы склад меньше стартового. */
+  small: boolean;
 }
 
 export type DraftTool = "area" | "repair" | "scrap";
@@ -165,13 +185,20 @@ export function draftPlan(
   rect: Rect | null,
   hasBuilding: boolean
 ): DraftPlan {
+  // Снос берёт любые клетки склада, целые и сгоревшие, по одной цене.
+  const scrap = tool === "scrap" && rect ? scrapRect(p.cells.slice(), rect) : null;
   const cells = rect
     ? tool === "area"
       ? newCellsIn(p.cells, rect)
-      : burntCellsIn(p.cells, rect)
+      : scrap
+        ? scrap.burnt + scrap.whole
+        : burntCellsIn(p.cells, rect)
     : 0;
-  const cost =
-    cells * (tool === "scrap" ? -SCRAP_REWARD : tool === "repair" ? REPAIR_COST : CELL_COST);
+  const cost = cells * (tool === "scrap" ? -SCRAP_REWARD : tool === "repair" ? REPAIR_COST : CELL_COST);
+  const small = !!scrap && cells > 0 && footprint(p.cells) - cells < MIN_BASE_CELLS;
+  const inside = (q: { cx: number; cy: number }) =>
+    !!rect && q.cx >= rect.x && q.cx < rect.x + rect.w && q.cy >= rect.y && q.cy < rect.y + rect.h;
+  const busy = tool === "scrap" && (p.guns.some(inside) || p.depots.some(inside));
 
   // Ремонт ничего не пристраивает, значит разрывов создать не может. Снос
   // как раз создаёт — ему примеряем результат заранее. Площади надо
@@ -187,7 +214,7 @@ export function draftPlan(
     }
   } else connects = rect ? rectConnects(p.cells, rect, hasBuilding) : false;
 
-  return { cells, cost, connects };
+  return { cells, cost, connects, busy, small };
 }
 
 /** Утверждение рамки. Считает по тому же плану, которым рисовался ценник. */
@@ -199,7 +226,9 @@ export function applyDraft(
 ): BuildResult {
   if (!rect || rect.w <= 0 || rect.h <= 0) return skip;
   const plan = draftPlan(p, tool, rect, hasBuilding);
+  if (plan.busy) return no("scrap.busy");
   if (!plan.connects) return no("draft.mustBeSolid");
+  if (plan.small) return no("scrap.tooSmall", { n: MIN_BASE_CELLS });
   if (plan.cost > p.credits) return no("draft.needCredits", { cost: plan.cost });
   if (plan.cells === 0) return skip;
 

@@ -38,7 +38,7 @@ import { RULES } from "@/lib/i18n/rules";
 import { useSettings } from "@/lib/i18n";
 import { Button, Modal, SectionTitle } from "./ui";
 import type { ReactNode } from "react";
-import { BALLOON_TOP, GUN_TOP, MAX_LEVEL, ROCKET_TOP, SPRAY_TOP, TRAP_TOP, dronePrice, priceAt, shownLevel } from "@/lib/economy";
+import { BALLOON_TOP, GUN_TOP, MAX_LEVEL, MIN_BASE_CELLS, ROCKET_TOP, SPRAY_TOP, TRAP_TOP, dronePrice, priceAt, shownLevel } from "@/lib/economy";
 import { balloonRange, gunRange, rocketRange, sprayRange, trapRange } from "@/lib/engine";
 import { PAYLOAD } from "@/lib/tuning";
 import { PAYLOADS } from "@/lib/attack";
@@ -49,6 +49,8 @@ const values: Record<string, string> = {
   credits: fmt(CREDITS_START),
   starter: String(STARTER_SIDE),
   droneBoxSale: String(saleValue(DRONES_PER_CELL, 1)),
+  droneBoxSaleTop: String(saleValue(DRONES_PER_CELL, MAX_LEVEL)),
+  minCells: String(MIN_BASE_CELLS),
   cell: String(CELL_COST),
   repair: String(REPAIR_COST),
   gun: String(GUN_COST),

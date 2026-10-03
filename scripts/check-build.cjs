@@ -153,6 +153,8 @@ console.log('\n— перенос ничего не стоит —');
 console.log('\n— снос платит, а склад надвое не рвёт —');
 {
   const p = player();
+  // склад побольше стартового: иначе снос упрётся в нижний порог
+  for (let k = 0; k < 6; k++) { const g = groundNear(p); B.buildOne(p, g.x, g.y, true); }
   // Сжигаем клетку в середине склада и сносим её.
   const c = freeCell(p);
   p.cells[BASE.idx(c.x, c.y)] = 3;
@@ -221,6 +223,25 @@ console.log('\n— прокачка дорожает по формуле —');
   check('дроны: контейнер дорожает с уровнем',
     B.depotCost(p.levels) === 300,
     String(B.depotCost(p.levels)));
+}
+
+console.log('\n— снос целой клетки и нижний порог склада —');
+{
+  const p = player();
+  const g = groundNear(p);
+  B.buildOne(p, g.x, g.y, true);
+  const before = p.credits;
+  const r = B.scrapAt(p, g.x, g.y);
+  check('целая пустая клетка сносится за ту же цену', r.ok && p.credits - before === E.SCRAP_REWARD,
+    r.ok ? String(p.credits - before) : r.why);
+  const c = freeCell(p);
+  const r2 = B.scrapAt(p, c.x, c.y);
+  check('меньше стартового склад не сносится', !r2.ok && r2.why === 'scrap.tooSmall', r2.ok ? 'снесли' : r2.why);
+  const h = groundNear(p);
+  B.buildOne(p, h.x, h.y, true);
+  B.placeGun(p, h.x, h.y, 'gun');
+  const r3 = B.scrapAt(p, h.x, h.y);
+  check('клетку с установкой не сносим', !r3.ok && r3.why === 'scrap.busy', r3.ok ? 'снесли' : r3.why);
 }
 
 console.log('\n— занятая клетка занята —');

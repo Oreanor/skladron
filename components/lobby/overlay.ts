@@ -115,7 +115,11 @@ export function drawDraft(
     for (let y = d.y; y < d.y + d.h; y++) {
       for (let x = d.x; x < d.x + d.w; x++) {
         if (!onMap(x, y)) continue;
-        if (o.cells[idx(x, y)] === G_BURNT) ctx.fillRect(x * cell, y * cell, cell, cell);
+        const v = o.cells[idx(x, y)];
+        // снос берёт и целые клетки, ремонт — только сгоревшие
+        if (v === G_BURNT || (o.burntOnly === "scrap" && v === G_BASE)) {
+          ctx.fillRect(x * cell, y * cell, cell, cell);
+        }
       }
     }
   }

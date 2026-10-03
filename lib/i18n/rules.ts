@@ -26,7 +26,7 @@ const en: RuleSection[] = [
     title: "The warehouse and the money",
     lines: [
       "You start with {credits} cr and a {starter}×{starter} warehouse standing in the middle of the field — it is yours for free.",
-      "Every midnight, London time, the shipment goes out: everything stored is sold at double the purchase price — a container of drones goes for {droneBoxSale} cr. That is the warehouse's income: cells pay no rent. Whatever you did not send into battle is sold. The server runs the shipment by itself and reports it in Telegram, if the bot is linked.",
+      "Every midnight, London time, the shipment goes out: everything stored is sold at double the purchase price — a container of drones goes for {droneBoxSale} cr at drone level 0 and up to {droneBoxSaleTop} at level 10. That is the warehouse's income: cells pay no rent. Whatever you did not send into battle is sold. The server runs the shipment by itself and reports it in Telegram, if the bot is linked.",
       "Short of money? The bank lends {loanMin}–{loanMax} cr for {loanHours} hours at {loanRate}%. The goods you buy with it can burn in a raid — the debt will not.",
       "Money strategy: the real income is burning rival warehouses ({loot} cr per cell). Defence bounty is smaller — a clean stop of a big swarm pays hundreds or about a thousand, usually two to three times less than a successful attack; missions earn it too. Flat broke — take a loan, play a mission, or wipe and get a floor of at least {credits} cr.",
     ],
@@ -36,7 +36,7 @@ const en: RuleSection[] = [
     lines: [
       "«Area» — drag a frame or tap a cell. A new cell costs {cell} cr and must touch what already stands.",
       "«Repair» — the same, {repair} cr per burnt cell.",
-      "«Demolish» — sell the remains of burnt cells for {scrap} cr each. Bare ground is left behind, and the warehouse must stay in one piece.",
+      "«Demolish» — tear down empty warehouse cells, intact or burnt, for {scrap} cr each. Bare ground is left behind; cells holding an installation or a container cannot be torn down, the warehouse must stay in one piece and cannot shrink below {minCells} cells.",
       "«Gun» — {gun} cr on a free intact cell.",
       "«Launcher» — {rocket} cr, placed and dragged like a gun. It reaches {rocketRange} cells, same as a gun, and fires wide, but the missile steers onto the target it was fired at and flies faster than a gun shell. One missile per launcher in the air, {rocketReload} s to reload.",
       "«Sprinkler» — {spray} cr, placed and dragged just like a gun. It does not shoot: when a cell within {sprayRange} catches fire, the sprinkler spins up and sweeps eight jets around itself. A jet stops at the first blaze it meets and needs a moment to douse it. It runs on mains water and never runs dry, but a big enough fire can still outpace a dense ring of them.",
@@ -136,7 +136,7 @@ const ru: RuleSection[] = [
     title: "Склад и деньги",
     lines: [
       "Начинаешь с {credits} кр и складом {starter}×{starter} посреди поля — он твой даром.",
-      "Каждую полночь по Лондону уходит отгрузка: всё, что лежит на складе, продаётся вдвое дороже закупки — контейнер дронов уходит за {droneBoxSale} кр. Это и есть доход склада: аренды с клеток нет. Что не пустил в дело, то продано. Сервер проводит отгрузку сам и пишет итог в телеграм, если бот привязан.",
+      "Каждую полночь по Лондону уходит отгрузка: всё, что лежит на складе, продаётся вдвое дороже закупки — контейнер дронов уходит за {droneBoxSale} кр на нулевом уровне дронов и до {droneBoxSaleTop} на десятом. Это и есть доход склада: аренды с клеток нет. Что не пустил в дело, то продано. Сервер проводит отгрузку сам и пишет итог в телеграм, если бот привязан.",
       "Не хватает денег — банк даёт {loanMin}–{loanMax} кр на {loanHours} часа под {loanRate}%. Купленный на них товар может сгореть в налёте, долг — нет.",
       "Стратегия кассы: основные деньги — с чужих складов ({loot} кр за сожжённую клетку). Премия за отбой меньше — при чистом отбое крупного роя это сотни или около тысячи, в среднем вдвое–втрое скромнее атаки; миссии тоже её дают. Упал в ноль — заём, миссия или полный снос с подушкой не меньше {credits} кр.",
     ],
@@ -146,7 +146,7 @@ const ru: RuleSection[] = [
     lines: [
       "«Площадь» — тяни рамку или ткни в клетку. Новая клетка стоит {cell} кр и должна примыкать к тому, что уже стоит.",
       "«Ремонт» — так же, {repair} кр за сгоревшую клетку.",
-      "«Снос» — сдать остатки сгоревших клеток во вторсырьё, {scrap} кр за клетку. Остаётся голая земля, и склад не должен развалиться надвое.",
+      "«Снос» — снести пустые клетки склада, целые или сгоревшие, по {scrap} кр за клетку. Остаётся голая земля. Клетку, где стоит установка или ящик, не снести; склад не должен развалиться надвое и стать меньше {minCells} клеток.",
       "«Пушка» — {gun} кр на свободную целую клетку.",
       "«Ракетница» — {rocket} кр, ставится и таскается как пушка. Достаёт на {rocketRange} клеток, как зенитка, и пускает неточно, зато ракета сама доворачивает на ту цель, в которую её пустили, и быстрее снаряда зенитки. В воздухе держит одну ракету, перезарядка {rocketReload} с.",
       "«Огнетушитель» — {spray} кр, ставится и таскается так же, как пушка. Он не стреляет: как только в радиусе {sprayRange} клеток занимается огонь, установка раскручивается и бьёт восемью струями вокруг себя. Струя упирается в первый же очаг и гасит его не сразу. Вода из водопровода и не кончается, но большой пожар может пересилить и плотный ковёр установок.",
@@ -246,7 +246,7 @@ const es: RuleSection[] = [
     title: "El almacén y el dinero",
     lines: [
       "Empiezas con {credits} cr y un almacén de {starter}×{starter} en medio del campo: es tuyo gratis.",
-      "Cada medianoche, hora de Londres, sale el envío: todo lo almacenado se vende al doble del precio de compra — un contenedor de drones sale por {droneBoxSale} cr. Ese es el ingreso del almacén: las celdas no pagan renta. Lo que no enviaste al combate, se vende. El servidor hace el envío solo y avisa en Telegram, si el bot está vinculado.",
+      "Cada medianoche, hora de Londres, sale el envío: todo lo almacenado se vende al doble del precio de compra — un contenedor de drones sale por {droneBoxSale} cr con drones de nivel 0 y hasta {droneBoxSaleTop} en el nivel 10. Ese es el ingreso del almacén: las celdas no pagan renta. Lo que no enviaste al combate, se vende. El servidor hace el envío solo y avisa en Telegram, si el bot está vinculado.",
       "¿Falta dinero? El banco presta {loanMin}–{loanMax} cr por {loanHours} horas al {loanRate}%. La mercancía comprada puede arder en un ataque; la deuda no.",
       "Estrategia de caja: el dinero gordo viene de quemar almacenes rivales ({loot} cr por celda). La prima de defensa es menor — un rechazo limpio de un enjambre grande da cientos o cerca de mil, unas dos o tres veces menos que un ataque bueno; las misiones también la pagan. Sin un cr — préstamo, una misión o derribo total con un suelo de al menos {credits} cr.",
     ],
@@ -256,7 +256,7 @@ const es: RuleSection[] = [
     lines: [
       "«Área»: arrastra un marco o toca una celda. Una celda nueva cuesta {cell} cr y debe tocar lo ya construido.",
       "«Reparar»: igual, {repair} cr por celda quemada.",
-      "«Demoler»: vende los restos de las celdas quemadas a {scrap} cr cada una. Queda tierra desnuda y el almacén debe seguir de una pieza.",
+      "«Demoler»: derriba celdas vacías del almacén, intactas o quemadas, a {scrap} cr cada una. Queda tierra desnuda; una celda con instalación o contenedor no se derriba, el almacén debe seguir de una pieza y no bajar de {minCells} celdas.",
       "«Cañón»: {gun} cr en una celda intacta libre.",
       "«Lanzadera» — {rocket} cr, se coloca y se arrastra como un cañón. Alcanza {rocketRange} celdas, como un cañón, y dispara con desvío, pero el misil corrige solo hacia el objetivo al que se lanzó y vuela más rápido que el proyectil del cañón. Un misil por lanzadera en el aire y {rocketReload} s de recarga.",
       "«Extintor»: {spray} cr, se coloca y se arrastra igual que un cañón. No dispara: en cuanto arde una celda a menos de {sprayRange}, la instalación gira y lanza ocho chorros a su alrededor. Cada chorro se detiene en el primer foco y tarda en apagarlo. Tira de la red de agua y nunca se queda seco, pero un incendio grande aún puede con un anillo denso.",
@@ -356,7 +356,7 @@ const pt: RuleSection[] = [
     title: "O armazém e o dinheiro",
     lines: [
       "Começas com {credits} cr e um armazém de {starter}×{starter} no meio do campo — é teu de graça.",
-      "Todas as meias-noites, hora de Londres, sai a expedição: tudo o que está guardado vende-se ao dobro da compra — um contentor de drones sai por {droneBoxSale} cr. É esse o rendimento do armazém: as células não pagam renda. O que não mandaste ao combate é vendido. O servidor faz a expedição sozinho e avisa no Telegram, se o bot estiver ligado.",
+      "Todas as meias-noites, hora de Londres, sai a expedição: tudo o que está guardado vende-se ao dobro da compra — um contentor de drones sai por {droneBoxSale} cr com drones de nível 0 e até {droneBoxSaleTop} no nível 10. É esse o rendimento do armazém: as células não pagam renda. O que não mandaste ao combate é vendido. O servidor faz a expedição sozinho e avisa no Telegram, se o bot estiver ligado.",
       "Falta dinheiro? O banco empresta {loanMin}–{loanMax} cr por {loanHours} horas a {loanRate}%. A mercadoria comprada pode arder num ataque; a dívida não.",
       "Estratégia de caixa: o dinheiro grosso vem de queimar armazéns rivais ({loot} cr por célula). O prémio de defesa é menor — uma defesa limpa de um enxame grande dá centenas ou cerca de mil, em média duas a três vezes menos que um ataque bom; as missões também o pagam. A zero — empréstimo, uma missão ou derrube total com chão de pelo menos {credits} cr.",
     ],
@@ -366,7 +366,7 @@ const pt: RuleSection[] = [
     lines: [
       "«Área» — arrasta uma moldura ou toca numa célula. Uma célula nova custa {cell} cr e tem de tocar no que já está de pé.",
       "«Reparar» — igual, {repair} cr por célula queimada.",
-      "«Demolir» — vende os restos das células queimadas a {scrap} cr cada. Fica terra nua, e o armazém tem de continuar inteiro.",
+      "«Demolir» — deita abaixo células vazias do armazém, intactas ou queimadas, a {scrap} cr cada. Fica terra nua; uma célula com instalação ou contentor não se demole, o armazém tem de continuar inteiro e não ficar com menos de {minCells} células.",
       "«Canhão» — {gun} cr numa célula intacta livre.",
       "«Lançador» — {rocket} cr, coloca-se e arrasta-se como um canhão. Alcança {rocketRange} células, como um canhão, e dispara torto, mas o míssil corrige sozinho para o alvo a que foi lançado e voa mais depressa que o projéctil do canhão. Um míssil por lançador no ar e {rocketReload} s de recarga.",
       "«Extintor» — {spray} cr, coloca-se e arrasta-se tal como um canhão. Não dispara: assim que uma célula a menos de {sprayRange} pega fogo, a instalação gira e lança oito jactos à sua volta. Cada jacto pára no primeiro foco e demora a apagá-lo. Liga-se à rede de água e nunca fica seco, mas um incêndio grande ainda pode vencer um anel denso.",
@@ -466,7 +466,7 @@ const fr: RuleSection[] = [
     title: "L’entrepôt et l’argent",
     lines: [
       "Tu commences avec {credits} cr et un entrepôt de {starter}×{starter} au milieu du terrain — il est à toi gratuitement.",
-      "Chaque minuit, heure de Londres, part l’expédition : tout ce qui est stocké se vend au double du prix d’achat — un conteneur de drones part pour {droneBoxSale} cr. C’est le revenu de l’entrepôt : les cases ne rapportent pas de loyer. Ce que tu n’as pas envoyé au combat est vendu. Le serveur fait l’expédition lui-même et en informe sur Telegram, si le bot est relié.",
+      "Chaque minuit, heure de Londres, part l’expédition : tout ce qui est stocké se vend au double du prix d’achat — un conteneur de drones part pour {droneBoxSale} cr avec des drones de niveau 0 et jusqu’à {droneBoxSaleTop} au niveau 10. C’est le revenu de l’entrepôt : les cases ne rapportent pas de loyer. Ce que tu n’as pas envoyé au combat est vendu. Le serveur fait l’expédition lui-même et en informe sur Telegram, si le bot est relié.",
       "À court d’argent ? La banque prête {loanMin}–{loanMax} cr pour {loanHours} heures à {loanRate} %. La marchandise achetée peut brûler dans un raid, la dette non.",
       "Stratégie de caisse : le gros de l’argent vient des entrepôts rivaux ({loot} cr par case brûlée). La prime de défense est plus petite — un rejet propre d’un gros essaim rapporte des centaines ou environ mille, en moyenne deux à trois fois moins qu’une bonne attaque ; les missions la donnent aussi. À zéro — emprunt, une mission, ou wipe avec un plancher d’au moins {credits} cr.",
     ],
@@ -476,7 +476,7 @@ const fr: RuleSection[] = [
     lines: [
       "« Surface » — tire un cadre ou clique une case. Une case neuve coûte {cell} cr et doit toucher l’existant.",
       "« Réparer » — pareil, {repair} cr par case brûlée.",
-      "« Démolir » — revends les restes des cases brûlées à {scrap} cr pièce. Il reste de la terre nue, et l’entrepôt doit rester d’un seul tenant.",
+      "« Démolir » — rase des cases vides de l’entrepôt, intactes ou brûlées, à {scrap} cr pièce. Il reste de la terre nue ; une case portant une installation ou un conteneur ne se rase pas, l’entrepôt doit rester d’un seul tenant et garder au moins {minCells} cases.",
       "« Canon » — {gun} cr sur une case intacte libre.",
       "« Lance-roquettes » — {rocket} cr, posé et déplacé comme un canon. Il porte à {rocketRange} cases, comme un canon, et tire large, mais le missile se dirige seul vers la cible sur laquelle il a été tiré et vole plus vite qu’un obus de canon. Un seul missile en l’air par lanceur, {rocketReload} s de recharge.",
       "« Extincteur » — {spray} cr, il se pose et se déplace comme un canon. Il ne tire pas : dès qu’une case s’enflamme à moins de {sprayRange}, l’installation se met à tourner et projette huit jets autour d’elle. Un jet bute sur le premier foyer et met un temps à l’éteindre. Il est branché sur le réseau d’eau et ne tarit jamais, mais un grand incendie peut encore déborder un anneau serré.",
@@ -576,7 +576,7 @@ const de: RuleSection[] = [
     title: "Lager und Geld",
     lines: [
       "Du startest mit {credits} Cr und einem {starter}×{starter}-Lager mitten im Feld — es gehört dir umsonst.",
-      "Jede Mitternacht Londoner Zeit geht der Versand raus: alles Eingelagerte wird zum doppelten Einkaufspreis verkauft — ein Drohnencontainer bringt {droneBoxSale} Cr. Das ist das Einkommen des Lagers: Felder bringen keine Miete. Was du nicht in den Kampf geschickt hast, ist verkauft. Der Server erledigt den Versand selbst und meldet ihn in Telegram, wenn der Bot verknüpft ist.",
+      "Jede Mitternacht Londoner Zeit geht der Versand raus: alles Eingelagerte wird zum doppelten Einkaufspreis verkauft — ein Drohnencontainer bringt {droneBoxSale} Cr bei Drohnenstufe 0 und bis {droneBoxSaleTop} auf Stufe 10. Das ist das Einkommen des Lagers: Felder bringen keine Miete. Was du nicht in den Kampf geschickt hast, ist verkauft. Der Server erledigt den Versand selbst und meldet ihn in Telegram, wenn der Bot verknüpft ist.",
       "Zu wenig Geld? Die Bank leiht {loanMin}–{loanMax} Cr für {loanHours} Stunden zu {loanRate} %. Die dafür gekaufte Ware kann bei einem Angriff verbrennen — die Schuld nicht.",
       "Geldstrategie: das große Geld kommt von fremden Lagern ({loot} Cr je abgebranntem Feld). Die Abwehrprämie ist kleiner — saubere Abwehr eines großen Schwarms bringt Hunderte oder etwa tausend, im Schnitt zwei- bis dreimal weniger als ein guter Angriff; Missionen zahlen sie auch. Bei null — Kredit, eine Mission oder Totalverlust mit Boden von mindestens {credits} Cr.",
     ],
@@ -586,7 +586,7 @@ const de: RuleSection[] = [
     lines: [
       "«Fläche» — Rahmen ziehen oder Feld antippen. Ein neues Feld kostet {cell} Cr und muss ans Bestehende grenzen.",
       "«Reparieren» — genauso, {repair} Cr je abgebranntem Feld.",
-      "«Abriss» — die Reste abgebrannter Felder für je {scrap} Cr verwerten. Zurück bleibt nackter Boden, und das Lager muss ein Stück bleiben.",
+      "«Abriss» — leere Lagerfelder abreißen, heile wie verbrannte, für je {scrap} Cr. Zurück bleibt nackter Boden; ein Feld mit Anlage oder Container lässt sich nicht abreißen, das Lager muss ein Stück bleiben und mindestens {minCells} Felder behalten.",
       "«Geschütz» — {gun} Cr auf ein freies heiles Feld.",
       "«Raketenwerfer» — {rocket} Cr, wird wie ein Geschütz gesetzt und gezogen. Er reicht {rocketRange} Felder, so weit wie ein Geschütz, und schießt ungenau, doch die Rakete lenkt selbst auf das Ziel, auf das sie abgefeuert wurde, und fliegt schneller als ein Geschoss. Eine Rakete je Werfer in der Luft, {rocketReload} s Nachladen.",
       "«Löschanlage» — {spray} Cr, wird wie ein Geschütz gesetzt und gezogen. Sie schießt nicht: brennt ein Feld im Umkreis von {sprayRange}, dreht sie auf und schleudert acht Strahlen um sich. Ein Strahl bleibt am ersten Brandherd hängen und braucht Zeit, ihn zu löschen. Sie hängt an der Wasserleitung und läuft nie leer, doch ein großes Feuer kann auch einen dichten Ring überrennen.",
@@ -686,7 +686,7 @@ const it: RuleSection[] = [
     title: "Il magazzino e i soldi",
     lines: [
       "Parti con {credits} cr e un magazzino {starter}×{starter} in mezzo al campo: è tuo gratis.",
-      "Ogni mezzanotte, ora di Londra, parte la spedizione: tutto ciò che è stoccato si vende al doppio dell’acquisto — un container di droni va via per {droneBoxSale} cr. È questo il reddito del magazzino: le celle non rendono affitto. Quello che non hai mandato in battaglia è venduto. Il server fa la spedizione da sé e lo comunica su Telegram, se il bot è collegato.",
+      "Ogni mezzanotte, ora di Londra, parte la spedizione: tutto ciò che è stoccato si vende al doppio dell’acquisto — un container di droni va via per {droneBoxSale} cr con droni di livello 0 e fino a {droneBoxSaleTop} al livello 10. È questo il reddito del magazzino: le celle non rendono affitto. Quello che non hai mandato in battaglia è venduto. Il server fa la spedizione da sé e lo comunica su Telegram, se il bot è collegato.",
       "Soldi finiti? La banca presta {loanMin}–{loanMax} cr per {loanHours} ore al {loanRate}%. La merce comprata può bruciare in un attacco, il debito no.",
       "Strategia di cassa: i soldi grossi vengono dai magazzini rivali ({loot} cr per cella bruciata). Il premio di difesa è minore — un respingimento pulito di uno sciame grande dà centinaia o circa mille, in media due-tre volte meno di un buon attacco; anche le missioni lo pagano. A zero — prestito, una missione o wipe con un pavimento di almeno {credits} cr.",
     ],
@@ -696,7 +696,7 @@ const it: RuleSection[] = [
     lines: [
       "«Area» — trascina una cornice o tocca una cella. Una cella nuova costa {cell} cr e deve toccare ciò che c’è già.",
       "«Riparare» — lo stesso, {repair} cr per cella bruciata.",
-      "«Demolisci» — vendi i resti delle celle bruciate a {scrap} cr l’una. Resta terra nuda, e il magazzino deve restare tutto d’un pezzo.",
+      "«Demolisci» — abbatti celle vuote del magazzino, intatte o bruciate, a {scrap} cr l’una. Resta terra nuda; una cella con installazione o container non si abbatte, il magazzino deve restare tutto d’un pezzo e non scendere sotto le {minCells} celle.",
       "«Cannone» — {gun} cr su una cella intatta libera.",
       "«Lanciarazzi» — {rocket} cr, si piazza e si trascina come un cannone. Arriva a {rocketRange} celle, come un cannone, e spara largo, ma il missile vira da solo sul bersaglio contro cui è stato lanciato e vola più veloce della granata del cannone. Un missile per lanciarazzi in aria e {rocketReload} s di ricarica.",
       "«Estintore» — {spray} cr, si posa e si trascina come un cannone. Non spara: appena una cella entro {sprayRange} prende fuoco, l’impianto gira e lancia otto getti attorno a sé. Un getto si ferma sul primo focolaio e ci mette un po’ a spegnerlo. È allacciato all’acquedotto e non resta mai a secco, ma un incendio grosso può ancora travolgere un anello fitto.",

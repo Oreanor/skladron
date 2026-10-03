@@ -1105,11 +1105,21 @@ begin
     elsif old_v = 3 and new_v = 0 then
       -- снос: остатки сгоревшей клетки сданы во вторсырьё
       scrapped := scrapped + 1;
+    elsif old_v = 1 and new_v = 0 then
+      -- Снос целой клетки — как и сгоревшей, во вторсырьё. Установок на ней не
+      -- будет: guns_valid и depots_valid не пустят их на землю.
+      scrapped := scrapped + 1;
     elsif new_v <> old_v then
       -- вне боя клетка не может стать хуже
       raise exception 'cell % may not degrade outside battle', i;
     end if;
   end loop;
+
+  -- Сносом склад не ужимается меньше стартового: там бесплатные клетки, и их
+  -- сносили бы и строили заново ради денег.
+  if scrapped > 0 and cells_with(bin, 1) + cells_with(bin, 2) + cells_with(bin, 3) < price('found') then
+    raise exception 'warehouse too small';
+  end if;
 
   guns_added := greatest(0, gun_count(new_guns, 'gun') - gun_count(cur_guns, 'gun'));
   rockets_added := greatest(0, gun_count(new_guns, 'rocket') - gun_count(cur_guns, 'rocket'));
