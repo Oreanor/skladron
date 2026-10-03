@@ -73,9 +73,7 @@ export default function PieceIcon({
     if (!ctx) return;
     const k = (px * dpr) / (CELL * VIEW);
     ctx.setTransform(k, 0, 0, k, 0, 0);
-    // всё стоит на клетке склада — как на карте
-    ctx.fillStyle = COLORS.base;
-    ctx.fillRect(0, 0, CELL * VIEW, CELL * VIEW);
+    ctx.clearRect(0, 0, CELL * VIEW, CELL * VIEW);
     if (payload) {
       drawDrone(ctx, COLORS.payload[payload] ?? COLORS.droneAccent);
       return;
@@ -103,5 +101,5 @@ export default function PieceIcon({
         drawTurret(ctx, 0, 0, CELL, angle, true);
     }
   }, [kind, payload]);
-  return <canvas ref={ref} aria-hidden className={`inline-block h-6 w-6 shrink-0 rounded-sm align-middle ${className}`} />;
+  return <canvas ref={ref} aria-hidden className={`inline-block h-6 w-6 shrink-0 align-middle ${className}`} />;
 }
