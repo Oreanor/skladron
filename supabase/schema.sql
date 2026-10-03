@@ -27,7 +27,7 @@ language sql immutable as $$
     -- Пусковая шаров: разовая — выбрасывает шары и пропадает, оттого дешевле зенитки.
     when 'balloon' then 80
     when 'income' then 10  -- кредитов в сутки с каждой целой клетки
-    when 'sale'   then 2   -- отгрузка идёт вдвое дороже закупки
+    when 'sale'   then 150 -- отгрузка: процент от цены закупки, в полтора раза дороже
     when 'loot'   then 50   -- нападавшему за каждую сожжённую клетку склада
     -- Надбавка за близкий к полному разгром, процентов при стопроцентном.
     -- Растёт кубом от доли сожжённого; то же число в LOOT_CURVE на клиенте.
@@ -967,8 +967,8 @@ begin
   -- прокачка съедала бы маржу — на десятом уровне дрон обходился в 47, а
   -- уходил за те же 50.
   drones_out := depot_sum_kind(cur_depots, 'basic');
-  sale := drones_out * price_at(price('drone'), coalesce((prof.levels->>'drones')::int, 1))
-         * price('sale');
+  sale := (drones_out * price_at(price('drone'), coalesce((prof.levels->>'drones')::int, 1))
+          * price('sale')) / 100;
 
   update bases
      set drone_cells = '[]'::jsonb,

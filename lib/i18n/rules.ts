@@ -14,7 +14,7 @@ const en: RuleSection[] = [
     lines: [
       "You start with {credits} cr and a {starter}×{starter} warehouse standing in the middle of the field — it is yours for free.",
       "Every {shift} hours the warehouse pays rent: {income} cr for every intact cell.",
-      "The same moment everything stored ships out at double the purchase price: drones at {droneSale} cr. Whatever you did not send into battle is sold. Once a day the server runs the shipment and rent by itself and reports the result in Telegram, if the bot is linked.",
+      "The same moment everything stored ships out at half again the purchase price: a container of drones goes for {droneBoxSale} cr. Whatever you did not send into battle is sold. Once a day the server runs the shipment and rent by itself and reports the result in Telegram, if the bot is linked.",
       "Away for a while? The rent accrues for at most {capDays} days.",
       "Short of money? The bank lends {loanMin}–{loanMax} cr for {loanHours} hours at {loanRate}%. The goods you buy with it can burn in a raid — the debt will not.",
       "Money strategy: the real income is burning rival warehouses ({loot} cr per cell). Defence bounty is smaller — a clean stop of a big swarm pays hundreds or about a thousand, usually two to three times less than a successful attack; missions earn it too. Flat broke — take a loan, play a mission, or wipe and get a floor of at least {credits} cr.",
@@ -100,7 +100,7 @@ const ru: RuleSection[] = [
     lines: [
       "Начинаешь с {credits} кр и складом {starter}×{starter} посреди поля — он твой даром.",
       "Каждые {shift} часов склад приносит аренду: {income} кр с каждой целой клетки.",
-      "Тогда же уходит отгрузка: всё, что лежит, продаётся вдвое дороже закупки — дроны по {droneSale} кр. Что не пустил в дело, то продано. Раз в сутки сервер проводит отгрузку и аренду сам и пишет итог в телеграм, если бот привязан.",
+      "Тогда же уходит отгрузка: всё, что лежит, продаётся в полтора раза дороже закупки — контейнер дронов уходит за {droneBoxSale} кр. Что не пустил в дело, то продано. Раз в сутки сервер проводит отгрузку и аренду сам и пишет итог в телеграм, если бот привязан.",
       "Не заходил долго — аренда копится не больше чем за {capDays} суток.",
       "Не хватает денег — банк даёт {loanMin}–{loanMax} кр на {loanHours} часа под {loanRate}%. Купленный на них товар может сгореть в налёте, долг — нет.",
       "Стратегия кассы: основные деньги — с чужих складов ({loot} кр за сожжённую клетку). Премия за отбой меньше — при чистом отбое крупного роя это сотни или около тысячи, в среднем вдвое–втрое скромнее атаки; миссии тоже её дают. Упал в ноль — заём, миссия или полный снос с подушкой не меньше {credits} кр.",
@@ -186,7 +186,7 @@ const es: RuleSection[] = [
     lines: [
       "Empiezas con {credits} cr y un almacén de {starter}×{starter} en medio del campo: es tuyo gratis.",
       "Cada {shift} horas el almacén paga renta: {income} cr por cada celda intacta.",
-      "En ese mismo momento se expide todo lo almacenado al doble del precio de compra: drones a {droneSale} cr. Lo que no enviaste al combate, se vende. Una vez al día el servidor hace solo el envío y la renta y avisa del resultado en Telegram, si el bot está vinculado.",
+      "En ese mismo momento se expide todo lo almacenado a vez y media el precio de compra: un contenedor de drones sale por {droneBoxSale} cr. Lo que no enviaste al combate, se vende. Una vez al día el servidor hace solo el envío y la renta y avisa del resultado en Telegram, si el bot está vinculado.",
       "¿Estuviste fuera? La renta se acumula como mucho {capDays} días.",
       "¿Falta dinero? El banco presta {loanMin}–{loanMax} cr por {loanHours} horas al {loanRate}%. La mercancía comprada puede arder en un ataque; la deuda no.",
       "Estrategia de caja: el dinero gordo viene de quemar almacenes rivales ({loot} cr por celda). La prima de defensa es menor — un rechazo limpio de un enjambre grande da cientos o cerca de mil, unas dos o tres veces menos que un ataque bueno; las misiones también la pagan. Sin un cr — préstamo, una misión o derribo total con un suelo de al menos {credits} cr.",
@@ -272,7 +272,7 @@ const pt: RuleSection[] = [
     lines: [
       "Começas com {credits} cr e um armazém de {starter}×{starter} no meio do campo — é teu de graça.",
       "A cada {shift} horas o armazém paga renda: {income} cr por cada célula intacta.",
-      "No mesmo momento sai a expedição: tudo o que está guardado vende-se ao dobro da compra — drones a {droneSale} cr. O que não mandaste ao combate, foi vendido. Uma vez por dia o servidor faz sozinho a expedição e a renda e manda o resultado no Telegram, se o bot estiver ligado.",
+      "No mesmo momento sai a expedição: tudo o que está guardado vende-se a uma vez e meia o preço de compra — um contentor de drones sai por {droneBoxSale} cr. O que não mandaste ao combate, foi vendido. Uma vez por dia o servidor faz sozinho a expedição e a renda e manda o resultado no Telegram, se o bot estiver ligado.",
       "Estiveste fora? A renda acumula no máximo {capDays} dias.",
       "Falta dinheiro? O banco empresta {loanMin}–{loanMax} cr por {loanHours} horas a {loanRate}%. A mercadoria comprada pode arder num ataque; a dívida não.",
       "Estratégia de caixa: o dinheiro grosso vem de queimar armazéns rivais ({loot} cr por célula). O prémio de defesa é menor — uma defesa limpa de um enxame grande dá centenas ou cerca de mil, em média duas a três vezes menos que um ataque bom; as missões também o pagam. A zero — empréstimo, uma missão ou derrube total com chão de pelo menos {credits} cr.",
@@ -358,7 +358,7 @@ const fr: RuleSection[] = [
     lines: [
       "Tu commences avec {credits} cr et un entrepôt de {starter}×{starter} au milieu du terrain — il est à toi gratuitement.",
       "Toutes les {shift} heures l’entrepôt rapporte un loyer : {income} cr par case intacte.",
-      "Au même moment part l’expédition : tout ce qui est stocké se vend au double du prix d’achat — drones à {droneSale} cr. Ce que tu n’as pas envoyé au combat est vendu. Une fois par jour, le serveur fait lui-même l’expédition et le loyer et en envoie le bilan sur Telegram, si le bot est relié.",
+      "Au même moment part l’expédition : tout ce qui est stocké se vend une fois et demie le prix d’achat — un conteneur de drones part pour {droneBoxSale} cr. Ce que tu n’as pas envoyé au combat est vendu. Une fois par jour, le serveur fait lui-même l’expédition et le loyer et en envoie le bilan sur Telegram, si le bot est relié.",
       "Absent longtemps ? Le loyer s’accumule sur {capDays} jours au maximum.",
       "À court d’argent ? La banque prête {loanMin}–{loanMax} cr pour {loanHours} heures à {loanRate} %. La marchandise achetée peut brûler dans un raid, la dette non.",
       "Stratégie de caisse : le gros de l’argent vient des entrepôts rivaux ({loot} cr par case brûlée). La prime de défense est plus petite — un rejet propre d’un gros essaim rapporte des centaines ou environ mille, en moyenne deux à trois fois moins qu’une bonne attaque ; les missions la donnent aussi. À zéro — emprunt, une mission, ou wipe avec un plancher d’au moins {credits} cr.",
@@ -444,7 +444,7 @@ const de: RuleSection[] = [
     lines: [
       "Du startest mit {credits} Cr und einem {starter}×{starter}-Lager mitten im Feld — es gehört dir umsonst.",
       "Alle {shift} Stunden bringt das Lager Miete: {income} Cr pro heilem Feld.",
-      "Im selben Moment geht die Verladung raus: alles Eingelagerte wird zum doppelten Einkaufspreis verkauft — Drohnen zu {droneSale} Cr. Was du nicht in den Einsatz geschickt hast, ist verkauft. Einmal am Tag erledigt der Server Versand und Miete selbst und meldet das Ergebnis in Telegram, wenn der Bot verknüpft ist.",
+      "Im selben Moment geht die Verladung raus: alles Eingelagerte wird zum anderthalbfachen Einkaufspreis verkauft — ein Drohnencontainer bringt {droneBoxSale} Cr. Was du nicht in den Einsatz geschickt hast, ist verkauft. Einmal am Tag erledigt der Server Versand und Miete selbst und meldet das Ergebnis in Telegram, wenn der Bot verknüpft ist.",
       "Länger weg gewesen? Die Miete läuft höchstens {capDays} Tage auf.",
       "Zu wenig Geld? Die Bank leiht {loanMin}–{loanMax} Cr für {loanHours} Stunden zu {loanRate} %. Die dafür gekaufte Ware kann bei einem Angriff verbrennen — die Schuld nicht.",
       "Geldstrategie: das große Geld kommt von fremden Lagern ({loot} Cr je abgebranntem Feld). Die Abwehrprämie ist kleiner — saubere Abwehr eines großen Schwarms bringt Hunderte oder etwa tausend, im Schnitt zwei- bis dreimal weniger als ein guter Angriff; Missionen zahlen sie auch. Bei null — Kredit, eine Mission oder Totalverlust mit Boden von mindestens {credits} Cr.",
@@ -530,7 +530,7 @@ const it: RuleSection[] = [
     lines: [
       "Parti con {credits} cr e un magazzino {starter}×{starter} in mezzo al campo: è tuo gratis.",
       "Ogni {shift} ore il magazzino rende affitto: {income} cr per ogni cella intatta.",
-      "Nello stesso momento parte la spedizione: tutto ciò che è stoccato si vende al doppio dell’acquisto — droni a {droneSale} cr. Quello che non hai mandato in battaglia è venduto. Una volta al giorno il server fa da sé spedizione e affitto e manda il resoconto su Telegram, se il bot è collegato.",
+      "Nello stesso momento parte la spedizione: tutto ciò che è stoccato si vende a una volta e mezza l’acquisto — un container di droni va via per {droneBoxSale} cr. Quello che non hai mandato in battaglia è venduto. Una volta al giorno il server fa da sé spedizione e affitto e manda il resoconto su Telegram, se il bot è collegato.",
       "Sei stato via? L’affitto si accumula al massimo per {capDays} giorni.",
       "Soldi finiti? La banca presta {loanMin}–{loanMax} cr per {loanHours} ore al {loanRate}%. La merce comprata può bruciare in un attacco, il debito no.",
       "Strategia di cassa: i soldi grossi vengono dai magazzini rivali ({loot} cr per cella bruciata). Il premio di difesa è minore — un respingimento pulito di uno sciame grande dà centinaia o circa mille, in media due-tre volte meno di un buon attacco; anche le missioni lo pagano. A zero — prestito, una missione o wipe con un pavimento di almeno {credits} cr.",

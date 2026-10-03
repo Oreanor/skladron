@@ -36,10 +36,18 @@ export const loanDebt = (amount: number) =>
  */
 export const INCOME_PER_CELL = 10;
 /**
- * Раз в сутки склад отгружает всё, что на нём лежит: дроны уходят вдвое
- * дороже закупки. Не успел пустить их в дело — они проданы.
+ * Каждую смену склад отгружает всё, что на нём лежит: дроны уходят в
+ * полтора раза дороже закупки, в процентах — 150. Не вдвое: на десятом
+ * уровне двойная цена делала из склада печатный станок.
  */
-export const SALE_MULTIPLIER = 2;
+export const SALE_PERCENT = 150;
+
+/**
+ * Во что уйдут дроны при отгрузке. Целая арифметика та же, что в
+ * collect_income_for на сервере: округляем вниз всю сумму, а не каждого дрона.
+ */
+export const saleValue = (drones: number, droneLevel: number) =>
+  Math.floor((drones * priceAt(DRONE_UNIT_COST, droneLevel) * SALE_PERCENT) / 100);
 export const INCOME_CAP_SHIFTS = 28; // потолок накопления — две недели смен
 export const CELL_LOOT_REWARD = 50; // нападавшему за каждую сожжённую клетку склада
 /**

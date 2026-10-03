@@ -3,13 +3,11 @@
 
 import {
   CREDITS_START,
-  DRONE_UNIT_COST,
   REPAIR_COST,
   INCOME_PER_CELL,
-  SALE_MULTIPLIER,
+  saleValue,
   STARTER_SIDE,
   accrue,
-  priceAt,
 } from "./economy";
 import {
   type Depot,
@@ -172,7 +170,7 @@ export const burntCells = (p: Player) => countCells(p.cells, G_BURNT);
  */
 export function saleOf(p: Player) {
   const drones = droneCount(p.depots);
-  const dronesValue = drones * priceAt(DRONE_UNIT_COST, p.levels.drones) * SALE_MULTIPLIER;
+  const dronesValue = saleValue(drones, p.levels.drones);
   return { drones, dronesValue };
 }
 

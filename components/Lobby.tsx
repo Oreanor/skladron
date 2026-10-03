@@ -23,7 +23,7 @@ import {
   STARTER_SIDE,
   DRONE_UNIT_COST,
   LOAN_MIN,
-  SALE_MULTIPLIER,
+  saleValue,
   SHIFT_HOURS,
   SCRAP_REWARD,
   priceAt,
@@ -410,11 +410,7 @@ export default function Lobby({
               (sold && sold.drones
                 ? t("income.sold", {
                     drones: sold.drones,
-                    dronesValue: fmt(
-                      sold.drones *
-                        priceAt(DRONE_UNIT_COST, player.levels.drones) *
-                        SALE_MULTIPLIER
-                    ),
+                    dronesValue: fmt(saleValue(sold.drones, player.levels.drones)),
                   })
                 : "")
           );
