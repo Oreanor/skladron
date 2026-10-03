@@ -13,6 +13,7 @@
  */
 
 import { mulberry32, MAX_FLIGHT, type Pattern, type Payload, type WavePlan } from "./attack";
+import { MAX_LEVEL } from "./economy";
 
 /** Сколько всего номеров. */
 export const COMPETITION_STAGES = 100;
@@ -44,7 +45,8 @@ export function competitionDrones(stage: number) {
  * Та же формула стоит в queue_competition.
  */
 export function competitionDroneLevel(stage: number) {
-  return 1 + Math.floor((clampStage(stage) - 1) / 11);
+  // с нулевого (в базе — первого) до десятого к 90-й миссии, дальше потолок
+  return Math.min(MAX_LEVEL, 1 + Math.floor(((clampStage(stage) - 1) * 10) / 89));
 }
 
 /** Зерно боя номера: одно на все попытки, чтобы счёт был сравним. */

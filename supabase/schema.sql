@@ -682,7 +682,7 @@ begin
   if drone_count <> 120 + ((stage - 1) * 880) / 99 then
     raise exception 'bad drone count';
   end if;
-  if attack_drone_level is distinct from 1 + (stage - 1) / 11 then
+  if attack_drone_level is distinct from least(11, 1 + (stage - 1) * 10 / 89) then
     raise exception 'bad drone level';
   end if;
   if attack_seed is distinct from stage * 9973 then
