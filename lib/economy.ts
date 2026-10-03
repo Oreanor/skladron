@@ -31,16 +31,11 @@ export const loanDebt = (amount: number) =>
   amount + Math.floor((amount * LOAN_RATE) / 100);
 
 /**
- * Каждая целая клетка склада приносит столько за смену — не за сутки.
- * Смен в сутках две, так что суточная аренда с клетки вдвое больше.
+ * Раз в сутки, в полночь по Лондону, склад отгружает всё, что на нём лежит:
+ * дроны уходят вдвое дороже закупки, в процентах — 200. Это и есть доход
+ * склада: аренды с клеток нет.
  */
-export const INCOME_PER_CELL = 10;
-/**
- * Каждую смену склад отгружает всё, что на нём лежит: дроны уходят в
- * полтора раза дороже закупки, в процентах — 150. Не вдвое: на десятом
- * уровне двойная цена делала из склада печатный станок.
- */
-export const SALE_PERCENT = 150;
+export const SALE_PERCENT = 200;
 
 /**
  * Во что уйдут дроны при отгрузке. Целая арифметика та же, что в
@@ -48,7 +43,6 @@ export const SALE_PERCENT = 150;
  */
 export const saleValue = (drones: number, droneLevel: number) =>
   Math.floor((drones * priceAt(DRONE_UNIT_COST, droneLevel) * SALE_PERCENT) / 100);
-export const INCOME_CAP_SHIFTS = 14; // потолок накопления — две недели смен
 export const CELL_LOOT_REWARD = 50; // нападавшему за каждую сожжённую клетку склада
 /**
  * Насколько щедрее платят за близкий к полному разгром, процентов сверху
@@ -204,20 +198,9 @@ export function londonDay(ms: number) {
   return Math.round(Date.UTC(y, m - 1, d) / 86_400_000);
 }
 
-/**
- * Сколько кредитов накопилось с прошлого начисления: столько, сколько
- * лондонских полуночей прошло. Та же арифметика, что в collect_income_for.
- */
-export function accrue(intactCells: number, lastIncomeAt: number, now: number) {
-  const shifts = londonDay(now) - londonDay(lastIncomeAt);
-  if (shifts <= 0) return { credits: 0, days: 0, nextAt: lastIncomeAt };
-  const paid = Math.min(shifts, INCOME_CAP_SHIFTS);
-  return {
-    credits: paid * intactCells * INCOME_PER_CELL,
-    days: paid,
-    nextAt: now,
-  };
-}
+/** Сколько лондонских полуночей прошло с прошлой отгрузки: 0 — ещё рано. */
+export const shiftsSince = (lastIncomeAt: number, now: number) =>
+  Math.max(0, londonDay(now) - londonDay(lastIncomeAt));
 
 /** Числа для интерфейса. Кривое значение показываем нулём, а не роняем экран. */
 export const fmt = (n: number) => (Number.isFinite(n) ? n : 0).toLocaleString("ru-RU");

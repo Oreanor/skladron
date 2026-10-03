@@ -6,7 +6,7 @@ import {
   REPAIR_COST,
   saleValue,
   STARTER_SIDE,
-  accrue,
+  shiftsSince,
 } from "./economy";
 import {
   type Depot,
@@ -217,12 +217,12 @@ export function save(p: Player) {
 /** Начисляет доход за прошедшие сутки. Возвращает, сколько накапало. */
 export function collectIncome(p: Player, now = Date.now()) {
   if (!p.founded) return { credits: 0, days: 0, sold: null };
-  const { credits, days, nextAt } = accrue(intactCells(p), p.lastIncomeAt, now);
+  const days = shiftsSince(p.lastIncomeAt, now);
   if (days <= 0) return { credits: 0, days: 0, sold: null };
   // Отгрузка идёт разом, а не за каждые сутки: продаётся то, что лежит сейчас.
   const sale = saleOf(p);
   p.depots = [];
-  p.lastIncomeAt = nextAt;
-  p.credits += credits + sale.dronesValue;
-  return { credits: credits + sale.dronesValue, days, sold: sale };
+  p.lastIncomeAt = now;
+  p.credits += sale.dronesValue;
+  return { credits: sale.dronesValue, days, sold: sale };
 }

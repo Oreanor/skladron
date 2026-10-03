@@ -10,7 +10,6 @@ import { createClient } from "@supabase/supabase-js";
 import { sendTelegram as send, telegramReady } from "@/lib/server/telegram";
 import { nameOf } from "@/lib/server/battleNotify";
 import { tg, tgLocale, type TgLocale } from "@/lib/server/tgText";
-import { SHIFT_HOURS } from "@/lib/economy";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -30,18 +29,9 @@ type Row = {
 
 type Shipment = { credits_added: number; days: number; sold_drones: number; sold_credits: number };
 
-/** Текст отчёта: что продано и сколько пришло всего. */
+/** Текст отчёта: что продано и за сколько. */
 function shipmentMessage(l: TgLocale, base: string, s: Shipment): string {
-  return [
-    s.sold_drones > 0
-      ? tg(l, "shipmentSold", { base, drones: s.sold_drones, credits: s.sold_credits })
-      : tg(l, "shipmentNone", { base }),
-    tg(l, "shipmentRent", {
-      hours: s.days * SHIFT_HOURS,
-      rent: s.credits_added - s.sold_credits,
-      total: s.credits_added,
-    }),
-  ].join("\n");
+  return tg(l, "shipmentSold", { base, drones: s.sold_drones, credits: s.sold_credits });
 }
 
 const sleep = (ms: number) => new Promise((done) => setTimeout(done, ms));
@@ -79,8 +69,8 @@ export async function GET(request: Request) {
       continue;
     }
     const s = (Array.isArray(data) ? data[0] : data) as Shipment | undefined;
-    // смена ещё не кончилась — игрок заходил недавно и всё уже получил
-    if (!s || s.credits_added <= 0) continue;
+    // дронов не было или игрок заходил после полуночи и всё уже получил
+    if (!s || s.sold_drones <= 0) continue;
     shipped++;
     const chat = Number(p.tg_chat_id);
     if (!Number.isFinite(chat)) continue;

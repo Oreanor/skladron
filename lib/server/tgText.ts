@@ -29,8 +29,6 @@ const en = {
   badCode: "I do not know this link. Get a fresh one from the game menu.",
   linked: "Done. I will write here about raids on «{name}» and how yours went.",
   shipmentSold: "{drones} drones shipped from «{base}» for {credits} cr.",
-  shipmentNone: "«{base}»: no drones to ship.",
-  shipmentRent: "Rent for {hours} h — {rent} cr. Total +{total} cr.",
 };
 type Dict = typeof en;
 
@@ -50,8 +48,6 @@ const DICTS: Record<TgLocale, Dict> = {
     badCode: "Такой ссылки не знаю. Возьми свежую в меню игры.",
     linked: "Готово. Буду писать сюда про налёты на «{name}» и про исход твоих.",
     shipmentSold: "Со склада «{base}» отгружено {drones} дронов на {credits} кр.",
-    shipmentNone: "Склад «{base}»: дронов на отгрузку не было.",
-    shipmentRent: "Аренда за {hours} ч — {rent} кр. Всего +{total} кр.",
   },
   es: {
     base: "almacén",
@@ -67,8 +63,6 @@ const DICTS: Record<TgLocale, Dict> = {
     badCode: "No conozco ese enlace. Pide uno nuevo en el menú del juego.",
     linked: "Listo. Escribiré aquí sobre los ataques a «{name}» y el resultado de los tuyos.",
     shipmentSold: "Del almacén «{base}» se enviaron {drones} drones por {credits} cr.",
-    shipmentNone: "Almacén «{base}»: no había drones que enviar.",
-    shipmentRent: "Renta de {hours} h — {rent} cr. Total +{total} cr.",
   },
   pt: {
     base: "armazém",
@@ -84,8 +78,6 @@ const DICTS: Record<TgLocale, Dict> = {
     badCode: "Não conheço essa ligação. Pede uma nova no menu do jogo.",
     linked: "Feito. Vou escrever aqui sobre os ataques a «{name}» e o resultado dos teus.",
     shipmentSold: "Do armazém «{base}» foram expedidos {drones} drones por {credits} cr.",
-    shipmentNone: "Armazém «{base}»: não havia drones para expedir.",
-    shipmentRent: "Renda de {hours} h — {rent} cr. Total +{total} cr.",
   },
   fr: {
     base: "entrepôt",
@@ -101,8 +93,6 @@ const DICTS: Record<TgLocale, Dict> = {
     badCode: "Je ne connais pas ce lien. Prends-en un nouveau dans le menu du jeu.",
     linked: "C’est fait. J’écrirai ici sur les raids contre « {name} » et l’issue des tiens.",
     shipmentSold: "{drones} drones expédiés depuis « {base} » pour {credits} cr.",
-    shipmentNone: "« {base} » : aucun drone à expédier.",
-    shipmentRent: "Loyer pour {hours} h — {rent} cr. Total +{total} cr.",
   },
   de: {
     base: "Lager",
@@ -118,8 +108,6 @@ const DICTS: Record<TgLocale, Dict> = {
     badCode: "Diesen Link kenne ich nicht. Hol dir einen neuen im Spielmenü.",
     linked: "Fertig. Ich schreibe hier über Angriffe auf „{name}“ und wie deine ausgehen.",
     shipmentSold: "Aus dem Lager „{base}“ wurden {drones} Drohnen für {credits} Cr verschickt.",
-    shipmentNone: "Lager „{base}“: keine Drohnen zum Verschicken.",
-    shipmentRent: "Miete für {hours} Std. — {rent} Cr. Gesamt +{total} Cr.",
   },
   it: {
     base: "magazzino",
@@ -135,8 +123,6 @@ const DICTS: Record<TgLocale, Dict> = {
     badCode: "Non conosco questo link. Prendine uno nuovo dal menu del gioco.",
     linked: "Fatto. Scriverò qui degli attacchi a «{name}» e dell’esito dei tuoi.",
     shipmentSold: "Dal magazzino «{base}» sono partiti {drones} droni per {credits} cr.",
-    shipmentNone: "Magazzino «{base}»: nessun drone da spedire.",
-    shipmentRent: "Affitto per {hours} h — {rent} cr. Totale +{total} cr.",
   },
 };
 

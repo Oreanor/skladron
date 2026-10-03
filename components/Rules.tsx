@@ -17,8 +17,6 @@ import {
   ROCKET_COST,
   SPRAY_COST,
   TRAP_COST,
-  INCOME_CAP_SHIFTS,
-  INCOME_PER_CELL,
   INSURANCE_CELL,
   INSURANCE_PER_LEVEL,
   PRICE_PER_LEVEL,
@@ -43,8 +41,6 @@ import { Button, Modal, SectionTitle } from "./ui";
 const values: Record<string, string> = {
   credits: fmt(CREDITS_START),
   starter: String(STARTER_SIDE),
-  income: String(INCOME_PER_CELL),
-  capDays: String(INCOME_CAP_SHIFTS),
   droneBoxSale: String(saleValue(DRONES_PER_CELL, 1)),
   cell: String(CELL_COST),
   repair: String(REPAIR_COST),
