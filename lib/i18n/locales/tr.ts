@@ -76,6 +76,7 @@ const tr: Dict = {
   "replays.empty": "Henüz savaş yok. Bir baskın gönder ya da gelmesini bekle.",
   "competitions.line": "{drones} dron, {waves} dalga",
   "competitions.play": "Oyna",
+  "competitions.saving": "Son savaş kaydediliyor…",
   "competitions.retake": "Tekrar oyna",
   "replays.attack": "Baskın:",
   "replays.defence": "Savunma:",

@@ -76,6 +76,7 @@ const it: Dict = {
   "replays.empty": "Ancora nessun combattimento. Manda un attacco o aspettane uno.",
   "competitions.line": "{drones} droni, {waves} ondate",
   "competitions.play": "Gioca",
+  "competitions.saving": "Salvataggio dell’ultima battaglia…",
   "competitions.retake": "Rigioca",
   "replays.attack": "Attacco a",
   "replays.defence": "Difesa da",

@@ -76,6 +76,7 @@ const uk: Dict = {
   "replays.empty": "Боїв ще не було. Надішли наліт або дочекайся чужого.",
   "competitions.line": "{drones} дронів, {waves} хвиль",
   "competitions.play": "Грати",
+  "competitions.saving": "Записуємо минулий бій…",
   "competitions.retake": "Перегравати",
   "replays.attack": "Наліт на",
   "replays.defence": "Оборона від",

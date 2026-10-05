@@ -77,6 +77,7 @@ const en = {
   "replays.empty": "No battles yet. Send a raid or wait for one.",
   "competitions.line": "{drones} drones, {waves} waves",
   "competitions.play": "Play",
+  "competitions.saving": "Saving the last battle…",
   "competitions.retake": "Retake",
   "replays.attack": "Raid on",
   "replays.defence": "Defence against",

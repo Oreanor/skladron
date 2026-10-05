@@ -76,6 +76,7 @@ const pl: Dict = {
   "replays.empty": "Bitew jeszcze nie było. Wyślij nalot albo zaczekaj na cudzy.",
   "competitions.line": "{drones} dronów, {waves} fal",
   "competitions.play": "Graj",
+  "competitions.saving": "Zapisujemy ostatnią bitwę…",
   "competitions.retake": "Zagraj ponownie",
   "replays.attack": "Nalot na",
   "replays.defence": "Obrona przed",

@@ -76,6 +76,7 @@ const ko: Dict = {
   "replays.empty": "아직 전투가 없습니다. 공습을 보내거나 기다려 보세요.",
   "competitions.line": "드론 {drones}대, {waves}개 웨이브",
   "competitions.play": "플레이",
+  "competitions.saving": "지난 전투를 저장하는 중…",
   "competitions.retake": "다시 하기",
   "replays.attack": "공습:",
   "replays.defence": "방어:",

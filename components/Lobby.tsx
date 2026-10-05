@@ -201,6 +201,8 @@ export default function Lobby({
   toolRef.current = tool;
   const [message, setMessage] = useState<string | null>(null);
   const [battle, setBattle] = useState<AttackOrder | null>(null);
+  /** Исход боя ещё пишется на сервер: следующую миссию он пока не открыл. */
+  const [saving, setSaving] = useState(false);
   /** Налёт с запиской нападающего — сначала показываем её, потом бой. */
   const [openerGate, setOpenerGate] = useState<AttackOrder | null>(null);
   /** После отбитого удалённого налёта — необязательная реплика. */
@@ -604,6 +606,7 @@ export default function Lobby({
           );
           setVersion((v) => v + 1);
           forceRender((v) => v + 1);
+          setSaving(true);
           try {
             // урон пишем отдельной операцией: она умеет только ухудшать карту
             const patch = await repo.applyBattle(
@@ -626,6 +629,7 @@ export default function Lobby({
             attacks.unmarkResolved(battle.id);
             await resyncBase();
           } finally {
+            setSaving(false);
             loadRaids();
           }
         }}
@@ -955,6 +959,7 @@ export default function Lobby({
    * ставим второй.
    */
   const playCompetition = async (stage: number) => {
+    if (saving) return;
     const queued = p.incoming.find((a) => a.competitionStage === stage);
     if (queued) {
       await defend(queued);
@@ -1298,6 +1303,7 @@ export default function Lobby({
     <CompetitionsPanel
       competitionAt={p.competitionAt}
       best={p.competitionBest}
+      busy={saving}
       onPlay={(stage) => void playCompetition(stage)}
       onWatch={(_stage, id) => void openReplay(id, p.name)}
     />

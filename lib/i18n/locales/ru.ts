@@ -76,6 +76,7 @@ const ru: Dict = {
   "replays.empty": "Боёв пока не было. Пошли налёт или дождись чужого.",
   "competitions.line": "{drones} дронов, {waves} волн",
   "competitions.play": "Играть",
+  "competitions.saving": "Записываем прошлый бой…",
   "competitions.retake": "Переиграть",
   "replays.attack": "Налёт на",
   "replays.defence": "Оборона от",

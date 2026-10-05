@@ -76,6 +76,7 @@ const ja: Dict = {
   "replays.empty": "まだ戦闘はありません。空襲を送るか、来るのを待ちましょう。",
   "competitions.line": "ドローン {drones} 機、{waves} ウェーブ",
   "competitions.play": "プレイ",
+  "competitions.saving": "前回の戦闘を保存中…",
   "competitions.retake": "再挑戦",
   "replays.attack": "空襲：",
   "replays.defence": "防衛：",

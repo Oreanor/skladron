@@ -76,6 +76,7 @@ const zh: Dict = {
   "replays.empty": "还没有战斗。发动一次空袭，或者等待别人来袭。",
   "competitions.line": "{drones} 架无人机，{waves} 波",
   "competitions.play": "开始",
+  "competitions.saving": "正在保存上一场战斗…",
   "competitions.retake": "重玩",
   "replays.attack": "空袭",
   "replays.defence": "防守",

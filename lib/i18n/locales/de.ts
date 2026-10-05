@@ -76,6 +76,7 @@ const de: Dict = {
   "replays.empty": "Noch keine Gefechte. Schick einen Angriff oder warte auf einen.",
   "competitions.line": "{drones} Drohnen, {waves} Wellen",
   "competitions.play": "Spielen",
+  "competitions.saving": "Letzte Schlacht wird gespeichert…",
   "competitions.retake": "Wiederholen",
   "replays.attack": "Angriff auf",
   "replays.defence": "Abwehr gegen",

@@ -23,12 +23,15 @@ const VISIBLE = "max-h-[10.5rem]";
 export default function CompetitionsPanel({
   competitionAt,
   best,
+  busy,
   onPlay,
   onWatch,
 }: {
   /** Старший открытый номер. */
   competitionAt: number;
   best: Record<number, CompetitionBest>;
+  /** Прошлый бой ещё пишется: сервер пока не открыл следующий номер. */
+  busy: boolean;
   onPlay: (stage: number) => void;
   onWatch: (stage: number, attackId: string) => void;
 }) {
@@ -73,8 +76,9 @@ export default function CompetitionsPanel({
                   )}
                   <IconButton
                     label={t("competitions.retake")}
-                    title={t("competitions.retake")}
-                    className="h-8 w-8"
+                    title={busy ? t("competitions.saving") : t("competitions.retake")}
+                    className="h-8 w-8 disabled:cursor-wait disabled:opacity-40"
+                    disabled={busy}
                     onClick={() => onPlay(n)}
                   >
                     <RotateCcw className="h-4 w-4" />
@@ -83,8 +87,9 @@ export default function CompetitionsPanel({
               ) : (
                 <IconButton
                   label={t("competitions.play")}
-                  title={t("competitions.play")}
-                  className="h-8 w-8 border-red-500/60 text-red-400"
+                  title={busy ? t("competitions.saving") : t("competitions.play")}
+                  className="h-8 w-8 border-red-500/60 text-red-400 disabled:cursor-wait disabled:opacity-40"
+                  disabled={busy}
                   onClick={() => onPlay(n)}
                 >
                   <Crosshair className="h-4 w-4" />
