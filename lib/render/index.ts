@@ -19,6 +19,7 @@ import {
 } from "../engine";
 import { BALLOON, BLOW, FX, GUN, ROCKET, SPRAY, SUPPRESS, TRAP } from "../tuning";
 import { COLORS } from "./colors";
+import { drawBoom } from "./fx";
 import {
   drawBalloonPad,
   drawBalloons,
@@ -782,90 +783,6 @@ function drawFireSmoke(
   ctx.restore();
 }
 
-/**
- * Взрыв по фазам: белая вспышка, огненный шар, который растёт и остывает от
- * жёлтого к тёмно-красному, ударная волна, разлёт искр и клуб дыма в конце.
- * Искры раскладываются от места взрыва, а не от случайных чисел боя: бой у
- * защитника и на сервере обязан совпадать, и отрисовка в него не лезет.
- */
-function drawBoom(
-  ctx: CanvasRenderingContext2D,
-  b: { x: number; y: number; t: number; r: number },
-  cell: number
-) {
-  const k = Math.min(1, b.t / FX.boomLife);
-  const x = b.x * cell;
-  const y = b.y * cell;
-  const r = b.r * cell;
-  const out = 1 - (1 - k) * (1 - k); // быстро в начале, медленно в конце
-
-  ctx.save();
-
-  // дым: всплывает, когда шар гаснет, и расплывается шире него
-  if (k > 0.35) {
-    const d = (k - 0.35) / 0.65;
-    ctx.globalAlpha = 0.45 * (1 - d);
-    ctx.fillStyle = "rgb(40, 36, 32)";
-    ctx.beginPath();
-    ctx.arc(x, y - r * 0.25 * d, r * (0.45 + 0.45 * d), 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // огненный шар остывает: жёлтый → оранжевый → тёмно-красный
-  if (k < 0.7) {
-    const f = k / 0.7;
-    ctx.globalAlpha = 1 - f;
-    ctx.fillStyle = `rgb(255, ${Math.round(210 - 150 * f)}, ${Math.round(80 - 60 * f)})`;
-    ctx.beginPath();
-    ctx.arc(x, y, r * (0.25 + 0.4 * out), 0, Math.PI * 2);
-    ctx.fill();
-    // горячее ядро поменьше
-    ctx.globalAlpha = Math.max(0, 1 - f * 1.6);
-    ctx.fillStyle = "rgb(255, 245, 200)";
-    ctx.beginPath();
-    ctx.arc(x, y, r * (0.14 + 0.18 * out), 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // вспышка — первые доли секунды, шире шара
-  if (k < 0.15) {
-    ctx.globalAlpha = 0.6 * (1 - k / 0.15);
-    ctx.fillStyle = "rgb(255, 255, 235)";
-    ctx.beginPath();
-    ctx.arc(x, y, r * 0.8, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // ударная волна: тонкое кольцо уходит дальше шара
-  if (k < 0.5) {
-    const w = k / 0.5;
-    ctx.globalAlpha = 0.7 * (1 - w);
-    ctx.strokeStyle = "rgb(255, 220, 150)";
-    ctx.lineWidth = Math.max(1, cell * 0.2);
-    ctx.beginPath();
-    ctx.arc(x, y, r * (0.3 + 0.9 * w), 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  // Искры: три-четыре, и летят дальше ударной волны — иначе они терялись
-  // внутри шара. У крупного взрыва — взрывчатки — на пару больше. У каждой
-  // своё направление и скорость, гаснут к концу.
-  if (k < 0.85) {
-    const seed = Math.abs(Math.sin(b.x * 12.9898 + b.y * 78.233)) * 43758.5453;
-    const sparks = 3 + (Math.floor(seed) % 2) + (b.r >= 4 ? 2 : 0);
-    const s = Math.max(1, cell * 0.3);
-    ctx.globalAlpha = 1 - k / 0.85;
-    ctx.fillStyle = "rgb(255, 200, 110)";
-    for (let i = 0; i < sparks; i++) {
-      const h = (seed * (i + 1)) % 1;
-      const ang = ((i + h) / sparks) * Math.PI * 2;
-      const dist = r * (1.3 + 1.0 * h) * out;
-      ctx.fillRect(x + Math.cos(ang) * dist - s / 2, y + Math.sin(ang) * dist - s / 2, s, s);
-    }
-  }
-
-  ctx.restore();
-}
 
 /**
  * Подпись-плашка над клеткой. Размер держим экранный, а не игровой, иначе
