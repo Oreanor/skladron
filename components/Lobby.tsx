@@ -251,8 +251,6 @@ export default function Lobby({
   const [hidden, setHidden] = useState<Record<string, boolean>>({});
   const [dragPanel, setDragPanel] = useState<string | null>(null);
   /** Журнал боёв: и свои налёты, и те, где отбивался. */
-  /** Повтор открыт из журнала миссий — какой номер в нём можно переиграть. */
-  const [replayStage, setReplayStage] = useState<number | null>(null);
   const { raids, loadRaids, hideRaid, openReplay, watching, setWatching } = useJournal(
     repo,
     t,
@@ -1286,10 +1284,7 @@ export default function Lobby({
       incoming={p.incoming.filter((a) => !a.competitionStage)}
       raids={raids}
       onDefend={(order) => void defend(order)}
-      onWatch={(r) => {
-        setReplayStage(null);
-        void openReplay(r.id, r.side === "attack" ? r.foe : p.name);
-      }}
+      onWatch={(r) => void openReplay(r.id, r.side === "attack" ? r.foe : p.name)}
       onHide={(id) => void hideRaid(id)}
       onFoe={(email) => {
         const enemy = email
@@ -1310,10 +1305,7 @@ export default function Lobby({
       best={p.competitionBest}
       busy={saving}
       onPlay={(stage) => void playCompetition(stage)}
-      onWatch={(stage, id) => {
-        setReplayStage(stage);
-        void openReplay(id, p.name);
-      }}
+      onWatch={(_stage, id) => void openReplay(id, p.name)}
     />
   );
 
@@ -1716,15 +1708,6 @@ export default function Lobby({
               replay={watching.replay}
               shareId={watching.id}
               onClose={() => setWatching(null)}
-              retakeBusy={saving}
-              onRetake={
-                replayStage === null
-                  ? undefined
-                  : () => {
-                      setWatching(null);
-                      void playCompetition(replayStage);
-                    }
-              }
             />
           </div>
         </div>

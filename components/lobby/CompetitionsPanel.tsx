@@ -4,8 +4,8 @@
  * Журнал состязаний: по строке на открытый номер, свежие сверху.
  *
  * Первый непройденный висит всегда — с нулём и кнопкой «играть». У
- * пройденных лучший счёт; нажатие на строку открывает повтор лучшей попытки,
- * а «переиграть» — уже в нём. Состязание
+ * пройденных лучший счёт и «переиграть», а нажатие на строку открывает повтор
+ * лучшей попытки. Состязание
  * запускается сразу, мимо очереди налётов: оно не чей-то рой, а тренировка.
  */
 
@@ -47,8 +47,8 @@ export default function CompetitionsPanel({
         const done = n < competitionAt || allDone;
         const b = done ? best[n] : undefined;
         const plan = buildCompetition(n);
-        // Пройденная с повтором — вся строка открывает повтор, а «переиграть»
-        // живёт в нём. Без повтора смотреть нечего — тогда кнопка тут.
+        // Пройденная с повтором — вся строка открывает повтор, отдельная
+        // кнопка «смотреть» ни к чему. «Переиграть» — рядом, как и было.
         const watchId = b?.id;
         const body = (
           <>
@@ -81,17 +81,15 @@ export default function CompetitionsPanel({
             )}
             <div className="flex shrink-0 gap-1">
               {done ? (
-                !watchId && (
-                  <IconButton
-                    label={t("competitions.retake")}
-                    title={busy ? t("competitions.saving") : t("competitions.retake")}
-                    className="h-8 w-8 disabled:cursor-wait disabled:opacity-40"
-                    disabled={busy}
-                    onClick={() => onPlay(n)}
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </IconButton>
-                )
+                <IconButton
+                  label={t("competitions.retake")}
+                  title={busy ? t("competitions.saving") : t("competitions.retake")}
+                  className="h-8 w-8 disabled:cursor-wait disabled:opacity-40"
+                  disabled={busy}
+                  onClick={() => onPlay(n)}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </IconButton>
               ) : (
                 <IconButton
                   label={t("competitions.play")}
