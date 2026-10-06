@@ -619,12 +619,16 @@ export function drawFrame(
     ctx.restore();
   }
 
-  // дроны
-  const r = cell * 0.85;
-  ctx.lineWidth = Math.max(1, cell * 0.18);
+  // Дроны: рама ±0.54 и винты 0.4 от неё — в размахе полторы клетки, как
+  // раз зона попадания снаряда (0.8–0.9). Прежние 0.85 давали почти три.
+  const r = cell * 0.54;
+  const frame = Math.max(1, cell * 0.13);
   for (const d of s.drones) {
     const px = d.x * cell;
     const py = d.y * cell;
+    // в цикле: кольцо топлива ниже меняет толщину, и следующий дрон
+    // иначе рисовался бы его линией
+    ctx.lineWidth = frame;
     ctx.strokeStyle = COLORS.drone;
     ctx.beginPath();
     ctx.moveTo(px - r, py - r);
@@ -665,7 +669,6 @@ export function drawFrame(
       ctx.stroke();
     }
   }
-  ctx.lineWidth = Math.max(1, cell * 0.18);
 
   // И сами заглушённые установки: живые, но молчат. Крестик поверх виден
   // даже там, где круг перекрыт соседним.
