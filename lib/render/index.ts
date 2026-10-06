@@ -75,6 +75,9 @@ export interface Clip {
 
 const FULL: Clip = { x0: 0, y0: 0, x1: GRID, y1: GRID };
 
+/** Насколько тень склада сдвинута от плиты, в долях клетки. */
+const SLAB_SHADOW = 0.3;
+
 export function drawStatic(
   ctx: CanvasRenderingContext2D,
   s: Scene,
@@ -97,6 +100,21 @@ export function drawStatic(
     }
   }
 
+  const building = (v: number) => v === G_BASE || v === G_BURNT || v === G_FIRE;
+
+  // Склад — плита над травой: тень от неё ложится вниз-вправо, солнце сверху
+  // слева, как и у установок. Одним путём — перекрытия не темнеют дважды.
+  const so = cell * SLAB_SHADOW;
+  ctx.beginPath();
+  for (let y = Math.max(0, y0 - 1); y < y1; y++) {
+    const row = y * GRID;
+    for (let x = Math.max(0, x0 - 1); x < x1; x++) {
+      if (building(s.cells[row + x])) ctx.rect(x * cell + so, y * cell + so, cell, cell);
+    }
+  }
+  ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+  ctx.fill();
+
   // Клетки красим слоями, по цвету за проход: смена fillStyle стоит дороже
   // самой заливки, а раньше она случалась на каждую из десяти тысяч клеток.
   const layers: [number, string][] = [
@@ -114,6 +132,28 @@ export function drawStatic(
       }
     }
   }
+
+  // Фаска по краю плиты: светлая кромка там, куда светит солнце, тёмная —
+  // с теневой стороны. По ней склад и читается приподнятым.
+  const bw = Math.max(0.5, cell * 0.12);
+  const lit = new Path2D();
+  const dark = new Path2D();
+  for (let y = y0; y < y1; y++) {
+    const row = y * GRID;
+    for (let x = x0; x < x1; x++) {
+      if (!building(s.cells[row + x])) continue;
+      const px = x * cell;
+      const py = y * cell;
+      if (y === 0 || !building(s.cells[row - GRID + x])) lit.rect(px, py, cell, bw);
+      if (x === 0 || !building(s.cells[row + x - 1])) lit.rect(px, py, bw, cell);
+      if (y === GRID - 1 || !building(s.cells[row + GRID + x])) dark.rect(px, py + cell - bw, cell, bw);
+      if (x === GRID - 1 || !building(s.cells[row + x + 1])) dark.rect(px + cell - bw, py, bw, cell);
+    }
+  }
+  ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+  ctx.fill(lit);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
+  ctx.fill(dark);
 
   // на приближении показываем сетку клеток — по ней целишься
   if (cell * zoom >= 14) {

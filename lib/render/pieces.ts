@@ -10,6 +10,7 @@
 
 import { SPRAY, TRAP } from "../tuning";
 import { COLORS } from "./colors";
+import { applyLight, dropShadow } from "./light";
 
 /** Контейнеры с дронами — их видит только хозяин склада. */
 /**
@@ -34,6 +35,8 @@ export function drawDepots(
     // на светлом полу рябили сплошным рядом.
     const fill = "206, 170, 116";
     const line = "128, 92, 50";
+    const half = cell / 2 - gap;
+    if (!dim) dropShadow(ctx, "square", x + cell / 2, y + cell / 2, half, cell);
     ctx.fillStyle = `rgba(${fill}, ${a})`;
     ctx.beginPath();
     ctx.roundRect(x + gap, y + gap, cell - gap * 2, cell - gap * 2, cell * 0.1);
@@ -74,6 +77,7 @@ export function drawDepots(
     ctx.beginPath();
     ctx.arc(mx, my - cell * 0.06, cell * 0.035, 0, Math.PI * 2);
     ctx.fill();
+    if (!dim) applyLight(ctx, "square", mx, my, half);
   }
 }
 
@@ -144,6 +148,7 @@ export function drawBalloonPad(
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
   const r = cell * 0.46;
+  if (alive) dropShadow(ctx, "circle", x, y, r, cell);
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fillStyle = alive ? COLORS.balloonPad : "#3f3f3f";
@@ -172,6 +177,7 @@ export function drawBalloonPad(
   ctx.arc(x - br * 0.35, by - br * 0.35, br * 0.28, 0, Math.PI * 2);
   ctx.fillStyle = COLORS.balloonGlare;
   ctx.fill();
+  applyLight(ctx, "circle", x, y, r);
 }
 
 /**
@@ -245,6 +251,8 @@ export function drawSpray(
   const shade = alive ? "#141414" : "#2a2a2a";
   const metal = alive ? "#9aa0a6" : "#666";
 
+  if (alive) dropShadow(ctx, "circle", x, y, r, cell);
+
   if (alive && wet > 0) {
     // Струи дышат: все разом то короче, то длиннее, от половины до полного
     // радиуса, толщина та же. Фаза — от угла поворота: он и так идёт, пока
@@ -314,6 +322,7 @@ export function drawSpray(
     ctx.beginPath();
     ctx.arc(x, y, cell * 0.06, 0, Math.PI * 2);
     ctx.fill();
+    applyLight(ctx, "circle", x, y, r);
   }
 }
 
@@ -339,6 +348,8 @@ export function drawTrap(
   const shade = alive ? "#3a2c14" : "#2a2a2a";
   const poleN = alive ? "#d8e8ff" : "#777";
   const poleS = alive ? "#e07050" : "#666";
+
+  if (alive) dropShadow(ctx, "oct", x, y, half, cell);
 
   if (alive && held > 0) {
     const maxR = range * cell;
@@ -411,6 +422,7 @@ export function drawTrap(
   ctx.arc(x, y - cell * 0.06, cell * 0.1, 0, Math.PI * 2);
   ctx.fillStyle = accent;
   ctx.fill();
+  applyLight(ctx, "oct", x, y, half);
 }
 
 /** Площадка, на которой крутится башня: общая у зенитки и ракетницы. */
@@ -427,6 +439,7 @@ function drawMount(
   square = false
 ) {
   const r = cell * 0.46;
+  if (alive) dropShadow(ctx, square ? "square" : "circle", x, y, r, cell);
   const pad = (k: number) => {
     ctx.beginPath();
     if (square) ctx.roundRect(x - r * k, y - r * k, r * k * 2, r * k * 2, r * k * 0.25);
@@ -531,6 +544,8 @@ export function drawTurret(
   ctx.fill();
 
   ctx.restore();
+  // свет после поворота: солнце стоит на месте, пока башня крутится
+  applyLight(ctx, "circle", x, y, cell * 0.46);
 }
 
 /**
@@ -601,6 +616,7 @@ export function drawRocket(
   }
 
   ctx.restore();
+  applyLight(ctx, "square", x, y, cell * 0.46);
 }
 
 /**
