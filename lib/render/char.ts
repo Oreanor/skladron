@@ -21,8 +21,8 @@ const LOOK: Record<Char, { base: string; light: string; dark: string; crack: str
   grass: { base: COLORS.scorch, light: "rgba(70, 62, 44, 0.5)", dark: "rgba(0, 0, 0, 0.55)", crack: "rgba(82, 72, 52, 0.4)" },
 };
 /** Травинки: светлые — молодая трава, тёмные — тень между ними. */
-const BLADE_LIGHT = "rgba(120, 170, 90, 0.22)";
-const BLADE_DARK = "rgba(16, 40, 16, 0.32)";
+const BLADE_LIGHT = "rgba(130, 180, 100, 0.12)";
+const BLADE_DARK = "rgba(16, 40, 16, 0.14)";
 
 const textures = new Map<Char, HTMLCanvasElement | null>();
 
@@ -93,35 +93,64 @@ export function charFill(ctx: CanvasRenderingContext2D, kind: Char): CanvasPatte
   return fill;
 }
 
+/**
+ * Газон: крупная картинка на несколько клеток и узор помягче. Мелкие
+ * штрихи в точку при уменьшении рябили, как артефакты сжатия, — поэтому
+ * основа здесь — размытые пятна светлее и темнее, а травинки редкие и
+ * бледные, их видно только вблизи.
+ */
+const TURF = 128;
+/** Сколько игровых точек занимает картинка газона: около семи клеток. */
+const TURF_WORLD = 48;
+const PATCH_LIGHT = "rgba(150, 200, 120, 0.07)";
+const PATCH_DARK = "rgba(10, 30, 10, 0.08)";
+
 let turf: HTMLCanvasElement | null | undefined;
 
-/** Травинки на прозрачном фоне: короткие штрихи светлее и темнее газона. */
 function turfTexture() {
   if (turf !== undefined) return turf;
   turf = null;
   if (typeof document === "undefined") return turf;
   const c = document.createElement("canvas");
-  c.width = c.height = TEX;
+  c.width = c.height = TURF;
   const g = c.getContext("2d");
   if (!g) return turf;
-  g.lineWidth = 1;
+  // со сдвигом на сторону — чтобы узор сходился на стыках без шва
+  const tiled = (draw: (ox: number, oy: number) => void) => {
+    for (const ox of [-TURF, 0, TURF]) for (const oy of [-TURF, 0, TURF]) draw(ox, oy);
+  };
+
+  // пятна: где трава гуще, где реже
+  for (let i = 0; i < 26; i++) {
+    const x = hash(3000 + i * 4) * TURF;
+    const y = hash(3001 + i * 4) * TURF;
+    const r = 10 + hash(3002 + i * 4) * 22;
+    const color = i % 2 ? PATCH_LIGHT : PATCH_DARK;
+    tiled((ox, oy) => {
+      const grad = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r);
+      grad.addColorStop(0, color);
+      grad.addColorStop(1, "rgba(0, 0, 0, 0)");
+      g.fillStyle = grad;
+      g.fillRect(x + ox - r, y + oy - r, r * 2, r * 2);
+    });
+  }
+
+  // редкие травинки
+  g.lineWidth = 1.5;
   g.lineCap = "round";
-  for (let i = 0; i < 340; i++) {
-    const x = hash(2000 + i * 5) * TEX;
-    const y = hash(2001 + i * 5) * TEX;
-    const len = 2 + hash(2002 + i * 5) * 3;
+  for (let i = 0; i < 90; i++) {
+    const x = hash(2000 + i * 5) * TURF;
+    const y = hash(2001 + i * 5) * TURF;
+    const len = 3 + hash(2002 + i * 5) * 3;
     // почти стоят, с наклоном в обе стороны
     const a = -Math.PI / 2 + (hash(2003 + i * 5) - 0.5) * 1.1;
     g.strokeStyle = i % 3 === 0 ? BLADE_DARK : BLADE_LIGHT;
-    // со сдвигом на сторону — чтобы узор сходился на стыках
-    for (const ox of [-TEX, 0, TEX]) {
-      for (const oy of [-TEX, 0, TEX]) {
-        g.beginPath();
-        g.moveTo(x + ox, y + oy);
-        g.lineTo(x + ox + Math.cos(a) * len, y + oy + Math.sin(a) * len);
-        g.stroke();
-      }
-    }
+    tiled((ox, oy) => {
+      g.beginPath();
+      g.moveTo(x + ox, y + oy);
+      g.lineTo(x + ox + Math.cos(a) * len, y + oy + Math.sin(a) * len);
+      g.stroke();
+    });
   }
   turf = c;
   return turf;
@@ -135,12 +164,11 @@ export function turfFill(ctx: CanvasRenderingContext2D): CanvasPattern | null {
   const tex = turfTexture();
   const pattern = tex ? ctx.createPattern(tex, "repeat") : null;
   if (pattern && typeof DOMMatrix !== "undefined") {
-    pattern.setTransform(new DOMMatrix().scale(TEX_WORLD / TEX));
+    pattern.setTransform(new DOMMatrix().scale(TURF_WORLD / TURF));
   }
   turfPatterns.set(ctx, pattern);
   return pattern;
 }
-
 /** Обугленная клетка — то, что остаётся от погибшей установки. */
 export function drawCharred(ctx: CanvasRenderingContext2D, cx: number, cy: number, cell: number) {
   ctx.fillStyle = charFill(ctx, "floor");

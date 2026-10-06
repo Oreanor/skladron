@@ -7,6 +7,12 @@
  * Все рисуют в игровых координатах: клетка равна cell пикселей, начало — в
  * левом верхнем углу клетки. Цвета берутся из соседнего colors.ts.
  *
+ * Неподвижные части — площадки, ящики, корпуса, башни — рисуются один раз в
+ * готовую картинку (stamp) и дальше кладутся одним drawImage, башня — с
+ * поворотом. В бою установки рисуются каждый кадр, и по полтора-два десятка
+ * заливок на каждую из сотен съедали кадр целиком. Живое — струи, кольца,
+ * форсунки, свет от неподвижного солнца — рисуется поверх кодом.
+ *
  * Погибшая установка не рисуется вовсе: от неё остаётся обугленная клетка.
  */
 
@@ -17,6 +23,68 @@ import { COLORS } from "./colors";
 import { applyLight, dropShadow, shapePath } from "./light";
 
 const TAU = Math.PI * 2;
+
+// ---------- готовые картинки ----------
+
+/** Точек картинки на клетку: хватает до восьмикратного приближения. */
+const TEX = 128;
+/** Сторона картинки в клетках: сама клетка и поля под тень и стволы. */
+const STAMP = 1.5;
+
+/** Рисует часть вокруг середины (mid, mid), где клетка — cell точек. */
+type Paint = (g: CanvasRenderingContext2D, mid: number, cell: number) => void;
+
+const stamps = new Map<string, HTMLCanvasElement | null>();
+
+function stampOf(key: string, paint: Paint) {
+  if (stamps.has(key)) return stamps.get(key)!;
+  let c: HTMLCanvasElement | null = null;
+  if (typeof document !== "undefined") {
+    c = document.createElement("canvas");
+    c.width = c.height = Math.ceil(TEX * STAMP);
+    const g = c.getContext("2d");
+    if (g) paint(g, c.width / 2, TEX);
+    else c = null;
+  }
+  stamps.set(key, c);
+  return c;
+}
+
+/**
+ * Кладёт готовую картинку серединой в (x, y), повернув на angle. Без
+ * картинок (на сервере) рисует напрямую — тем же paint.
+ */
+function stamp(
+  ctx: CanvasRenderingContext2D,
+  key: string,
+  paint: Paint,
+  x: number,
+  y: number,
+  cell: number,
+  angle = 0
+) {
+  const img = stampOf(key, paint);
+  if (!img) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    paint(ctx, 0, cell);
+    ctx.restore();
+    return;
+  }
+  const side = cell * STAMP;
+  if (!angle) {
+    ctx.drawImage(img, x - side / 2, y - side / 2, side, side);
+    return;
+  }
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.drawImage(img, -side / 2, -side / 2, side, side);
+  ctx.restore();
+}
+
+// ---------- общее ----------
 
 /** Как пушка сейчас выглядит в бою: всё, кроме места и угла, — по виду. */
 export interface PieceState {
@@ -93,19 +161,21 @@ export function drawDrone(
   ctx.fill();
 }
 
+// ---------- контейнеры и шары ----------
+
 /**
- * Один контейнер с серединой (mx, my): тень, ящик, квадрокоптер на крышке и
- * блик. Ящик меньше клетки: между соседями остаётся щель, и ряд контейнеров
- * читается как ящики, а не сливается в одну плитку.
+ * Контейнер целиком: тень, ящик, квадрокоптер на крышке и блик. Ящик меньше
+ * клетки: между соседями остаётся щель, и ряд контейнеров читается как
+ * ящики, а не сливается в одну плитку.
  */
-function depotAt(ctx: CanvasRenderingContext2D, mx: number, my: number, cell: number) {
+const paintDepot: Paint = (ctx, m, cell) => {
   const half = cell / 2 - cell * 0.07;
   const off = cell * 0.21;
   const disc = cell * 0.14;
-  dropShadow(ctx, "square", mx, my, half, cell);
+  dropShadow(ctx, "square", m, m, half, cell);
   ctx.fillStyle = COLORS.depot;
   ctx.beginPath();
-  ctx.roundRect(mx - half, my - half, half * 2, half * 2, cell * 0.1);
+  ctx.roundRect(m - half, m - half, half * 2, half * 2, cell * 0.1);
   ctx.fill();
 
   // Квадрокоптер сверху, с полями до края ящика: тонкие рамы крестом, на
@@ -114,15 +184,15 @@ function depotAt(ctx: CanvasRenderingContext2D, mx: number, my: number, cell: nu
   ctx.strokeStyle = COLORS.depotLine;
   ctx.lineWidth = cell * 0.055;
   ctx.beginPath();
-  ctx.moveTo(mx - off, my - off);
-  ctx.lineTo(mx + off, my + off);
-  ctx.moveTo(mx + off, my - off);
-  ctx.lineTo(mx - off, my + off);
+  ctx.moveTo(m - off, m - off);
+  ctx.lineTo(m + off, m + off);
+  ctx.moveTo(m + off, m - off);
+  ctx.lineTo(m - off, m + off);
   ctx.stroke();
   ctx.fillStyle = COLORS.depotLine;
   for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
-    const rx = mx + dx * off;
-    const ry = my + dy * off;
+    const rx = m + dx * off;
+    const ry = m + dy * off;
     ctx.globalAlpha = 0.18;
     ctx.beginPath();
     ctx.arc(rx, ry, disc, 0, TAU);
@@ -133,36 +203,14 @@ function depotAt(ctx: CanvasRenderingContext2D, mx: number, my: number, cell: nu
     ctx.fill();
   }
   ctx.beginPath();
-  ctx.roundRect(mx - cell * 0.1, my - cell * 0.13, cell * 0.2, cell * 0.26, cell * 0.07);
+  ctx.roundRect(m - cell * 0.1, m - cell * 0.13, cell * 0.2, cell * 0.26, cell * 0.07);
   ctx.fill();
   ctx.fillStyle = COLORS.depot;
   ctx.beginPath();
-  ctx.arc(mx, my - cell * 0.06, cell * 0.035, 0, TAU);
+  ctx.arc(m, m - cell * 0.06, cell * 0.035, 0, TAU);
   ctx.fill();
-  applyLight(ctx, "square", mx, my, half);
-}
-
-/**
- * Готовая картинка контейнера: клетка в DEPOT_TEX точек плюс поле справа и
- * снизу под тень. Ящиков на складе бывают сотни, а рисуются они каждый кадр
- * поверх карты — по полтора десятка заливок на каждый съедали кадр целиком.
- */
-const DEPOT_TEX = 128;
-const DEPOT_SIDE = 1.25;
-let depotSprite: HTMLCanvasElement | null | undefined;
-
-function depotImage() {
-  if (depotSprite !== undefined) return depotSprite;
-  depotSprite = null;
-  if (typeof document === "undefined") return null;
-  const c = document.createElement("canvas");
-  c.width = c.height = Math.ceil(DEPOT_TEX * DEPOT_SIDE);
-  const g = c.getContext("2d");
-  if (!g) return null;
-  depotAt(g, DEPOT_TEX / 2, DEPOT_TEX / 2, DEPOT_TEX);
-  depotSprite = c;
-  return c;
-}
+  applyLight(ctx, "square", m, m, half);
+};
 
 /**
  * Контейнеры с дронами на складе — их видит только хозяин. На крышке
@@ -177,13 +225,7 @@ export function drawDepots(
 ) {
   if (!depots.length) return;
   ctx.globalAlpha = dim ? 0.5 : 1;
-  const img = depotImage();
-  if (img) {
-    const side = cell * DEPOT_SIDE;
-    for (const d of depots) ctx.drawImage(img, d.cx * cell, d.cy * cell, side, side);
-  } else {
-    for (const d of depots) depotAt(ctx, (d.cx + 0.5) * cell, (d.cy + 0.5) * cell, cell);
-  }
+  for (const d of depots) stamp(ctx, "depot", paintDepot, (d.cx + 0.5) * cell, (d.cy + 0.5) * cell, cell);
   ctx.globalAlpha = 1;
 }
 
@@ -241,10 +283,39 @@ export function drawBalloons(
 }
 
 /**
- * Пусковая установка шаров сверху: круглая площадка и на ней шар — знак
+ * Пусковая установка шаров целиком: круглая площадка и на ней шар — знак
  * того, что тут лежит запас, который выпустят разом, а не ствол. Круглая,
  * чтобы не путать с квадратными ящиками дронов.
  */
+const paintBalloonPad: Paint = (ctx, m, cell) => {
+  const r = cell * 0.46;
+  dropShadow(ctx, "circle", m, m, r, cell);
+  shapePath(ctx, "circle", m, m, r);
+  ctx.fillStyle = COLORS.balloonPad;
+  ctx.fill();
+  ctx.strokeStyle = COLORS.balloonPadTop;
+  ctx.lineWidth = cell * 0.09;
+  ctx.stroke();
+
+  // Один шар крупно — знак, а не пересчёт: семь мелких на клетке рябили.
+  const br = cell * 0.27;
+  const by = m - cell * 0.03;
+  shapePath(ctx, "circle", m, by, br);
+  ctx.fillStyle = COLORS.balloon;
+  ctx.fill();
+  ctx.strokeStyle = COLORS.balloonDark;
+  ctx.lineWidth = cell * 0.05;
+  ctx.stroke();
+  // пипка снизу и блик сверху слева — по ним круг и читается шаром
+  shapePath(ctx, "circle", m, by + br * 0.95, br * 0.2);
+  ctx.fillStyle = COLORS.balloonDark;
+  ctx.fill();
+  shapePath(ctx, "circle", m - br * 0.35, by - br * 0.35, br * 0.28);
+  ctx.fillStyle = COLORS.balloonGlare;
+  ctx.fill();
+  applyLight(ctx, "circle", m, m, r);
+};
+
 export function drawBalloonPad(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -253,37 +324,7 @@ export function drawBalloonPad(
   alive = true
 ) {
   if (!alive) return drawCharred(ctx, cx, cy, cell);
-  const x = (cx + 0.5) * cell;
-  const y = (cy + 0.5) * cell;
-  const r = cell * 0.46;
-  dropShadow(ctx, "circle", x, y, r, cell);
-  shapePath(ctx, "circle", x, y, r);
-  ctx.fillStyle = COLORS.balloonPad;
-  ctx.fill();
-  ctx.strokeStyle = COLORS.balloonPadTop;
-  ctx.lineWidth = Math.max(0.55, cell * 0.09);
-  ctx.stroke();
-
-  // Один шар крупно — знак, а не пересчёт: семь мелких на клетке рябили.
-  const br = cell * 0.27;
-  const by = y - cell * 0.03;
-  ctx.beginPath();
-  ctx.arc(x, by, br, 0, TAU);
-  ctx.fillStyle = COLORS.balloon;
-  ctx.fill();
-  ctx.strokeStyle = COLORS.balloonDark;
-  ctx.lineWidth = Math.max(0.4, cell * 0.05);
-  ctx.stroke();
-  // пипка снизу и блик сверху слева — по ним круг и читается шаром
-  ctx.beginPath();
-  ctx.arc(x, by + br * 0.95, br * 0.2, 0, TAU);
-  ctx.fillStyle = COLORS.balloonDark;
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(x - br * 0.35, by - br * 0.35, br * 0.28, 0, TAU);
-  ctx.fillStyle = COLORS.balloonGlare;
-  ctx.fill();
-  applyLight(ctx, "circle", x, y, r);
+  stamp(ctx, "balloonPad", paintBalloonPad, (cx + 0.5) * cell, (cy + 0.5) * cell, cell);
 }
 
 /**
@@ -333,9 +374,51 @@ export function drawScoutPlane(ctx: CanvasRenderingContext2D, cell: number) {
   ctx.fill();
 }
 
+// ---------- огнетушитель ----------
+
+const SPRAY_R = 0.44;
+
+/** Корпус огнетушителя без форсунок: тень, площадка, бак со швом, горловина и рукоять. */
+const paintSprayBody: Paint = (ctx, m, cell) => {
+  const r = cell * SPRAY_R;
+  dropShadow(ctx, "circle", m, m, r, cell);
+
+  // Площадка-основание.
+  shapePath(ctx, "circle", m, m, r);
+  ctx.fillStyle = COLORS.sprayShade;
+  ctx.fill();
+  ctx.strokeStyle = COLORS.sprayRim;
+  ctx.lineWidth = cell * 0.1;
+  ctx.stroke();
+
+  // Цилиндр бака.
+  shapePath(ctx, "circle", m, m, r * 0.72);
+  ctx.fillStyle = COLORS.spray;
+  ctx.fill();
+  ctx.strokeStyle = COLORS.sprayMetal;
+  ctx.lineWidth = cell * 0.08;
+  ctx.stroke();
+
+  // Кольцевой шов на баке.
+  shapePath(ctx, "circle", m, m, r * 0.5);
+  ctx.strokeStyle = COLORS.sprayShade;
+  ctx.lineWidth = cell * 0.06;
+  ctx.stroke();
+
+  // Горловина и рукоять сверху.
+  shapePath(ctx, "circle", m, m, cell * 0.16);
+  ctx.fillStyle = COLORS.sprayRim;
+  ctx.fill();
+  ctx.fillStyle = COLORS.sprayMetal;
+  ctx.fillRect(m - cell * 0.05, m - cell * 0.28, cell * 0.1, cell * 0.18);
+  shapePath(ctx, "circle", m, m, cell * 0.06);
+  ctx.fillStyle = COLORS.glint;
+  ctx.fill();
+};
+
 /**
  * Огнетушитель сверху: бак с горловиной и форсунками по кругу. Когда льёт —
- * звезда струй, а форсунки мокрые.
+ * звезда струй, а форсунки мокрые. Форсунки и струи вертятся, корпус — нет.
  */
 export function drawSpray(
   ctx: CanvasRenderingContext2D,
@@ -350,9 +433,7 @@ export function drawSpray(
   if (!alive) return drawCharred(ctx, cx, cy, cell);
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
-  const r = cell * 0.44;
-
-  dropShadow(ctx, "circle", x, y, r, cell);
+  const r = cell * SPRAY_R;
 
   if (wet > 0) {
     // Струи дышат: все разом то короче, то длиннее, от половины до полного
@@ -373,27 +454,7 @@ export function drawSpray(
     ctx.globalAlpha = 1;
   }
 
-  // Площадка-основание.
-  shapePath(ctx, "circle", x, y, r);
-  ctx.fillStyle = COLORS.sprayShade;
-  ctx.fill();
-  ctx.strokeStyle = COLORS.sprayRim;
-  ctx.lineWidth = Math.max(0.55, cell * 0.1);
-  ctx.stroke();
-
-  // Цилиндр бака.
-  shapePath(ctx, "circle", x, y, r * 0.72);
-  ctx.fillStyle = COLORS.spray;
-  ctx.fill();
-  ctx.strokeStyle = COLORS.sprayMetal;
-  ctx.lineWidth = Math.max(0.5, cell * 0.08);
-  ctx.stroke();
-
-  // Кольцевой шов на баке.
-  shapePath(ctx, "circle", x, y, r * 0.5);
-  ctx.strokeStyle = COLORS.sprayShade;
-  ctx.lineWidth = Math.max(0.5, cell * 0.06);
-  ctx.stroke();
+  stamp(ctx, "sprayBody", paintSprayBody, x, y, cell);
 
   // Форсунки по кругу — по одной на струю.
   ctx.fillStyle = wet > 0 ? COLORS.water : COLORS.sprayMetal;
@@ -407,18 +468,52 @@ export function drawSpray(
     ctx.arc(nx, ny, nr, 0, TAU);
   }
   ctx.fill();
-
-  // Горловина и рукоять сверху.
-  shapePath(ctx, "circle", x, y, cell * 0.16);
-  ctx.fillStyle = COLORS.sprayRim;
-  ctx.fill();
-  ctx.fillStyle = COLORS.sprayMetal;
-  ctx.fillRect(x - cell * 0.05, y - cell * 0.28, cell * 0.1, cell * 0.18);
-  shapePath(ctx, "circle", x, y, cell * 0.06);
-  ctx.fillStyle = COLORS.glint;
-  ctx.fill();
   applyLight(ctx, "circle", x, y, r);
 }
+
+// ---------- ловушка ----------
+
+const TRAP_HALF = 0.42;
+
+/** Ловушка целиком: восьмиугольная платформа, плита, подкова магнита, сердечник и свет. */
+const paintTrap: Paint = (ctx, m, cell) => {
+  const half = cell * TRAP_HALF;
+  dropShadow(ctx, "oct", m, m, half, cell);
+
+  shapePath(ctx, "oct", m, m, half);
+  ctx.fillStyle = COLORS.trap;
+  ctx.fill();
+  ctx.strokeStyle = COLORS.trapTop;
+  ctx.lineWidth = cell * 0.1;
+  ctx.stroke();
+  shapePath(ctx, "oct", m, m, half * 0.62);
+  ctx.fillStyle = COLORS.trapShade;
+  ctx.fill();
+
+  // Подкова магнита: два полюса и дуга между ними.
+  const pr = cell * 0.13;
+  const ox = cell * 0.2;
+  ctx.strokeStyle = COLORS.trapTop;
+  ctx.lineWidth = cell * 0.16;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.arc(m, m, cell * 0.22, Math.PI * 0.15, Math.PI * 0.85);
+  ctx.stroke();
+  ctx.lineCap = "butt";
+
+  shapePath(ctx, "circle", m - ox, m + cell * 0.06, pr);
+  ctx.fillStyle = COLORS.trapPoleN;
+  ctx.fill();
+  shapePath(ctx, "circle", m + ox, m + cell * 0.06, pr);
+  ctx.fillStyle = COLORS.trapPoleS;
+  ctx.fill();
+
+  // Центральный сердечник.
+  shapePath(ctx, "circle", m, m - cell * 0.06, cell * 0.1);
+  ctx.fillStyle = COLORS.trapTop;
+  ctx.fill();
+  applyLight(ctx, "oct", m, m, half);
+};
 
 /**
  * Ловушка: восьмиугольная платформа с подковообразным магнитом.
@@ -437,9 +532,6 @@ export function drawTrap(
   if (!alive) return drawCharred(ctx, cx, cy, cell);
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
-  const half = cell * 0.42;
-
-  dropShadow(ctx, "oct", x, y, half, cell);
 
   if (held > 0) {
     const maxR = range * cell;
@@ -455,110 +547,60 @@ export function drawTrap(
     ctx.globalAlpha = 1;
   }
 
-  // Восьмиугольная площадка и внутренняя плита.
-  shapePath(ctx, "oct", x, y, half);
-  ctx.fillStyle = COLORS.trap;
-  ctx.fill();
-  ctx.strokeStyle = COLORS.trapTop;
-  ctx.lineWidth = Math.max(0.6, cell * 0.1);
-  ctx.stroke();
-  shapePath(ctx, "oct", x, y, half * 0.62);
-  ctx.fillStyle = COLORS.trapShade;
-  ctx.fill();
-
-  // Подкова магнита: два полюса и дуга между ними.
-  const pr = cell * 0.13;
-  const ox = cell * 0.2;
-  ctx.strokeStyle = COLORS.trapTop;
-  ctx.lineWidth = Math.max(1.2, cell * 0.16);
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  ctx.arc(x, y, cell * 0.22, Math.PI * 0.15, Math.PI * 0.85);
-  ctx.stroke();
-  ctx.lineCap = "butt";
-
-  shapePath(ctx, "circle", x - ox, y + cell * 0.06, pr);
-  ctx.fillStyle = COLORS.trapPoleN;
-  ctx.fill();
-  shapePath(ctx, "circle", x + ox, y + cell * 0.06, pr);
-  ctx.fillStyle = COLORS.trapPoleS;
-  ctx.fill();
-
-  // Центральный сердечник.
-  shapePath(ctx, "circle", x, y - cell * 0.06, cell * 0.1);
-  ctx.fillStyle = COLORS.trapTop;
-  ctx.fill();
-  applyLight(ctx, "oct", x, y, half);
+  stamp(ctx, "trap", paintTrap, x, y, cell);
 }
 
-/**
- * Площадка, на которой крутится башня: общая у зенитки и ракетницы.
- * Квадратная — у ракетницы, чтобы и формой её не путать с зениткой.
- */
-function drawMount(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  cell: number,
-  body: string,
-  plate: string,
-  accent: string,
-  square: boolean
-) {
-  const shape = square ? "square" : "circle";
-  const r = cell * 0.46;
-  dropShadow(ctx, shape, x, y, r, cell);
-  shapePath(ctx, shape, x, y, r);
-  ctx.fillStyle = body;
-  ctx.fill();
-  shapePath(ctx, shape, x, y, r * 0.78);
-  ctx.fillStyle = plate;
-  ctx.fill();
-  shapePath(ctx, shape, x, y, r);
-  ctx.strokeStyle = accent;
-  ctx.lineWidth = Math.max(0.55, cell * 0.1);
-  ctx.stroke();
+// ---------- зенитка и ракетница ----------
 
-  // Четыре «болта» по краю площадки — чуть живее, чем голый круг.
-  ctx.fillStyle = accent;
-  ctx.beginPath();
-  const br = Math.max(0.6, cell * 0.07);
-  for (let i = 0; i < 4; i++) {
-    const a = (i * Math.PI) / 2 + Math.PI / 4;
-    const bx = x + Math.cos(a) * r * 0.72;
-    const by = y + Math.sin(a) * r * 0.72;
-    ctx.moveTo(bx + br, by);
-    ctx.arc(bx, by, br, 0, TAU);
-  }
-  ctx.fill();
+const MOUNT_R = 0.46;
+
+/**
+ * Площадка, на которой крутится башня: общая у зенитки и ракетницы, с тенью
+ * и четырьмя «болтами» по краю. Квадратная — у ракетницы, чтобы и формой её
+ * не путать с зениткой.
+ */
+function paintMount(body: string, plate: string, accent: string, square: boolean): Paint {
+  return (ctx, m, cell) => {
+    const shape = square ? "square" : "circle";
+    const r = cell * MOUNT_R;
+    dropShadow(ctx, shape, m, m, r, cell);
+    shapePath(ctx, shape, m, m, r);
+    ctx.fillStyle = body;
+    ctx.fill();
+    shapePath(ctx, shape, m, m, r * 0.78);
+    ctx.fillStyle = plate;
+    ctx.fill();
+    shapePath(ctx, shape, m, m, r);
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = cell * 0.1;
+    ctx.stroke();
+
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    const br = cell * 0.07;
+    for (let i = 0; i < 4; i++) {
+      const a = (i * Math.PI) / 2 + Math.PI / 4;
+      const bx = m + Math.cos(a) * r * 0.72;
+      const by = m + Math.sin(a) * r * 0.72;
+      ctx.moveTo(bx + br, by);
+      ctx.arc(bx, by, br, 0, TAU);
+    }
+    ctx.fill();
+  };
 }
 
+const paintGunMount = paintMount(COLORS.gun, COLORS.gunPlate, COLORS.gunTop, false);
+const paintRocketMount = paintMount(COLORS.rocket, COLORS.rocketPlate, COLORS.rocketTop, true);
+
 /**
- * Зенитка сверху: круглая площадка, станина и спарка коротких стволов с
- * дульными тормозами. Спарка тут не украшение — по ней
- * зенитка и отличается от ракетницы, у которой на том же лафете короб
- * направляющих. На мелкой клетке от рисунка остаются два штриха наружу,
- * и этого хватает, чтобы прочитать «ствол смотрит туда».
+ * Башня зенитки стволами по +x: станина, казённик, спарка с дульными
+ * тормозами, колпак наводчика с бликом прицела.
  */
-export function drawTurret(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  cell: number,
-  angle: number,
-  alive = true
-) {
-  if (!alive) return drawCharred(ctx, cx, cy, cell);
-  const x = (cx + 0.5) * cell;
-  const y = (cy + 0.5) * cell;
+const paintGunTop: Paint = (ctx, m, cell) => {
   const accent = COLORS.gunTop;
   const shade = COLORS.gunShade;
-
-  drawMount(ctx, x, y, cell, COLORS.gun, COLORS.gunPlate, accent, false);
-
   ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angle);
+  ctx.translate(m, m);
 
   // Станина: клин, расширяющийся назад. На нём и держится вся спарка.
   ctx.fillStyle = shade;
@@ -593,10 +635,87 @@ export function drawTurret(
   shapePath(ctx, "circle", -cell * 0.06, -cell * 0.04, cell * 0.06);
   ctx.fillStyle = COLORS.glint;
   ctx.fill();
-
   ctx.restore();
+};
+
+/**
+ * Башня ракетницы стволом по +x: рама, короб направляющих с рёбрами и
+ * жёлоб; заряженная — ещё и ракета в жёлобе.
+ */
+function paintRocketTop(loaded: boolean): Paint {
+  return (ctx, m, cell) => {
+    const accent = COLORS.rocketTop;
+    const shade = COLORS.rocketShade;
+    ctx.save();
+    ctx.translate(m, m);
+
+    // Опорная рама и подъёмный механизм позади короба.
+    ctx.fillStyle = shade;
+    ctx.beginPath();
+    ctx.moveTo(-cell * 0.36, -cell * 0.24);
+    ctx.lineTo(-cell * 0.02, -cell * 0.3);
+    ctx.lineTo(-cell * 0.02, cell * 0.3);
+    ctx.lineTo(-cell * 0.36, cell * 0.24);
+    ctx.closePath();
+    ctx.fill();
+
+    // Короб направляющих: широкий, приподнятый, с рёбрами по бокам. Короче
+    // клетки: ракета выглядывает из короба лишь носом и на соседнюю
+    // установку не залезает.
+    ctx.fillStyle = COLORS.rocketPlate;
+    ctx.fillRect(-cell * 0.08, -cell * 0.3, cell * 0.52, cell * 0.6);
+    ctx.fillStyle = accent;
+    ctx.fillRect(-cell * 0.08, -cell * 0.3, cell * 0.52, cell * 0.07);
+    ctx.fillRect(-cell * 0.08, cell * 0.23, cell * 0.52, cell * 0.07);
+
+    // Сама направляющая — тёмный жёлоб по оси.
+    ctx.fillStyle = shade;
+    ctx.fillRect(-cell * 0.02, -cell * 0.13, cell * 0.48, cell * 0.26);
+
+    if (loaded) {
+      // Ракета в жёлобе: светлый корпус и красная головка наружу.
+      ctx.fillStyle = COLORS.rocketBody;
+      ctx.fillRect(cell * 0.04, -cell * 0.09, cell * 0.42, cell * 0.18);
+      ctx.beginPath();
+      ctx.moveTo(cell * 0.45, -cell * 0.09);
+      ctx.lineTo(cell * 0.6, 0);
+      ctx.lineTo(cell * 0.45, cell * 0.09);
+      ctx.closePath();
+      ctx.fillStyle = COLORS.droneAccent;
+      ctx.fill();
+      // Хвостовое оперение — по нему ракета читается ракетой, а не бруском.
+      ctx.fillStyle = accent;
+      ctx.fillRect(cell * 0.06, -cell * 0.2, cell * 0.1, cell * 0.4);
+    }
+    ctx.restore();
+  };
+}
+
+const paintRocketLoaded = paintRocketTop(true);
+const paintRocketEmpty = paintRocketTop(false);
+
+/**
+ * Зенитка сверху: круглая площадка, станина и спарка коротких стволов с
+ * дульными тормозами. Спарка тут не украшение — по ней
+ * зенитка и отличается от ракетницы, у которой на том же лафете короб
+ * направляющих. На мелкой клетке от рисунка остаются два штриха наружу,
+ * и этого хватает, чтобы прочитать «ствол смотрит туда».
+ */
+export function drawTurret(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  cell: number,
+  angle: number,
+  alive = true
+) {
+  if (!alive) return drawCharred(ctx, cx, cy, cell);
+  const x = (cx + 0.5) * cell;
+  const y = (cy + 0.5) * cell;
+  stamp(ctx, "gunMount", paintGunMount, x, y, cell);
+  stamp(ctx, "gunTop", paintGunTop, x, y, cell, angle);
   // свет после поворота: солнце стоит на месте, пока башня крутится
-  applyLight(ctx, "circle", x, y, cell * 0.46);
+  applyLight(ctx, "circle", x, y, cell * MOUNT_R);
 }
 
 /**
@@ -616,55 +735,8 @@ export function drawRocket(
   if (!alive) return drawCharred(ctx, cx, cy, cell);
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
-  const accent = COLORS.rocketTop;
-  const shade = COLORS.rocketShade;
-  const plate = COLORS.rocketPlate;
-
-  drawMount(ctx, x, y, cell, COLORS.rocket, plate, accent, true);
-
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angle);
-
-  // Опорная рама и подъёмный механизм позади короба.
-  ctx.fillStyle = shade;
-  ctx.beginPath();
-  ctx.moveTo(-cell * 0.36, -cell * 0.24);
-  ctx.lineTo(-cell * 0.02, -cell * 0.3);
-  ctx.lineTo(-cell * 0.02, cell * 0.3);
-  ctx.lineTo(-cell * 0.36, cell * 0.24);
-  ctx.closePath();
-  ctx.fill();
-
-  // Короб направляющих: широкий, приподнятый, с рёбрами по бокам. Короче
-  // клетки: ракета выглядывает из короба лишь носом и на соседнюю
-  // установку не залезает.
-  ctx.fillStyle = plate;
-  ctx.fillRect(-cell * 0.08, -cell * 0.3, cell * 0.52, cell * 0.6);
-  ctx.fillStyle = accent;
-  ctx.fillRect(-cell * 0.08, -cell * 0.3, cell * 0.52, cell * 0.07);
-  ctx.fillRect(-cell * 0.08, cell * 0.23, cell * 0.52, cell * 0.07);
-
-  // Сама направляющая — тёмный жёлоб по оси.
-  ctx.fillStyle = shade;
-  ctx.fillRect(-cell * 0.02, -cell * 0.13, cell * 0.48, cell * 0.26);
-
-  if (loaded) {
-    // Ракета в жёлобе: светлый корпус и красная головка наружу.
-    ctx.fillStyle = COLORS.rocketBody;
-    ctx.fillRect(cell * 0.04, -cell * 0.09, cell * 0.42, cell * 0.18);
-    ctx.beginPath();
-    ctx.moveTo(cell * 0.45, -cell * 0.09);
-    ctx.lineTo(cell * 0.6, 0);
-    ctx.lineTo(cell * 0.45, cell * 0.09);
-    ctx.closePath();
-    ctx.fillStyle = COLORS.droneAccent;
-    ctx.fill();
-    // Хвостовое оперение — по нему ракета читается ракетой, а не бруском.
-    ctx.fillStyle = accent;
-    ctx.fillRect(cell * 0.06, -cell * 0.2, cell * 0.1, cell * 0.4);
-  }
-
-  ctx.restore();
-  applyLight(ctx, "square", x, y, cell * 0.46);
+  stamp(ctx, "rocketMount", paintRocketMount, x, y, cell);
+  if (loaded) stamp(ctx, "rocketLoaded", paintRocketLoaded, x, y, cell, angle);
+  else stamp(ctx, "rocketEmpty", paintRocketEmpty, x, y, cell, angle);
+  applyLight(ctx, "square", x, y, cell * MOUNT_R);
 }
