@@ -1389,11 +1389,7 @@ export default function Lobby({
     tool,
     // Те же числа, что и на самой кнопке: сырые vars не знают ни цены по
     // уровню, ни прокачанной дальности, и в строке оставались «{cost}».
-    // Цена — тоже здесь: на телефоне кнопка её не пишет, места нет.
-    hint: `${t(activeTool.hint, toolVars(activeTool))} · ${t(activeTool.priceKey ?? "tool.price", {
-      ...activeTool.vars,
-      cost: toolPrice(activeTool),
-    })}`,
+    hint: t(activeTool.hint, toolVars(activeTool)),
     draft:
       draftOpen && draftRect
         ? {
