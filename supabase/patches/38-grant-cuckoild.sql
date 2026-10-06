@@ -1,4 +1,4 @@
--- Разовое начисление: +20000 кр игроку «Cuckoild» (ник или имя склада).
+-- Разовое начисление: +50000 кр игроку «Cuckoild» (ник или имя склада).
 -- Только данные — схему и версию боя не меняет.
 -- ВНИМАНИЕ: не повторять — каждый прогон начисляет заново. Если под имя
 -- подходит не ровно один игрок, патч падает и ничего не меняет.
@@ -14,8 +14,8 @@ begin
   if n <> 1 then
     raise exception 'Cuckoild: найдено игроков — %, нужен ровно один', n;
   end if;
-  update profiles set credits = credits + 20000 where id = uid;
-  raise notice 'Cuckoild (%) получил 20000 кр', uid;
+  update profiles set credits = credits + 50000 where id = uid;
+  raise notice 'Cuckoild (%) получил 50000 кр', uid;
 end;
 $$;
 
