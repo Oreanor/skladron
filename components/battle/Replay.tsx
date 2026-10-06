@@ -181,6 +181,10 @@ const EMPTY_HUD: ReplayHud = {
 const SEEK_BUDGET_MS = 12;
 /** Деления ползунка. */
 const SCRUB_MAX = 1000;
+/** Нажатие по карте — пауза, если короче этого, мс… */
+const TAP_MS = 400;
+/** …и сдвинулось не дальше этого, в клетках. */
+const TAP_MOVE = 1.5;
 
 function ReplayView({
   sim,
@@ -208,6 +212,12 @@ function ReplayView({
   const [hud, setHud] = useState<ReplayHud>(EMPTY_HUD);
   /** Положение ползунка, пока его тянут; null — ползунок идёт за повтором. */
   const [scrub, setScrub] = useState<number | null>(null);
+  /** Пауза — нажатием по карте. */
+  const [paused, setPaused] = useState(false);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
+  /** Где и когда коснулись карты: пауза — только от короткого нажатия на месте. */
+  const tapRef = useRef<{ x: number; y: number; at: number } | null>(null);
   const speedRef = useRef(speed);
   speedRef.current = speed;
   const [statsFolded, foldStats] = usePanelFold("replay.stats");
@@ -297,6 +307,9 @@ function ReplayView({
         }
         if (cur.phase !== "playing" || stepRef.current >= target) seekRef.current = null;
         carry = 0;
+      } else if (pausedRef.current) {
+        // на паузе время стоит, а перемотка ползунком работает
+        carry = 0;
       } else {
         carry += dt * speedRef.current;
         let guard = 0;
@@ -341,7 +354,21 @@ function ReplayView({
     return () => cancelAnimationFrame(raf);
   }, [run, frames, progressSteps, sim]);
 
+  // Нажатие, а не жест: короче TAP_MS и почти без сдвига. Щипок двумя
+  // пальцами MapCanvas сообщает через onLeave — тогда нажатие отменяется.
+  const onMapDown = (p: { x: number; y: number }, button: number) => {
+    tapRef.current = button === 0 ? { x: p.x, y: p.y, at: performance.now() } : null;
+  };
+  const onMapUp = (p: { x: number; y: number }) => {
+    const tap = tapRef.current;
+    tapRef.current = null;
+    if (!tap || hud.done) return;
+    if (performance.now() - tap.at > TAP_MS || Math.hypot(p.x - tap.x, p.y - tap.y) > TAP_MOVE) return;
+    setPaused((v) => !v);
+  };
+
   const restart = () => {
+    setPaused(false);
     state.current = makeState();
     setHud(EMPTY_HUD);
     setVersion((v) => v + 1);
@@ -416,9 +443,19 @@ function ReplayView({
               scene={scene}
               sceneVersion={version}
               overlay={overlay}
-              cursor="default"
+              cursor="pointer"
               zones={{ on: zones, onChange: setZones }}
+              onDown={onMapDown}
+              onUp={onMapUp}
+              onLeave={() => (tapRef.current = null)}
             />
+            {paused && !hud.done && (
+              <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/50 pl-1 text-3xl text-white/90">
+                  ▶
+                </span>
+              </div>
+            )}
             {hud.done && (
               <div className="absolute inset-0 z-20 flex items-center justify-center bg-neutral-950/70">
                 <Button variant="build" onClick={restart}>
