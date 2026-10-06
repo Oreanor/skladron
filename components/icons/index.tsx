@@ -5,7 +5,6 @@
  */
 
 import Balloon from "./balloon.svg";
-import Crane from "./crane.svg";
 import Drone from "./drone.svg";
 import Menu from "./menu.svg";
 import Target from "./target.svg";
@@ -18,5 +17,3 @@ export const IconUsers = () => <Users className={SIZE} />;
 export const IconMenu = () => <Menu className={SIZE} />;
 export const IconDrone = () => <Drone className={SIZE} />;
 export const IconBalloon = () => <Balloon className={SIZE} />;
-/** Кран для «построить»: в кнопке поменьше, поэтому размер можно задать. */
-export const IconCrane = ({ className = SIZE }: { className?: string }) => <Crane className={className} />;

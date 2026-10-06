@@ -11,12 +11,12 @@
  */
 
 import { useState, type ReactNode } from "react";
-import { Trash2 } from "lucide-react";
+import { Hammer, Trash2 } from "lucide-react";
 import { fmt } from "@/lib/economy";
 import { blueprintCounts, rebuildCost, type Blueprint } from "@/lib/blueprint";
 import type { Player } from "@/lib/player";
 import { COLORS, installColors } from "@/lib/render";
-import { Button, IconButton, IconCrane, Modal, inputClass } from "../ui";
+import { Button, IconButton, Modal, inputClass } from "../ui";
 import BlueprintPreview from "./BlueprintPreview";
 import { useT, type Translate } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
@@ -70,7 +70,7 @@ export default function BlueprintsPanel({
               disabled={!afford}
               onClick={() => onBuild(b)}
             >
-              <IconCrane className="h-4 w-4" />
+              <Hammer className="h-4 w-4" />
             </IconButton>
           </li>
         );
@@ -87,6 +87,7 @@ const LEGEND: { key: keyof ReturnType<typeof blueprintCounts>; label: Key; color
   { key: "spray", label: "tool.spray", color: installColors("spray").top },
   { key: "trap", label: "tool.trap", color: installColors("trap").top },
   { key: "balloon", label: "tool.balloon", color: installColors("balloon").top },
+  { key: "drones", label: "tool.drones", color: COLORS.depot },
 ];
 
 /** Карта чертежа и его состав, а под ними — то, что окну нужно сверх этого. */
@@ -94,7 +95,7 @@ function BlueprintBody({
   plan,
   children,
 }: {
-  plan: Pick<Blueprint, "cells" | "guns">;
+  plan: Pick<Blueprint, "cells" | "guns" | "depots">;
   children: ReactNode;
 }) {
   const t = useT();
@@ -197,7 +198,7 @@ export function NewBlueprintDialog({
   onAdd,
   onClose,
 }: {
-  plan: Pick<Blueprint, "cells" | "guns">;
+  plan: Pick<Blueprint, "cells" | "guns" | "depots">;
   player: Player;
   defaultName: string;
   maxLength: number;

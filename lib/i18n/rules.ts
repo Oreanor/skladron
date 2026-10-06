@@ -44,7 +44,7 @@ const en: RuleSection[] = [
       "«Drones» — a container of {perCell} pieces for {droneBox} cr. It gets dearer with the drone level, up to {droneBoxTop} cr at level ten.",
       "«Balloons» — {balloon} cr, a one-shot launcher placed like a gun. As soon as a drone enters its {balloonRange}-cell circle, it throws out {balloonCount} barrage balloons almost at once, scattering them evenly over the whole circle, and is gone — nothing is left on its cell. The balloons then drift slowly, and a drone that flies into one dies with it — no fire, no damage to the warehouse or the ground. But a gun or launcher shell pops a balloon in its way just as readily. Each level widens the circle and adds two balloons.",
       "Installations and containers can be dragged around the warehouse in any mode, for free. Drop one onto an occupied cell and the two swap places. Double-click sells an installation or a container at today's purchase price.",
-      "«Blueprints» — save your current warehouse under a name to come back to it later. Rebuilding tears down the current warehouse and sells it — intact cells at build price, burnt ones for scrap, installations, drones and balloons at purchase price — and puts the blueprint in its place. You pay only the difference; a blueprint holds no drones.",
+      "«Blueprints» — save your current warehouse under a name to come back to it later: area, installations and drone containers exactly as they are, burnt cells as intact. Rebuilding tears down the current warehouse and sells it — intact cells at build price, burnt ones for scrap, installations and drones at purchase price — and puts the blueprint in its place, buying its drones at the same price. You pay only the difference.",
     ],
   },
   {
@@ -154,7 +154,7 @@ const ru: RuleSection[] = [
       "«Дроны» — контейнер на {perCell} штук за {droneBox} кр. С уровнем дронов дорожает — до {droneBoxTop} кр на десятом.",
       "«Шары» — {balloon} кр, разовая пусковая установка, ставится как пушка. Как только в её круг радиусом {balloonRange} клеток входит дрон, она почти разом выбрасывает {balloonCount} аэростатов, ровно раскидывая их по всему кругу, и пропадает — на клетке ничего не остаётся. Дальше шары медленно плывут, и влетевший дрон гибнет вместе с шаром — без пожара, без вреда складу и земле. Но снаряд зенитки или ракета лопнут шар на своём пути с тем же успехом. Каждый уровень расширяет круг и прибавляет два шара.",
       "Установки и контейнеры таскаются по складу в любом режиме, и это бесплатно. Уронишь на занятую клетку — поменяются местами. Двойной клик продаёт установку или контейнер по нынешней цене закупки.",
-      "«Чертежи» — сохрани нынешний склад под именем, чтобы вернуться к нему позже. Перестройка сносит нынешний склад и продаёт его — целые клетки по цене постройки, сгоревшие во вторсырьё, установки, дроны и шары по цене закупки — и ставит на его месте чертёж. Платится только разница, дронов в чертеже нет.",
+      "«Чертежи» — сохрани нынешний склад под именем, чтобы вернуться к нему позже: площадь, установки и контейнеры с дронами — всё как есть, сгоревшее — целым. Перестройка сносит нынешний склад и продаёт его — целые клетки по цене постройки, сгоревшие во вторсырьё, установки и дроны по цене закупки — и ставит на его месте чертёж, докупая дронов из него по той же цене. Платится только разница.",
     ],
   },
   {
@@ -264,7 +264,7 @@ const es: RuleSection[] = [
       "«Drones»: un contenedor de {perCell} unidades por {droneBox} cr. Se encarece con el nivel de drones, hasta {droneBoxTop} cr en el décimo.",
       "«Globos» — {balloon} cr, una lanzadera de un solo uso que se coloca como un cañón. En cuanto un dron entra en su círculo de {balloonRange} celdas, suelta casi a la vez {balloonCount} globos de barrera, repartidos por todo el círculo, y desaparece: en su celda no queda nada. Luego los globos flotan despacio y el dron que choca con uno muere con él, sin fuego ni daño al almacén ni al suelo. Pero un proyectil del cañón o un misil revientan igual de bien el globo que se les cruce. Cada nivel ensancha el círculo y añade dos globos.",
       "Las instalaciones y los contenedores se arrastran por el almacén en cualquier modo, gratis. Si sueltas uno sobre una celda ocupada, intercambian el sitio. Con doble clic vendes una instalación o un contenedor al precio de compra actual.",
-      "«Planos» — guarda tu almacén actual con un nombre para volver a él más tarde. Reconstruir derriba el almacén actual y lo vende — celdas intactas a precio de construcción, las quemadas como chatarra, instalaciones, drones y globos a precio de compra — y levanta el plano en su lugar. Pagas solo la diferencia; el plano no lleva drones.",
+      "«Planos» — guarda tu almacén actual con un nombre para volver a él más tarde: superficie, instalaciones y contenedores de drones tal como están, las celdas quemadas como intactas. Reconstruir derriba el almacén actual y lo vende — celdas intactas a precio de construcción, las quemadas como chatarra, instalaciones y drones a precio de compra — y levanta el plano en su lugar, comprando sus drones al mismo precio. Pagas solo la diferencia.",
     ],
   },
   {
@@ -374,7 +374,7 @@ const pt: RuleSection[] = [
       "«Drones» — um contentor de {perCell} unidades por {droneBox} cr. Fica mais caro com o nível dos drones, até {droneBoxTop} cr no décimo.",
       "«Balões» — {balloon} cr, um lançador de uso único que se coloca como um canhão. Assim que um drone entra no seu círculo de {balloonRange} células, solta quase de uma vez {balloonCount} balões de barragem, espalhados por todo o círculo, e desaparece — na célula não fica nada. Depois os balões flutuam devagar e o drone que bate num morre com ele, sem fogo nem dano ao armazém ou ao chão. Mas um projéctil do canhão ou um míssil rebentam com igual facilidade o balão que lhes aparece à frente. Cada nível alarga o círculo e junta dois balões.",
       "Instalações e contentores arrastam-se pelo armazém em qualquer modo, de graça. Larga um numa célula ocupada e trocam de lugar. Um duplo clique vende uma instalação ou um contentor ao preço de compra atual.",
-      "«Plantas» — guarda o armazém atual com um nome para voltar a ele mais tarde. Reconstruir demole o armazém atual e vende-o — células intactas ao preço de construção, as queimadas como sucata, instalações, drones e balões ao preço de compra — e ergue a planta no lugar dele. Pagas só a diferença; a planta não leva drones.",
+      "«Plantas» — guarda o armazém atual com um nome para voltar a ele mais tarde: área, instalações e contentores de drones tal como estão, as células queimadas como intactas. Reconstruir demole o armazém atual e vende-o — células intactas ao preço de construção, as queimadas como sucata, instalações e drones ao preço de compra — e ergue a planta no lugar dele, comprando os drones dela ao mesmo preço. Pagas só a diferença.",
     ],
   },
   {
@@ -484,7 +484,7 @@ const fr: RuleSection[] = [
       "« Drones » — un conteneur de {perCell} pièces pour {droneBox} cr. Il renchérit avec le niveau des drones, jusqu’à {droneBoxTop} cr au dixième.",
       "« Ballons » — {balloon} cr, un lanceur à usage unique posé comme un canon. Dès qu’un drone entre dans son cercle de {balloonRange} cases, il lâche presque d’un coup {balloonCount} ballons de barrage, répartis sur tout le cercle, puis disparaît — il ne reste rien sur sa case. Ensuite les ballons dérivent lentement, et le drone qui en percute un meurt avec lui, sans incendie ni dégât pour l’entrepôt ni pour le sol. Mais un obus de canon ou une roquette crèvent tout aussi bien le ballon sur leur trajectoire. Chaque niveau élargit le cercle et ajoute deux ballons.",
       "Installations et conteneurs se déplacent dans l’entrepôt dans n’importe quel mode, gratuitement. Lâche-en un sur une case occupée et ils échangent leur place. Un double-clic vend une installation ou un conteneur au prix d’achat actuel.",
-      "« Plans » — enregistre ton entrepôt actuel sous un nom pour y revenir plus tard. Reconstruire rase l’entrepôt actuel et le vend — cases intactes au prix de construction, cases brûlées à la casse, installations, drones et ballons au prix d’achat — et bâtit le plan à sa place. Tu ne paies que la différence ; un plan ne contient pas de drones.",
+      "« Plans » — enregistre ton entrepôt actuel sous un nom pour y revenir plus tard : surface, installations et conteneurs de drones tels quels, cases brûlées comme intactes. Reconstruire rase l’entrepôt actuel et le vend — cases intactes au prix de construction, cases brûlées à la casse, installations et drones au prix d’achat — et bâtit le plan à sa place en achetant ses drones au même prix. Tu ne paies que la différence.",
     ],
   },
   {
@@ -594,7 +594,7 @@ const de: RuleSection[] = [
       "«Drohnen» — ein Container mit {perCell} Stück für {droneBox} Cr. Er wird mit der Drohnenstufe teurer, bis {droneBoxTop} Cr auf Stufe zehn.",
       "«Ballons» — {balloon} Cr, ein Einweg-Werfer, wird wie ein Geschütz gesetzt. Sobald eine Drohne seinen Kreis von {balloonRange} Feldern betritt, wirft er fast gleichzeitig {balloonCount} Sperrballons aus, gleichmäßig über den ganzen Kreis verteilt, und ist weg — auf dem Feld bleibt nichts. Danach treiben die Ballons langsam, und eine Drohne, die hineinfliegt, stirbt mit dem Ballon — ohne Feuer, ohne Schaden am Lager und am Boden. Doch ein Geschoss oder eine Rakete zerplatzt den Ballon im Weg ebenso bereitwillig. Jede Stufe weitet den Kreis und bringt zwei Ballons mehr.",
       "Anlagen und Container lassen sich in jedem Modus kostenlos über das Lager ziehen. Lässt du eines auf ein belegtes Feld fallen, tauschen beide die Plätze. Ein Doppelklick verkauft eine Anlage oder einen Container zum heutigen Einkaufspreis.",
-      "«Baupläne» — speichere dein jetziges Lager unter einem Namen, um später dahin zurückzukehren. Ein Umbau reißt das jetzige Lager ab und verkauft es — heile Felder zum Baupreis, verbrannte als Schrott, Anlagen, Drohnen und Ballons zum Einkaufspreis — und stellt den Bauplan an seine Stelle. Du zahlst nur die Differenz; ein Bauplan enthält keine Drohnen.",
+      "«Baupläne» — speichere dein jetziges Lager unter einem Namen, um später dahin zurückzukehren: Fläche, Anlagen und Drohnencontainer genau so, wie sie sind, verbrannte Felder heil. Ein Umbau reißt das jetzige Lager ab und verkauft es — heile Felder zum Baupreis, verbrannte als Schrott, Anlagen und Drohnen zum Einkaufspreis — und stellt den Bauplan an seine Stelle, seine Drohnen zum selben Preis gekauft. Du zahlst nur die Differenz.",
     ],
   },
   {
@@ -704,7 +704,7 @@ const it: RuleSection[] = [
       "«Droni» — un container da {perCell} pezzi per {droneBox} cr. Rincara con il livello dei droni, fino a {droneBoxTop} cr al decimo.",
       "«Palloni» — {balloon} cr, un lanciatore monouso che si piazza come un cannone. Appena un drone entra nel suo cerchio di {balloonRange} celle, lancia quasi insieme {balloonCount} palloni di sbarramento, sparsi su tutto il cerchio, e scompare: sulla cella non resta nulla. Poi i palloni vanno alla deriva lenti, e il drone che ne colpisce uno muore con lui, senza incendio né danni al magazzino o al terreno. Ma una granata del cannone o un missile fanno scoppiare con la stessa facilità il pallone sulla loro traiettoria. Ogni livello allarga il cerchio e aggiunge due palloni.",
       "Installazioni e container si trascinano per il magazzino in qualsiasi modalità, gratis. Lasciane uno su una cella occupata e si scambiano di posto. Un doppio clic vende un’installazione o un container al prezzo d’acquisto attuale.",
-      "«Progetti» — salva il magazzino attuale con un nome per tornarci più tardi. Ricostruire demolisce il magazzino attuale e lo vende — celle intatte al prezzo di costruzione, quelle bruciate come rottame, installazioni, droni e palloni al prezzo d’acquisto — e mette il progetto al suo posto. Paghi solo la differenza; un progetto non contiene droni.",
+      "«Progetti» — salva il magazzino attuale con un nome per tornarci più tardi: superficie, installazioni e container di droni così come sono, le celle bruciate come intatte. Ricostruire demolisce il magazzino attuale e lo vende — celle intatte al prezzo di costruzione, quelle bruciate come rottame, installazioni e droni al prezzo d’acquisto — e mette il progetto al suo posto, comprandone i droni allo stesso prezzo. Paghi solo la differenza.",
     ],
   },
   {
@@ -814,7 +814,7 @@ const uk: RuleSection[] = [
       "«Дрони» — ящик на {perCell} штук за {droneBox} кр. З рівнем дронів дорожчає — до {droneBoxTop} кр на десятому.",
       "«Кулі» — {balloon} кр, разова пускова установка, ставиться як гармата. Щойно в її коло радіусом {balloonRange} клітинок заходить дрон, вона майже водночас викидає {balloonCount} аеростатів, рівно розкидаючи їх по всьому колу, і зникає — на клітинці нічого не лишається. Далі кулі повільно пливуть, і дрон, що влетів, гине разом із кулею — без пожежі, без шкоди складу й землі. Але снаряд зенітки чи ракета так само луснуть кулю на своєму шляху. Кожен рівень розширює коло й додає дві кулі.",
       "Установки й ящики тягаються складом у будь-якому режимі, і це безкоштовно. Упустиш на зайняту клітинку — поміняються місцями. Подвійний клік продає установку чи ящик за нинішньою ціною закупівлі.",
-      "«Креслення» — збережи нинішній склад під назвою, щоб повернутися до нього пізніше. Перебудова зносить нинішній склад і продає його — цілі клітинки за ціною будівництва, згорілі на вторсировину, установки, дрони й кулі за ціною закупівлі — і ставить на його місці креслення. Платиш лише різницю, дронів у кресленні немає.",
+      "«Креслення» — збережи нинішній склад під назвою, щоб повернутися до нього пізніше: площа, установки і ящики з дронами — усе як є, згоріле — цілим. Перебудова зносить нинішній склад і продає його — цілі клітинки за ціною будівництва, згорілі на вторсировину, установки й дрони за ціною закупівлі — і ставить на його місці креслення, докуповуючи його дронів за тією ж ціною. Платиш лише різницю.",
     ],
   },
   {
@@ -924,7 +924,7 @@ const pl: RuleSection[] = [
       "«Drony» — skrzynia na {perCell} sztuk za {droneBox} kr. Drożeje z poziomem dronów — do {droneBoxTop} kr na dziesiątym.",
       "«Balony» — {balloon} kr, jednorazowa wyrzutnia stawiana jak działo. Gdy tylko w jej koło o promieniu {balloonRange} pól wleci dron, prawie naraz wyrzuca {balloonCount} balonów zaporowych, równo rozrzucając je po całym kole, i znika — na polu nic nie zostaje. Potem balony powoli dryfują, a dron, który w nie wleci, ginie razem z balonem — bez pożaru, bez szkody dla magazynu i ziemi. Ale pocisk działa czy rakieta przebiją balon na swojej drodze równie łatwo. Każdy poziom poszerza koło i dodaje dwa balony.",
       "Instalacje i skrzynie przeciąga się po magazynie w każdym trybie, za darmo. Upuść jedną na zajęte pole — zamienią się miejscami. Podwójne kliknięcie sprzedaje instalację lub skrzynię po dzisiejszej cenie zakupu.",
-      "«Projekty» — zapisz obecny magazyn pod nazwą, by do niego wrócić. Przebudowa burzy obecny magazyn i go sprzedaje — całe pola po cenie budowy, spalone na złom, instalacje, drony i balony po cenie zakupu — i stawia na jego miejscu projekt. Płacisz tylko różnicę; projekt nie zawiera dronów.",
+      "«Projekty» — zapisz obecny magazyn pod nazwą, by do niego wrócić: powierzchnia, instalacje i skrzynie z dronami dokładnie tak, jak są, spalone pola jako całe. Przebudowa burzy obecny magazyn i go sprzedaje — całe pola po cenie budowy, spalone na złom, instalacje i drony po cenie zakupu — i stawia na jego miejscu projekt, dokupując jego drony po tej samej cenie. Płacisz tylko różnicę.",
     ],
   },
   {
@@ -1034,7 +1034,7 @@ const tr: RuleSection[] = [
       "«Dronlar» — {perCell} adetlik kasa {droneBox} kr. Dron seviyesiyle pahalanır — onuncu seviyede {droneBoxTop} kr'ye kadar.",
       "«Balonlar» — {balloon} kr, top gibi konan tek kullanımlık fırlatıcı. {balloonRange} hücre yarıçaplı dairesine bir dron girer girmez neredeyse aynı anda {balloonCount} baraj balonunu tüm daireye eşit dağıtarak fırlatır ve yok olur — hücrede hiçbir şey kalmaz. Sonra balonlar yavaşça sürüklenir ve birine çarpan dron onunla birlikte yok olur — yangın yok, depoya ve toprağa zarar yok. Ama top mermisi ya da füze yolundaki balonu da aynı kolaylıkla patlatır. Her seviye daireyi genişletir ve iki balon ekler.",
       "Kurulumlar ve kasalar her modda depo içinde ücretsiz sürüklenir. Birini dolu hücreye bırakırsan yer değiştirirler. Çift tıklama bir kurulumu ya da kasayı bugünkü alış fiyatına satar.",
-      "«Planlar» — mevcut deponu bir adla kaydet ki sonra ona dönebilesin. Yeniden kurulum mevcut depoyu yıkıp satar — sağlam hücreler inşa fiyatına, yananlar hurdaya, kurulumlar, dronlar ve balonlar alış fiyatına — ve yerine planı koyar. Yalnızca farkı ödersin; planda dron yoktur.",
+      "«Planlar» — mevcut deponu bir adla kaydet ki sonra ona dönebilesin: alan, kurulumlar ve dron kasaları olduğu gibi, yanan hücreler sağlam olarak. Yeniden kurulum mevcut depoyu yıkıp satar — sağlam hücreler inşa fiyatına, yananlar hurdaya, kurulumlar ve dronlar alış fiyatına — ve yerine planı koyar, dronlarını aynı fiyattan alarak. Yalnızca farkı ödersin.",
     ],
   },
   {
@@ -1144,7 +1144,7 @@ const zh: RuleSection[] = [
       "「无人机」——一箱 {perCell} 架，{droneBox} 币。随无人机等级变贵——10 级时一箱 {droneBoxTop} 币。",
       "「气球」——{balloon} 币，一次性发射装置，像高射炮一样放置。一旦有无人机进入它半径 {balloonRange} 格的圆，它几乎同时抛出 {balloonCount} 个阻塞气球，均匀撒满整个圆，然后消失——格子上什么都不留。之后气球缓慢飘动，撞上气球的无人机会同归于尽——不起火，也不损坏仓库和地面。但炮弹或导弹同样会打破路上的气球。每升一级圆更大，并多两个气球。",
       "设施和箱子在任何模式下都能免费拖动。放到被占的格子上，两者会交换位置。双击可按当前进价卖掉一个设施或箱子。",
-      "「蓝图」——把当前仓库按名称保存，之后可以回到这个布局。重建会拆除并卖掉当前仓库——完好格子按建造价，烧毁格子当废料，设施、无人机和气球按进价——并在原地按蓝图建起。你只付差价；蓝图里没有无人机。",
+      "「蓝图」——把当前仓库按名称保存，之后可以回到这个布局：面积、设施和无人机箱子原样保存，烧毁格子按完好记。重建会拆除并卖掉当前仓库——完好格子按建造价，烧毁格子当废料，设施和无人机按进价——并在原地按蓝图建起，蓝图里的无人机按同样价格买回。你只付差价。",
     ],
   },
   {
@@ -1254,7 +1254,7 @@ const ja: RuleSection[] = [
       "「ドローン」— {perCell} 機入りの箱が {droneBox} cr。ドローンのレベルとともに値上がりし、Lv10で {droneBoxTop} cr まで。",
       "「気球」— {balloon} cr、高射砲と同じように置く使い捨てのランチャー。半径 {balloonRange} マスの円にドローンが入るとすぐ、ほぼ同時に {balloonCount} 個の阻塞気球を円全体に均等に放ち、消えます — マスには何も残りません。その後気球はゆっくり漂い、ぶつかったドローンは気球もろとも消えます — 火事も倉庫や地面の被害もありません。ただし砲弾やミサイルも進路上の気球を同じように割ってしまいます。レベルごとに円が広がり、気球が2個増えます。",
       "設備と箱はどのモードでも無料で倉庫内をドラッグできます。ふさがったマスに落とすと入れ替わります。ダブルクリックで設備や箱を現在の購入価格で売れます。",
-      "「設計図」— 今の倉庫に名前をつけて保存し、あとで戻れます。建て直しは今の倉庫を解体して売り — 無傷のマスは建設価格、焼けたマスはスクラップ、設備・ドローン・気球は購入価格で — その場所に設計図を建てます。払うのは差額だけで、設計図にドローンは含まれません。",
+      "「設計図」— 今の倉庫に名前をつけて保存し、あとで戻れます：面積、設備、ドローンの箱はそのまま、焼けたマスは無傷として。建て直しは今の倉庫を解体して売り — 無傷のマスは建設価格、焼けたマスはスクラップ、設備とドローンは購入価格で — その場所に設計図を建て、設計図のドローンは同じ価格で買い直します。払うのは差額だけです。",
     ],
   },
   {
@@ -1364,7 +1364,7 @@ const ko: RuleSection[] = [
       "«드론» — {perCell}대짜리 상자가 {droneBox} cr. 드론 레벨에 따라 비싸져 Lv10에서 {droneBoxTop} cr까지.",
       "«풍선» — {balloon} cr, 대공포처럼 놓는 일회용 발사기. 반경 {balloonRange}칸 원 안에 드론이 들어오자마자 거의 동시에 차단 풍선 {balloonCount}개를 원 전체에 고르게 뿌리고 사라집니다 — 칸에는 아무것도 남지 않습니다. 그 뒤 풍선은 천천히 떠다니고, 부딪힌 드론은 풍선과 함께 사라집니다 — 불도 없고 창고나 땅의 피해도 없습니다. 하지만 포탄이나 미사일도 길목의 풍선을 똑같이 터뜨립니다. 레벨마다 원이 넓어지고 풍선이 두 개 늘어납니다.",
       "설비와 상자는 어느 모드에서든 창고 안에서 무료로 끌 수 있습니다. 차 있는 칸에 놓으면 서로 자리를 바꿉니다. 더블 클릭하면 설비나 상자를 현재 구입가에 팝니다.",
-      "«설계도» — 지금 창고를 이름을 붙여 저장해 두면 나중에 돌아올 수 있습니다. 재건축은 지금 창고를 철거해 팔고 — 멀쩡한 칸은 건설가, 탄 칸은 고철, 설비·드론·풍선은 구입가로 — 그 자리에 설계도를 세웁니다. 차액만 내며, 설계도에 드론은 없습니다.",
+      "«설계도» — 지금 창고를 이름을 붙여 저장해 두면 나중에 돌아올 수 있습니다: 면적, 설비, 드론 상자는 그대로, 탄 칸은 멀쩡한 칸으로. 재건축은 지금 창고를 철거해 팔고 — 멀쩡한 칸은 건설가, 탄 칸은 고철, 설비와 드론은 구입가로 — 그 자리에 설계도를 세우며, 설계도의 드론은 같은 가격에 다시 삽니다. 차액만 냅니다.",
     ],
   },
   {

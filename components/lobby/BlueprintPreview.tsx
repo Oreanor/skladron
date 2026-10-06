@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { GRID, G_BASE, decodeRle } from "@/lib/base";
 import type { Blueprint } from "@/lib/blueprint";
-import { drawStatic } from "@/lib/render";
+import { drawDepots, drawStatic } from "@/lib/render";
 import { CELL } from "../MapCanvas";
 
 /** Сколько клеток травы оставить вокруг склада. */
@@ -19,7 +19,7 @@ export default function BlueprintPreview({
   plan,
   className = "",
 }: {
-  plan: Pick<Blueprint, "cells" | "guns">;
+  plan: Pick<Blueprint, "cells" | "guns" | "depots">;
   className?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -68,12 +68,13 @@ export default function BlueprintPreview({
         x1: box.x0 + box.side,
         y1: box.y0 + box.side,
       });
+      drawDepots(ctx, plan.depots, CELL);
     };
     draw();
     const watch = new ResizeObserver(draw);
     watch.observe(canvas);
     return () => watch.disconnect();
-  }, [cells, plan.guns, box]);
+  }, [cells, plan.guns, plan.depots, box]);
 
   return <canvas ref={canvasRef} className={`block aspect-square w-full rounded-md ${className}`} />;
 }

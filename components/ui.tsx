@@ -9,7 +9,7 @@ import {
 
 // Иконки живут отдельными .svg в components/icons — правятся редактором,
 // а не руками в JSX. Реэкспортируем, чтобы места вызова не менялись.
-export { IconBalloon, IconCrane, IconDrone, IconMenu, IconTarget, IconUsers } from "./icons";
+export { IconBalloon, IconDrone, IconMenu, IconTarget, IconUsers } from "./icons";
 import { useT } from "@/lib/i18n";
 import { shownLevel } from "@/lib/economy";
 
