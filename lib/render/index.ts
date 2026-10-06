@@ -41,7 +41,6 @@ export {
   drawTrap,
   drawTurret,
 } from "./pieces";
-export { onSpriteLoad, spritesVersion } from "./sprites";
 
 /** Всё, что нужно для отрисовки карты — и бою, и редактору. */
 export interface Scene {

@@ -10,7 +10,6 @@
 
 import { SPRAY, TRAP } from "../tuning";
 import { COLORS } from "./colors";
-import { TURRET_SCALE, drawSprite, drawWreck, sprite } from "./sprites";
 
 /** Контейнеры с дронами — их видит только хозяин склада. */
 /**
@@ -25,13 +24,6 @@ export function drawDepots(
   dim = false
 ) {
   const a = dim ? 0.5 : 1;
-  const img = sprite("drone-container");
-  if (img) {
-    ctx.globalAlpha = a;
-    for (const d of depots) drawSprite(ctx, img, d.cx, d.cy, cell);
-    ctx.globalAlpha = 1;
-    return;
-  }
   // Ящик меньше клетки: между соседями остаётся щель, и ряд контейнеров
   // читается как ящики, а не сливается в одну плитку.
   const gap = cell * 0.07;
@@ -98,12 +90,6 @@ export function drawBalloons(
   // ещё не выпущенные сидят в установке — их не видно
   const balloons = all.some((b) => (b.wait ?? 0) > 0) ? all.filter((b) => (b.wait ?? 0) <= 0) : all;
 
-  const img = sprite("balloon");
-  if (img) {
-    for (const b of balloons) ctx.drawImage(img, b.x * cell - r, b.y * cell - r, r * 2, r * 2);
-    return;
-  }
-
   // Тела одним проходом: цвет у всех один, а смена fillStyle стоит дороже
   // самой заливки — шаров над складом бывают сотни.
   ctx.beginPath();
@@ -155,12 +141,6 @@ export function drawBalloonPad(
   cell: number,
   alive = true
 ) {
-  if (!alive) return drawWreck(ctx, cx, cy, cell);
-  const img = sprite("balloon-container");
-  if (img) {
-    drawSprite(ctx, img, cx, cy, cell);
-    return;
-  }
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
   const r = cell * 0.46;
@@ -282,13 +262,6 @@ export function drawSpray(
     ctx.stroke();
   }
 
-  if (!alive) return drawWreck(ctx, cx, cy, cell);
-  const img = sprite("fire-extinguisher");
-  if (img) {
-    drawSprite(ctx, img, cx, cy, cell);
-    return;
-  }
-
   // Площадка-основание.
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
@@ -380,13 +353,6 @@ export function drawTrap(
       ctx.lineWidth = Math.max(1, cell * 0.12);
       ctx.stroke();
     }
-  }
-
-  if (!alive) return drawWreck(ctx, cx, cy, cell);
-  const img = sprite("trap");
-  if (img) {
-    drawSprite(ctx, img, cx, cy, cell);
-    return;
   }
 
   // Восьмиугольная площадка.
@@ -510,14 +476,6 @@ export function drawTurret(
   angle: number,
   alive = true
 ) {
-  if (!alive) return drawWreck(ctx, cx, cy, cell);
-  const base = sprite("cannon-base");
-  const top = sprite("cannon-turret");
-  if (base && top) {
-    drawSprite(ctx, base, cx, cy, cell);
-    drawSprite(ctx, top, cx, cy, cell, TURRET_SCALE, angle);
-    return;
-  }
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
   const body = alive ? COLORS.gun : "#3f3f3f";
@@ -589,17 +547,6 @@ export function drawRocket(
   alive = true,
   loaded = true
 ) {
-  if (!alive) return drawWreck(ctx, cx, cy, cell);
-  const base = sprite("rocket-base");
-  const top = sprite("rocket-turret");
-  if (base && top) {
-    drawSprite(ctx, base, cx, cy, cell);
-    // Пустую башню картинкой не покажешь — перезарядку видно по бледности.
-    if (!loaded) ctx.globalAlpha = 0.45;
-    drawSprite(ctx, top, cx, cy, cell, TURRET_SCALE, angle);
-    ctx.globalAlpha = 1;
-    return;
-  }
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
   const body = alive ? COLORS.rocket : "#3f3f3f";

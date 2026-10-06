@@ -10,8 +10,12 @@ import type { ReactNode } from "react";
 import {
   Banknote,
   ChevronsUp,
+  CircleDotDashed,
+  Crosshair,
   Hammer,
   LayoutGrid,
+  Magnet,
+  Rocket,
   ShieldCheck,
   Wrench,
 } from "lucide-react";
@@ -33,7 +37,7 @@ import {
 import { DRONES_PER_CELL, type GunKind } from "@/lib/base";
 import { BALLOON, ROCKET, SPRAY, TRAP } from "@/lib/tuning";
 import type { Key } from "@/lib/i18n/dict";
-import SpriteIcon from "../SpriteIcon";
+import { IconBalloon, IconDrone } from "../ui";
 
 export type Tool =
   | "area"
@@ -118,7 +122,7 @@ export const TOOLS: {
     hint: "tool.dronesHint",
     vars: { perCell: DRONES_PER_CELL },
     priceKey: "tool.priceBox",
-    icon: <SpriteIcon name="drone-container" />,
+    icon: <IconDrone />,
     levelKind: "drones",
     countKind: "drones",
   },
@@ -127,7 +131,7 @@ export const TOOLS: {
     label: "tool.gun",
     hint: "tool.gunHint",
     vars: { cost: GUN_COST },
-    icon: <SpriteIcon name="cannon-base" />,
+    icon: <Crosshair className={ICON} />,
     levelKind: "guns",
     countKind: "guns",
   },
@@ -136,7 +140,7 @@ export const TOOLS: {
     label: "tool.rocket",
     hint: "tool.rocketHint",
     vars: { cost: ROCKET_COST, range: ROCKET.range, reload: ROCKET.cooldown },
-    icon: <SpriteIcon name="rocket-base" />,
+    icon: <Rocket className={ICON} />,
     levelKind: "rockets",
     countKind: "rockets",
   },
@@ -145,7 +149,7 @@ export const TOOLS: {
     label: "tool.spray",
     hint: "tool.sprayHint",
     vars: { cost: SPRAY_COST, range: SPRAY.range },
-    icon: <SpriteIcon name="fire-extinguisher" />,
+    icon: <CircleDotDashed className={ICON} />,
     levelKind: "sprays",
     countKind: "sprays",
   },
@@ -154,7 +158,7 @@ export const TOOLS: {
     label: "tool.trap",
     hint: "tool.trapHint",
     vars: { cost: TRAP_COST, range: TRAP.range, cap: TRAP.capacity },
-    icon: <SpriteIcon name="trap" />,
+    icon: <Magnet className={ICON} />,
     levelKind: "traps",
     countKind: "traps",
   },
@@ -163,7 +167,7 @@ export const TOOLS: {
     label: "tool.balloon",
     hint: "tool.balloonHint",
     vars: { cost: BALLOON_COST, range: BALLOON.range, count: BALLOON.count },
-    icon: <SpriteIcon name="balloon-container" />,
+    icon: <IconBalloon />,
     levelKind: "balloons",
     countKind: "balloons",
   },
