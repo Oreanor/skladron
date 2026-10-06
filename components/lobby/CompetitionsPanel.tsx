@@ -4,11 +4,12 @@
  * Журнал состязаний: по строке на открытый номер, свежие сверху.
  *
  * Первый непройденный висит всегда — с нулём и кнопкой «играть». У
- * пройденных лучший счёт, повтор лучшей попытки и «переиграть». Состязание
+ * пройденных лучший счёт; нажатие на строку открывает повтор лучшей попытки,
+ * а «переиграть» — уже в нём. Состязание
  * запускается сразу, мимо очереди налётов: оно не чей-то рой, а тренировка.
  */
 
-import { Crosshair, Play, RotateCcw } from "lucide-react";
+import { Crosshair, RotateCcw } from "lucide-react";
 import {
   COMPETITION_STAGES,
   buildCompetition,
@@ -46,34 +47,41 @@ export default function CompetitionsPanel({
         const done = n < competitionAt || allDone;
         const b = done ? best[n] : undefined;
         const plan = buildCompetition(n);
+        // Пройденная с повтором — вся строка открывает повтор, а «переиграть»
+        // живёт в нём. Без повтора смотреть нечего — тогда кнопка тут.
+        const watchId = b?.id;
+        const body = (
+          <>
+            <div className="truncate text-neutral-200">
+              {t("competition.title", { n })}
+              <span
+                className={`ml-3 font-mono font-bold ${done ? "text-emerald-300" : "text-neutral-500"}`}
+              >
+                {b?.score ?? 0}%
+              </span>
+            </div>
+            <div className="font-mono text-[11px] text-neutral-500">
+              {t("competitions.line", { drones: plan.drones, waves: plan.waves.length })}
+            </div>
+          </>
+        );
         return (
           <li key={n} className="flex items-center justify-between gap-2 rounded-md px-3 py-1.5 transition-colors hover:bg-neutral-800/60">
-            <div className="min-w-0">
-              <div className="truncate text-neutral-200">
-                {t("competition.title", { n })}
-                <span
-                  className={`ml-3 font-mono font-bold ${done ? "text-emerald-300" : "text-neutral-500"}`}
-                >
-                  {b?.score ?? 0}%
-                </span>
-              </div>
-              <div className="font-mono text-[11px] text-neutral-500">
-                {t("competitions.line", { drones: plan.drones, waves: plan.waves.length })}
-              </div>
-            </div>
+            {watchId ? (
+              <button
+                type="button"
+                title={t("replay.watch")}
+                className="min-w-0 flex-1 cursor-pointer text-left"
+                onClick={() => onWatch(n, watchId)}
+              >
+                {body}
+              </button>
+            ) : (
+              <div className="min-w-0">{body}</div>
+            )}
             <div className="flex shrink-0 gap-1">
               {done ? (
-                <>
-                  {b?.id && (
-                    <IconButton
-                      label={t("replay.watch")}
-                      title={t("replay.watch")}
-                      className="h-8 w-8"
-                      onClick={() => onWatch(n, b.id!)}
-                    >
-                      <Play className="h-4 w-4" />
-                    </IconButton>
-                  )}
+                !watchId && (
                   <IconButton
                     label={t("competitions.retake")}
                     title={busy ? t("competitions.saving") : t("competitions.retake")}
@@ -83,7 +91,7 @@ export default function CompetitionsPanel({
                   >
                     <RotateCcw className="h-4 w-4" />
                   </IconButton>
-                </>
+                )
               ) : (
                 <IconButton
                   label={t("competitions.play")}

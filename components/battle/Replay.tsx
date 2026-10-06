@@ -147,6 +147,8 @@ function ReplayView({
   replay,
   shareId,
   onClose,
+  onRetake,
+  retakeBusy = false,
 }: {
   /** Движок той версии, по которой бой шёл. */
   sim: Sim;
@@ -156,6 +158,10 @@ function ReplayView({
   /** Есть id — можно дать ссылку, по которой бой посмотрят другие. */
   shareId?: string;
   onClose?: () => void;
+  /** Повтор миссии: тут же можно её и переиграть. */
+  onRetake?: () => void;
+  /** Прошлый бой ещё пишется — переигрывать пока нельзя. */
+  retakeBusy?: boolean;
 }) {
   const t = useT();
   const [zones, setZones] = useZones();
@@ -339,8 +345,18 @@ function ReplayView({
             {shared ? t("replay.copied") : t("replay.share")}
           </Button>
         )}
+        {onRetake && (
+          <Button
+            className={shareId ? "" : "ml-auto"}
+            disabled={retakeBusy}
+            title={retakeBusy ? t("competitions.saving") : undefined}
+            onClick={onRetake}
+          >
+            {t("competitions.retake")}
+          </Button>
+        )}
         {onClose && (
-          <Button variant="build" className={shareId ? "" : "ml-auto"} onClick={onClose}>
+          <Button variant="build" className={shareId || onRetake ? "" : "ml-auto"} onClick={onClose}>
             {t("common.ok")}
           </Button>
         )}
@@ -359,6 +375,8 @@ export default function Replay(props: {
   replay: ReplayData;
   shareId?: string;
   onClose?: () => void;
+  onRetake?: () => void;
+  retakeBusy?: boolean;
 }) {
   const t = useT();
   const version = props.replay.order.simulationVersion;
