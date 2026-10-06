@@ -7,6 +7,7 @@ import {
   MIN_ZOOM,
   applyView,
   drawStatic,
+  spritesVersion,
   type Scene,
   type View,
 } from "@/lib/render";
@@ -241,11 +242,16 @@ export default function MapCanvas({
 
     let raf = 0;
     let drawn: MapCanvasProps["overlay"] = undefined;
+    // догрузилась картинка установки — слой с установками пора перерисовать
+    let sprites = -1;
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
       const view = viewRef.current;
       const staticStale =
-        viewDirty.current || versionRef.current !== sceneVersionRef.current;
+        viewDirty.current ||
+        versionRef.current !== sceneVersionRef.current ||
+        sprites !== spritesVersion();
+      sprites = spritesVersion();
       // Свежее замыкание overlay значит, что React перерисовал родителя, —
       // это и есть сигнал, что накладке есть что показать нового.
       const overlayStale = drawn !== overlayRef.current;

@@ -24,6 +24,7 @@ const FILES = [
   "render/index.ts",
   "render/pieces.ts",
   "render/colors.ts",
+  "render/sprites.ts",
 ];
 
 const read = (rev, file) => {

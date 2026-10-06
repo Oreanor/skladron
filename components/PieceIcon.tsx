@@ -15,6 +15,7 @@ import {
   drawSpray,
   drawTrap,
   drawTurret,
+  onSpriteLoad,
 } from "@/lib/render";
 
 export type PieceKind = "gun" | "rocket" | "spray" | "trap" | "balloon" | "depot";
@@ -63,42 +64,47 @@ export default function PieceIcon({
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const px = canvas.clientWidth || 24;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.round(px * dpr);
-    canvas.height = Math.round(px * dpr);
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const k = (px * dpr) / (CELL * VIEW);
-    ctx.setTransform(k, 0, 0, k, 0, 0);
-    ctx.clearRect(0, 0, CELL * VIEW, CELL * VIEW);
-    if (payload) {
-      drawDrone(ctx, COLORS.payload[payload] ?? COLORS.droneAccent);
-      return;
-    }
-    // установки рисуются по клетке: сдвигаем так, чтобы клетка (0,0) легла в середину
-    ctx.translate((CELL * (VIEW - 1)) / 2, (CELL * (VIEW - 1)) / 2);
-    const angle = -Math.PI / 4;
-    switch (kind) {
-      case "rocket":
-        drawRocket(ctx, 0, 0, CELL, angle, true);
-        break;
-      case "spray":
-        drawSpray(ctx, 0, 0, CELL, 0, 0, true);
-        break;
-      case "trap":
-        drawTrap(ctx, 0, 0, CELL, true);
-        break;
-      case "balloon":
-        drawBalloonPad(ctx, 0, 0, CELL, true);
-        break;
-      case "depot":
-        drawDepots(ctx, [{ cx: 0, cy: 0, n: 10 }], CELL);
-        break;
-      default:
-        drawTurret(ctx, 0, 0, CELL, angle, true);
+    // картинки установок догружаются не сразу — тогда рисуем заново
+    draw();
+    return onSpriteLoad(draw);
+    function draw() {
+      const canvas = ref.current;
+      if (!canvas) return;
+      const px = canvas.clientWidth || 24;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(px * dpr);
+      canvas.height = Math.round(px * dpr);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const k = (px * dpr) / (CELL * VIEW);
+      ctx.setTransform(k, 0, 0, k, 0, 0);
+      ctx.clearRect(0, 0, CELL * VIEW, CELL * VIEW);
+      if (payload) {
+        drawDrone(ctx, COLORS.payload[payload] ?? COLORS.droneAccent);
+        return;
+      }
+      // установки рисуются по клетке: сдвигаем так, чтобы клетка (0,0) легла в середину
+      ctx.translate((CELL * (VIEW - 1)) / 2, (CELL * (VIEW - 1)) / 2);
+      const angle = -Math.PI / 4;
+      switch (kind) {
+        case "rocket":
+          drawRocket(ctx, 0, 0, CELL, angle, true);
+          break;
+        case "spray":
+          drawSpray(ctx, 0, 0, CELL, 0, 0, true);
+          break;
+        case "trap":
+          drawTrap(ctx, 0, 0, CELL, true);
+          break;
+        case "balloon":
+          drawBalloonPad(ctx, 0, 0, CELL, true);
+          break;
+        case "depot":
+          drawDepots(ctx, [{ cx: 0, cy: 0, n: 10 }], CELL);
+          break;
+        default:
+          drawTurret(ctx, 0, 0, CELL, angle, true);
+      }
     }
   }, [kind, payload]);
   return <canvas ref={ref} aria-hidden className={`inline-block h-6 w-6 shrink-0 align-middle ${className}`} />;

@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { GRID, G_BASE, decodeRle } from "@/lib/base";
 import type { Blueprint } from "@/lib/blueprint";
-import { drawStatic } from "@/lib/render";
+import { drawStatic, onSpriteLoad } from "@/lib/render";
 import { CELL } from "../MapCanvas";
 
 /** Сколько клеток травы оставить вокруг склада. */
@@ -72,7 +72,11 @@ export default function BlueprintPreview({
     draw();
     const watch = new ResizeObserver(draw);
     watch.observe(canvas);
-    return () => watch.disconnect();
+    const unload = onSpriteLoad(draw);
+    return () => {
+      watch.disconnect();
+      unload();
+    };
   }, [cells, plan.guns, box]);
 
   return <canvas ref={canvasRef} className={`block aspect-square w-full rounded-md ${className}`} />;
