@@ -392,31 +392,37 @@ function ReplayView({
     ? t("competition.title", { n: replay.order.competitionStage })
     : `${t("replay.of")} ${name}`;
 
+  // Скорость — строкой, кнопки по своей ширине; ссылка и «ОК» — строкой ниже.
   const controls = (
-    <div className="flex shrink-0 flex-wrap items-center gap-2">
-      {SPEEDS.map((v) => (
-        <Button key={v} size="sm" active={speed === v} onClick={() => setSpeed(v)}>
-          {v}×
-        </Button>
-      ))}
-      {shareId && (
-        <Button
-          size="sm"
-          className="ml-auto"
-          onClick={() => {
-            void navigator.clipboard
-              ?.writeText(`${location.origin}/replay/${shareId}`)
-              .then(() => setShared(true))
-              .catch(() => setShared(false));
-          }}
-        >
-          {shared ? t("replay.copied") : t("replay.share")}
-        </Button>
-      )}
-      {onClose && (
-        <Button size="sm" variant="build" className={shareId ? "" : "ml-auto"} onClick={onClose}>
-          {t("common.ok")}
-        </Button>
+    <div className="flex shrink-0 flex-col items-start gap-2">
+      <div className="flex gap-2">
+        {SPEEDS.map((v) => (
+          <Button key={v} size="sm" active={speed === v} onClick={() => setSpeed(v)}>
+            {v}×
+          </Button>
+        ))}
+      </div>
+      {(shareId || onClose) && (
+        <div className="flex gap-2">
+          {shareId && (
+            <Button
+              size="sm"
+              onClick={() => {
+                void navigator.clipboard
+                  ?.writeText(`${location.origin}/replay/${shareId}`)
+                  .then(() => setShared(true))
+                  .catch(() => setShared(false));
+              }}
+            >
+              {shared ? t("replay.copied") : t("replay.share")}
+            </Button>
+          )}
+          {onClose && (
+            <Button size="sm" variant="build" onClick={onClose}>
+              {t("common.ok")}
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -504,30 +510,33 @@ function ReplayView({
       )}
 
       {/* Колонка — сворачиваемые панели, как в лобби; разговор — своей панелью. */}
-      <aside className="hidden min-h-0 flex-col gap-4 overflow-y-auto text-sm lg:flex [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* Кнопки стоят на месте, прокручиваются только панели под ними. */}
+      <aside className="hidden min-h-0 flex-col gap-4 text-sm lg:flex">
         {controls}
-        <Panel title={t("panel.replay")} collapsed={statsFolded} onToggle={foldStats}>
-          <p className="mb-3 text-neutral-300">{title}</p>
-          <dl className="space-y-1 font-mono">
-            <Row label={t("battle.time")} value={seconds} />
-            <Row label={t("battle.inAir")} value={String(hud.inAir)} />
-            <Row label={t("battle.incomingLeft")} value={String(hud.left)} />
-            <Row label={t("battle.killedByGuns")} value={String(hud.killedByGuns)} />
-            <Row label={t("battle.killedByMg")} value={String(hud.killedByMg)} />
-            <Row label={t("battle.fires")} value={String(hud.fires)} />
-            <Row label={t("battle.burned")} value={fmt(hud.burned)} />
-            <Row label={t("battle.gunsAlive")} value={`${hud.gunsAlive}/${hud.gunsTotal}`} />
-            <Row label={t("battle.integrity")} value={`${hud.integrity}%`} />
-          </dl>
-        </Panel>
-        <Panel title={t("panel.payloads")} collapsed={payloadsFolded} onToggle={foldPayloads}>
-          <PayloadLegend t={t} counts={hud.byPayload} />
-        </Panel>
-        {shareId && (
-          <Panel title={t("panel.talk")} collapsed={talkFolded} onToggle={foldTalk}>
-            <Talk battleId={shareId} tall />
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <Panel title={t("panel.replay")} collapsed={statsFolded} onToggle={foldStats}>
+            <p className="mb-3 text-neutral-300">{title}</p>
+            <dl className="space-y-1 font-mono">
+              <Row label={t("battle.time")} value={seconds} />
+              <Row label={t("battle.inAir")} value={String(hud.inAir)} />
+              <Row label={t("battle.incomingLeft")} value={String(hud.left)} />
+              <Row label={t("battle.killedByGuns")} value={String(hud.killedByGuns)} />
+              <Row label={t("battle.killedByMg")} value={String(hud.killedByMg)} />
+              <Row label={t("battle.fires")} value={String(hud.fires)} />
+              <Row label={t("battle.burned")} value={fmt(hud.burned)} />
+              <Row label={t("battle.gunsAlive")} value={`${hud.gunsAlive}/${hud.gunsTotal}`} />
+              <Row label={t("battle.integrity")} value={`${hud.integrity}%`} />
+            </dl>
           </Panel>
-        )}
+          <Panel title={t("panel.payloads")} collapsed={payloadsFolded} onToggle={foldPayloads}>
+            <PayloadLegend t={t} counts={hud.byPayload} />
+          </Panel>
+          {shareId && (
+            <Panel title={t("panel.talk")} collapsed={talkFolded} onToggle={foldTalk}>
+              <Talk battleId={shareId} tall />
+            </Panel>
+          )}
+        </div>
       </aside>
     </div>
   );
