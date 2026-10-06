@@ -95,41 +95,37 @@ export function countFreeCells(cells: Uint8Array, guns: Gun[], depots: Depot[]) 
 }
 
 /**
- * Всё здание одним куском? Проверяем перед сносом: продать середину и
- * оставить две половинки на разных концах поля нельзя.
+ * Сколько у здания отдельных кусков (соседи — по стороне). Перед сносом
+ * проверяем, что кусков не прибавилось: продать середину и оставить две
+ * половинки на разных концах поля нельзя. Но склад мог разойтись ещё
+ * раньше, и требовать от сноса «один кусок» значило бы запретить его вовсе.
  */
-export function isWhole(cells: Uint8Array) {
-  let start = -1;
-  let total = 0;
-  for (let i = 0; i < cells.length; i++) {
-    if (!isBuilding(cells[i])) continue;
-    total++;
-    if (start < 0) start = i;
-  }
-  if (total === 0) return true;
-
+export function buildingParts(cells: Uint8Array) {
   const seen = new Uint8Array(CELLS);
-  const queue = new Int32Array(total);
-  let head = 0;
-  let tail = 0;
-  queue[tail++] = start;
-  seen[start] = 1;
-  let found = 0;
-  while (head < tail) {
-    const i = queue[head++];
-    found++;
-    const x = i % GRID;
-    const step = (n: number) => {
-      if (seen[n] || !isBuilding(cells[n])) return;
-      seen[n] = 1;
-      queue[tail++] = n;
-    };
-    if (x > 0) step(i - 1);
-    if (x < GRID - 1) step(i + 1);
-    if (i >= GRID) step(i - GRID);
-    if (i < CELLS - GRID) step(i + GRID);
+  const queue = new Int32Array(CELLS);
+  let parts = 0;
+  for (let start = 0; start < CELLS; start++) {
+    if (seen[start] || !isBuilding(cells[start])) continue;
+    parts++;
+    let head = 0;
+    let tail = 0;
+    queue[tail++] = start;
+    seen[start] = 1;
+    while (head < tail) {
+      const i = queue[head++];
+      const x = i % GRID;
+      const step = (n: number) => {
+        if (seen[n] || !isBuilding(cells[n])) return;
+        seen[n] = 1;
+        queue[tail++] = n;
+      };
+      if (x > 0) step(i - 1);
+      if (x < GRID - 1) step(i + 1);
+      if (i >= GRID) step(i - GRID);
+      if (i < CELLS - GRID) step(i + GRID);
+    }
   }
-  return found === total;
+  return parts;
 }
 
 /** Сторона квадрата, которым меряется устаревание разведданных. */

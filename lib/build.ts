@@ -26,7 +26,7 @@ import {
   gunKind,
   idx,
   isBuilding,
-  isWhole,
+  buildingParts,
   rectConnects,
   repairRect,
   sanitizeGuns,
@@ -138,7 +138,7 @@ export function scrapAt(p: Player, x: number, y: number): BuildResult {
 
   const cells = p.cells.slice();
   cells[i] = G_GROUND;
-  if (!isWhole(cells)) return no("scrap.splits");
+  if (buildingParts(cells) > buildingParts(p.cells)) return no("scrap.splits");
   if (footprint(p.cells) - 1 < MIN_BASE_CELLS) return no("scrap.tooSmall", { n: MIN_BASE_CELLS });
 
   p.cells = cells;
@@ -210,7 +210,9 @@ export function draftPlan(
     else {
       const next = p.cells.slice();
       scrapRect(next, rect);
-      connects = isWhole(next);
+      // не «один кусок», а «кусков не прибавилось»: склад мог разойтись
+      // раньше, и тогда снос не проходил бы нигде
+      connects = buildingParts(next) <= buildingParts(p.cells);
     }
   } else connects = rect ? rectConnects(p.cells, rect, hasBuilding) : false;
 
