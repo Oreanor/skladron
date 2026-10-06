@@ -256,69 +256,68 @@ export default function Battle({
               <PayloadLegend t={t} counts={hud?.byPayload} />
             </div>
           )}
-
-          {done && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center overflow-y-auto rounded-md bg-neutral-950/90 p-4 sm:p-6">
-              <div className="w-full max-w-sm">
-                <div
-                  className={`mb-1 text-2xl font-bold tracking-wide ${
-                    done.won ? "text-emerald-300" : "text-red-400"
-                  }`}
-                >
-                  {done.won ? t("battle.won") : t("battle.lost")}
-                </div>
-                <p className="mb-4 text-sm text-neutral-400">{header}</p>
-                <dl className="mb-5 space-y-1 font-mono text-sm">
-                  <Row label={t("battle.sent")} value={String(order.drones)} />
-                  <Row label={t("battle.killedByGuns")} value={String(done.result.killedByGuns)} />
-                  <Row label={t("battle.killedByMg")} value={String(done.result.killedByMg)} />
-                  <Row
-                    label={t("battle.killedByBalloons")}
-                    value={String(done.result.killedByBalloons)}
-                  />
-                  <Row
-                    label={t("battle.insurance")}
-                    value={`+${fmt(
-                      insurance(
-                        done.result.burned,
-                        goodsValue(depots) - goodsValue(done.depots),
-                        done.result.gunsLost,
-                        insuranceLevel,
-                        done.result.spraysLost,
-                        done.result.trapsLost,
-                        done.result.rocketsLost
-                      )
-                    )} ${t("battle.creditsSuffix")}`}
-                  />
-                  <Row
-                    label={t("battle.defenseBounty")}
-                    value={`+${fmt(defenseBounty(order.drones, done.result.burned))} ${t(
-                      "battle.creditsSuffix"
-                    )}`}
-                  />
-                  <Row label={t("battle.leaked")} value={String(done.result.leaked)} />
-                  <Row
-                    label={t("battle.destroyedShare")}
-                    value={`${
-                      s.baseTotal ? Math.round((done.result.burned / s.baseTotal) * 100) : 0
-                    }%`}
-                  />
-                  <Row label={t("battle.extinguished")} value={String(done.result.extinguished)} />
-                  <Row label={t("battle.dronesLost")} value={String(done.result.dronesLost)} />
-                  <Row label={t("battle.gunsLost")} value={String(done.result.gunsLost)} />
-                  <Row label={t("battle.rocketsLost")} value={String(done.result.rocketsLost)} />
-                  <Row label={t("battle.spraysLost")} value={String(done.result.spraysLost)} />
-                  <Row label={t("battle.trapsLost")} value={String(done.result.trapsLost)} />
-                </dl>
-                <div className="flex justify-center px-8 pt-1">
-                  <Button variant="build" onClick={() => onFinish(done)}>
-                    {t("battle.back")}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
         </>
+      }
+      cover={
+        done && (
+          <>
+            <div
+              className={`mb-1 text-2xl font-bold tracking-wide ${
+                done.won ? "text-emerald-300" : "text-red-400"
+              }`}
+            >
+              {done.won ? t("battle.won") : t("battle.lost")}
+            </div>
+            <p className="mb-4 text-sm text-neutral-400">{header}</p>
+            <dl className="mb-5 space-y-1 font-mono text-sm">
+              <Row label={t("battle.sent")} value={String(order.drones)} />
+              <Row label={t("battle.killedByGuns")} value={String(done.result.killedByGuns)} />
+              <Row label={t("battle.killedByMg")} value={String(done.result.killedByMg)} />
+              <Row
+                label={t("battle.killedByBalloons")}
+                value={String(done.result.killedByBalloons)}
+              />
+              <Row
+                label={t("battle.insurance")}
+                value={`+${fmt(
+                  insurance(
+                    done.result.burned,
+                    goodsValue(depots) - goodsValue(done.depots),
+                    done.result.gunsLost,
+                    insuranceLevel,
+                    done.result.spraysLost,
+                    done.result.trapsLost,
+                    done.result.rocketsLost
+                  )
+                )} ${t("battle.creditsSuffix")}`}
+              />
+              <Row
+                label={t("battle.defenseBounty")}
+                value={`+${fmt(defenseBounty(order.drones, done.result.burned))} ${t(
+                  "battle.creditsSuffix"
+                )}`}
+              />
+              <Row label={t("battle.leaked")} value={String(done.result.leaked)} />
+              <Row
+                label={t("battle.destroyedShare")}
+                value={`${
+                  s.baseTotal ? Math.round((done.result.burned / s.baseTotal) * 100) : 0
+                }%`}
+              />
+              <Row label={t("battle.extinguished")} value={String(done.result.extinguished)} />
+              <Row label={t("battle.dronesLost")} value={String(done.result.dronesLost)} />
+              <Row label={t("battle.gunsLost")} value={String(done.result.gunsLost)} />
+              <Row label={t("battle.rocketsLost")} value={String(done.result.rocketsLost)} />
+              <Row label={t("battle.spraysLost")} value={String(done.result.spraysLost)} />
+              <Row label={t("battle.trapsLost")} value={String(done.result.trapsLost)} />
+            </dl>
+            <div className="flex justify-center px-8 pt-1">
+              <Button variant="build" onClick={() => onFinish(done)}>
+                {t("battle.back")}
+              </Button>
+            </div>
+          </>
+        )
       }
       mobile={
         // компактный HUD телефона: под картой, одной прокручиваемой строкой

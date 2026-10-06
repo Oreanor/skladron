@@ -60,9 +60,15 @@ export default function BattleFrame({
   mobile,
   head,
   panels,
+  cover,
 }: {
   variant: FrameVariant;
   onDismiss?: () => void;
+  /**
+   * Накладка на всё окно — итог боя. Не на квадрат карты: на телефоне он
+   * маленький, и итог прокручивался в окошке размером с карту.
+   */
+  cover?: ReactNode;
   /** Карта и всё, что лежит поверх неё: подсказки, итог. Внутри квадрата. */
   map: ReactNode;
   /** Полоска под картой по её ширине — ползунок повтора. */
@@ -79,29 +85,39 @@ export default function BattleFrame({
   const side = under ? `min(100cqw, calc(100cqh - ${underHeight}))` : "min(100cqw, 100cqh)";
   return (
     <BattleWindow variant={variant} onDismiss={onDismiss}>
-      {/* Колонка со счётом жмётся вместе с окном: на узком десктопе поле боя
-          важнее, чем ровная ширина цифр. */}
-      <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(12rem,20vw,18rem)] lg:gap-4">
-        <div className="flex min-h-0 flex-1 flex-col gap-2">
-          <div className="flex min-h-0 flex-1 items-center justify-center" style={{ containerType: "size" }}>
-            <div className="flex flex-col" style={{ width: side }}>
-              {/* overflow-hidden — не украшение. Блок с aspect-ratio растёт
-                  под содержимое, если оно выше; холст карты подгоняется под
-                  рамку, рамка с бордюром на 2 точки выше холста — и они
-                  раздували друг друга без конца, пока бой не вставал. */}
-              <div className="relative aspect-square w-full overflow-hidden">{map}</div>
-              {under}
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        {/* Колонка со счётом жмётся вместе с окном: на узком десктопе поле боя
+            важнее, чем ровная ширина цифр. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(12rem,20vw,18rem)] lg:gap-4">
+          <div className="flex min-h-0 flex-1 flex-col gap-2">
+            <div className="flex min-h-0 flex-1 items-center justify-center" style={{ containerType: "size" }}>
+              <div className="flex flex-col" style={{ width: side }}>
+                {/* overflow-hidden — не украшение. Блок с aspect-ratio растёт
+                    под содержимое, если оно выше; холст карты подгоняется под
+                    рамку, рамка с бордюром на 2 точки выше холста — и они
+                    раздували друг друга без конца, пока бой не вставал. */}
+                <div className="relative aspect-square w-full overflow-hidden">{map}</div>
+                {under}
+              </div>
             </div>
+            {mobile && <div className="flex shrink-0 flex-col gap-2 lg:hidden">{mobile}</div>}
           </div>
-          {mobile && <div className="flex shrink-0 flex-col gap-2 lg:hidden">{mobile}</div>}
-        </div>
 
-        <aside className="hidden min-h-0 flex-col gap-4 text-sm lg:flex">
-          {head}
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {panels}
+          <aside className="hidden min-h-0 flex-col gap-4 text-sm lg:flex">
+            {head}
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {panels}
+            </div>
+          </aside>
+        </div>
+        {/* Прокрутка — у всей накладки, а внутри блок по центру через m-auto:
+            при justify-center длинный итог уходил верхом за край, и его было
+            не докрутить. */}
+        {cover && (
+          <div className="absolute inset-0 z-30 flex flex-col overflow-y-auto rounded-md bg-neutral-950/90 p-4 sm:p-6">
+            <div className="m-auto w-full max-w-sm">{cover}</div>
           </div>
-        </aside>
+        )}
       </div>
     </BattleWindow>
   );
