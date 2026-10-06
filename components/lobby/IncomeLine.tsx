@@ -52,7 +52,7 @@ export default function IncomeLine({
       >
         {stacked ? (
           <>
-            <span className="block truncate leading-tight">{fmt(p.credits)}</span>
+            <span className="block truncate leading-tight">{t("tool.price", { cost: fmt(p.credits) })}</span>
             <span className="block truncate text-[11px] leading-tight text-emerald-300/70">
               {t("stat.incomeLine", { income: fmt(sale) })}
             </span>
