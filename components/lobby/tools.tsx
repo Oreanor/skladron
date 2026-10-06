@@ -7,18 +7,7 @@
  */
 
 import type { ReactNode } from "react";
-import {
-  Banknote,
-  ChevronsUp,
-  CircleDotDashed,
-  Crosshair,
-  Hammer,
-  LayoutGrid,
-  Magnet,
-  Rocket,
-  ShieldCheck,
-  Wrench,
-} from "lucide-react";
+import { Banknote, ChevronsUp, ShieldCheck } from "lucide-react";
 import {
   GUN_COST,
   INSURANCE_CELL,
@@ -37,7 +26,8 @@ import {
 import { DRONES_PER_CELL, type GunKind } from "@/lib/base";
 import { BALLOON, ROCKET, SPRAY, TRAP } from "@/lib/tuning";
 import type { Key } from "@/lib/i18n/dict";
-import { IconBalloon, IconDrone } from "../ui";
+import { COLORS } from "@/lib/render";
+import PieceIcon from "../PieceIcon";
 
 export type Tool =
   | "area"
@@ -67,7 +57,15 @@ export type ModalId = "upgrade" | "insurance" | "loan" | "telegram" | "avatar";
 
 const ICON = "h-5 w-5";
 
-/** Подпись и цена берутся из словаря, глиф — из lucide. */
+/**
+ * Клетка того цвета, какой она на карте: площадь — склад, ремонт — гарь,
+ * снос — трава. Обводка — чтобы чёрная клетка не пропала на тёмной кнопке.
+ */
+function CellIcon({ color }: { color: string }) {
+  return <span aria-hidden className="inline-block h-5 w-5 rounded-sm border border-neutral-500" style={{ background: color }} />;
+}
+
+/** Подпись и цена берутся из словаря; у предметов значок — их же рисунок с карты. */
 export const TOOLS: {
   id: ToolId;
   label: Key;
@@ -95,7 +93,7 @@ export const TOOLS: {
     label: "tool.area",
     hint: "tool.areaHint",
     vars: { cost: CELL_COST },
-    icon: <LayoutGrid className={ICON} />,
+    icon: <CellIcon color={COLORS.base} />,
     countKind: "intact",
   },
   {
@@ -103,7 +101,7 @@ export const TOOLS: {
     label: "tool.repair",
     hint: "tool.repairHint",
     vars: { cost: REPAIR_COST },
-    icon: <Wrench className={ICON} />,
+    icon: <CellIcon color={COLORS.burnt} />,
     countKind: "burnt",
   },
   {
@@ -112,7 +110,7 @@ export const TOOLS: {
     hint: "tool.scrapHint",
     vars: { cost: SCRAP_REWARD },
     priceKey: "tool.priceScrap",
-    icon: <Hammer className={ICON} />,
+    icon: <CellIcon color={COLORS.groundA} />,
     countKind: "burnt",
   },
   // Дроны — перед пушками: это единственное нападение, всё остальное — оборона.
@@ -122,7 +120,7 @@ export const TOOLS: {
     hint: "tool.dronesHint",
     vars: { perCell: DRONES_PER_CELL },
     priceKey: "tool.priceBox",
-    icon: <IconDrone />,
+    icon: <PieceIcon kind="depot" />,
     levelKind: "drones",
     countKind: "drones",
   },
@@ -131,7 +129,7 @@ export const TOOLS: {
     label: "tool.gun",
     hint: "tool.gunHint",
     vars: { cost: GUN_COST },
-    icon: <Crosshair className={ICON} />,
+    icon: <PieceIcon kind="gun" />,
     levelKind: "guns",
     countKind: "guns",
   },
@@ -140,7 +138,7 @@ export const TOOLS: {
     label: "tool.rocket",
     hint: "tool.rocketHint",
     vars: { cost: ROCKET_COST, range: ROCKET.range, reload: ROCKET.cooldown },
-    icon: <Rocket className={ICON} />,
+    icon: <PieceIcon kind="rocket" />,
     levelKind: "rockets",
     countKind: "rockets",
   },
@@ -149,7 +147,7 @@ export const TOOLS: {
     label: "tool.spray",
     hint: "tool.sprayHint",
     vars: { cost: SPRAY_COST, range: SPRAY.range },
-    icon: <CircleDotDashed className={ICON} />,
+    icon: <PieceIcon kind="spray" />,
     levelKind: "sprays",
     countKind: "sprays",
   },
@@ -158,7 +156,7 @@ export const TOOLS: {
     label: "tool.trap",
     hint: "tool.trapHint",
     vars: { cost: TRAP_COST, range: TRAP.range, cap: TRAP.capacity },
-    icon: <Magnet className={ICON} />,
+    icon: <PieceIcon kind="trap" />,
     levelKind: "traps",
     countKind: "traps",
   },
@@ -167,7 +165,7 @@ export const TOOLS: {
     label: "tool.balloon",
     hint: "tool.balloonHint",
     vars: { cost: BALLOON_COST, range: BALLOON.range, count: BALLOON.count },
-    icon: <IconBalloon />,
+    icon: <PieceIcon kind="balloon" />,
     levelKind: "balloons",
     countKind: "balloons",
   },
