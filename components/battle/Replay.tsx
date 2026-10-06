@@ -16,6 +16,7 @@ import { useZones } from "../ZonesToggle";
 import MapCanvas, { CELL } from "../MapCanvas";
 import { Button, Chip, ChipBar, Panel, Row, inputClass } from "../ui";
 import { PayloadLegend } from "./Battle";
+import BattleFrame, { BattleWindow } from "./BattleFrame";
 import { usePanelFold } from "./usePanelFold";
 import Avatar from "../Avatar";
 import {
@@ -435,85 +436,84 @@ function ReplayView({
   };
 
   return (
-    // Как поле боя: квадратная карта слева, колонка со счётом справа. На
-    // телефоне колонки нет — счёт строкой под картой.
-    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(12rem,20vw,18rem)] lg:gap-4">
-      {/* Квадрат вписан в то, что осталось: сторона — меньшее из ширины и
-          высоты, за вычетом полоски ползунка. */}
-      <div className="flex min-h-0 flex-1 items-center justify-center" style={{ containerType: "size" }}>
-        <div className="flex flex-col" style={{ width: "min(100cqw, calc(100cqh - 1rem))" }}>
-          <div className="relative aspect-square w-full">
-            <MapCanvas
-              fit
-              className="h-full w-full rounded-b-none"
-              scene={scene}
-              sceneVersion={version}
-              overlay={overlay}
-              cursor="pointer"
-              zones={{ on: zones, onChange: setZones }}
-              onDown={onMapDown}
-              onUp={onMapUp}
-              onLeave={() => (tapRef.current = null)}
-            />
-            {paused && !hud.done && (
-              <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/50 pl-1 text-3xl text-white/90">
-                  ▶
-                </span>
-              </div>
-            )}
-            {hud.done && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center bg-neutral-950/70">
-                <Button variant="build" onClick={restart}>
-                  {t("replay.again")}
-                </Button>
-              </div>
-            )}
-          </div>
-          {/* Ползунок по нижнему краю карты: видно, сколько прошло, и можно
-              перемотать. Перемотка — на отпускании: тянуть, пересчитывая
-              бой на каждый сдвиг, было бы тяжело. */}
-          <input
-            type="range"
-            min={0}
-            max={SCRUB_MAX}
-            value={Math.round(shown)}
-            aria-label={t("replay.progress")}
-            onChange={(e) => setScrub(Number(e.target.value))}
-            onPointerUp={commitScrub}
-            onKeyUp={commitScrub}
-            onBlur={commitScrub}
-            className="h-4 w-full cursor-pointer accent-white"
+    <BattleFrame
+      variant={onClose ? "replay" : "page"}
+      onDismiss={onClose}
+      map={
+        <>
+          <MapCanvas
+            fit
+            className="h-full w-full rounded-b-none"
+            scene={scene}
+            sceneVersion={version}
+            overlay={overlay}
+            cursor="pointer"
+            zones={{ on: zones, onChange: setZones }}
+            onDown={onMapDown}
+            onUp={onMapUp}
+            onLeave={() => (tapRef.current = null)}
           />
-        </div>
-      </div>
-
-      {/* телефон: счёт строкой, под ней скорость и кнопки */}
-      <ChipBar className="shrink-0 lg:hidden">
-        <Chip label={t("battle.hudTime")} value={seconds} />
-        <Chip label={t("battle.hudAir")} value={String(hud.inAir)} tone="text-red-300" />
-        <Chip label={t("battle.hudLeft")} value={String(hud.left)} />
-        <Chip label={t("battle.hudKilled")} value={String(hud.killedByGuns + hud.killedByMg)} tone="text-emerald-300" />
-        <Chip label={t("battle.burned")} value={fmt(hud.burned)} tone="text-orange-300" />
-        <Chip label={t("battle.hudGuns")} value={`${hud.gunsAlive}/${hud.gunsTotal}`} />
-        <Chip
-          label={t("battle.hudIntegrity")}
-          value={`${hud.integrity}%`}
-          tone={hud.integrity < 60 ? "text-orange-300" : "text-emerald-300"}
+          {paused && !hud.done && (
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/50 pl-1 text-3xl text-white/90">
+                ▶
+              </span>
+            </div>
+          )}
+          {hud.done && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-neutral-950/70">
+              <Button variant="build" onClick={restart}>
+                {t("replay.again")}
+              </Button>
+            </div>
+          )}
+        </>
+      }
+      // Ползунок по нижнему краю карты: видно, сколько прошло, и можно
+      // перемотать. Перемотка — на отпускании: тянуть, пересчитывая бой на
+      // каждый сдвиг, было бы тяжело.
+      under={
+        <input
+          type="range"
+          min={0}
+          max={SCRUB_MAX}
+          value={Math.round(shown)}
+          aria-label={t("replay.progress")}
+          onChange={(e) => setScrub(Number(e.target.value))}
+          onPointerUp={commitScrub}
+          onKeyUp={commitScrub}
+          onBlur={commitScrub}
+          className="h-4 w-full cursor-pointer accent-white"
         />
-      </ChipBar>
-      <div className="lg:hidden">{controls}</div>
-      {shareId && (
-        <div className="border-t border-neutral-800 pt-2 lg:hidden">
-          <Talk battleId={shareId} />
-        </div>
-      )}
-
-      {/* Колонка — сворачиваемые панели, как в лобби; разговор — своей панелью. */}
-      {/* Кнопки стоят на месте, прокручиваются только панели под ними. */}
-      <aside className="hidden min-h-0 flex-col gap-4 text-sm lg:flex">
-        {controls}
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      }
+      underHeight="1rem"
+      mobile={
+        <>
+          <ChipBar>
+            <Chip label={t("battle.hudTime")} value={seconds} />
+            <Chip label={t("battle.hudAir")} value={String(hud.inAir)} tone="text-red-300" />
+            <Chip label={t("battle.hudLeft")} value={String(hud.left)} />
+            <Chip label={t("battle.hudKilled")} value={String(hud.killedByGuns + hud.killedByMg)} tone="text-emerald-300" />
+            <Chip label={t("battle.burned")} value={fmt(hud.burned)} tone="text-orange-300" />
+            <Chip label={t("battle.hudGuns")} value={`${hud.gunsAlive}/${hud.gunsTotal}`} />
+            <Chip
+              label={t("battle.hudIntegrity")}
+              value={`${hud.integrity}%`}
+              tone={hud.integrity < 60 ? "text-orange-300" : "text-emerald-300"}
+            />
+          </ChipBar>
+          {controls}
+          {shareId && (
+            <div className="border-t border-neutral-800 pt-2">
+              <Talk battleId={shareId} />
+            </div>
+          )}
+        </>
+      }
+      // кнопки стоят на месте, прокручиваются только панели под ними
+      head={controls}
+      panels={
+        <>
           <Panel title={t("panel.replay")} collapsed={statsFolded} onToggle={foldStats}>
             <p className="mb-3 text-neutral-300">{title}</p>
             <dl className="space-y-1 font-mono">
@@ -531,14 +531,15 @@ function ReplayView({
           <Panel title={t("panel.payloads")} collapsed={payloadsFolded} onToggle={foldPayloads}>
             <PayloadLegend t={t} counts={hud.byPayload} />
           </Panel>
+          {/* разговор — своей панелью */}
           {shareId && (
             <Panel title={t("panel.talk")} collapsed={talkFolded} onToggle={foldTalk}>
               <Talk battleId={shareId} tall />
             </Panel>
           )}
-        </div>
-      </aside>
-    </div>
+        </>
+      }
+    />
   );
 }
 
@@ -567,7 +568,15 @@ export default function Replay(props: {
     };
   }, [version]);
 
-  if (sim === "loading") return <p className="p-6 text-sm text-neutral-500">{t("app.loading")}</p>;
-  if (!sim) return <p className="p-6 text-sm text-neutral-400">{t("replay.tooOld")}</p>;
+  if (sim === "loading" || !sim) {
+    // пока движок грузится — то же окно, что и у повтора, а не голый текст
+    return (
+      <BattleWindow variant={props.onClose ? "replay" : "page"} onDismiss={props.onClose}>
+        <p className={`p-6 text-sm ${sim ? "text-neutral-500" : "text-neutral-400"}`}>
+          {sim ? t("app.loading") : t("replay.tooOld")}
+        </p>
+      </BattleWindow>
+    );
+  }
   return <ReplayView sim={sim} {...props} />;
 }

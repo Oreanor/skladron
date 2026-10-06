@@ -19,6 +19,7 @@ import MapCanvas, { type Pt } from "../MapCanvas";
 import { useZones } from "../ZonesToggle";
 import { usePanelFold } from "./usePanelFold";
 import { Button, Chip, ChipBar, IconButton, Panel, Row } from "../ui";
+import BattleFrame from "./BattleFrame";
 import { encodeTrace, type Frame } from "@/lib/replay";
 import type { BattleOutcome } from "@/lib/outcome";
 import { SIM } from "@/lib/tuning";
@@ -203,39 +204,125 @@ export default function Battle({
   const bountyPay = defenseBounty(order.drones, hud?.burned ?? 0);
   const payout = insurePay + bountyPay;
 
-  return (
-    // Колонка со счётом жмётся вместе с окном: на узком десктопе поле боя
-    // важнее, чем ровная ширина цифр.
-    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(12rem,20vw,18rem)] lg:gap-4">
-      <div className="relative flex min-h-0 flex-1 flex-col gap-2">
-        <MapCanvas
-          fit
-          className="min-h-0 flex-1"
-          scene={scene}
-          sceneVersion={version}
-          cursor="none"
-          zones={{ on: zones, onChange: setZones }}
-          overlay={(ctx, now) => drawFrame(ctx, s, 7, hoverRef.current, now, zones)}
-          onMove={(p) => {
-            hoverRef.current = toCell(p);
-            setAim(s, aimAt(hoverRef.current));
-          }}
-          onDown={(p, button) => {
-            if (button !== 0) return;
-            hoverRef.current = toCell(p);
-            setAim(s, aimAt(hoverRef.current));
-            setFiring(s, true);
-          }}
-          onUp={() => setFiring(s, false)}
-          onLeave={() => {
-            hoverRef.current = null;
-            setAim(s, null);
-            setFiring(s, false);
-          }}
-        />
+  const header = t(order.competitionStage ? "battle.headerCompetition" : "battle.header", {
+    from: order.from,
+    drones: order.drones,
+    pattern: patternName,
+  });
 
-        {/* компактный HUD телефона: под картой, одной прокручиваемой строкой */}
-        <ChipBar className="lg:hidden">
+  return (
+    <BattleFrame
+      variant="battle"
+      map={
+        <>
+          <MapCanvas
+            fit
+            className="h-full w-full"
+            scene={scene}
+            sceneVersion={version}
+            cursor="none"
+            zones={{ on: zones, onChange: setZones }}
+            overlay={(ctx, now) => drawFrame(ctx, s, 7, hoverRef.current, now, zones)}
+            onMove={(p) => {
+              hoverRef.current = toCell(p);
+              setAim(s, aimAt(hoverRef.current));
+            }}
+            onDown={(p, button) => {
+              if (button !== 0) return;
+              hoverRef.current = toCell(p);
+              setAim(s, aimAt(hoverRef.current));
+              setFiring(s, true);
+            }}
+            onUp={() => setFiring(s, false)}
+            onLeave={() => {
+              hoverRef.current = null;
+              setAim(s, null);
+              setFiring(s, false);
+            }}
+          />
+
+          {/* типы дронов: на телефоне колонки нет, легенда разворачивается по кнопке */}
+          <IconButton
+            label={t("panel.payloads")}
+            round
+            onClick={() => setHints((v) => !v)}
+            className="absolute right-2 top-12 z-10 h-8 w-8 bg-neutral-900/80 lg:hidden"
+          >
+            ?
+          </IconButton>
+          {hints && (
+            <div className="absolute inset-x-2 top-12 z-10 rounded-md border border-neutral-700 bg-neutral-950/95 p-3 text-xs leading-relaxed text-neutral-400 lg:hidden">
+              <p className="mb-2 font-semibold text-neutral-300">{t("panel.payloads")}</p>
+              <PayloadLegend t={t} counts={hud?.byPayload} />
+            </div>
+          )}
+
+          {done && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center overflow-y-auto rounded-md bg-neutral-950/90 p-4 sm:p-6">
+              <div className="w-full max-w-sm">
+                <div
+                  className={`mb-1 text-2xl font-bold tracking-wide ${
+                    done.won ? "text-emerald-300" : "text-red-400"
+                  }`}
+                >
+                  {done.won ? t("battle.won") : t("battle.lost")}
+                </div>
+                <p className="mb-4 text-sm text-neutral-400">{header}</p>
+                <dl className="mb-5 space-y-1 font-mono text-sm">
+                  <Row label={t("battle.sent")} value={String(order.drones)} />
+                  <Row label={t("battle.killedByGuns")} value={String(done.result.killedByGuns)} />
+                  <Row label={t("battle.killedByMg")} value={String(done.result.killedByMg)} />
+                  <Row
+                    label={t("battle.killedByBalloons")}
+                    value={String(done.result.killedByBalloons)}
+                  />
+                  <Row
+                    label={t("battle.insurance")}
+                    value={`+${fmt(
+                      insurance(
+                        done.result.burned,
+                        goodsValue(depots) - goodsValue(done.depots),
+                        done.result.gunsLost,
+                        insuranceLevel,
+                        done.result.spraysLost,
+                        done.result.trapsLost,
+                        done.result.rocketsLost
+                      )
+                    )} ${t("battle.creditsSuffix")}`}
+                  />
+                  <Row
+                    label={t("battle.defenseBounty")}
+                    value={`+${fmt(defenseBounty(order.drones, done.result.burned))} ${t(
+                      "battle.creditsSuffix"
+                    )}`}
+                  />
+                  <Row label={t("battle.leaked")} value={String(done.result.leaked)} />
+                  <Row
+                    label={t("battle.destroyedShare")}
+                    value={`${
+                      s.baseTotal ? Math.round((done.result.burned / s.baseTotal) * 100) : 0
+                    }%`}
+                  />
+                  <Row label={t("battle.extinguished")} value={String(done.result.extinguished)} />
+                  <Row label={t("battle.dronesLost")} value={String(done.result.dronesLost)} />
+                  <Row label={t("battle.gunsLost")} value={String(done.result.gunsLost)} />
+                  <Row label={t("battle.rocketsLost")} value={String(done.result.rocketsLost)} />
+                  <Row label={t("battle.spraysLost")} value={String(done.result.spraysLost)} />
+                  <Row label={t("battle.trapsLost")} value={String(done.result.trapsLost)} />
+                </dl>
+                <div className="flex justify-center px-8 pt-1">
+                  <Button variant="build" onClick={() => onFinish(done)}>
+                    {t("battle.back")}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      }
+      mobile={
+        // компактный HUD телефона: под картой, одной прокручиваемой строкой
+        <ChipBar>
           <Chip label={t("battle.hudAir")} value={String(hud?.inAir ?? 0)} tone="text-red-300" />
           <Chip label={t("battle.hudLeft")} value={String(hud?.left ?? 0)} />
           <Chip
@@ -261,123 +348,32 @@ export default function Battle({
           />
           <Chip label={t("battle.hudTime")} value={seconds} />
         </ChipBar>
-
-        {/* типы дронов: на телефоне колонки нет, легенда разворачивается по кнопке */}
-        <IconButton
-          label={t("panel.payloads")}
-          round
-          onClick={() => setHints((v) => !v)}
-          className="absolute right-2 top-12 z-10 h-8 w-8 bg-neutral-900/80 lg:hidden"
-        >
-          ?
-        </IconButton>
-        {hints && (
-          <div className="absolute inset-x-2 top-12 z-10 rounded-md border border-neutral-700 bg-neutral-950/95 p-3 text-xs leading-relaxed text-neutral-400 lg:hidden">
-            <p className="mb-2 font-semibold text-neutral-300">{t("panel.payloads")}</p>
+      }
+      panels={
+        <>
+          <Panel title={t("panel.raid")} collapsed={raidFolded} onToggle={foldRaid}>
+            <p className="mb-3 text-neutral-300">{header}</p>
+            <dl className="space-y-1 font-mono">
+              <Row label={t("battle.inAir")} value={String(hud?.inAir ?? 0)} />
+              <Row label={t("battle.incomingLeft")} value={String(hud?.left ?? 0)} />
+              <Row label={t("battle.killedByGuns")} value={String(hud?.killedByGuns ?? 0)} />
+              <Row label={t("battle.killedByMg")} value={String(hud?.killedByMg ?? 0)} />
+              <Row
+                label={t("battle.insurance")}
+                value={`+${fmt(payout)} ${t("battle.creditsSuffix")}`}
+              />
+              <Row label={t("battle.fires")} value={String(hud?.fires ?? 0)} />
+              <Row label={t("battle.gunsAlive")} value={`${hud?.gunsAlive ?? 0}/${hud?.gunsTotal ?? 0}`} />
+              <Row label={t("battle.integrity")} value={`${hud?.integrity ?? 100}%`} />
+              <Row label={t("battle.time")} value={seconds} />
+            </dl>
+          </Panel>
+          <Panel title={t("panel.payloads")} collapsed={payloadsFolded} onToggle={foldPayloads}>
             <PayloadLegend t={t} counts={hud?.byPayload} />
-          </div>
-        )}
-
-        {done && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center overflow-y-auto rounded-md bg-neutral-950/90 p-4 sm:p-6">
-            <div className="w-full max-w-sm">
-              <div
-                className={`mb-1 text-2xl font-bold tracking-wide ${
-                  done.won ? "text-emerald-300" : "text-red-400"
-                }`}
-              >
-                {done.won ? t("battle.won") : t("battle.lost")}
-              </div>
-              <p className="mb-4 text-sm text-neutral-400">
-                {t(order.competitionStage ? "battle.headerCompetition" : "battle.header", {
-                  from: order.from,
-                  drones: order.drones,
-                  pattern: patternName,
-                })}
-              </p>
-              <dl className="mb-5 space-y-1 font-mono text-sm">
-                <Row label={t("battle.sent")} value={String(order.drones)} />
-                <Row label={t("battle.killedByGuns")} value={String(done.result.killedByGuns)} />
-                <Row label={t("battle.killedByMg")} value={String(done.result.killedByMg)} />
-                <Row
-                  label={t("battle.killedByBalloons")}
-                  value={String(done.result.killedByBalloons)}
-                />
-                <Row
-                  label={t("battle.insurance")}
-                  value={`+${fmt(
-                    insurance(
-                      done.result.burned,
-                      goodsValue(depots) - goodsValue(done.depots),
-                      done.result.gunsLost,
-                      insuranceLevel,
-                      done.result.spraysLost,
-                      done.result.trapsLost,
-                      done.result.rocketsLost
-                    )
-                  )} ${t("battle.creditsSuffix")}`}
-                />
-                <Row
-                  label={t("battle.defenseBounty")}
-                  value={`+${fmt(defenseBounty(order.drones, done.result.burned))} ${t(
-                    "battle.creditsSuffix"
-                  )}`}
-                />
-                <Row label={t("battle.leaked")} value={String(done.result.leaked)} />
-                <Row
-                  label={t("battle.destroyedShare")}
-                  value={`${
-                    s.baseTotal ? Math.round((done.result.burned / s.baseTotal) * 100) : 0
-                  }%`}
-                />
-                <Row label={t("battle.extinguished")} value={String(done.result.extinguished)} />
-                <Row label={t("battle.dronesLost")} value={String(done.result.dronesLost)} />
-                <Row label={t("battle.gunsLost")} value={String(done.result.gunsLost)} />
-                <Row label={t("battle.rocketsLost")} value={String(done.result.rocketsLost)} />
-                <Row label={t("battle.spraysLost")} value={String(done.result.spraysLost)} />
-                <Row label={t("battle.trapsLost")} value={String(done.result.trapsLost)} />
-              </dl>
-              <div className="flex justify-center px-8 pt-1">
-                <Button variant="build" onClick={() => onFinish(done)}>
-                  {t("battle.back")}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <aside className="hidden min-h-0 space-y-4 overflow-y-auto text-sm lg:block [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <Panel title={t("panel.raid")} collapsed={raidFolded} onToggle={foldRaid}>
-          <p className="mb-3 text-neutral-300">
-            {t(order.competitionStage ? "battle.headerCompetition" : "battle.header", {
-              from: order.from,
-              drones: order.drones,
-              pattern: patternName,
-            })}
-          </p>
-          <dl className="space-y-1 font-mono">
-            <Row label={t("battle.inAir")} value={String(hud?.inAir ?? 0)} />
-            <Row label={t("battle.incomingLeft")} value={String(hud?.left ?? 0)} />
-            <Row label={t("battle.killedByGuns")} value={String(hud?.killedByGuns ?? 0)} />
-            <Row label={t("battle.killedByMg")} value={String(hud?.killedByMg ?? 0)} />
-            <Row
-              label={t("battle.insurance")}
-              value={`+${fmt(payout)} ${t("battle.creditsSuffix")}`}
-            />
-            <Row label={t("battle.fires")} value={String(hud?.fires ?? 0)} />
-            <Row label={t("battle.gunsAlive")} value={`${hud?.gunsAlive ?? 0}/${hud?.gunsTotal ?? 0}`} />
-            <Row label={t("battle.integrity")} value={`${hud?.integrity ?? 100}%`} />
-            <Row label={t("battle.time")} value={seconds} />
-          </dl>
-        </Panel>
-
-        <Panel title={t("panel.payloads")} collapsed={payloadsFolded} onToggle={foldPayloads}>
-          <PayloadLegend t={t} counts={hud?.byPayload} />
-        </Panel>
-
-      </aside>
-    </div>
+          </Panel>
+        </>
+      }
+    />
   );
 }
 

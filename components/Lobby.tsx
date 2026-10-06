@@ -1695,22 +1695,13 @@ export default function Lobby({
       )}
 
       {watching && (
-        // Повтор — почти во весь экран: смотреть бой в полоске внизу нечего.
-        <div
-          className="fixed inset-0 z-40 flex bg-black/80 p-2 sm:p-4"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setWatching(null);
-          }}
-        >
-          <div className="m-auto flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-md border border-neutral-700 bg-neutral-900 p-3 shadow-2xl">
-            <Replay
-              name={watching.name}
-              replay={watching.replay}
-              shareId={watching.id}
-              onClose={() => setWatching(null)}
-            />
-          </div>
-        </div>
+        // Повтор открывается в том же окне, что и бой (BattleFrame).
+        <Replay
+          name={watching.name}
+          replay={watching.replay}
+          shareId={watching.id}
+          onClose={() => setWatching(null)}
+        />
       )}
 
       {openerGate && (
