@@ -1490,12 +1490,12 @@ export default function Lobby({
         классом это не задать: Tailwind собирает их чтением исходника и
         вычисленного имени не найдёт.
 
-        На телефоне по-прежнему пять в ряд и не шире 384 точек: там кнопку
-        растягивать некуда, её и так хватает под палец.
+        На телефоне четыре в ряд и не шире 384 точек: двенадцать кнопок
+        ложатся ровно в три ряда, без огрызка в последнем.
       */}
       <div
         style={{ "--tools": TOOLS.length } as CSSProperties}
-        className="order-3 mx-auto grid w-full max-w-96 shrink-0 grid-cols-5 gap-1.5 lg:order-2 lg:mx-0 lg:max-w-none lg:gap-2 lg:[grid-template-columns:repeat(var(--tools),minmax(0,1fr))]"
+        className="order-3 mx-auto grid w-full max-w-96 shrink-0 grid-cols-4 gap-1.5 lg:order-2 lg:mx-0 lg:max-w-none lg:gap-2 lg:[grid-template-columns:repeat(var(--tools),minmax(0,1fr))]"
       >
         {TOOLS.map((item) => (
           <ToolButton
