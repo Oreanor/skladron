@@ -62,7 +62,8 @@ const ICON = "h-5 w-5";
  * снос — трава. Обводка — чтобы чёрная клетка не пропала на тёмной кнопке.
  */
 function CellIcon({ color }: { color: string }) {
-  return <span aria-hidden className="inline-block h-5 w-5 rounded-sm border border-neutral-500" style={{ background: color }} />;
+  // 16 точек — как клетка, на которой PieceIcon рисует предмет (24 / 1.4)
+  return <span aria-hidden className="inline-block h-4 w-4 rounded-sm border border-neutral-500" style={{ background: color }} />;
 }
 
 /** Подпись и цена берутся из словаря; у предметов значок — их же рисунок с карты. */
