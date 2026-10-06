@@ -26,13 +26,15 @@ function hash(x: number, y: number, k: number) {
 function star(p: Path2D, cx: number, cy: number, cell: number, k: number) {
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
-  const n = 9 + Math.floor(hash(cx, cy, 0) * 4);
+  // Лучей немного, и впадины между ними неглубокие: лучи выходят широкими
+  // и тупыми, а сама звезда — в пределах клетки.
+  const n = 7 + Math.floor(hash(cx, cy, 0) * 3);
   const turn = hash(cx, cy, 1) * Math.PI * 2;
   for (let i = 0; i < n; i++) {
     const a = turn + ((i + (hash(cx, cy, i + 2) - 0.5) * 0.4) / n) * Math.PI * 2;
     const b = a + Math.PI / n;
-    const ro = cell * k * (0.44 + hash(cx, cy, i + 20) * 0.2);
-    const ri = cell * k * (0.17 + hash(cx, cy, i + 40) * 0.08);
+    const ro = cell * k * (0.33 + hash(cx, cy, i + 20) * 0.12);
+    const ri = cell * k * (0.21 + hash(cx, cy, i + 40) * 0.05);
     if (i === 0) p.moveTo(x + Math.cos(a) * ro, y + Math.sin(a) * ro);
     else p.lineTo(x + Math.cos(a) * ro, y + Math.sin(a) * ro);
     p.lineTo(x + Math.cos(b) * ri, y + Math.sin(b) * ri);
