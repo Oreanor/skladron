@@ -396,8 +396,9 @@ function ReplayView({
     : `${t("replay.of")} ${name}`;
 
   // Скорость — строкой, кнопки по своей ширине; ссылка и «ОК» — строкой ниже.
+  // Обе строки — по центру колонки.
   const controls = (
-    <div className="flex shrink-0 flex-col items-start gap-2">
+    <div className="flex shrink-0 flex-col items-center gap-2">
       <div className="flex gap-2">
         {SPEEDS.map((v) => (
           <Button key={v} size="sm" active={speed === v} onClick={() => setSpeed(v)}>
