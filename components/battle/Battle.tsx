@@ -17,6 +17,7 @@ import { drawFrame, COLORS } from "@/lib/render";
 import { goodsValue, insurance, defenseBounty, fmt } from "@/lib/economy";
 import MapCanvas, { type Pt } from "../MapCanvas";
 import { useZones } from "../ZonesToggle";
+import { usePanelFold } from "./usePanelFold";
 import { Button, Chip, ChipBar, IconButton, Panel, Row } from "../ui";
 import { encodeTrace, type Frame } from "@/lib/replay";
 import type { BattleOutcome } from "@/lib/outcome";
@@ -74,6 +75,9 @@ export default function Battle({
   const [done, setDone] = useState<BattleOutcome | null>(null);
   const [hints, setHints] = useState(false);
   const [zones, setZones] = useZones();
+  // панели колонки сворачиваются, как в лобби; «Типы дронов» — заодно с повтором
+  const [raidFolded, foldRaid] = usePanelFold("battle.raid");
+  const [payloadsFolded, foldPayloads] = usePanelFold("payloads");
   const t = useT();
   const finished = useRef(false);
   /** Во что обходился товар до боя: из него считаем, сколько сгорело. */
@@ -344,7 +348,7 @@ export default function Battle({
       </div>
 
       <aside className="hidden min-h-0 space-y-4 overflow-y-auto text-sm lg:block [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <Panel title={t("panel.raid")}>
+        <Panel title={t("panel.raid")} collapsed={raidFolded} onToggle={foldRaid}>
           <p className="mb-3 text-neutral-300">
             {t(order.competitionStage ? "battle.headerCompetition" : "battle.header", {
               from: order.from,
@@ -368,7 +372,7 @@ export default function Battle({
           </dl>
         </Panel>
 
-        <Panel title={t("panel.payloads")}>
+        <Panel title={t("panel.payloads")} collapsed={payloadsFolded} onToggle={foldPayloads}>
           <PayloadLegend t={t} counts={hud?.byPayload} />
         </Panel>
 
@@ -390,7 +394,8 @@ const PAYLOAD_KEYS: Record<Payload, Key> = {
   shooter: "payload.shooter",
 };
 
-function PayloadLegend({
+/** Цвета боеголовок и сколько таких сейчас в воздухе — в бою и в повторе. */
+export function PayloadLegend({
   t,
   counts,
 }: {

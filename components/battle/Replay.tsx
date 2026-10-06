@@ -5,7 +5,7 @@
 // действий — и прокручиваем бой тем же движком, теми же шагами.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { AttackOrder } from "@/lib/attack";
+import type { AttackOrder, Payload } from "@/lib/attack";
 import { G_BURNT, decodeCells, type Depot, type Gun } from "@/lib/base";
 import type { GameState } from "@/lib/engine";
 import { simFor, type Sim } from "@/lib/sim";
@@ -14,7 +14,9 @@ import { useT } from "@/lib/i18n";
 import { explainAlone } from "@/lib/errors";
 import { useZones } from "../ZonesToggle";
 import MapCanvas, { CELL } from "../MapCanvas";
-import { Button, Chip, ChipBar, inputClass } from "../ui";
+import { Button, Chip, ChipBar, Panel, Row, inputClass } from "../ui";
+import { PayloadLegend } from "./Battle";
+import { usePanelFold } from "./usePanelFold";
 import Avatar from "../Avatar";
 import {
   deleteComment,
@@ -44,8 +46,8 @@ export interface ReplayData {
   trace: string;
 }
 
-/** Разговор под боем: список заметок и поле для своей. */
-function Talk({ battleId }: { battleId: string }) {
+/** Разговор под боем: список заметок и поле для своей. tall — в колонке, где места больше. */
+function Talk({ battleId, tall = false }: { battleId: string; tall?: boolean }) {
   const t = useT();
   const [items, setItems] = useState<BattleComment[]>([]);
   const [draft, setDraft] = useState("");
@@ -90,8 +92,8 @@ function Talk({ battleId }: { battleId: string }) {
   };
 
   return (
-    <div className="min-h-0 shrink-0 border-t border-neutral-800 pt-2">
-      <div className="max-h-24 space-y-1 overflow-y-auto overscroll-contain pr-1 text-sm">
+    <div className="min-h-0 shrink-0">
+      <div className={`${tall ? "max-h-72" : "max-h-24"} space-y-1 overflow-y-auto overscroll-contain pr-1 text-sm`}>
         {items.length === 0 ? (
           <p className="text-neutral-600">{t("talk.empty")}</p>
         ) : (
@@ -141,6 +143,45 @@ function Talk({ battleId }: { battleId: string }) {
   );
 }
 
+/** Что показывает колонка повтора — те же счётчики, что в бою. */
+interface ReplayHud {
+  time: number;
+  inAir: number;
+  left: number;
+  killedByGuns: number;
+  killedByMg: number;
+  fires: number;
+  burned: number;
+  gunsAlive: number;
+  gunsTotal: number;
+  integrity: number;
+  byPayload: Partial<Record<Payload, number>>;
+  done: boolean;
+  /** Сколько записи уже прокручено, от 0 до 1. */
+  progress: number;
+}
+
+const EMPTY_HUD: ReplayHud = {
+  time: 0,
+  inAir: 0,
+  left: 0,
+  killedByGuns: 0,
+  killedByMg: 0,
+  fires: 0,
+  burned: 0,
+  gunsAlive: 0,
+  gunsTotal: 0,
+  integrity: 100,
+  byPayload: {},
+  done: false,
+  progress: 0,
+};
+
+/** Сколько миллисекунд кадра отдаём перемотке: окно не должно замирать. */
+const SEEK_BUDGET_MS = 12;
+/** Деления ползунка. */
+const SCRUB_MAX = 1000;
+
 function ReplayView({
   sim,
   name,
@@ -164,12 +205,17 @@ function ReplayView({
   /** Счётчик прогонов: по нему эффект крутит бой с нуля в том же окне. */
   const [run, setRun] = useState(0);
   const [version, setVersion] = useState(0);
-  const [hud, setHud] = useState({ time: 0, inAir: 0, burned: 0, done: false, progress: 0 });
+  const [hud, setHud] = useState<ReplayHud>(EMPTY_HUD);
+  /** Положение ползунка, пока его тянут; null — ползунок идёт за повтором. */
+  const [scrub, setScrub] = useState<number | null>(null);
   const speedRef = useRef(speed);
   speedRef.current = speed;
+  const [statsFolded, foldStats] = usePanelFold("replay.stats");
+  const [payloadsFolded, foldPayloads] = usePanelFold("payloads");
+  const [talkFolded, foldTalk] = usePanelFold("replay.talk");
 
   const frames = useMemo(() => sim.decodeTrace(replay.trace), [sim, replay.trace]);
-  /** Шкала бара — длина записи. Хвост tailFrames в знаменатель не кладём:
+  /** Шкала ползунка — длина записи. Хвост tailFrames в неё не кладём:
    *  бой обычно кончается около конца записи, и бар прыгал с ~35% в 100%. */
   const progressSteps = Math.max(1, frames.length);
 
@@ -185,6 +231,10 @@ function ReplayView({
   const state = useRef<GameState | null>(null);
   if (!state.current) state.current = makeState();
   const s = state.current;
+  /** Сколько шагов уже прокручено — его видит и перемотка. */
+  const stepRef = useRef(0);
+  /** Куда перемотать: шаг записи; null — крутим своим ходом. */
+  const seekRef = useRef<number | null>(null);
 
   // Пушки крутит накладка кадра — на статике они иначе дают бледный призрак.
   const scene = useMemo(() => ({ cells: s.cells, guns: [], depots: s.depots }), [s, run]);
@@ -193,10 +243,10 @@ function ReplayView({
     let raf = 0;
     let last = performance.now();
     let carry = 0;
-    let step = 0;
     let hudAt = 0;
     let mapAt = 0;
     const cur = state.current!;
+    stepRef.current = 0;
 
     /** Конец повтора: оставшийся огонь → пепел, как после настоящего боя. */
     const finish = (won: boolean) => {
@@ -207,31 +257,52 @@ function ReplayView({
       setVersion((v) => v + 1);
     };
 
+    /** Один шаг боя с руками защитника. false — бой кончился. */
+    const tick = () => {
+      // Запись кончилась — доигрываем хвост без рук защитника и на этом
+      // всё: дожигать склад, которого он не терял, повтор не должен.
+      if (frames.length && stepRef.current >= frames.length + sim.SIM.tailFrames) {
+        finish(cur.baseOk > 0);
+        return false;
+      }
+      // руки защитника: что он делал на этом шаге, то и повторяем
+      const f = frames[stepRef.current++] ?? null;
+      sim.setAim(cur, f ? { x: f.x + 0.5, y: f.y + 0.5 } : null);
+      sim.setFiring(cur, Boolean(f?.firing));
+      sim.update(cur, sim.SIM.step);
+      // Движок мог закончить бой (склад пал или всё потухло) — огонь на
+      // кадре всё ещё мигает, пока не свести его в пепел, как settle().
+      if (cur.phase !== "playing") {
+        finish(cur.phase === "won");
+        return false;
+      }
+      return true;
+    };
+
     const loop = (now: number) => {
+      // Повтор начали заново (перемотка назад): этот прогон уже чужой. Без
+      // этого его последний кадр, ещё до уборки, снимал свежую перемотку.
+      if (state.current !== cur) return;
       raf = requestAnimationFrame(loop);
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      carry += dt * speedRef.current;
 
-      let guard = 0;
-      while (carry >= sim.SIM.step && guard++ < 32 && cur.phase === "playing") {
-        // Запись кончилась — доигрываем хвост без рук защитника и на этом
-        // всё: дожигать склад, которого он не терял, повтор не должен.
-        if (frames.length && step >= frames.length + sim.SIM.tailFrames) {
-          finish(cur.baseOk > 0);
-          break;
+      const target = seekRef.current;
+      if (target !== null) {
+        // Перемотка вперёд: шагаем без отрисовки, пока не дойдём или не
+        // кончится бюджет кадра, — остальное доделаем в следующем.
+        const until = performance.now() + SEEK_BUDGET_MS;
+        while (cur.phase === "playing" && stepRef.current < target && performance.now() < until) {
+          if (!tick()) break;
         }
-        carry -= sim.SIM.step;
-        // руки защитника: что он делал на этом шаге, то и повторяем
-        const f = frames[step++] ?? null;
-        sim.setAim(cur, f ? { x: f.x + 0.5, y: f.y + 0.5 } : null);
-        sim.setFiring(cur, Boolean(f?.firing));
-        sim.update(cur, sim.SIM.step);
-        // Движок мог закончить бой (склад пал или всё потухло) — огонь на
-        // кадре всё ещё мигает, пока не свести его в пепел, как settle().
-        if (cur.phase !== "playing") {
-          finish(cur.phase === "won");
-          break;
+        if (cur.phase !== "playing" || stepRef.current >= target) seekRef.current = null;
+        carry = 0;
+      } else {
+        carry += dt * speedRef.current;
+        let guard = 0;
+        while (carry >= sim.SIM.step && guard++ < 32 && cur.phase === "playing") {
+          carry -= sim.SIM.step;
+          if (!tick()) break;
         }
       }
 
@@ -243,21 +314,26 @@ function ReplayView({
       if (now - hudAt > 100) {
         hudAt = now;
         const done = cur.phase !== "playing";
-        // Полоска доходит до края только когда повтор реально кончился.
-        // Пока крутится хвост после записи — чуть не дожимаем до 100%.
-        let progress = 0;
-        if (done) progress = 1;
-        else if (step < progressSteps) progress = (step / progressSteps) * 0.97;
-        else {
-          const tail = Math.min(1, (step - progressSteps) / Math.max(1, sim.SIM.tailFrames));
-          progress = 0.97 + 0.03 * tail;
+        const byPayload: Partial<Record<Payload, number>> = {};
+        for (const d of cur.drones) {
+          if (!d.hit) byPayload[d.payload] = (byPayload[d.payload] ?? 0) + 1;
         }
+        const towers = cur.guns.filter((g) => !g.spray && !g.trap && !g.balloon);
         setHud({
           time: cur.time,
           inAir: cur.drones.length,
+          left: cur.plan.length - cur.planAt,
+          killedByGuns: cur.result.killedByGuns,
+          killedByMg: cur.result.killedByMg,
+          fires: cur.fire.size,
           burned: cur.result.burned,
+          gunsAlive: towers.filter((g) => g.alive).length,
+          gunsTotal: towers.length,
+          integrity: cur.baseTotal ? Math.round((cur.baseOk / cur.baseTotal) * 100) : 0,
+          byPayload,
           done,
-          progress,
+          // до края ползунок доходит, только когда повтор реально кончился
+          progress: done ? 1 : Math.min(0.99, stepRef.current / progressSteps),
         });
       }
     };
@@ -267,87 +343,159 @@ function ReplayView({
 
   const restart = () => {
     state.current = makeState();
-    setHud({ time: 0, inAir: 0, burned: 0, done: false, progress: 0 });
+    setHud(EMPTY_HUD);
     setVersion((v) => v + 1);
     setRun((n) => n + 1);
+  };
+
+  /** Перемотать на долю записи. Назад — с начала: бой идёт только вперёд. */
+  const seekTo = (share: number) => {
+    const target = Math.round(Math.max(0, Math.min(1, share)) * progressSteps);
+    if (target < stepRef.current || hud.done) restart();
+    seekRef.current = target;
   };
 
   const overlay = (ctx: CanvasRenderingContext2D, now: number) => {
     sim.drawFrame(ctx, s, CELL, null, now, zones);
   };
 
+  const seconds = `${Math.floor(hud.time)} ${t("battle.seconds")}`;
+  // у состязания склад свой: вместо «налёт на …» — его номер
+  const title = replay.order.competitionStage
+    ? t("competition.title", { n: replay.order.competitionStage })
+    : `${t("replay.of")} ${name}`;
+
+  const controls = (
+    <div className="flex shrink-0 flex-wrap items-center gap-2">
+      {SPEEDS.map((v) => (
+        <Button key={v} size="sm" active={speed === v} onClick={() => setSpeed(v)}>
+          {v}×
+        </Button>
+      ))}
+      {shareId && (
+        <Button
+          size="sm"
+          className="ml-auto"
+          onClick={() => {
+            void navigator.clipboard
+              ?.writeText(`${location.origin}/replay/${shareId}`)
+              .then(() => setShared(true))
+              .catch(() => setShared(false));
+          }}
+        >
+          {shared ? t("replay.copied") : t("replay.share")}
+        </Button>
+      )}
+      {onClose && (
+        <Button size="sm" variant="build" className={shareId ? "" : "ml-auto"} onClick={onClose}>
+          {t("common.ok")}
+        </Button>
+      )}
+    </div>
+  );
+
+  const shown = scrub ?? hud.progress * SCRUB_MAX;
+  const commitScrub = () => {
+    if (scrub === null) return;
+    seekTo(scrub / SCRUB_MAX);
+    setScrub(null);
+  };
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
-      <ChipBar className="shrink-0 flex-wrap">
-        {/* у состязания склад свой: вместо «налёт на …» — его номер */}
-        {replay.order.competitionStage ? (
-          <Chip
-            label={t("replay.competition")}
-            value={t("competition.title", { n: replay.order.competitionStage })}
+    // Как поле боя: квадратная карта слева, колонка со счётом справа. На
+    // телефоне колонки нет — счёт строкой под картой.
+    <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(12rem,20vw,18rem)] lg:gap-4">
+      {/* Квадрат вписан в то, что осталось: сторона — меньшее из ширины и
+          высоты, за вычетом полоски ползунка. */}
+      <div className="flex min-h-0 flex-1 items-center justify-center" style={{ containerType: "size" }}>
+        <div className="flex flex-col" style={{ width: "min(100cqw, calc(100cqh - 1rem))" }}>
+          <div className="relative aspect-square w-full">
+            <MapCanvas
+              fit
+              className="h-full w-full rounded-b-none"
+              scene={scene}
+              sceneVersion={version}
+              overlay={overlay}
+              cursor="default"
+              zones={{ on: zones, onChange: setZones }}
+            />
+            {hud.done && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-neutral-950/70">
+                <Button variant="build" onClick={restart}>
+                  {t("replay.again")}
+                </Button>
+              </div>
+            )}
+          </div>
+          {/* Ползунок по нижнему краю карты: видно, сколько прошло, и можно
+              перемотать. Перемотка — на отпускании: тянуть, пересчитывая
+              бой на каждый сдвиг, было бы тяжело. */}
+          <input
+            type="range"
+            min={0}
+            max={SCRUB_MAX}
+            value={Math.round(shown)}
+            aria-label={t("replay.progress")}
+            onChange={(e) => setScrub(Number(e.target.value))}
+            onPointerUp={commitScrub}
+            onKeyUp={commitScrub}
+            onBlur={commitScrub}
+            className="h-4 w-full cursor-pointer accent-white"
           />
-        ) : (
-          <Chip label={t("replay.of")} value={name} />
-        )}
-        <Chip label={t("battle.time")} value={`${Math.floor(hud.time)} ${t("battle.seconds")}`} />
-        <Chip label={t("battle.inAir")} value={String(hud.inAir)} />
+        </div>
+      </div>
+
+      {/* телефон: счёт строкой, под ней скорость и кнопки */}
+      <ChipBar className="shrink-0 lg:hidden">
+        <Chip label={t("battle.hudTime")} value={seconds} />
+        <Chip label={t("battle.hudAir")} value={String(hud.inAir)} tone="text-red-300" />
+        <Chip label={t("battle.hudLeft")} value={String(hud.left)} />
+        <Chip label={t("battle.hudKilled")} value={String(hud.killedByGuns + hud.killedByMg)} tone="text-emerald-300" />
         <Chip label={t("battle.burned")} value={fmt(hud.burned)} tone="text-orange-300" />
+        <Chip label={t("battle.hudGuns")} value={`${hud.gunsAlive}/${hud.gunsTotal}`} />
+        <Chip
+          label={t("battle.hudIntegrity")}
+          value={`${hud.integrity}%`}
+          tone={hud.integrity < 60 ? "text-orange-300" : "text-emerald-300"}
+        />
       </ChipBar>
-
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="relative min-h-0 flex-1">
-          <MapCanvas
-            fit
-            className="h-full min-h-0 rounded-b-none"
-            scene={scene}
-            sceneVersion={version}
-            overlay={overlay}
-            cursor="default"
-            zones={{ on: zones, onChange: setZones }}
-          />
-          {hud.done && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-neutral-950/70">
-              <Button variant="build" onClick={restart}>
-                {t("replay.again")}
-              </Button>
-            </div>
-          )}
+      <div className="lg:hidden">{controls}</div>
+      {shareId && (
+        <div className="border-t border-neutral-800 pt-2 lg:hidden">
+          <Talk battleId={shareId} />
         </div>
-        {/* Прогресс повтора: тонкая белая линия вплотную под кадром. */}
-        <div className="h-0.5 w-full shrink-0 bg-neutral-800" aria-hidden>
-          <div className="h-full bg-white" style={{ width: `${hud.progress * 100}%` }} />
-        </div>
-      </div>
+      )}
 
-      {shareId && <Talk battleId={shareId} />}
-
-      <div className="flex shrink-0 items-center gap-2">
-        {SPEEDS.map((v) => (
-          <Button key={v} size="sm" active={speed === v} onClick={() => setSpeed(v)}>
-            {v}×
-          </Button>
-        ))}
+      {/* Колонка — сворачиваемые панели, как в лобби; разговор — своей панелью. */}
+      <aside className="hidden min-h-0 flex-col gap-4 overflow-y-auto text-sm lg:flex [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {controls}
+        <Panel title={t("panel.replay")} collapsed={statsFolded} onToggle={foldStats}>
+          <p className="mb-3 text-neutral-300">{title}</p>
+          <dl className="space-y-1 font-mono">
+            <Row label={t("battle.time")} value={seconds} />
+            <Row label={t("battle.inAir")} value={String(hud.inAir)} />
+            <Row label={t("battle.incomingLeft")} value={String(hud.left)} />
+            <Row label={t("battle.killedByGuns")} value={String(hud.killedByGuns)} />
+            <Row label={t("battle.killedByMg")} value={String(hud.killedByMg)} />
+            <Row label={t("battle.fires")} value={String(hud.fires)} />
+            <Row label={t("battle.burned")} value={fmt(hud.burned)} />
+            <Row label={t("battle.gunsAlive")} value={`${hud.gunsAlive}/${hud.gunsTotal}`} />
+            <Row label={t("battle.integrity")} value={`${hud.integrity}%`} />
+          </dl>
+        </Panel>
+        <Panel title={t("panel.payloads")} collapsed={payloadsFolded} onToggle={foldPayloads}>
+          <PayloadLegend t={t} counts={hud.byPayload} />
+        </Panel>
         {shareId && (
-          <Button
-            className="ml-auto"
-            onClick={() => {
-              void navigator.clipboard
-                ?.writeText(`${location.origin}/replay/${shareId}`)
-                .then(() => setShared(true))
-                .catch(() => setShared(false));
-            }}
-          >
-            {shared ? t("replay.copied") : t("replay.share")}
-          </Button>
+          <Panel title={t("panel.talk")} collapsed={talkFolded} onToggle={foldTalk}>
+            <Talk battleId={shareId} tall />
+          </Panel>
         )}
-        {onClose && (
-          <Button variant="build" className={shareId ? "" : "ml-auto"} onClick={onClose}>
-            {t("common.ok")}
-          </Button>
-        )}
-      </div>
+      </aside>
     </div>
   );
 }
+
 
 /**
  * Повтор боя. Бой прогоняется заново по слепку склада и записи рук, а
