@@ -312,7 +312,7 @@ export function drawFrame(
   cell: number,
   hover: { x: number; y: number } | null,
   now: number,
-  /** Круги действия пушек, огнетушителей и ловушек. В бою их можно убрать. */
+  /** Круги действия установок и дронов-подавителей, зона обдува. В бою их можно убрать. */
   zones = true
 ) {
   drawDepots(ctx, s.depots, cell);
@@ -500,7 +500,8 @@ export function drawFrame(
   // круг: глушат они с первой секунды полёта, и по кругу видно, до каких
   // установок рой уже дотянулся. Обводка пульсирует — иначе на пёстрой
   // карте кольцо теряется среди прочих кругов.
-  const jammers = s.drones.filter((d) => !d.hit && !d.heldBy && COLORS.suppress[d.payload]);
+  // Круги дронов — тоже зоны действия: выключены зоны — не видно и их.
+  const jammers = zones ? s.drones.filter((d) => !d.hit && !d.heldBy && COLORS.suppress[d.payload]) : [];
   if (jammers.length) {
     const pulse = 0.75 + 0.25 * Math.sin(now / 160);
     for (const d of jammers) {
@@ -533,7 +534,7 @@ export function drawFrame(
 
   // Зона обдува. Рисуем бледно и только ободом: она большая, их бывает
   // много, и заливать ею пол-экрана незачем — важно, где у неё край.
-  const fans = s.drones.filter((d) => !d.hit && d.payload === "blower");
+  const fans = zones ? s.drones.filter((d) => !d.hit && d.payload === "blower") : [];
   if (fans.length) {
     const reach = BLOW.range * cell;
     ctx.beginPath();
