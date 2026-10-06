@@ -383,8 +383,10 @@ function ReplayView({
     seekRef.current = target;
   };
 
-  const overlay = (ctx: CanvasRenderingContext2D, now: number) => {
-    sim.drawFrame(ctx, s, CELL, null, now, zones);
+  // Анимация — по часам боя, а не по настенным: на паузе стоит всё разом
+  // (кольца ловушек, огонь, дым), а на 2× и 4× крутится вместе с боем.
+  const overlay = (ctx: CanvasRenderingContext2D) => {
+    sim.drawFrame(ctx, s, CELL, null, s.time * 1000, zones);
   };
 
   const seconds = `${Math.floor(hud.time)} ${t("battle.seconds")}`;
