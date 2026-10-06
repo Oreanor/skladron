@@ -109,6 +109,12 @@ export default function MapCanvas({
   /** Стартовый масштаб — от него считается подпись «×» и кнопка сброса. */
   const baseZoom = useRef(1);
   const [zoom, setZoom] = useState(1);
+  /** Счётчик кадров — для замеров, по ?fps в адресе; игрокам не показываем. */
+  const [showFps, setShowFps] = useState(false);
+  const fpsRef = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    setShowFps(new URLSearchParams(window.location.search).has("fps"));
+  }, []);
 
   sceneRef.current = scene;
   overlayRef.current = overlay;
@@ -241,7 +247,23 @@ export default function MapCanvas({
 
     let raf = 0;
     let drawn: MapCanvasProps["overlay"] = undefined;
+    // Замер: сколько кадров реально нарисовано и сколько стоил кадр. Время —
+    // только наших команд холсту; в покое лобби не рисует, и fps там честно ноль.
+    let frames = 0;
+    let spent = 0;
+    let worst = 0;
+    let since = performance.now();
     const loop = (now: number) => {
+      const meter = fpsRef.current;
+      if (meter && now - since >= 500) {
+        const fps = Math.round((frames * 1000) / (now - since));
+        const avg = frames ? spent / frames : 0;
+        meter.textContent = `${fps} fps · ${avg.toFixed(1)} / ${worst.toFixed(1)} ms`;
+        frames = 0;
+        spent = 0;
+        worst = 0;
+        since = now;
+      }
       raf = requestAnimationFrame(loop);
       const view = viewRef.current;
       const staticStale =
@@ -254,6 +276,7 @@ export default function MapCanvas({
         return;
       }
 
+      const t0 = meter ? performance.now() : 0;
       if (staticStale) {
         lctx.setTransform(1, 0, 0, 1, 0, 0);
         lctx.clearRect(0, 0, w * dpr, h * dpr);
@@ -275,6 +298,12 @@ export default function MapCanvas({
       ctx.drawImage(layer, 0, 0);
       applyView(ctx, dpr, view);
       overlayRef.current?.(ctx, now, view);
+      if (meter) {
+        const ms = performance.now() - t0;
+        frames++;
+        spent += ms;
+        worst = Math.max(worst, ms);
+      }
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
@@ -437,6 +466,14 @@ export default function MapCanvas({
         >
           {t("map.wholeMap")}
         </Button>
+      )}
+      {showFps && (
+        <span
+          ref={fpsRef}
+          className="pointer-events-none absolute bottom-2 right-2 z-10 rounded bg-black/60 px-1.5 py-0.5 font-mono text-xs text-white"
+        >
+          …
+        </span>
       )}
       {zones && (
         <ZonesToggle
