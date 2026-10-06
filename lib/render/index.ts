@@ -10,7 +10,7 @@ import {
   type GameState,
 } from "../engine";
 import { BALLOON, BLOW, FX, GUN, ROCKET, SPRAY, SUPPRESS, TRAP } from "../tuning";
-import { charFill, turfFill } from "./char";
+import { charFill } from "./char";
 import { COLORS } from "./colors";
 import { drawBoom, drawSoft } from "./fx";
 import { slabBevel, slabShadow } from "./light";
@@ -90,13 +90,6 @@ export function drawStatic(
     for (let x = x0 + ((x0 ^ y) & 1); x < x1; x += 2) {
       ctx.fillRect(x * cell, y * cell, cell, cell);
     }
-  }
-
-  // травинки поверх шашечки — одним узором на весь видимый кусок
-  const turf = turfFill(ctx);
-  if (turf) {
-    ctx.fillStyle = turf;
-    ctx.fillRect(x0 * cell, y0 * cell, (x1 - x0) * cell, (y1 - y0) * cell);
   }
 
   slabShadow(ctx, s.cells, cell, area);
