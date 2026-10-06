@@ -56,7 +56,7 @@ const fr: Dict = {
   "blueprint.delete": "Supprimer le plan",
   "blueprint.hint": "Ton entrepôt actuel est rasé et vendu : cases au prix de construction, cases brûlées à la casse, installations et drones au prix d’achat. Le plan est bâti à sa place à l’identique — mêmes installations, mêmes conteneurs de drones —, tu ne paies que la différence.",
   "blueprint.area": "Surface",
-  "blueprint.price": "Le plan coûte",
+  "blueprint.price": "Construction selon le plan",
   "blueprint.sold": "Vente de l’entrepôt actuel",
   "blueprint.toPay": "À payer",
   "blueprint.toGet": "Tu récupères",

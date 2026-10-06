@@ -56,7 +56,7 @@ const es: Dict = {
   "blueprint.delete": "Borrar plano",
   "blueprint.hint": "Tu almacén actual se derriba y se vende: celdas a precio de construcción, las quemadas como chatarra, instalaciones y drones a precio de compra. En su lugar se levanta el plano tal cual, con las mismas instalaciones y contenedores de drones: pagas solo la diferencia.",
   "blueprint.area": "Superficie",
-  "blueprint.price": "El plano cuesta",
+  "blueprint.price": "Construcción según el plano",
   "blueprint.sold": "Venta del almacén actual",
   "blueprint.toPay": "A pagar",
   "blueprint.toGet": "Recuperas",

@@ -56,7 +56,7 @@ const tr: Dict = {
   "blueprint.delete": "Planı sil",
   "blueprint.hint": "Mevcut depo yıkılır ve satılır: hücreler inşa fiyatına, yananlar hurdaya, kurulumlar ve dronlar alış fiyatına. Yerine plan birebir kurulur — aynı kurulumlar, aynı dron kasaları — yalnızca farkı ödersin.",
   "blueprint.area": "Alan",
-  "blueprint.price": "Plan fiyatı",
+  "blueprint.price": "Plana göre inşaat",
   "blueprint.sold": "Mevcut deponun satışı",
   "blueprint.toPay": "Ödenecek",
   "blueprint.toGet": "Geri gelecek",

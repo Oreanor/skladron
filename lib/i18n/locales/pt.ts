@@ -56,7 +56,7 @@ const pt: Dict = {
   "blueprint.delete": "Apagar planta",
   "blueprint.hint": "O teu armazém atual é demolido e vendido: células ao preço de construção, as queimadas como sucata, instalações e drones ao preço de compra. No lugar dele ergue-se a planta tal e qual, com as mesmas instalações e contentores de drones — pagas só a diferença.",
   "blueprint.area": "Área",
-  "blueprint.price": "A planta custa",
+  "blueprint.price": "Construção pela planta",
   "blueprint.sold": "Venda do armazém atual",
   "blueprint.toPay": "A pagar",
   "blueprint.toGet": "Recebes",

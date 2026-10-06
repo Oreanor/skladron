@@ -56,7 +56,7 @@ const pl: Dict = {
   "blueprint.delete": "Usuń projekt",
   "blueprint.hint": "Obecny magazyn zostaje zburzony i sprzedany: pola po cenie budowy, spalone na złom, instalacje i drony po cenie zakupu. Na jego miejscu staje projekt 1:1 — z tymi samymi instalacjami i skrzyniami z dronami — płacisz tylko różnicę.",
   "blueprint.area": "Powierzchnia",
-  "blueprint.price": "Projekt kosztuje",
+  "blueprint.price": "Budowa według projektu",
   "blueprint.sold": "Za obecny magazyn",
   "blueprint.toPay": "Do zapłaty",
   "blueprint.toGet": "Zwrot",

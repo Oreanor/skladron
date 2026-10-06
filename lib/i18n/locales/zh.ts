@@ -56,7 +56,7 @@ const zh: Dict = {
   "blueprint.delete": "删除蓝图",
   "blueprint.hint": "当前仓库会被拆除并出售：完好格子按建造价，烧毁格子当废料，设施和无人机按购买价。原地按蓝图一比一建起——同样的设施、同样的无人机箱子——你只需支付差价。",
   "blueprint.area": "面积",
-  "blueprint.price": "蓝图造价",
+  "blueprint.price": "按蓝图建造",
   "blueprint.sold": "当前仓库售得",
   "blueprint.toPay": "需支付",
   "blueprint.toGet": "将返还",

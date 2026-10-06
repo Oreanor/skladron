@@ -56,7 +56,7 @@ const ja: Dict = {
   "blueprint.delete": "設計図を削除",
   "blueprint.hint": "今の倉庫は解体して売却されます：無傷のマスは建設価格、焼けたマスはスクラップ、設備とドローンは購入価格で。その場所に設計図どおりの倉庫がそのまま建ち——同じ設備、同じドローンの箱——払うのは差額だけです。",
   "blueprint.area": "面積",
-  "blueprint.price": "設計図の価格",
+  "blueprint.price": "設計図どおりの建設",
   "blueprint.sold": "今の倉庫の売却額",
   "blueprint.toPay": "支払額",
   "blueprint.toGet": "返金額",

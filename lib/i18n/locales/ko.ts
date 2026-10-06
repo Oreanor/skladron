@@ -56,7 +56,7 @@ const ko: Dict = {
   "blueprint.delete": "설계도 삭제",
   "blueprint.hint": "지금 창고는 철거되어 팔립니다: 멀쩡한 칸은 건설가, 탄 칸은 고철, 설비와 드론은 구입가로. 그 자리에 설계도 그대로 — 같은 설비, 같은 드론 상자로 — 창고가 서고, 차액만 냅니다.",
   "blueprint.area": "면적",
-  "blueprint.price": "설계도 가격",
+  "blueprint.price": "설계도대로 건설",
   "blueprint.sold": "지금 창고 판매액",
   "blueprint.toPay": "지불액",
   "blueprint.toGet": "환급액",

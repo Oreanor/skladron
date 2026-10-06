@@ -56,7 +56,7 @@ const it: Dict = {
   "blueprint.delete": "Elimina progetto",
   "blueprint.hint": "Il magazzino attuale viene demolito e venduto: celle al prezzo di costruzione, quelle bruciate come rottame, installazioni e droni al prezzo d’acquisto. Al suo posto sorge il progetto identico, con le stesse installazioni e gli stessi container di droni: paghi solo la differenza.",
   "blueprint.area": "Superficie",
-  "blueprint.price": "Il progetto costa",
+  "blueprint.price": "Costruzione dal progetto",
   "blueprint.sold": "Ricavo dal magazzino attuale",
   "blueprint.toPay": "Da pagare",
   "blueprint.toGet": "Rientrano",

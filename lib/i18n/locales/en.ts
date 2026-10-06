@@ -57,7 +57,7 @@ const en = {
   "blueprint.delete": "Delete blueprint",
   "blueprint.hint": "Your current warehouse is torn down and sold: cells at build price, burnt ones for scrap, installations and drones at purchase price. The blueprint goes up in its place one to one — same installations, same drone containers — and you pay only the difference.",
   "blueprint.area": "Area",
-  "blueprint.price": "Blueprint costs",
+  "blueprint.price": "Building to the blueprint",
   "blueprint.sold": "Current warehouse sells for",
   "blueprint.toPay": "To pay",
   "blueprint.toGet": "You get back",

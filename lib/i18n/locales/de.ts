@@ -56,7 +56,7 @@ const de: Dict = {
   "blueprint.delete": "Bauplan löschen",
   "blueprint.hint": "Dein jetziges Lager wird abgerissen und verkauft: Felder zum Baupreis, verbrannte als Schrott, Anlagen und Drohnen zum Einkaufspreis. An seiner Stelle entsteht der Bauplan eins zu eins — mit denselben Anlagen und Drohnencontainern —, du zahlst nur die Differenz.",
   "blueprint.area": "Fläche",
-  "blueprint.price": "Bauplan kostet",
+  "blueprint.price": "Bau nach dem Bauplan",
   "blueprint.sold": "Erlös für das jetzige Lager",
   "blueprint.toPay": "Zu zahlen",
   "blueprint.toGet": "Du bekommst",
