@@ -12,6 +12,61 @@ import { SPRAY, TRAP } from "../tuning";
 import { COLORS } from "./colors";
 import { applyLight, dropShadow } from "./light";
 
+/** Ореол следа — копоть по краю, и сердцевина — выжженное до черноты. */
+const SCORCH_HALO = "#57524b";
+const SCORCH_CORE = "#141414";
+
+/** Число от 0 до 1 по клетке и номеру — без жребия, у клетки след всегда один. */
+function hash(x: number, y: number, k: number) {
+  const v = Math.sin(x * 127.1 + y * 311.7 + k * 74.7) * 43758.5453;
+  return v - Math.floor(v);
+}
+
+/** Звезда с рваными лучами в середине клетки; k — во сколько раз ужать. */
+function star(p: Path2D, cx: number, cy: number, cell: number, k: number) {
+  const x = (cx + 0.5) * cell;
+  const y = (cy + 0.5) * cell;
+  const n = 9 + Math.floor(hash(cx, cy, 0) * 4);
+  const turn = hash(cx, cy, 1) * Math.PI * 2;
+  for (let i = 0; i < n; i++) {
+    const a = turn + ((i + (hash(cx, cy, i + 2) - 0.5) * 0.4) / n) * Math.PI * 2;
+    const b = a + Math.PI / n;
+    const ro = cell * k * (0.44 + hash(cx, cy, i + 20) * 0.2);
+    const ri = cell * k * (0.17 + hash(cx, cy, i + 40) * 0.08);
+    if (i === 0) p.moveTo(x + Math.cos(a) * ro, y + Math.sin(a) * ro);
+    else p.lineTo(x + Math.cos(a) * ro, y + Math.sin(a) * ro);
+    p.lineTo(x + Math.cos(b) * ri, y + Math.sin(b) * ri);
+  }
+  p.closePath();
+}
+
+/**
+ * След взрыва на клетках: звезда копоти на всю клетку и чёрная сердцевина.
+ * Всё одним путём на цвет — сгоревших клеток бывают сотни. Цвета без
+ * прозрачности: след, нарисованный дважды (клетка сгорела и установка на
+ * ней погибла), совпадает сам с собой и не темнеет.
+ */
+export function drawScorches(ctx: CanvasRenderingContext2D, cells: Iterable<[number, number]>, cell: number) {
+  const halo = new Path2D();
+  const core = new Path2D();
+  let any = false;
+  for (const [cx, cy] of cells) {
+    star(halo, cx, cy, cell, 1);
+    star(core, cx, cy, cell, 0.55);
+    any = true;
+  }
+  if (!any) return;
+  ctx.fillStyle = SCORCH_HALO;
+  ctx.fill(halo);
+  ctx.fillStyle = SCORCH_CORE;
+  ctx.fill(core);
+}
+
+/** Погибшая установка: от неё ничего не остаётся, только след взрыва. */
+function wreck(ctx: CanvasRenderingContext2D, cx: number, cy: number, cell: number) {
+  drawScorches(ctx, [[cx, cy]], cell);
+}
+
 /** Контейнеры с дронами — их видит только хозяин склада. */
 /**
  * Контейнеры на складе. На крышке рисуем то, что внутри: винты у дронов,
@@ -145,6 +200,7 @@ export function drawBalloonPad(
   cell: number,
   alive = true
 ) {
+  if (!alive) return wreck(ctx, cx, cy, cell);
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
   const r = cell * 0.46;
@@ -241,6 +297,7 @@ export function drawSpray(
   alive = true,
   range: number = SPRAY.range
 ) {
+  if (!alive) return wreck(ctx, cx, cy, cell);
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
   const r = cell * 0.44;
@@ -340,6 +397,7 @@ export function drawTrap(
   now = 0,
   range: number = TRAP.range
 ) {
+  if (!alive) return wreck(ctx, cx, cy, cell);
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
   const half = cell * 0.42;
@@ -489,6 +547,7 @@ export function drawTurret(
   angle: number,
   alive = true
 ) {
+  if (!alive) return wreck(ctx, cx, cy, cell);
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
   const body = alive ? COLORS.gun : "#3f3f3f";
@@ -562,6 +621,7 @@ export function drawRocket(
   alive = true,
   loaded = true
 ) {
+  if (!alive) return wreck(ctx, cx, cy, cell);
   const x = (cx + 0.5) * cell;
   const y = (cy + 0.5) * cell;
   const body = alive ? COLORS.rocket : "#3f3f3f";

@@ -24,6 +24,7 @@ import {
   drawBalloons,
   drawDepots,
   drawRocket,
+  drawScorches,
   drawSpray,
   drawTrap,
   drawTurret,
@@ -118,8 +119,9 @@ export function drawStatic(
   // Клетки красим слоями, по цвету за проход: смена fillStyle стоит дороже
   // самой заливки, а раньше она случалась на каждую из десяти тысяч клеток.
   const layers: [number, string][] = [
+    // сгоревшая клетка — тот же пол, а сверху след взрыва (ниже)
     [G_BASE, COLORS.base],
-    [G_BURNT, COLORS.burnt],
+    [G_BURNT, COLORS.base],
     [G_SCORCH, COLORS.scorch],
     [G_FIRE, "#e0561a"], // подложка под огонь
   ];
@@ -154,6 +156,13 @@ export function drawStatic(
   ctx.fill(lit);
   ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
   ctx.fill(dark);
+
+  const burnt: [number, number][] = [];
+  for (let y = y0; y < y1; y++) {
+    const row = y * GRID;
+    for (let x = x0; x < x1; x++) if (s.cells[row + x] === G_BURNT) burnt.push([x, y]);
+  }
+  drawScorches(ctx, burnt, cell);
 
   // на приближении показываем сетку клеток — по ней целишься
   if (cell * zoom >= 14) {
