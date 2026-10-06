@@ -85,7 +85,11 @@ export default function BattleFrame({
         <div className="flex min-h-0 flex-1 flex-col gap-2">
           <div className="flex min-h-0 flex-1 items-center justify-center" style={{ containerType: "size" }}>
             <div className="flex flex-col" style={{ width: side }}>
-              <div className="relative aspect-square w-full">{map}</div>
+              {/* overflow-hidden — не украшение. Блок с aspect-ratio растёт
+                  под содержимое, если оно выше; холст карты подгоняется под
+                  рамку, рамка с бордюром на 2 точки выше холста — и они
+                  раздували друг друга без конца, пока бой не вставал. */}
+              <div className="relative aspect-square w-full overflow-hidden">{map}</div>
               {under}
             </div>
           </div>
