@@ -40,6 +40,7 @@ const zh: Dict = {
   "replays.pending": "{drones} 架无人机，尚未防守",
   "tool.priceBox": "{cost} 币/{perCell} 架",
   "stat.creditsLine": "{credits}（+{income} 币/天）",
+  "stat.incomeLine": "+{income} 币/天",
   "income.boxRow": "无人机箱",
   "tool.loan": "贷款",
   "tool.loanHint": "借入积分",

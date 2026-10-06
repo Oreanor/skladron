@@ -40,6 +40,7 @@ const uk: Dict = {
   "replays.pending": "{drones} дронів, ще не відбито",
   "tool.priceBox": "{cost} кр/{perCell} шт",
   "stat.creditsLine": "{credits} (+{income} кр/добу)",
+  "stat.incomeLine": "+{income} кр/добу",
   "income.boxRow": "Ящик дронів",
   "tool.loan": "Позика",
   "tool.loanHint": "Позичити кредити",

@@ -11,8 +11,18 @@ import { fmt, saleValue } from "@/lib/economy";
 import { droneCount } from "@/lib/base";
 import type { Player } from "@/lib/player";
 import { useT } from "@/lib/i18n";
+import { COLORS } from "@/lib/render";
 
-export default function IncomeLine({ p, className = "" }: { p: Player; className?: string }) {
+export default function IncomeLine({
+  p,
+  className = "",
+  stacked = false,
+}: {
+  p: Player;
+  className?: string;
+  /** В две строки: наличные крупно, доход под ними мельче — для телефона, где шапка узкая. */
+  stacked?: boolean;
+}) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const boxes = p.depots.length;
@@ -40,14 +50,23 @@ export default function IncomeLine({ p, className = "" }: { p: Player; className
         onClick={() => setOpen((v) => !v)}
         className="block w-full cursor-help truncate text-left font-mono text-sm text-emerald-300"
       >
-        {t("stat.creditsLine", { credits: fmt(p.credits), income: fmt(sale) })}
+        {stacked ? (
+          <>
+            <span className="block truncate leading-tight">{fmt(p.credits)}</span>
+            <span className="block truncate text-[11px] leading-tight text-emerald-300/70">
+              {t("stat.incomeLine", { income: fmt(sale) })}
+            </span>
+          </>
+        ) : (
+          t("stat.creditsLine", { credits: fmt(p.credits), income: fmt(sale) })
+        )}
       </button>
       <div
         className={`absolute left-0 top-full z-30 mt-1 w-max min-w-[16rem] rounded-md border border-neutral-700 bg-neutral-950/95 p-3 font-mono text-xs shadow-lg ${
           open ? "block" : "hidden group-hover:block"
         }`}
       >
-        {row("rgb(206, 170, 116)", t("income.boxRow"), boxes, sale)}
+        {row(COLORS.depot, t("income.boxRow"), boxes, sale)}
       </div>
     </div>
   );

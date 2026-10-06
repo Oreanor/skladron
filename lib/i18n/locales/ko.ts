@@ -40,6 +40,7 @@ const ko: Dict = {
   "replays.pending": "드론 {drones}대, 아직 방어 전",
   "tool.priceBox": "{cost} cr/{perCell}대",
   "stat.creditsLine": "{credits} (+{income} cr/일)",
+  "stat.incomeLine": "+{income} cr/일",
   "income.boxRow": "드론 상자",
   "tool.loan": "대출",
   "tool.loanHint": "크레딧 빌리기",

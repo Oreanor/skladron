@@ -488,8 +488,9 @@ export function ConfirmDialog({
 }
 
 /**
- * Квадратная кнопка инструмента: глиф крупно, цена мелко под ним. Занимает
- * меньше места, чем строка с подписью, и одинаково читается на телефоне.
+ * Кнопка инструмента: глиф крупно, подпись и цена мелко под ним. На телефоне
+ * без цены и ниже квадрата: три ряда квадратов съедали треть экрана, и карта
+ * над ними выходила плоской полосой. Цена там видна в подсказке инструмента.
  */
 export function ToolButton({
   label,
@@ -519,7 +520,7 @@ export function ToolButton({
       aria-label={`${label}, ${hint}`}
       aria-pressed={active}
       // сверху оставляем место счётчику и уровню — иконка идёт под ними
-      className={`relative flex aspect-square w-full min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border px-1 pb-1 pt-4 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 disabled:cursor-not-allowed disabled:opacity-40 lg:aspect-auto lg:h-auto lg:pb-2 lg:pt-5 ${
+      className={`relative flex w-full min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border px-1 pb-1.5 pt-4 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 disabled:cursor-not-allowed disabled:opacity-40 lg:h-auto lg:pb-2 lg:pt-5 ${
         active
           ? "border-emerald-500 bg-emerald-500/15 text-emerald-300"
           : "border-neutral-700 text-neutral-300 hover:bg-neutral-800"
@@ -540,7 +541,7 @@ export function ToolButton({
       <span className="w-full truncate text-center text-[11px] font-semibold leading-none">
         {label}
       </span>
-      <span className="w-full truncate text-center font-mono text-[10px] leading-none text-neutral-500">
+      <span className="hidden w-full truncate text-center font-mono text-[10px] leading-none text-neutral-500 lg:block">
         {price}
       </span>
     </button>

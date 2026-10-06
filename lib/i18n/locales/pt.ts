@@ -40,6 +40,7 @@ const pt: Dict = {
   "replays.pending": "{drones} drones, por combater",
   "tool.priceBox": "{cost} cr/{perCell} un",
   "stat.creditsLine": "{credits} (+{income} cr/dia)",
+  "stat.incomeLine": "+{income} cr/dia",
   "income.boxRow": "Contentor de drones",
   "tool.loan": "Crédito",
   "tool.loanHint": "Pedir créditos emprestados",

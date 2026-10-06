@@ -1389,7 +1389,11 @@ export default function Lobby({
     tool,
     // Те же числа, что и на самой кнопке: сырые vars не знают ни цены по
     // уровню, ни прокачанной дальности, и в строке оставались «{cost}».
-    hint: t(activeTool.hint, toolVars(activeTool)),
+    // Цена — тоже здесь: на телефоне кнопка её не пишет, места нет.
+    hint: `${t(activeTool.hint, toolVars(activeTool))} · ${t(activeTool.priceKey ?? "tool.price", {
+      ...activeTool.vars,
+      cost: toolPrice(activeTool),
+    })}`,
     draft:
       draftOpen && draftRect
         ? {
@@ -1428,9 +1432,9 @@ export default function Lobby({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 lg:gap-3">
-      {/* шапка телефона: счётчики одной строкой плюс кнопки панелей */}
+      {/* шапка телефона: наличные и доход в две строки плюс кнопки панелей */}
       <div className="order-1 flex shrink-0 items-center gap-2 lg:hidden">
-        <IncomeLine p={p} className="flex-1" />
+        <IncomeLine p={p} className="flex-1" stacked />
         <IconButton
           label={t("panel.replays")}
           badge={p.incoming.filter((a) => !a.competitionStage).length}

@@ -40,6 +40,7 @@ const ja: Dict = {
   "replays.pending": "ドローン {drones} 機、未防衛",
   "tool.priceBox": "{cost} cr/{perCell} 機",
   "stat.creditsLine": "{credits}（+{income} cr/日）",
+  "stat.incomeLine": "+{income} cr/日",
   "income.boxRow": "ドローン箱",
   "tool.loan": "ローン",
   "tool.loanHint": "クレジットを借りる",
