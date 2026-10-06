@@ -33,8 +33,8 @@ function star(p: Path2D, cx: number, cy: number, cell: number, k: number) {
   for (let i = 0; i < n; i++) {
     const a = turn + ((i + (hash(cx, cy, i + 2) - 0.5) * 0.4) / n) * Math.PI * 2;
     const b = a + Math.PI / n;
-    const ro = cell * k * (0.33 + hash(cx, cy, i + 20) * 0.12);
-    const ri = cell * k * (0.21 + hash(cx, cy, i + 40) * 0.05);
+    const ro = cell * k * (0.39 + hash(cx, cy, i + 20) * 0.13);
+    const ri = cell * k * (0.25 + hash(cx, cy, i + 40) * 0.06);
     if (i === 0) p.moveTo(x + Math.cos(a) * ro, y + Math.sin(a) * ro);
     else p.lineTo(x + Math.cos(a) * ro, y + Math.sin(a) * ro);
     p.lineTo(x + Math.cos(b) * ri, y + Math.sin(b) * ri);
