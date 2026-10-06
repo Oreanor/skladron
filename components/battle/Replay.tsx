@@ -504,7 +504,6 @@ function ReplayView({
               tone={hud.integrity < 60 ? "text-orange-300" : "text-emerald-300"}
             />
           </ChipBar>
-          {controls}
           {shareId && (
             <div className="border-t border-neutral-800 pt-2">
               <Talk battleId={shareId} />
@@ -512,8 +511,8 @@ function ReplayView({
           )}
         </>
       }
-      // кнопки стоят на месте, прокручиваются только панели под ними
-      head={controls}
+      // кнопки — внизу и на месте, прокручиваются только панели над ними
+      foot={controls}
       panels={
         <>
           <Panel title={t("panel.replay")} collapsed={statsFolded} onToggle={foldStats}>

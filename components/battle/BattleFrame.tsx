@@ -60,6 +60,7 @@ export default function BattleFrame({
   mobile,
   head,
   panels,
+  foot,
   cover,
 }: {
   variant: FrameVariant;
@@ -81,6 +82,11 @@ export default function BattleFrame({
   head?: ReactNode;
   /** Панели колонки — прокручиваются. */
   panels: ReactNode;
+  /**
+   * Низ окна, который не прокручивается: кнопки повтора. На десктопе — под
+   * панелями колонки, на телефоне — в самом низу, под счётом.
+   */
+  foot?: ReactNode;
 }) {
   const side = under ? `min(100cqw, calc(100cqh - ${underHeight}))` : "min(100cqw, 100cqh)";
   return (
@@ -101,6 +107,7 @@ export default function BattleFrame({
               </div>
             </div>
             {mobile && <div className="flex shrink-0 flex-col gap-2 lg:hidden">{mobile}</div>}
+            {foot && <div className="shrink-0 lg:hidden">{foot}</div>}
           </div>
 
           <aside className="hidden min-h-0 flex-col gap-4 text-sm lg:flex">
@@ -108,6 +115,7 @@ export default function BattleFrame({
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {panels}
             </div>
+            {foot && <div className="shrink-0">{foot}</div>}
           </aside>
         </div>
         {/* Прокрутка — у всей накладки, а внутри блок по центру через m-auto:
