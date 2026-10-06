@@ -92,7 +92,7 @@ export default function Scout({
     c.height = SIZE;
     const g = c.getContext("2d");
     if (g) {
-      g.fillStyle = "#0b0d0b";
+      g.fillStyle = COLORS.fog;
       g.fillRect(0, 0, SIZE, SIZE);
     }
     return c;
@@ -217,7 +217,7 @@ export default function Scout({
     if (!p) return;
 
     // круг съёмки — видно, что именно самолёт сейчас снимает
-    ctx.strokeStyle = "rgba(140, 215, 255, 0.35)";
+    ctx.strokeStyle = COLORS.scoutView;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(p.x * CELL, p.y * CELL, s.radius * CELL, 0, Math.PI * 2);

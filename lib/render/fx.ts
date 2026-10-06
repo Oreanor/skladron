@@ -9,8 +9,10 @@
  */
 
 import { FX } from "../tuning";
+import { COLORS } from "./colors";
+import { hash } from "./hash";
 
-type Blob = "glow" | "fire" | "smoke";
+type Blob = "glow" | "fire" | "smoke" | "trail";
 
 /** Сторона картинки клуба, в точках. */
 const BLOB_SIZE = 64;
@@ -34,6 +36,12 @@ const STOPS: Record<Blob, [number, string][]> = {
     [0, "rgba(46, 42, 38, 0.9)"],
     [0.55, "rgba(52, 48, 44, 0.55)"],
     [1, "rgba(60, 56, 52, 0)"],
+  ],
+  // выхлоп ракеты: светлый, чуть тёплый, тает к краям
+  trail: [
+    [0, "rgba(246, 244, 236, 0.9)"],
+    [0.5, "rgba(232, 230, 222, 0.5)"],
+    [1, "rgba(220, 218, 210, 0)"],
   ],
 };
 
@@ -62,11 +70,35 @@ function put(ctx: CanvasRenderingContext2D, img: HTMLCanvasElement, x: number, y
   ctx.drawImage(img, x - r, y - r, r * 2, r * 2);
 }
 
-/** Число от 0 до 1 по месту взрыва и номеру. */
-function hash(x: number, y: number, k: number) {
-  const v = Math.sin(x * 12.9898 + y * 78.233 + k * 37.719) * 43758.5453;
-  return v - Math.floor(v);
+/**
+ * Мягкий клуб дыма или выхлопа с центром (x, y) и радиусом r. Прозрачность
+ * ставит сам и не возвращает: вызывают пачкой, и после пачки вернуть
+ * globalAlpha — дело вызывающего.
+ */
+export function drawSoft(
+  ctx: CanvasRenderingContext2D,
+  kind: "smoke" | "trail",
+  x: number,
+  y: number,
+  r: number,
+  alpha: number
+) {
+  const img = blob(kind);
+  if (img) put(ctx, img, x, y, r, alpha);
+  else {
+    // без картинки (нет document) — плоский круг, как раньше
+    ctx.globalAlpha = Math.min(1, alpha);
+    ctx.fillStyle = kind === "smoke" ? COLORS.smoke : COLORS.trail;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
+
+/** Ударная волна, искры и обломки. */
+const WAVE_COLOR = "rgb(255, 225, 170)";
+const SPARK_COLOR = "rgb(255, 205, 120)";
+const DEBRIS_COLOR = "#2a2622";
 
 const easeOut = (k: number) => 1 - (1 - k) * (1 - k);
 const clamp01 = (k: number) => Math.max(0, Math.min(1, k));
@@ -145,7 +177,7 @@ export function drawBoom(
   if (t < WAVE) {
     const w = t / WAVE;
     ctx.globalAlpha = 0.55 * (1 - w);
-    ctx.strokeStyle = "rgb(255, 225, 170)";
+    ctx.strokeStyle = WAVE_COLOR;
     ctx.lineWidth = Math.max(0.6, cell * 0.25 * (1 - w));
     ctx.beginPath();
     ctx.arc(x, y, r * (0.3 + 1.2 * easeOut(w)), 0, Math.PI * 2);
@@ -158,7 +190,7 @@ export function drawBoom(
     const k = t / SPARKS;
     const n = (big ? 12 : 7) + Math.floor(hash(b.x, b.y, 60) * 3);
     ctx.globalAlpha = 1 - k;
-    ctx.strokeStyle = "rgb(255, 205, 120)";
+    ctx.strokeStyle = SPARK_COLOR;
     ctx.lineWidth = Math.max(0.6, cell * 0.14);
     ctx.lineCap = "round";
     ctx.beginPath();
@@ -181,7 +213,7 @@ export function drawBoom(
   if (big && t < FX.boomLife * 0.6) {
     const k = t / (FX.boomLife * 0.6);
     ctx.globalAlpha = 1 - k * k;
-    ctx.fillStyle = "#2a2622";
+    ctx.fillStyle = DEBRIS_COLOR;
     const s = Math.max(0.8, cell * 0.28);
     for (let i = 0; i < 5; i++) {
       const h = hash(b.x, b.y, i + 90);

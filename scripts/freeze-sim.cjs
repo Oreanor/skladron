@@ -26,6 +26,8 @@ const FILES = [
   "render/colors.ts",
   "render/light.ts",
   "render/fx.ts",
+  "render/char.ts",
+  "render/hash.ts",
 ];
 
 const read = (rev, file) => {

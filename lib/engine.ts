@@ -5,11 +5,13 @@ import { levelBonus } from "./economy";
 import {
   GRID,
   G_BASE,
+  G_BURNT,
   G_FIRE,
   G_GROUND,
   G_SCORCH,
   type Depot,
   type Gun as BaseGun,
+  gunKind,
   idx,
   isBuilding,
 } from "./base";
@@ -32,10 +34,8 @@ import {
   TRAP,
   WAVE,
 } from "./tuning";
-import { gunKind } from "./base";
 
-export { GRID, G_BASE, G_FIRE, G_GROUND, G_SCORCH, idx, isBuilding };
-export { G_BURNT } from "./base";
+export { GRID, G_BASE, G_BURNT, G_FIRE, G_GROUND, G_SCORCH, idx, isBuilding };
 
 export type Phase = "playing" | "won" | "lost";
 
@@ -583,7 +583,7 @@ export function extinguish(s: GameState, x: number, y: number) {
   if (x < 0 || y < 0 || x >= GRID || y >= GRID) return false;
   const i = idx(x, y);
   if (s.cells[i] !== G_FIRE) return false;
-  s.cells[i] = 3; // G_BURNT
+  s.cells[i] = G_BURNT;
   s.fire.delete(i);
   s.targetsStale = true;
   s.result.extinguished++;
@@ -1993,7 +1993,7 @@ function stepFire(s: GameState, dt: number) {
       const fuel = near.filter((n) => s.cells[n] === G_BASE);
       if (fuel.length === 0) {
         // гореть больше нечему — очаг догорает сам, иначе бой не кончится
-        s.cells[i] = 3; // G_BURNT
+        s.cells[i] = G_BURNT;
         s.fire.delete(i);
         s.targetsStale = true;
         s.dirty = true;
@@ -2103,7 +2103,7 @@ export function settle(s: GameState) {
   for (let i = 0; i < cells.length; i++) {
     if (cells[i] === G_SCORCH) cells[i] = G_GROUND;
   }
-  for (const i of s.fire.keys()) cells[i] = 3; // G_BURNT
+  for (const i of s.fire.keys()) cells[i] = G_BURNT;
   return {
     cells,
     guns: s.guns

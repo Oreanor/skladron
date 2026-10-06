@@ -31,8 +31,34 @@ export interface PriceTag {
   at: number;
 }
 
-const OK = "#8ecae6";
-const BAD = "#ff6b6b";
+/**
+ * Цвета подсказок поверх карты. Голубой — «сюда можно», красный — «нельзя»,
+ * оранжевый — рамка заготовки, янтарный — ящики, зелёный — выбранное.
+ */
+export const MARK = {
+  ok: "#8ecae6",
+  bad: "#ff6b6b",
+  /** Свободные клетки под установку и под ящик. */
+  freeGun: "rgba(140, 215, 255, 0.16)",
+  freeDepot: "rgba(214, 168, 92, 0.18)",
+  /** Рамка вокруг ящика, который берут или роняют. */
+  depot: "#f5c56f",
+  /** Клетка под курсором и клетки, за которые спишутся деньги. */
+  cellOk: "rgba(140, 215, 255, 0.6)",
+  cellBad: "rgba(229, 56, 59, 0.55)",
+  repair: "rgba(140, 215, 255, 0.55)",
+  repairBad: "rgba(229, 56, 59, 0.5)",
+  scrap: "rgba(214, 168, 92, 0.55)",
+  /** Заготовка: заливка, обводка и уголки. */
+  draft: "rgba(229, 90, 43, 0.3)",
+  draftBad: "rgba(229, 56, 59, 0.28)",
+  draftLine: "#ff9f5a",
+  /** Тёмная подложка под обводкой и под текстом ценника. */
+  outline: "rgba(0, 0, 0, 0.55)",
+  picked: "rgb(52, 211, 153)",
+  gain: "#7ee787",
+  spend: "#ffb454",
+} as const;
 
 /** Клетка под курсором внутри карты? */
 export const onMap = (cx: number, cy: number) =>
@@ -60,9 +86,9 @@ export function drawDropTarget(
   cx: number,
   cy: number,
   ok: boolean,
-  okColor = OK
+  okColor: string = MARK.ok
 ) {
-  ctx.strokeStyle = ok ? okColor : BAD;
+  ctx.strokeStyle = ok ? okColor : MARK.bad;
   ctx.lineWidth = 1.5;
   ctx.strokeRect(cx * cell, cy * cell, cell, cell);
 }
@@ -107,11 +133,11 @@ export function drawDraft(
     ctx.fillStyle =
       o.burntOnly === "scrap"
         ? o.scrapWhole
-          ? "rgba(214, 168, 92, 0.55)"
-          : "rgba(229, 56, 59, 0.55)"
+          ? MARK.scrap
+          : MARK.cellBad
         : o.afford
-          ? "rgba(140, 215, 255, 0.55)"
-          : "rgba(229, 56, 59, 0.5)";
+          ? MARK.repair
+          : MARK.repairBad;
     for (let y = d.y; y < d.y + d.h; y++) {
       for (let x = d.x; x < d.x + d.w; x++) {
         if (!onMap(x, y)) continue;
@@ -125,13 +151,13 @@ export function drawDraft(
   }
 
   const bad = !o.connects || !o.afford;
-  ctx.fillStyle = bad ? "rgba(229, 56, 59, 0.28)" : "rgba(229, 90, 43, 0.3)";
+  ctx.fillStyle = bad ? MARK.draftBad : MARK.draft;
   ctx.fillRect(d.x * cell, d.y * cell, d.w * cell, d.h * cell);
-  ctx.strokeStyle = bad ? BAD : "#ff9f5a";
+  ctx.strokeStyle = bad ? MARK.bad : MARK.draftLine;
   ctx.lineWidth = 1.5;
   ctx.strokeRect(d.x * cell, d.y * cell, d.w * cell, d.h * cell);
 
-  ctx.fillStyle = "#ff9f5a";
+  ctx.fillStyle = MARK.draftLine;
   const hs = cell * 1.6;
   for (const [hx, hy] of [
     [d.x, d.y],
@@ -166,10 +192,11 @@ export function drawPicked(
   ctx.save();
   ctx.lineJoin = "round";
   for (const pass of [
-    { color: "rgba(0, 0, 0, 0.55)", width: Math.max(1, cell * 0.16) },
-    { color: `rgba(52, 211, 153, ${pulse.toFixed(3)})`, width: Math.max(0.8, cell * 0.09) },
+    { color: MARK.outline, alpha: 1, width: Math.max(1, cell * 0.16) },
+    { color: MARK.picked, alpha: pulse, width: Math.max(0.8, cell * 0.09) },
   ]) {
     ctx.strokeStyle = pass.color;
+    ctx.globalAlpha = pass.alpha;
     ctx.lineWidth = pass.width;
     ctx.beginPath();
     for (const s of spots) {
@@ -188,7 +215,7 @@ export function drawHoverCell(
   cy: number,
   ok: boolean
 ) {
-  ctx.fillStyle = ok ? "rgba(140, 215, 255, 0.6)" : "rgba(229, 56, 59, 0.55)";
+  ctx.fillStyle = ok ? MARK.cellOk : MARK.cellBad;
   ctx.fillRect(cx * cell, cy * cell, cell, cell);
 }
 
@@ -207,14 +234,14 @@ export function drawPriceTags(
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
   ctx.lineWidth = cell * 0.22;
-  ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
+  ctx.strokeStyle = MARK.outline;
   for (const tag of live) {
     const k = (now - tag.at) / TAG_MS;
     const px = (tag.x + 0.5) * cell;
     const py = (tag.y - k * 1.6) * cell;
     ctx.globalAlpha = 1 - k * k;
     ctx.strokeText(tag.text, px, py);
-    ctx.fillStyle = tag.gain ? "#7ee787" : "#ffb454";
+    ctx.fillStyle = tag.gain ? MARK.gain : MARK.spend;
     ctx.fillText(tag.text, px, py);
   }
   ctx.restore();

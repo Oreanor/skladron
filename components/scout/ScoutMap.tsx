@@ -7,7 +7,7 @@
 
 import { useMemo, useRef } from "react";
 import { GRID, decodeRle, fogPatches, gunKind, type Gun } from "@/lib/base";
-import { drawCoverage, installColors } from "@/lib/render";
+import { COLORS, drawCoverage, installColors } from "@/lib/render";
 import type { ScoutSnapshot } from "@/lib/enemy";
 import { seenGuns } from "@/lib/scout";
 import MapCanvas, { CELL, SIZE } from "../MapCanvas";
@@ -59,7 +59,7 @@ export default function ScoutMap({
     c.height = SIZE;
     const g = c.getContext("2d");
     if (!g) return c;
-    g.fillStyle = "#0b0d0b";
+    g.fillStyle = COLORS.fog;
     g.fillRect(0, 0, SIZE, SIZE);
     g.globalCompositeOperation = "destination-out";
     for (let i = 0; i < seen.length; i++) {

@@ -13,7 +13,7 @@
  * склада печатали кредиты. Теперь ни карта, ни исход с клиента не берутся.
  */
 
-import { GRID, decodeCells, encodeRle, type Depot, type Gun } from "./base";
+import { GRID, G_BASE, decodeCells, encodeRle, type Depot, type Gun } from "./base";
 import { buildPlan, type AttackOrder } from "./attack";
 import { levelBonus } from "./economy";
 import {
@@ -160,7 +160,7 @@ export function resolveBattle(input: BattleInput): Verdict {
 
   const out = settle(s);
   let intact = 0;
-  for (const v of out.cells) if (v === 1) intact++;
+  for (const v of out.cells) if (v === G_BASE) intact++;
 
   return {
     cells: encodeRle(out.cells),

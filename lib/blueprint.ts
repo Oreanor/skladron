@@ -9,10 +9,12 @@
 import {
   G_BASE,
   G_BURNT,
+  G_GROUND,
   GRID,
   countKind,
   decodeRle,
   encodeRle,
+  isBuilding,
   type Depot,
   type Gun,
 } from "./base";
@@ -37,8 +39,7 @@ export interface Blueprint {
 export function blueprintOf(p: Pick<Player, "cells" | "guns">) {
   const cells = new Uint8Array(GRID * GRID);
   for (let i = 0; i < cells.length; i++) {
-    const v = p.cells[i];
-    cells[i] = v === G_BASE || v === G_BURNT || v === 2 ? G_BASE : 0;
+    cells[i] = isBuilding(p.cells[i]) ? G_BASE : G_GROUND;
   }
   return {
     cells: encodeRle(cells),

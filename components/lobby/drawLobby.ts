@@ -11,10 +11,7 @@ import {
   drawCoverage,
   drawDepots,
   drawHoverLabel,
-  drawRocket,
-  drawSpray,
-  drawTrap,
-  drawTurret,
+  drawPiece,
   type CoverageKind,
   type View,
 } from "@/lib/render";
@@ -39,13 +36,12 @@ import {
   drawPicked,
   drawPriceTags,
   dropAllowed,
+  MARK,
   onMap,
 } from "./overlay";
+import { CELL } from "../MapCanvas";
 import { DOUBLE_TAP, type MapRefs } from "./mapInput";
 import { isBuildKind, type Tool } from "./tools";
-
-/** Клетка карты лобби в пикселях холста. */
-const CELL = 7;
 
 export interface LobbyScene {
   p: Player;
@@ -182,7 +178,7 @@ export function drawLobbyOverlay(
       p.cells,
       p.guns,
       p.depots,
-      placing ? "rgba(140, 215, 255, 0.16)" : "rgba(214, 168, 92, 0.18)"
+      placing ? MARK.freeGun : MARK.freeDepot
     );
   }
 
@@ -205,29 +201,20 @@ export function drawLobbyOverlay(
         const px = onMap(hx, hy) ? hx : from.cx;
         const py = onMap(hx, hy) ? hy : from.cy;
         const angle = Math.atan2(py + 0.5 - GRID / 2, px + 0.5 - GRID / 2);
-        switch (gunKind(source)) {
-          case "spray":
-            drawSpray(ctx, px, py, CELL, angle, 0, ok);
-            break;
-          case "trap":
-            drawTrap(ctx, px, py, CELL, ok);
-            break;
-          case "rocket":
-            drawRocket(ctx, px, py, CELL, angle, ok);
-            break;
-          default:
-            drawTurret(ctx, px, py, CELL, angle, ok);
-            break;
-        }
+        // Туда, куда нельзя, — бледной, как и ящик. Не «мёртвой»: погибшая
+        // установка рисуется углём, а она цела, просто не встанет сюда.
+        ctx.globalAlpha = ok ? 1 : 0.45;
+        drawPiece(ctx, gunKind(source), px, py, CELL, angle);
+        ctx.globalAlpha = 1;
       }
     }
-    drawDropTarget(ctx, CELL, hx, hy, ok, m.dragGun.current ? "#8ecae6" : "#f5c56f");
+    drawDropTarget(ctx, CELL, hx, hy, ok, m.dragGun.current ? MARK.ok : MARK.depot);
   } else if (hover) {
     // между кликами двойного клика рамка под предметом тоже не гаснет
     const gun = tapped(s, "gun");
     const box = gun ?? tapped(s, "depot");
     if (box && box.cx === hx && box.cy === hy) {
-      drawDropTarget(ctx, CELL, hx, hy, true, gun ? "#8ecae6" : "#f5c56f");
+      drawDropTarget(ctx, CELL, hx, hy, true, gun ? MARK.ok : MARK.depot);
     }
   }
 

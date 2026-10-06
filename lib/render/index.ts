@@ -1,12 +1,4 @@
-import {
-  GRID,
-  G_BASE,
-  G_BURNT,
-  G_FIRE,
-  G_SCORCH,
-  gunKind,
-  type Gun,
-} from "../base";
+import { GRID, G_BASE, G_BURNT, G_FIRE, G_SCORCH, gunKind, type Gun } from "../base";
 import {
   aimMode,
   balloonRange,
@@ -18,18 +10,11 @@ import {
   type GameState,
 } from "../engine";
 import { BALLOON, BLOW, FX, GUN, ROCKET, SPRAY, SUPPRESS, TRAP } from "../tuning";
+import { charFill, turfFill } from "./char";
 import { COLORS } from "./colors";
-import { drawBoom } from "./fx";
-import {
-  drawBalloonPad,
-  drawBalloons,
-  drawDepots,
-  drawRocket,
-  drawScorches,
-  drawSpray,
-  drawTrap,
-  drawTurret,
-} from "./pieces";
+import { drawBoom, drawSoft } from "./fx";
+import { slabBevel, slabShadow } from "./light";
+import { drawBalloons, drawDepots, drawDrone, drawPiece } from "./pieces";
 
 // Палитра и сами предметы живут в render/: их правят отдельно от кадра боя.
 export { COLORS, installColors } from "./colors";
@@ -37,6 +22,8 @@ export {
   drawBalloonPad,
   drawBalloons,
   drawDepots,
+  drawDrone,
+  drawPiece,
   drawRocket,
   drawScoutPlane,
   drawSpray,
@@ -66,7 +53,6 @@ export function applyView(ctx: CanvasRenderingContext2D, dpr: number, v: View) {
   ctx.setTransform(k, 0, 0, k, -v.panX * k, -v.panY * k);
 }
 
-/** Статичный слой: земля, склад, пепелище, тумбы пушек. */
 /** Видимый кусок карты в клетках — рисовать остальное незачем. */
 export interface Clip {
   x0: number;
@@ -77,9 +63,10 @@ export interface Clip {
 
 const FULL: Clip = { x0: 0, y0: 0, x1: GRID, y1: GRID };
 
-/** Насколько тень склада сдвинута от плиты, в долях клетки. */
-const SLAB_SHADOW = 0.3;
+/** С какого размера клетки на экране, в точках, показываем сетку — по ней целишься. */
+const GRID_FROM = 14;
 
+/** Статичный слой: земля, склад, пепелище, установки в лобби. */
 export function drawStatic(
   ctx: CanvasRenderingContext2D,
   s: Scene,
@@ -87,10 +74,13 @@ export function drawStatic(
   zoom = 1,
   clip: Clip = FULL
 ) {
-  const x0 = Math.max(0, clip.x0);
-  const y0 = Math.max(0, clip.y0);
-  const x1 = Math.min(GRID, clip.x1);
-  const y1 = Math.min(GRID, clip.y1);
+  const area = {
+    x0: Math.max(0, clip.x0),
+    y0: Math.max(0, clip.y0),
+    x1: Math.min(GRID, clip.x1),
+    y1: Math.min(GRID, clip.y1),
+  };
+  const { x0, y0, x1, y1 } = area;
 
   ctx.fillStyle = COLORS.groundA;
   ctx.fillRect(x0 * cell, y0 * cell, (x1 - x0) * cell, (y1 - y0) * cell);
@@ -102,29 +92,23 @@ export function drawStatic(
     }
   }
 
-  const building = (v: number) => v === G_BASE || v === G_BURNT || v === G_FIRE;
-
-  // Склад — плита над травой: тень от неё ложится вниз-вправо, солнце сверху
-  // слева, как и у установок. Одним путём — перекрытия не темнеют дважды.
-  const so = cell * SLAB_SHADOW;
-  ctx.beginPath();
-  for (let y = Math.max(0, y0 - 1); y < y1; y++) {
-    const row = y * GRID;
-    for (let x = Math.max(0, x0 - 1); x < x1; x++) {
-      if (building(s.cells[row + x])) ctx.rect(x * cell + so, y * cell + so, cell, cell);
-    }
+  // травинки поверх шашечки — одним узором на весь видимый кусок
+  const turf = turfFill(ctx);
+  if (turf) {
+    ctx.fillStyle = turf;
+    ctx.fillRect(x0 * cell, y0 * cell, (x1 - x0) * cell, (y1 - y0) * cell);
   }
-  ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
-  ctx.fill();
+
+  slabShadow(ctx, s.cells, cell, area);
 
   // Клетки красим слоями, по цвету за проход: смена fillStyle стоит дороже
   // самой заливки, а раньше она случалась на каждую из десяти тысяч клеток.
-  const layers: [number, string][] = [
-    // сгоревшая клетка — тот же пол, а сверху след взрыва (ниже)
+  const layers: [number, string | CanvasPattern][] = [
     [G_BASE, COLORS.base],
-    [G_BURNT, COLORS.base],
-    [G_SCORCH, COLORS.scorch],
-    [G_FIRE, "#e0561a"], // подложка под огонь
+    // сгоревший пол и выжженная трава — уголь с едва заметной фактурой
+    [G_BURNT, charFill(ctx, "floor")],
+    [G_SCORCH, charFill(ctx, "grass")],
+    [G_FIRE, COLORS.fireBase],
   ];
   for (const [value, color] of layers) {
     ctx.fillStyle = color;
@@ -136,38 +120,10 @@ export function drawStatic(
     }
   }
 
-  // Фаска по краю плиты: светлая кромка там, куда светит солнце, тёмная —
-  // с теневой стороны. По ней склад и читается приподнятым.
-  const bw = Math.max(0.5, cell * 0.12);
-  const lit = new Path2D();
-  const dark = new Path2D();
-  for (let y = y0; y < y1; y++) {
-    const row = y * GRID;
-    for (let x = x0; x < x1; x++) {
-      if (!building(s.cells[row + x])) continue;
-      const px = x * cell;
-      const py = y * cell;
-      if (y === 0 || !building(s.cells[row - GRID + x])) lit.rect(px, py, cell, bw);
-      if (x === 0 || !building(s.cells[row + x - 1])) lit.rect(px, py, bw, cell);
-      if (y === GRID - 1 || !building(s.cells[row + GRID + x])) dark.rect(px, py + cell - bw, cell, bw);
-      if (x === GRID - 1 || !building(s.cells[row + x + 1])) dark.rect(px + cell - bw, py, bw, cell);
-    }
-  }
-  ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-  ctx.fill(lit);
-  ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
-  ctx.fill(dark);
+  slabBevel(ctx, s.cells, cell, area);
 
-  const burnt: [number, number][] = [];
-  for (let y = y0; y < y1; y++) {
-    const row = y * GRID;
-    for (let x = x0; x < x1; x++) if (s.cells[row + x] === G_BURNT) burnt.push([x, y]);
-  }
-  drawScorches(ctx, burnt, cell);
-
-  // на приближении показываем сетку клеток — по ней целишься
-  if (cell * zoom >= 14) {
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.12)";
+  if (cell * zoom >= GRID_FROM) {
+    ctx.strokeStyle = COLORS.grid;
     ctx.lineWidth = 0.5 / zoom;
     ctx.beginPath();
     for (let i = x0; i <= x1; i++) {
@@ -181,31 +137,13 @@ export function drawStatic(
     ctx.stroke();
   }
 
+  // В бою и повторе пушек тут нет — их рисует живой кадр со своим углом.
+  // В лобби ствол смотрит наружу от середины склада.
   for (const g of s.guns) {
     const angle = Math.atan2(g.cy + 0.5 - GRID / 2, g.cx + 0.5 - GRID / 2);
-    const kind = gunKind(g as Gun);
-    // В бою и повторе пушек тут нет — их рисует живой кадр со своим углом.
-    // В лобби ствол смотрит наружу от середины склада.
-    switch (kind) {
-      case "spray":
-        drawSpray(ctx, g.cx, g.cy, cell, angle, 0, g.alive !== false);
-        break;
-      case "trap":
-        drawTrap(ctx, g.cx, g.cy, cell, g.alive !== false);
-        break;
-      case "rocket":
-        drawRocket(ctx, g.cx, g.cy, cell, angle, g.alive !== false);
-        break;
-      case "balloon":
-        drawBalloonPad(ctx, g.cx, g.cy, cell, g.alive !== false);
-        break;
-      default:
-        drawTurret(ctx, g.cx, g.cy, cell, angle, g.alive !== false);
-        break;
-    }
+    drawPiece(ctx, gunKind(g as Gun), g.cx, g.cy, cell, angle, g.alive !== false);
   }
 }
-
 /** Чьи круги покрытия показывать: зениток, ракетниц, огнетушителей, ловушек. */
 export type CoverageKind = "gun" | "rocket" | "spray" | "trap" | "balloon";
 
@@ -263,8 +201,8 @@ export function drawCoverage(
     },
     spray: {
       r: spraysRange,
-      fill: "rgba(214, 64, 56, 0.12)",
-      stroke: "rgba(255, 128, 121, 0.4)",
+      fill: COLORS.sprayRange,
+      stroke: COLORS.sprayRangeLine,
     },
     trap: {
       r: trapsRange,
@@ -344,17 +282,20 @@ export function drawPops(ctx: CanvasRenderingContext2D, pops: { id: number; x: n
     const y = p.y * cell;
     const fade = 1 - k;
     if (k < 0.3) {
-      ctx.fillStyle = `rgba(255, 245, 235, ${(1 - k / 0.3) * 0.9})`;
+      ctx.globalAlpha = (1 - k / 0.3) * 0.9;
+      ctx.fillStyle = COLORS.popFlash;
       ctx.beginPath();
       ctx.arc(x, y, cell * (0.45 + k), 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.strokeStyle = `rgba(214, 40, 40, ${fade * 0.8})`;
+    ctx.globalAlpha = fade * 0.8;
+    ctx.strokeStyle = COLORS.balloon;
     ctx.lineWidth = Math.max(0.6, cell * 0.12 * fade);
     ctx.beginPath();
     ctx.arc(x, y, cell * (0.5 + 0.7 * k), 0, Math.PI * 2);
     ctx.stroke();
-    ctx.fillStyle = `rgba(214, 40, 40, ${fade})`;
+    ctx.globalAlpha = fade;
+    ctx.fillStyle = COLORS.balloon;
     for (let j = 0; j < 6; j++) {
       const a = p.id * 1.7 + (j * Math.PI) / 3;
       const d = cell * (0.4 + 1.4 * k);
@@ -368,6 +309,7 @@ export function drawPops(ctx: CanvasRenderingContext2D, pops: { id: number; x: n
       ctx.restore();
     }
   }
+  ctx.globalAlpha = 1;
 }
 
 /** Динамика боя: прицел, огонь, дроны, ракеты, взрывы. */
@@ -383,13 +325,15 @@ export function drawFrame(
   drawDepots(ctx, s.depots, cell);
 
   // следы пуль в земле
-  ctx.fillStyle = "rgba(26, 22, 16, 0.75)";
+  // Одним путём: следов бывает до FX.maxHoles, по заливке на каждый — дорого.
+  ctx.fillStyle = COLORS.hole;
+  ctx.beginPath();
   for (const h of s.holes) {
     const r = cell * (0.16 + h.seed * 0.14);
-    ctx.beginPath();
+    ctx.moveTo(h.x * cell + r, h.y * cell);
     ctx.arc(h.x * cell, h.y * cell, r, 0, Math.PI * 2);
-    ctx.fill();
   }
+  ctx.fill();
 
   const reach = sprayRange(s);
   const trapsReach = trapRange(s);
@@ -400,37 +344,26 @@ export function drawFrame(
   // перезаряжается, а кто готов пустить.
   const launched = new Set<number>();
   for (const r of s.rockets) launched.add(r.from);
+  // Сколько дронов держит каждая ловушка — одним проходом по стае, а не
+  // стаей на каждую ловушку.
+  const held = new Map<number, number>();
+  for (const d of s.drones) if (d.heldBy) held.set(d.heldBy, (held.get(d.heldBy) ?? 0) + 1);
   for (const g of s.guns) {
-    switch (gunKind(g)) {
-      case "spray": {
-        // Льёт только с водой, без пены и пока идёт бой. Счётчик струй в
-        // движке у пустой или заглушённой установки застывает, а когда бой
-        // кончился — у всех: симуляция встала, пока последний очаг ещё
-        // заливали. По нему одному струи висели бы и в паузе перед итогом,
-        // и в конце повтора.
-        const pouring = s.phase === "playing" && g.jammed <= 0 ? g.wet : 0;
-        drawSpray(ctx, g.cx, g.cy, cell, g.angle, pouring, g.alive, reach);
-        break;
-      }
-      case "rocket":
-        drawRocket(ctx, g.cx, g.cy, cell, g.angle, g.alive, !launched.has(g.id));
-        break;
-      case "balloon":
-        // выпустила шары — на её месте ничего не осталось
-        if (!g.spent) drawBalloonPad(ctx, g.cx, g.cy, cell, g.alive);
-        break;
-      case "trap": {
-        let held = 0;
-        if (g.alive) {
-          for (const d of s.drones) if (d.heldBy === g.id) held++;
-        }
-        drawTrap(ctx, g.cx, g.cy, cell, g.alive, held, now, trapsReach);
-        break;
-      }
-      default:
-        drawTurret(ctx, g.cx, g.cy, cell, g.angle, g.alive);
-        break;
-    }
+    const kind = gunKind(g);
+    // выпустила шары — на её месте ничего не осталось
+    if (kind === "balloon" && g.spent) continue;
+    drawPiece(ctx, kind, g.cx, g.cy, cell, g.angle, g.alive, {
+      // Льёт только с водой, без пены и пока идёт бой. Счётчик струй в
+      // движке у пустой или заглушённой установки застывает, а когда бой
+      // кончился — у всех: симуляция встала, пока последний очаг ещё
+      // заливали. По нему одному струи висели бы и в паузе перед итогом,
+      // и в конце повтора.
+      wet: s.phase === "playing" && g.jammed <= 0 ? g.wet : 0,
+      range: kind === "trap" ? trapsReach : reach,
+      loaded: !launched.has(g.id),
+      held: held.get(g.id) ?? 0,
+      now,
+    });
   }
 
   drawBalloons(ctx, s.balloons, cell);
@@ -463,24 +396,30 @@ export function drawFrame(
   for (const i of s.fire.keys()) {
     const x = i % GRID;
     const y = (i / GRID) | 0;
+    // мерцает от тёмно-оранжевого к жёлтому, у каждой клетки своя фаза
     const f = 0.5 + 0.5 * Math.sin(now * 0.012 + (x * 7 + y * 13));
     ctx.fillStyle = `rgb(${230 + f * 25}, ${70 + f * 90}, 20)`;
     ctx.fillRect(x * cell, y * cell, cell, cell);
-    ctx.fillStyle = `rgba(255, 240, 160, ${0.25 + f * 0.45})`;
+    ctx.globalAlpha = 0.25 + f * 0.45;
+    ctx.fillStyle = COLORS.fireCore;
     ctx.fillRect(x * cell + cell * 0.3, y * cell + cell * 0.3, cell * 0.4, cell * 0.4);
+    ctx.globalAlpha = 1;
   }
 
   drawFireSmoke(ctx, s.fire.keys(), s.fire.size, cell, now);
 
-  // чёрный дым за подбитыми
+  // Дым за подбитыми и выхлоп ракет — мягкими клубами, как у взрыва. След
+  // ракеты из таких клубов сливается в сплошной шлейф, который пухнет и тает.
   for (const p of s.puffs) {
     const k = p.t / (p.life ?? FX.smokeLife);
-    // выхлоп ракеты — белый след, дым подбитого — чёрный
-    ctx.fillStyle = `rgba(${p.light ? COLORS.trail : COLORS.smoke}, ${0.5 * (1 - k)})`;
-    ctx.beginPath();
-    ctx.arc(p.x * cell, p.y * cell, p.r * cell * (0.6 + k * 1.6), 0, Math.PI * 2);
-    ctx.fill();
+    const fade = (1 - k) * Math.min(1, k * 8 + 0.4);
+    if (p.light) {
+      drawSoft(ctx, "trail", p.x * cell, p.y * cell, p.r * cell * (0.9 + k * 2.2), 0.6 * fade);
+    } else {
+      drawSoft(ctx, "smoke", p.x * cell, p.y * cell, p.r * cell * (0.9 + k * 2.2), 0.75 * fade);
+    }
   }
+  ctx.globalAlpha = 1;
 
   // Снаряды зениток — короткие трассеры, парой, по одному из каждого
   // ствола спарки. Пара только на картинке: в бою это один снаряд, и бьёт
@@ -513,9 +452,9 @@ export function drawFrame(
     ctx.lineTo(-len * (0.8 + f * 0.7), 0);
     ctx.lineTo(-len * 0.35, cell * 0.11);
     ctx.closePath();
-    ctx.fillStyle = "rgba(255, 82, 64, 0.9)";
+    ctx.fillStyle = COLORS.foeFlame;
     ctx.fill();
-    ctx.fillStyle = "#26201c";
+    ctx.fillStyle = COLORS.foeBody;
     ctx.fillRect(-len * 0.4, -cell * 0.1, len * 0.8, cell * 0.2);
     ctx.beginPath();
     ctx.moveTo(len * 0.4, -cell * 0.1);
@@ -540,7 +479,7 @@ export function drawFrame(
     ctx.lineTo(-len * (0.9 + f * 0.8), 0);
     ctx.lineTo(-len * 0.35, cell * 0.12);
     ctx.closePath();
-    ctx.fillStyle = "rgba(255, 168, 56, 0.85)";
+    ctx.fillStyle = COLORS.flame;
     ctx.fill();
 
     ctx.beginPath();
@@ -548,10 +487,10 @@ export function drawFrame(
     ctx.lineTo(-len * (0.5 + f * 0.5), 0);
     ctx.lineTo(-len * 0.3, cell * 0.06);
     ctx.closePath();
-    ctx.fillStyle = "#fff3c4";
+    ctx.fillStyle = COLORS.flameCore;
     ctx.fill();
 
-    ctx.fillStyle = "#dfe7ef";
+    ctx.fillStyle = COLORS.rocketBody;
     ctx.fillRect(-len * 0.35, -cell * 0.09, len, cell * 0.18);
     ctx.beginPath();
     ctx.moveTo(len * 0.65, -cell * 0.09);
@@ -630,28 +569,7 @@ export function drawFrame(
     // в цикле: кольцо топлива ниже меняет толщину, и следующий дрон
     // иначе рисовался бы его линией
     ctx.lineWidth = frame;
-    ctx.strokeStyle = COLORS.drone;
-    ctx.beginPath();
-    ctx.moveTo(px - r, py - r);
-    ctx.lineTo(px + r, py + r);
-    ctx.moveTo(px + r, py - r);
-    ctx.lineTo(px - r, py + r);
-    ctx.stroke();
-    ctx.fillStyle = COLORS.drone;
-    for (const [ox, oy] of [
-      [-r, -r],
-      [r, -r],
-      [-r, r],
-      [r, r],
-    ]) {
-      ctx.beginPath();
-      ctx.arc(px + ox, py + oy, r * 0.4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.fillStyle = COLORS.payload[d.payload] ?? COLORS.droneAccent;
-    ctx.beginPath();
-    ctx.arc(px, py, r * 0.45, 0, Math.PI * 2);
-    ctx.fill();
+    drawDrone(ctx, px, py, r, COLORS.payload[d.payload] ?? COLORS.droneAccent);
 
     // Топливо подавителя — дугой вокруг боеголовки, как бак огнетушителя.
     // Горит только на круге над жертвой; пока летит — полный запас (~30 с).
@@ -700,7 +618,8 @@ export function drawFrame(
     const px = sh.x * cell;
     const py = sh.y * cell;
     if (sh.water) {
-      ctx.strokeStyle = `rgba(121, 199, 255, ${0.9 * k})`;
+      ctx.globalAlpha = 0.9 * k;
+      ctx.strokeStyle = COLORS.water;
       ctx.lineWidth = Math.max(1, cell * 0.3);
       ctx.beginPath();
       for (let n = 0; n < 5; n++) {
@@ -710,13 +629,15 @@ export function drawFrame(
         ctx.lineTo(px + Math.cos(a) * len, py + Math.sin(a) * len);
       }
       ctx.stroke();
-      ctx.fillStyle = `rgba(200, 235, 255, ${0.8 * k})`;
+      ctx.globalAlpha = 0.8 * k;
+      ctx.fillStyle = COLORS.waterSpray;
       ctx.beginPath();
       ctx.arc(px, py, cell * 0.5, 0, Math.PI * 2);
       ctx.fill();
     } else {
       const rr = cell * (1 + sh.seed * 0.7);
-      ctx.strokeStyle = `rgba(255, 233, 168, ${k})`;
+      ctx.globalAlpha = k;
+      ctx.strokeStyle = COLORS.flash;
       ctx.lineWidth = Math.max(1, cell * 0.25);
       ctx.beginPath();
       for (let n = 0; n < 4; n++) {
@@ -725,12 +646,13 @@ export function drawFrame(
         ctx.lineTo(px + Math.cos(a) * rr, py + Math.sin(a) * rr);
       }
       ctx.stroke();
-      ctx.fillStyle = `rgba(255, 255, 220, ${k})`;
+      ctx.fillStyle = COLORS.flashCore;
       ctx.beginPath();
       ctx.arc(px, py, cell * 0.45, 0, Math.PI * 2);
       ctx.fill();
     }
   }
+  ctx.globalAlpha = 1;
 
   // взрывы
   for (const b of s.booms) drawBoom(ctx, b, cell);
@@ -758,7 +680,6 @@ function drawFireSmoke(
   const per = count > 300 ? 1 : count > 150 ? 2 : 3;
   const t = now / 1000;
   ctx.save();
-  ctx.fillStyle = "rgb(78, 74, 70)";
   for (const i of cells) {
     const x = i % GRID;
     const y = (i / GRID) | 0;
@@ -768,16 +689,16 @@ function drawFireSmoke(
       const k = (t / SMOKE_LIFE + shift + j / per) % 1;
       const rise = k * 4; // клеток вверх за жизнь клуба
       const drift = k * 1.4 + Math.sin((t + shift * 7) * 1.7 + j) * 0.25; // ветер вправо
-      ctx.globalAlpha = 0.55 * Math.sin(k * Math.PI); // проявляется и тает
-      ctx.beginPath();
-      ctx.arc(
+      // Мягкий клуб, как у взрыва: проявляется и тает. Края у него
+      // прозрачные, поэтому радиус больше прежнего плоского круга.
+      drawSoft(
+        ctx,
+        "smoke",
         (x + 0.5 + drift) * cell,
         (y + 0.4 - rise) * cell,
-        cell * (0.6 + 2 * k),
-        0,
-        Math.PI * 2
+        cell * (0.85 + 2.6 * k),
+        0.7 * Math.sin(k * Math.PI)
       );
-      ctx.fill();
     }
   }
   ctx.restore();
@@ -809,9 +730,9 @@ export function drawHoverLabel(
   const padY = 3;
   const boxH = 12 + padY * 2;
   const boxY = -boxH;
-  ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+  ctx.fillStyle = COLORS.labelBg;
   ctx.fillRect(-tw / 2 - padX, boxY, tw + padX * 2, boxH);
-  ctx.fillStyle = "#f5f5f5";
+  ctx.fillStyle = COLORS.labelText;
   ctx.fillText(label, 0, boxY + boxH / 2);
   ctx.restore();
 }
