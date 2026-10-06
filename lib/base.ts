@@ -250,6 +250,23 @@ export function starterCells(side: number): Uint8Array {
   return cells;
 }
 
+/**
+ * Установки стартового склада: зенитки по углам и огнетушитель в центре —
+ * чтобы первый налёт было чем встретить. Сервер ставит те же (starter_guns).
+ */
+export function starterGuns(side: number): Gun[] {
+  const lo = ((GRID - side) / 2) | 0;
+  const hi = lo + side - 1;
+  const mid = lo + ((side - 1) >> 1);
+  return [
+    { cx: lo, cy: lo, kind: "gun" },
+    { cx: hi, cy: lo, kind: "gun" },
+    { cx: lo, cy: hi, kind: "gun" },
+    { cx: hi, cy: hi, kind: "gun" },
+    { cx: mid, cy: mid, kind: "spray" },
+  ];
+}
+
 // --- хранение ---
 
 /**

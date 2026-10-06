@@ -20,6 +20,7 @@ import {
   encodeCells,
   regrowGround,
   starterCells,
+  starterGuns,
 } from "./base";
 import type { AttackOrder } from "./attack";
 import type { Enemy } from "./enemy";
@@ -120,7 +121,7 @@ export function newPlayer(now = Date.now()): Player {
     loan: 0,
     loanDue: null,
     cells: starterCells(STARTER_SIDE),
-    guns: [],
+    guns: starterGuns(STARTER_SIDE),
     depots: [],
     lastIncomeAt: now,
     createdAt: now,

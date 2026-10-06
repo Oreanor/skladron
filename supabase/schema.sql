@@ -133,6 +133,15 @@ language sql immutable as $$
   from generate_series(0, 9999) as cells(n);
 $$;
 
+-- Установки стартового склада: зенитки по углам и огнетушитель в центре.
+-- Клиент ставит те же (starterGuns в lib/base.ts).
+create or replace function starter_guns() returns jsonb
+language sql immutable as $$
+  select '[{"cx":47,"cy":47,"kind":"gun"},{"cx":51,"cy":47,"kind":"gun"},
+           {"cx":47,"cy":51,"kind":"gun"},{"cx":51,"cy":51,"kind":"gun"},
+           {"cx":49,"cy":49,"kind":"spray"}]'::jsonb;
+$$;
+
 -- Во сколько обходится товар на складе: по нему считается суточный доход и
 -- страховая выплата за сгоревшее.
 create or replace function depot_value(d jsonb) returns int
@@ -479,8 +488,8 @@ begin
   )
   on conflict (id) do nothing;
 
-  insert into bases (user_id, cells)
-  values (uid, starter_map())
+  insert into bases (user_id, cells, guns)
+  values (uid, starter_map(), starter_guns())
   on conflict (user_id) do nothing;
 end;
 $$;
@@ -1634,7 +1643,7 @@ begin
 
   update bases
      set cells = starter_map(),
-         guns = '[]'::jsonb, drone_cells = '[]'::jsonb,
+         guns = starter_guns(), drone_cells = '[]'::jsonb,
          intact_cells = price('free'), updated_at = now()
    where user_id = uid;
 
@@ -2172,7 +2181,7 @@ begin
 
   update bases
      set cells = starter_map(),
-         guns = '[]'::jsonb, drone_cells = '[]'::jsonb,
+         guns = starter_guns(), drone_cells = '[]'::jsonb,
          intact_cells = price('free'), updated_at = now()
    where user_id = uid;
 
