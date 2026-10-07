@@ -72,7 +72,10 @@ export default function AuthGate() {
 
   if (cloudEnabled && state === "anon") {
     return (
-      <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border border-neutral-700">
+      // Заставка — на всё окно, а не в рамке главного контейнера: картинку
+      // выбираем по пропорциям окна, и на широком мониторе рамка шириной в
+      // max-w-6xl была почти квадратной — широкий арт срезало по бокам.
+      <div className="fixed inset-0 z-10 overflow-hidden bg-black">
         {/*
           Заставка нарисована в четырёх пропорциях, логотип в каждой врисован
           под свой кроп. Выбираем по пропорциям экрана, а не по ширине: планшет
