@@ -35,7 +35,7 @@ language sql immutable as $$
     when 'insure_step'  then 25  -- покрытие товара и пушек: столько процентов за уровень полиса
     when 'free'   then 25   -- стартовая площадь 5×5 достаётся даром
     when 'found'  then 25   -- столько же нужно, чтобы основаться
-    when 'upgrade' then 5000 -- апгрейд на любую ступень стоит одинаково
+    when 'upgrade' then 1000 -- первый уровень; каждый следующий вдвое дороже
     -- Цена на десятом уровне: с первого до десятого вещь дорожает ровно.
     when 'gun_top'     then 200
     when 'rocket_top'  then 400
@@ -1190,7 +1190,7 @@ $$;
 
 -- ---------- апгрейд классов ----------
 -- Уровень общий для всего класса: апгрейд достаёт и склад, и то, что
--- купят завтра. Цена растёт линейно: на 2-й уровень 5000, на 3-й 10000.
+-- купят завтра. Видимый уровень 1 стоит 1000, каждый следующий вдвое дороже, до 512000.
 
 create or replace function upgrade(kind text)
 returns table (credits int, levels jsonb)
@@ -1213,7 +1213,7 @@ begin
   if cur >= (case when kind = 'insurance' then 5 else 11 end) then
     raise exception 'already at max level';
   end if;
-  cost := price('upgrade');
+  cost := price('upgrade') * (1 << (cur - 1));
 
   update profiles
      set credits = profiles.credits - cost,

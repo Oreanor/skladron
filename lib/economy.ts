@@ -121,10 +121,10 @@ export const defenseBounty = (drones: number, burned: number) => {
 };
 /**
  * Уровни. Апгрейд общий на класс: дорожает и уже лежащее на складе, и всё,
- * что купишь потом. Второй уровень стоит 5 000, третий 10 000, и так далее —
- * шаг ровный, чтобы прикидывать в уме.
+ * что купишь потом. Первый видимый уровень стоит 1 000, каждый следующий
+ * вдвое дороже: десятый — 512 000.
  */
-export const UPGRADE_STEP = 5000;
+export const UPGRADE_STEP = 1000;
 /**
  * Ступеней прокачки одиннадцать. Хранятся они с единицы, как и раньше, а
  * игроку показываются с нуля — от 0 до 10 (shownLevel): так цена растёт
@@ -135,8 +135,8 @@ export const MAX_LEVEL = 11;
 /** Уровень, каким его видит игрок: хранимый минус один, от нуля. */
 export const shownLevel = (level: number) => Math.max(0, level - 1);
 
-/** Цена следующего уровня. Одна и та же на всех ступенях. */
-export const upgradeCost = (_level: number) => UPGRADE_STEP;
+/** Цена следующего уровня: хранимый 1 означает переход с видимого 0 на 1. */
+export const upgradeCost = (level: number) => UPGRADE_STEP * 2 ** (level - 1);
 
 export type UpgradeKind =
   | "drones"

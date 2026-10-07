@@ -203,6 +203,11 @@ console.log('\n— оторванный кусок склада не прист�
 
 console.log('\n— прокачка дорожает по формуле —');
 {
+  const expected = [1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000, 256000, 512000];
+  check('цены переходов с уровня 0 до 10 удваиваются',
+    expected.every((cost, i) => E.upgradeCost(i + 1) === cost));
+}
+{
   const p = player();
   for (const [kind, base, level, top] of [
     ['gun', E.GUN_COST, 'guns', 200],

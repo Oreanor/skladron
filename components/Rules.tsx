@@ -29,6 +29,7 @@ import {
   SCRAP_REWARD,
   STARTER_SIDE,
   UPGRADE_STEP,
+  upgradeCost,
   fmt,
 } from "@/lib/economy";
 
@@ -83,6 +84,7 @@ const values: Record<string, string> = {
   insureCell: String(INSURANCE_CELL),
   insureShare: String(Math.round(INSURANCE_PER_LEVEL * 100)),
   upgrade: fmt(UPGRADE_STEP),
+  upgradeTop: fmt(upgradeCost(10)),
   scrap: String(SCRAP_REWARD),
   droneBoxTop: String(DRONE_TOP * DRONES_PER_CELL),
   loanMin: fmt(LOAN_MIN),
