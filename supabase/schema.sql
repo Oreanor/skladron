@@ -36,6 +36,7 @@ language sql immutable as $$
     when 'free'   then 25   -- стартовая площадь 5×5 достаётся даром
     when 'found'  then 25   -- столько же нужно, чтобы основаться
     when 'upgrade' then 1000 -- первый уровень; каждый следующий вдвое дороже
+    when 'insurance_upgrade' then 250 -- страховка: отдельная базовая цена
     -- Цена на десятом уровне: с первого до десятого вещь дорожает ровно.
     when 'gun_top'     then 200
     when 'rocket_top'  then 400
@@ -1213,7 +1214,8 @@ begin
   if cur >= (case when kind = 'insurance' then 5 else 11 end) then
     raise exception 'already at max level';
   end if;
-  cost := price('upgrade') * (1 << (cur - 1));
+  cost := price(case when kind = 'insurance' then 'insurance_upgrade' else 'upgrade' end)
+          * (1 << ((cur - 1) * (case when kind = 'insurance' then 2 else 1 end)));
 
   update profiles
      set credits = profiles.credits - cost,

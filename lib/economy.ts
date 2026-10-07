@@ -125,6 +125,7 @@ export const defenseBounty = (drones: number, burned: number) => {
  * вдвое дороже: десятый — 512 000.
  */
 export const UPGRADE_STEP = 1000;
+export const INSURANCE_UPGRADE_STEP = 250;
 /**
  * Ступеней прокачки одиннадцать. Хранятся они с единицы, как и раньше, а
  * игроку показываются с нуля — от 0 до 10 (shownLevel): так цена растёт
@@ -136,7 +137,10 @@ export const MAX_LEVEL = 11;
 export const shownLevel = (level: number) => Math.max(0, level - 1);
 
 /** Цена следующего уровня: хранимый 1 означает переход с видимого 0 на 1. */
-export const upgradeCost = (level: number) => UPGRADE_STEP * 2 ** (level - 1);
+export const upgradeCost = (level: number, kind?: UpgradeKind) =>
+  kind === "insurance"
+    ? INSURANCE_UPGRADE_STEP * 4 ** (level - 1)
+    : UPGRADE_STEP * 2 ** (level - 1);
 
 export type UpgradeKind =
   | "drones"

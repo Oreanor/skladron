@@ -59,7 +59,7 @@ export function UpgradeDialog({
           {UPGRADE_KINDS.map((kind) => {
             const level = player.levels[kind];
             const maxed = level >= maxLevel(kind);
-            const cost = upgradeCost(level);
+            const cost = upgradeCost(level, kind);
             return (
               <div key={kind} className="flex items-center justify-between gap-3">
                 <span className="min-w-0 truncate text-neutral-200">
@@ -98,7 +98,7 @@ export function InsuranceDialog({
   const t = useT();
   const level = player.levels.insurance;
   const canUpgrade = level < MAX_INSURANCE_LEVEL;
-  const cost = upgradeCost(level);
+  const cost = upgradeCost(level, "insurance");
 
   return (
     <Modal

@@ -14,7 +14,7 @@ import {
 import {
   CREDITS_START,
   LOAN_HOURS,
-  MAX_LEVEL,
+  maxLevel,
   STARTER_CELLS,
   loanDebt,
   upgradeCost,
@@ -250,8 +250,8 @@ class LocalRepo implements Repo {
   }
 
   async upgrade(p: Player, kind: UpgradeKind) {
-    if (p.levels[kind] >= MAX_LEVEL) throw new Error("already at max level");
-    const cost = upgradeCost(p.levels[kind]);
+    if (p.levels[kind] >= maxLevel(kind)) throw new Error("already at max level");
+    const cost = upgradeCost(p.levels[kind], kind);
     if (p.credits < cost) throw new Error("not enough credits");
     p.credits -= cost;
     p.levels = { ...p.levels, [kind]: p.levels[kind] + 1 };

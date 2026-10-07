@@ -1203,7 +1203,7 @@ export default function Lobby({
   const doUpgrade = async (kind: UpgradeKind) => {
     const level = p.levels[kind];
     if (level >= maxLevel(kind)) return;
-    const cost = upgradeCost(level);
+    const cost = upgradeCost(level, kind);
     if (p.credits < cost) {
       setMessage(t("upgrade.cantAfford", { cost: fmt(cost) }));
       return;

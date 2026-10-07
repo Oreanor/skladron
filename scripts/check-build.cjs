@@ -206,6 +206,12 @@ console.log('\n— прокачка дорожает по формуле —');
   const expected = [1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000, 256000, 512000];
   check('цены переходов с уровня 0 до 10 удваиваются',
     expected.every((cost, i) => E.upgradeCost(i + 1) === cost));
+  const insuranceCosts = [250, 1000, 4000, 16000];
+  check('четыре улучшения страховки стоят 250, 1000, 4000, 16000',
+    E.maxLevel('insurance') === insuranceCosts.length + 1 &&
+    insuranceCosts.every((cost, i) => E.upgradeCost(i + 1, 'insurance') === cost));
+  check('покрытие страховки сохраняется: 0%, 25%, 50%, 75%, 100%',
+    [0, 0.25, 0.5, 0.75, 1].every((share, i) => E.insuranceShare(i + 1) === share));
 }
 {
   const p = player();

@@ -98,7 +98,7 @@ const en: RuleSection[] = [
   {
     title: "Upgrades",
     lines: [
-      "Level 1 costs {upgrade} cr; every next level costs twice as much, up to {upgradeTop} cr for level 10. Levels count from zero up to ten; the insurance policy stops at four, where cover is already full.",
+      "Level 1 costs {upgrade} cr; every next level costs twice as much, up to {upgradeTop} cr for level 10. Levels count from zero up to ten; the insurance policy stops at four, where cover is already full. Insurance starts at {insuranceUpgrade} cr, and each next upgrade costs four times as much.",
       "Drones fly faster and see farther on recon, guns reach further and shoot quicker, the machine gun aims better, the hose covers more, sprinklers douse a wider circle, traps grab farther. Balloons — a wider circle and two more balloons per level.",
       "Launchers grow the same way: more range and a faster missile with every level.",
       "A level applies to everything at once — to what is already in stock and to everything bought later.",
@@ -208,7 +208,7 @@ const ru: RuleSection[] = [
   {
     title: "Прокачка",
     lines: [
-      "Первый уровень стоит {upgrade} кр; каждый следующий вдвое дороже, до {upgradeTop} кр за десятый. Уровни считаются с нуля и доходят до десятого, у полиса — до четвёртого: дальше покрывать нечего.",
+      "Первый уровень стоит {upgrade} кр; каждый следующий вдвое дороже, до {upgradeTop} кр за десятый. Уровни считаются с нуля и доходят до десятого, у полиса — до четвёртого: дальше покрывать нечего. Улучшение страховки начинается с {insuranceUpgrade} кр, каждый следующий уровень вчетверо дороже.",
       "Дроны летят быстрее и на разведке видят дальше, пушки бьют дальше и резвее, пулемёт точнее, струя шире, огнетушители заливают круг побольше, ловушки хватают дальше. Шары — шире круг и на два шара больше за уровень.",
       "Ракетницы растут так же: с каждым уровнем дальше достают и быстрее гонят ракету.",
       "Уровень достаётся всему классу разом — и тому, что уже на складе, и тому, что купишь потом.",
@@ -318,7 +318,7 @@ const es: RuleSection[] = [
   {
     title: "Mejoras",
     lines: [
-      "El nivel 1 cuesta {upgrade} cr; cada nivel siguiente cuesta el doble, hasta {upgradeTop} cr por el nivel 10. Los niveles van de cero a diez; la póliza se queda en el cuarto, cuando la cobertura ya es total.",
+      "El nivel 1 cuesta {upgrade} cr; cada nivel siguiente cuesta el doble, hasta {upgradeTop} cr por el nivel 10. Los niveles van de cero a diez; la póliza se queda en el cuarto, cuando la cobertura ya es total. El seguro empieza en {insuranceUpgrade} cr y cada mejora siguiente cuesta cuatro veces más.",
       "Los drones vuelan más rápido y ven más lejos en exploración, los cañones llegan más lejos y disparan antes, la ametralladora apunta mejor, la manguera cubre más, los extintores riegan un círculo mayor, las trampas atrapan más lejos. Globos: un círculo más amplio y dos globos más por nivel.",
       "Las lanzaderas crecen igual: más alcance y misil más rápido con cada nivel.",
       "El nivel vale para toda la clase a la vez: lo que ya tienes y lo que compres después.",
@@ -428,7 +428,7 @@ const pt: RuleSection[] = [
   {
     title: "Melhorias",
     lines: [
-      "O nível 1 custa {upgrade} cr; cada nível seguinte custa o dobro, até {upgradeTop} cr pelo nível 10. Os níveis vão de zero a dez; a apólice fica no quarto, quando a cobertura já é total.",
+      "O nível 1 custa {upgrade} cr; cada nível seguinte custa o dobro, até {upgradeTop} cr pelo nível 10. Os níveis vão de zero a dez; a apólice fica no quarto, quando a cobertura já é total. O seguro começa em {insuranceUpgrade} cr e cada melhoria seguinte custa quatro vezes mais.",
       "Os drones voam mais depressa e veem mais longe em reconhecimento, os canhões alcançam mais longe e disparam mais rápido, a metralhadora acerta melhor, a mangueira cobre mais, os extintores regam um círculo maior, as armadilhas apanham mais longe. Balões — um círculo mais largo e mais dois balões por nível.",
       "Os lançadores crescem do mesmo modo: mais alcance e míssil mais rápido a cada nível.",
       "O nível vale para toda a classe de uma vez: o que já tens e o que comprares depois.",
@@ -538,7 +538,7 @@ const fr: RuleSection[] = [
   {
     title: "Améliorations",
     lines: [
-      "Le niveau 1 coûte {upgrade} cr ; chaque niveau suivant coûte le double, jusqu’à {upgradeTop} cr pour le niveau 10. Les niveaux vont de zéro à dix ; la police s’arrête au quatrième, la couverture y est déjà totale.",
+      "Le niveau 1 coûte {upgrade} cr ; chaque niveau suivant coûte le double, jusqu’à {upgradeTop} cr pour le niveau 10. Les niveaux vont de zéro à dix ; la police s’arrête au quatrième, la couverture y est déjà totale. L’assurance commence à {insuranceUpgrade} cr et chaque amélioration suivante coûte quatre fois plus.",
       "Les drones volent plus vite et voient plus loin en reconnaissance, les canons portent plus loin et tirent plus vite, la mitrailleuse vise mieux, la lance couvre plus, les extincteurs arrosent un cercle plus large, les pièges attrapent plus loin. Ballons — un cercle plus large et deux ballons de plus par niveau.",
       "Les lance-roquettes progressent pareil : plus de portée et un missile plus rapide à chaque niveau.",
       "Le niveau vaut pour toute la classe d’un coup : ce que tu as déjà et ce que tu achèteras ensuite.",
@@ -648,7 +648,7 @@ const de: RuleSection[] = [
   {
     title: "Ausbau",
     lines: [
-      "Stufe 1 kostet {upgrade} Cr; jede weitere Stufe kostet doppelt so viel, bis zu {upgradeTop} Cr für Stufe 10. Die Stufen zählen von null bis zehn; die Police endet bei vier, dort ist die Deckung schon voll.",
+      "Stufe 1 kostet {upgrade} Cr; jede weitere Stufe kostet doppelt so viel, bis zu {upgradeTop} Cr für Stufe 10. Die Stufen zählen von null bis zehn; die Police endet bei vier, dort ist die Deckung schon voll. Die Versicherung beginnt bei {insuranceUpgrade} Cr; jede weitere Verbesserung kostet viermal so viel.",
       "Drohnen fliegen schneller und sehen in der Aufklärung weiter, Geschütze reichen weiter und schießen zügiger, das MG trifft besser, der Schlauch deckt mehr ab, Löschanlagen begießen einen größeren Kreis, Fallen greifen weiter. Ballons — ein weiterer Kreis und zwei Ballons mehr je Stufe.",
       "Raketenwerfer wachsen genauso: mehr Reichweite und eine schnellere Rakete je Stufe.",
       "Eine Stufe gilt für die ganze Klasse auf einmal — für Vorhandenes und für später Gekauftes.",
@@ -758,7 +758,7 @@ const it: RuleSection[] = [
   {
     title: "Potenziamenti",
     lines: [
-      "Il livello 1 costa {upgrade} cr; ogni livello successivo costa il doppio, fino a {upgradeTop} cr per il livello 10. I livelli vanno da zero a dieci; la polizza si ferma al quarto, dove la copertura è già piena.",
+      "Il livello 1 costa {upgrade} cr; ogni livello successivo costa il doppio, fino a {upgradeTop} cr per il livello 10. I livelli vanno da zero a dieci; la polizza si ferma al quarto, dove la copertura è già piena. L’assicurazione parte da {insuranceUpgrade} cr e ogni miglioramento successivo costa quattro volte tanto.",
       "I droni volano più veloci e vedono più lontano in ricognizione, i cannoni arrivano più lontano e sparano prima, la mitragliatrice mira meglio, la manichetta copre di più, gli estintori bagnano un cerchio più ampio, le trappole afferrano più lontano. Palloni — un cerchio più ampio e due palloni in più per livello.",
       "I lanciarazzi crescono allo stesso modo: più gittata e missile più veloce a ogni livello.",
       "Il livello vale per tutta la classe in una volta: per ciò che hai già e per ciò che comprerai poi.",
@@ -868,7 +868,7 @@ const uk: RuleSection[] = [
   {
     title: "Прокачка",
     lines: [
-      "Перший рівень коштує {upgrade} кр; кожен наступний удвічі дорожчий, до {upgradeTop} кр за десятий. Рівні рахуються з нуля й доходять до десятого, у поліса — до четвертого: далі покривати нічого.",
+      "Перший рівень коштує {upgrade} кр; кожен наступний удвічі дорожчий, до {upgradeTop} кр за десятий. Рівні рахуються з нуля й доходять до десятого, у поліса — до четвертого: далі покривати нічого. Покращення страховки починається з {insuranceUpgrade} кр, кожен наступний рівень учетверо дорожчий.",
       "Дрони летять швидше й на розвідці бачать далі, гармати б’ють далі й жвавіше, кулемет влучніший, струмінь ширший, вогнегасники заливають більше коло, пастки хапають далі. Кулі — ширше коло й на дві кулі більше за рівень.",
       "Ракетниці ростуть так само: з кожним рівнем далі дістають і швидше женуть ракету.",
       "Рівень дістається всьому класу разом — і тому, що вже на складі, і тому, що купиш потім.",
@@ -978,7 +978,7 @@ const pl: RuleSection[] = [
   {
     title: "Ulepszenia",
     lines: [
-      "Poziom 1 kosztuje {upgrade} kr; każdy kolejny kosztuje dwa razy więcej, aż do {upgradeTop} kr za poziom 10. Poziomy liczy się od zera do dziesięciu; polisa kończy się na czwartym, gdzie pokrycie jest już pełne.",
+      "Poziom 1 kosztuje {upgrade} kr; każdy kolejny kosztuje dwa razy więcej, aż do {upgradeTop} kr za poziom 10. Poziomy liczy się od zera do dziesięciu; polisa kończy się na czwartym, gdzie pokrycie jest już pełne. Ubezpieczenie zaczyna się od {insuranceUpgrade} kr, a każde kolejne ulepszenie kosztuje cztery razy więcej.",
       "Drony latają szybciej i na zwiadzie widzą dalej, działa sięgają dalej i strzelają szybciej, karabin celuje lepiej, strumień jest szerszy, gaśnice zalewają większe koło, pułapki chwytają dalej. Balony — szersze koło i dwa balony więcej na poziom.",
       "Wyrzutnie rosną tak samo: z każdym poziomem większy zasięg i szybsza rakieta.",
       "Poziom obejmuje całą klasę naraz — i to, co już jest w magazynie, i to, co kupisz później.",
@@ -1088,7 +1088,7 @@ const tr: RuleSection[] = [
   {
     title: "Geliştirmeler",
     lines: [
-      "1. seviye {upgrade} kr; sonraki her seviye iki katına mal olur, 10. seviye {upgradeTop} kr. Seviyeler sıfırdan ona kadar sayılır; sigorta poliçesi teminatın tamamlandığı dördüncüde durur.",
+      "1. seviye {upgrade} kr; sonraki her seviye iki katına mal olur, 10. seviye {upgradeTop} kr. Seviyeler sıfırdan ona kadar sayılır; sigorta poliçesi teminatın tamamlandığı dördüncüde durur. Sigorta {insuranceUpgrade} kr ile başlar; sonraki her yükseltme dört katına mal olur.",
       "Dronlar daha hızlı uçar ve keşifte daha uzağı görür, toplar daha uzağa ve daha hızlı vurur, makineli daha isabetli, hortum daha geniş, söndürücüler daha büyük daireyi ıslatır, tuzaklar daha uzaktan yakalar. Balonlar — seviye başına daha geniş daire ve iki balon fazla.",
       "Fırlatıcılar da aynı şekilde büyür: her seviyede daha çok menzil ve daha hızlı füze.",
       "Seviye her şeye birden uygulanır — depoda olana da, sonra alınacak her şeye de.",
@@ -1198,7 +1198,7 @@ const zh: RuleSection[] = [
   {
     title: "升级",
     lines: [
-      "1级需要 {upgrade} 币，之后每级价格翻倍，10级需要 {upgradeTop} 币。 等级从零算到十；保险只到四级，那时已全额赔付。",
+      "1级需要 {upgrade} 币，之后每级价格翻倍，10级需要 {upgradeTop} 币。 等级从零算到十；保险只到四级，那时已全额赔付。 保险升级从 {insuranceUpgrade} 币起，每次后续升级的价格是前一次的四倍。",
       "无人机飞得更快、侦察看得更远，高射炮射程更远、射得更快，机枪更准，水枪覆盖更广，灭火器浇的圆更大，陷阱抓得更远。气球——每级圆更大，多两个气球。",
       "火箭发射器同样成长：每级射程更远、导弹更快。",
       "等级作用于全部——已在仓库里的和以后买的都一样。",
@@ -1308,7 +1308,7 @@ const ja: RuleSection[] = [
   {
     title: "強化",
     lines: [
-      "レベル1は {upgrade} cr。以後は倍額になり、レベル10は {upgradeTop} crです。 レベルは0から10まで数え、保険は補償が満額になる4で止まります。",
+      "レベル1は {upgrade} cr。以後は倍額になり、レベル10は {upgradeTop} crです。 レベルは0から10まで数え、保険は補償が満額になる4で止まります。 保険の強化は {insuranceUpgrade} crから始まり、次の強化は毎回4倍の価格になります。",
       "ドローンは速く飛び偵察で遠くまで見え、高射砲は射程が伸び連射が速くなり、機関銃は狙いが正確に、放水は範囲が広く、消火器はより大きな円を濡らし、トラップはより遠くから捕まえます。気球 — レベルごとに円が広がり、気球が2個増えます。",
       "ランチャーも同じように成長します：レベルごとに射程が伸び、ミサイルが速くなります。",
       "レベルはすべてに一度に適用されます — すでに倉庫にあるものにも、あとで買うものにも。",
@@ -1418,7 +1418,7 @@ const ko: RuleSection[] = [
   {
     title: "강화",
     lines: [
-      "1레벨은 {upgrade} cr이며, 다음 레벨마다 두 배가 되어 10레벨은 {upgradeTop} cr입니다. 레벨은 0부터 10까지 세고, 보험은 보상이 꽉 차는 4에서 멈춥니다.",
+      "1레벨은 {upgrade} cr이며, 다음 레벨마다 두 배가 되어 10레벨은 {upgradeTop} cr입니다. 레벨은 0부터 10까지 세고, 보험은 보상이 꽉 차는 4에서 멈춥니다. 보험 강화는 {insuranceUpgrade} cr부터 시작하며 다음 강화마다 가격이 네 배가 됩니다.",
       "드론은 더 빨리 날고 정찰에서 더 멀리 보며, 대공포는 사거리가 늘고 더 빨리 쏘고, 기관총은 더 정확하고, 호스는 더 넓게, 소화기는 더 큰 원을 적시고, 함정은 더 멀리서 붙잡습니다. 풍선 — 레벨마다 원이 넓어지고 풍선이 두 개 늘어납니다.",
       "발사기도 같은 식으로 자랍니다: 레벨마다 사거리가 늘고 미사일이 빨라집니다.",
       "레벨은 모든 것에 한꺼번에 적용됩니다 — 이미 창고에 있는 것에도, 나중에 살 것에도.",

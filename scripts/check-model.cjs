@@ -138,6 +138,7 @@ console.log('\n— цены клиента и сервера совпадают 
     ['CELL_COST', 'cell'], ['REPAIR_COST', 'repair'], ['SCRAP_REWARD', 'scrap'],
     ['CELL_LOOT_REWARD', 'loot'], ['LOOT_CURVE', 'loot_curve'],
     ['INSURANCE_CELL', 'insure_cell'], ['UPGRADE_STEP', 'upgrade'],
+    ['INSURANCE_UPGRADE_STEP', 'insurance_upgrade'],
     ['GUN_TOP', 'gun_top'], ['ROCKET_TOP', 'rocket_top'], ['SPRAY_TOP', 'spray_top'],
     ['TRAP_TOP', 'trap_top'], ['BALLOON_TOP', 'balloon_top'], ['DRONE_TOP', 'drone_top'],
     ['LOAN_MIN', 'loan_min'], ['LOAN_MAX', 'loan_max'], ['LOAN_RATE', 'loan_rate'],
