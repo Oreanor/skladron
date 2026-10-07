@@ -40,7 +40,6 @@ const tr: Dict = {
   "replays.incoming": "Baskın:",
   "replays.pending": "{drones} dron, henüz savunulmadı",
   "tool.priceBox": "{cost} kr/{perCell} adet",
-  "stat.creditsLine": "{credits} (+{income} kr/gün)",
   "stat.incomeLine": "+{income} kr/gün",
   "income.boxRow": "Dron kasası",
   "tool.loan": "Kredi",

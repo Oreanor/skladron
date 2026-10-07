@@ -1430,7 +1430,7 @@ export default function Lobby({
     <div className="flex min-h-0 flex-1 flex-col gap-2 lg:gap-3">
       {/* шапка телефона: наличные и доход в две строки плюс кнопки панелей */}
       <div className="order-1 flex shrink-0 items-center gap-2 lg:hidden">
-        <IncomeLine p={p} className="flex-1" stacked />
+        <IncomeLine p={p} className="flex-1" />
         {/* налёт — прямо в шапке, не открывая журнал */}
         <div className="shrink-0 whitespace-nowrap">{summonButton}</div>
         <IconButton

@@ -41,7 +41,6 @@ const en = {
   "replays.incoming": "Raid from",
   "replays.pending": "{drones} drones, not fought",
   "tool.priceBox": "{cost} cr/{perCell} pcs",
-  "stat.creditsLine": "{credits} (+{income} cr/day)",
   "stat.incomeLine": "+{income} cr/day",
   "income.boxRow": "Drone container",
   "tool.loan": "Loan",

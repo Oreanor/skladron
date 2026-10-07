@@ -12,17 +12,10 @@ import { droneCount } from "@/lib/base";
 import type { Player } from "@/lib/player";
 import { useT } from "@/lib/i18n";
 import { COLORS } from "@/lib/render";
+import { IconCoin } from "../icons";
 
-export default function IncomeLine({
-  p,
-  className = "",
-  stacked = false,
-}: {
-  p: Player;
-  className?: string;
-  /** В две строки: наличные крупно, доход под ними мельче — для телефона, где шапка узкая. */
-  stacked?: boolean;
-}) {
+/** В две строки: наличные с «кр», под ними мельче — суточный доход. */
+export default function IncomeLine({ p, className = "" }: { p: Player; className?: string }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const boxes = p.depots.length;
@@ -50,16 +43,13 @@ export default function IncomeLine({
         onClick={() => setOpen((v) => !v)}
         className="block w-full cursor-help truncate text-left font-mono text-sm text-emerald-300"
       >
-        {stacked ? (
-          <>
-            <span className="block truncate leading-tight">{t("tool.price", { cost: fmt(p.credits) })}</span>
-            <span className="block truncate text-[11px] leading-tight text-emerald-300/70">
-              {t("stat.incomeLine", { income: fmt(sale) })}
-            </span>
-          </>
-        ) : (
-          t("stat.creditsLine", { credits: fmt(p.credits), income: fmt(sale) })
-        )}
+        <span className="flex items-center gap-1.5 leading-tight">
+          <IconCoin className="h-4 w-3.5 shrink-0" />
+          <span className="truncate">{t("tool.price", { cost: fmt(p.credits) })}</span>
+        </span>
+        <span className="block truncate text-[11px] leading-tight text-emerald-300/70">
+          {t("stat.incomeLine", { income: fmt(sale) })}
+        </span>
       </button>
       <div
         className={`absolute left-0 top-full z-30 mt-1 w-max min-w-[16rem] rounded-md border border-neutral-700 bg-neutral-950/95 p-3 font-mono text-xs shadow-lg ${
