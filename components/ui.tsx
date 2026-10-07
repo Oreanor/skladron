@@ -232,11 +232,13 @@ export const inputClass =
 export function Sheet({
   open,
   title,
+  action,
   onClose,
   children,
 }: {
   open: boolean;
   title: string;
+  action?: ReactNode;
   onClose: () => void;
   children: ReactNode;
 }) {
@@ -265,6 +267,7 @@ export function Sheet({
       <div className="pointer-events-auto relative max-h-[82dvh] overflow-y-auto overscroll-contain rounded-t-2xl border-t border-neutral-700 bg-neutral-900 shadow-2xl">
         <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-neutral-800 bg-neutral-900/95 px-4 py-3 backdrop-blur">
           <SectionTitle>{title}</SectionTitle>
+          {action && <div className="ml-auto shrink-0 whitespace-nowrap">{action}</div>}
           <Button variant="ghost" size="sm" onClick={onClose} className="-my-1 text-lg leading-none">
             ✕
           </Button>
@@ -554,4 +557,3 @@ export function ToolButton({
  * столько ни к чему — за ним же живёт подсказка инструмента.
  */
 export const MESSAGE_MS = 12_000;
-
