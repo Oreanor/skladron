@@ -79,6 +79,8 @@ export function useAttacks(o: AttacksOptions): Attacks {
   /** Что было непрочитано в прошлый опрос: говорим только про прибавку. */
   const unreadAt = useRef<Record<string, number>>({});
   const namesAt = useRef(0);
+  /** Отчёты, что уже видели: журнал перечитываем только ради новых. */
+  const reportsSeen = useRef(new Set<string>());
 
   // ---------- опрос сервера ----------
   useEffect(() => {
@@ -119,6 +121,11 @@ export function useAttacks(o: AttacksOptions): Attacks {
         if (met) void repo.saveEnemies(cur).catch(() => {});
 
         setReports(state.reports);
+        // Новый отчёт значит, что враг отыграл наш налёт: журнал перечитываем
+        // сразу, иначе бой висел бы там «ещё летит» до закрытия отчёта.
+        const fresh = state.reports.some((r) => !reportsSeen.current.has(r.id));
+        reportsSeen.current = new Set(state.reports.map((r) => r.id));
+        if (fresh) opt.current.loadRaids();
         for (const a of state.incoming) {
           if (a.remote && !a.competitionStage) notifyBattle(a.id, "sent");
         }
