@@ -12,9 +12,10 @@ import {
 import { BALLOON, BLOW, FX, GUN, ROCKET, SPRAY, SUPPRESS, TRAP } from "../tuning";
 import { charFill } from "./char";
 import { COLORS } from "./colors";
+import { drawBattleDepots } from "./depots";
 import { drawBoom, drawSoft } from "./fx";
 import { slabBevel, slabShadow } from "./light";
-import { drawBalloons, drawDepots, drawDroneSwarm, drawPiece } from "./pieces";
+import { drawBalloons, drawDroneSwarm, drawPiece } from "./pieces";
 
 // Палитра и сами предметы живут в render/: их правят отдельно от кадра боя.
 export { COLORS, installColors } from "./colors";
@@ -322,7 +323,7 @@ export function drawFrame(
   /** Круги действия установок и дронов-подавителей, зона обдува. В бою их можно убрать. */
   zones = true
 ) {
-  drawDepots(ctx, s.depots, cell);
+  drawBattleDepots(ctx, s, cell);
 
   // следы пуль в земле
   // Одним путём: следов бывает до FX.maxHoles, по заливке на каждый — дорого.

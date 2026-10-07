@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "check": "node scripts/check-battle.cjs && node scripts/check-build.cjs && node scripts/check-model.cjs",
     "check:model": "node scripts/check-model.cjs",
-    "check:build": "node scripts/check-build.cjs"
+    "check:build": "node scripts/check-build.cjs",
+    "check:render": "node scripts/check-render.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",

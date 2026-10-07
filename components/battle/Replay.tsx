@@ -260,13 +260,15 @@ function ReplayView({
   const seekRef = useRef<number | null>(null);
 
   // Пушки крутит накладка кадра — на статике они иначе дают бледный призрак.
-  const scene = useMemo(() => ({ cells: s.cells, guns: [], depots: s.depots }), [s, run]);
+  const scene = useMemo(() => ({ cells: s.cells, guns: [], depots: s.depots }), [s]);
 
   useEffect(() => {
     let raf = 0;
     let last = performance.now();
     let carry = 0;
     let hudAt = 0;
+    let hudStep = -1;
+    let hudPhase: GameState["phase"] | undefined;
     let mapAt = 0;
     const cur = state.current!;
     stepRef.current = 0;
@@ -337,8 +339,12 @@ function ReplayView({
         mapAt = now;
         setVersion((v) => v + 1);
       }
-      if (now - hudAt > 100) {
+      // На паузе и после конца не пересобираем HUD: это будило и React, и карту.
+      // При перемотке шаг меняется, поэтому счёт и кадр продолжают обновляться.
+      if (now - hudAt > 100 && (hudStep !== stepRef.current || hudPhase !== cur.phase)) {
         hudAt = now;
+        hudStep = stepRef.current;
+        hudPhase = cur.phase;
         const done = cur.phase !== "playing";
         const byPayload: Partial<Record<Payload, number>> = {};
         for (const d of cur.drones) {
@@ -462,6 +468,7 @@ function ReplayView({
             scene={scene}
             sceneVersion={version}
             overlay={overlay}
+            idle={paused || hud.done}
             cursor="pointer"
             zones={{ on: zones, onChange: setZones }}
             onDown={onMapDown}
