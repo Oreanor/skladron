@@ -16,7 +16,7 @@ import { useZones } from "../ZonesToggle";
 import MapCanvas, { CELL } from "../MapCanvas";
 import { Button, Chip, ChipBar, Panel, Row, inputClass } from "../ui";
 import { PayloadLegend } from "./Battle";
-import BattleFrame, { BattleWindow } from "./BattleFrame";
+import BattleFrame, { BattleWindow, MAP_EVERY_MS } from "./BattleFrame";
 import { usePanelFold } from "./usePanelFold";
 import Avatar from "../Avatar";
 import {
@@ -320,7 +320,7 @@ function ReplayView({
         }
       }
 
-      if (cur.dirty && now - mapAt > 100) {
+      if (cur.dirty && now - mapAt > MAP_EVERY_MS) {
         cur.dirty = false;
         mapAt = now;
         setVersion((v) => v + 1);

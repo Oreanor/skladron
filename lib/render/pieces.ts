@@ -161,6 +161,53 @@ export function drawDrone(
   ctx.fill();
 }
 
+/**
+ * Вся стая разом, тем же рисунком, что drawDrone, но пачкой: все рамы — одним
+ * штрихом, все винты — одной заливкой, боеголовки — по заливке на цвет.
+ * Дронов в бою бывает под тысячу, и по три команды на каждого съедали кадр.
+ * Толщину линии ставит вызывающий.
+ */
+export function drawDroneSwarm<T extends { x: number; y: number }>(
+  ctx: CanvasRenderingContext2D,
+  drones: readonly T[],
+  cell: number,
+  r: number,
+  accentOf: (d: T) => string,
+  frame: string = COLORS.drone
+) {
+  if (!drones.length) return;
+  const frames = new Path2D();
+  const rotors = new Path2D();
+  const heads = new Map<string, Path2D>();
+  const rr = r * 0.4;
+  const hr = r * 0.45;
+  for (const d of drones) {
+    const x = d.x * cell;
+    const y = d.y * cell;
+    frames.moveTo(x - r, y - r);
+    frames.lineTo(x + r, y + r);
+    frames.moveTo(x + r, y - r);
+    frames.lineTo(x - r, y + r);
+    for (const [ox, oy] of [[-r, -r], [r, -r], [-r, r], [r, r]]) {
+      rotors.moveTo(x + ox + rr, y + oy);
+      rotors.arc(x + ox, y + oy, rr, 0, TAU);
+    }
+    const color = accentOf(d);
+    let head = heads.get(color);
+    if (!head) heads.set(color, (head = new Path2D()));
+    head.moveTo(x + hr, y);
+    head.arc(x, y, hr, 0, TAU);
+  }
+  ctx.strokeStyle = frame;
+  ctx.stroke(frames);
+  ctx.fillStyle = frame;
+  ctx.fill(rotors);
+  for (const [color, head] of heads) {
+    ctx.fillStyle = color;
+    ctx.fill(head);
+  }
+}
+
 // ---------- контейнеры и шары ----------
 
 /**
@@ -230,57 +277,49 @@ export function drawDepots(
 }
 
 /**
+ * Шар целиком: полупрозрачное тело, тёмная обводка, пипка снизу — по ней
+ * надутый шар и отличаешь от пузыря — и блик серпом по верхнему левому боку.
+ */
+const paintBalloon: Paint = (ctx, m, cell) => {
+  const r = cell * 0.5;
+  shapePath(ctx, "circle", m, m, r);
+  ctx.globalAlpha = 0.9;
+  ctx.fillStyle = COLORS.balloon;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = COLORS.balloonDark;
+  ctx.lineWidth = cell * 0.14;
+  ctx.stroke();
+  shapePath(ctx, "circle", m, m + r * 0.78, r * 0.2);
+  ctx.fillStyle = COLORS.balloonDark;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(m, m, r * 0.62, Math.PI * 1.05, Math.PI * 1.55);
+  ctx.strokeStyle = COLORS.balloonGlare;
+  ctx.lineWidth = cell * 0.16;
+  ctx.lineCap = "round";
+  ctx.stroke();
+  ctx.lineCap = "butt";
+};
+
+/**
  * Шары в воздухе. Рисуем после дронов и перед прицелом: они висят выше
- * всего, что на земле, но заслонять перекрестье им незачем.
+ * всего, что на земле, но заслонять перекрестье им незачем. Каждый — одна
+ * готовая картинка: шаров над складом бывают сотни, и три прохода по сотням
+ * окружностей с обводкой были самой дорогой частью кадра.
  */
 export function drawBalloons(
   ctx: CanvasRenderingContext2D,
   all: { id: number; x: number; y: number; wait?: number }[],
   cell: number
 ) {
-  const r = cell * 0.5;
-  // ещё не выпущенные сидят в установке — их не видно
-  const balloons = all.some((b) => (b.wait ?? 0) > 0) ? all.filter((b) => (b.wait ?? 0) <= 0) : all;
-
-  // Тела одним проходом: цвет у всех один, а смена fillStyle стоит дороже
-  // самой заливки — шаров над складом бывают сотни.
-  ctx.beginPath();
-  for (const b of balloons) {
-    ctx.moveTo(b.x * cell + r, b.y * cell);
-    ctx.arc(b.x * cell, b.y * cell, r, 0, TAU);
+  for (const b of all) {
+    // ещё не выпущенные сидят в установке — их не видно
+    if ((b.wait ?? 0) > 0) continue;
+    stamp(ctx, "balloon", paintBalloon, b.x * cell, b.y * cell, cell);
   }
-  ctx.globalAlpha = 0.9;
-  ctx.fillStyle = COLORS.balloon;
-  ctx.fill();
-  ctx.globalAlpha = 1;
-  ctx.strokeStyle = COLORS.balloonDark;
-  ctx.lineWidth = Math.max(1, cell * 0.14);
-  ctx.stroke();
-
-  // Пипка снизу: сверху её видно кружком у самого края, и именно она
-  // отличает надутый шар от пузыря.
-  ctx.beginPath();
-  for (const b of balloons) {
-    const nx = b.x * cell;
-    const ny = b.y * cell + r * 0.78;
-    ctx.moveTo(nx + r * 0.2, ny);
-    ctx.arc(nx, ny, r * 0.2, 0, TAU);
-  }
-  ctx.fillStyle = COLORS.balloonDark;
-  ctx.fill();
-
-  // Блик серпом по верхнему левому боку — тем же одним путём.
-  ctx.beginPath();
-  for (const b of balloons) {
-    ctx.moveTo(b.x * cell, b.y * cell);
-    ctx.arc(b.x * cell, b.y * cell, r * 0.62, Math.PI * 1.05, Math.PI * 1.55);
-  }
-  ctx.strokeStyle = COLORS.balloonGlare;
-  ctx.lineWidth = Math.max(1, cell * 0.16);
-  ctx.lineCap = "round";
-  ctx.stroke();
-  ctx.lineCap = "butt";
 }
+
 
 /**
  * Пусковая установка шаров целиком: круглая площадка и на ней шар — знак

@@ -19,7 +19,7 @@ import MapCanvas, { type Pt } from "../MapCanvas";
 import { useZones } from "../ZonesToggle";
 import { usePanelFold } from "./usePanelFold";
 import { Button, Chip, ChipBar, IconButton, Panel, Row } from "../ui";
-import BattleFrame from "./BattleFrame";
+import BattleFrame, { MAP_EVERY_MS } from "./BattleFrame";
 import { encodeTrace, type Frame } from "@/lib/replay";
 import type { BattleOutcome } from "@/lib/outcome";
 import { SIM } from "@/lib/tuning";
@@ -130,9 +130,10 @@ export default function Battle({
         afterglow(s, SIM.step);
       }
 
-      // Перерисовка карты стоит десяти тысяч заливок, а пожар ползёт
-      // секундами: чаще десяти раз в секунду обновлять её незачем.
-      if (s.dirty && now - mapAt > 100) {
+      // Перерисовка подложки — проход по десяти тысячам клеток, а пожар ползёт
+      // секундами. Сам огонь рисуется каждый кадр поверх, так что подложке
+      // хватает четырёх раз в секунду: она лишь чернит догоревшее.
+      if (s.dirty && now - mapAt > MAP_EVERY_MS) {
         s.dirty = false;
         mapAt = now;
         setVersion((v) => v + 1);

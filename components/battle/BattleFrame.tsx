@@ -21,6 +21,12 @@ import type { ReactNode } from "react";
 
 export type FrameVariant = "battle" | "replay" | "page";
 
+/**
+ * Как часто бой и повтор перерисовывают подложку карты, мс. Огонь рисуется
+ * поверх каждый кадр — подложка лишь чернит догоревшее, и чаще ни к чему.
+ */
+export const MAP_EVERY_MS = 250;
+
 /** Само окно: затемнённый фон и карточка почти во весь экран. */
 export function BattleWindow({
   variant,

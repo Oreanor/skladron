@@ -14,7 +14,7 @@ import { charFill } from "./char";
 import { COLORS } from "./colors";
 import { drawBoom, drawSoft } from "./fx";
 import { slabBevel, slabShadow } from "./light";
-import { drawBalloons, drawDepots, drawDrone, drawPiece } from "./pieces";
+import { drawBalloons, drawDepots, drawDroneSwarm, drawPiece } from "./pieces";
 
 // Палитра и сами предметы живут в render/: их правят отдельно от кадра боя.
 export { COLORS, installColors } from "./colors";
@@ -23,6 +23,7 @@ export {
   drawBalloons,
   drawDepots,
   drawDrone,
+  drawDroneSwarm,
   drawPiece,
   drawRocket,
   drawScoutPlane,
@@ -85,17 +86,18 @@ export function drawStatic(
   ctx.fillStyle = COLORS.groundA;
   ctx.fillRect(x0 * cell, y0 * cell, (x1 - x0) * cell, (y1 - y0) * cell);
 
-  ctx.fillStyle = COLORS.groundB;
+  // Каждый слой — одним путём и одной заливкой: по команде на клетку выходили
+  // тысячи заливок, а угольный узор на каждой клетке стоил дороже всего кадра.
+  const checker = new Path2D();
   for (let y = y0; y < y1; y++) {
-    for (let x = x0 + ((x0 ^ y) & 1); x < x1; x += 2) {
-      ctx.fillRect(x * cell, y * cell, cell, cell);
-    }
+    for (let x = x0 + ((x0 ^ y) & 1); x < x1; x += 2) checker.rect(x * cell, y * cell, cell, cell);
   }
+  ctx.fillStyle = COLORS.groundB;
+  ctx.fill(checker);
 
   slabShadow(ctx, s.cells, cell, area);
 
-  // Клетки красим слоями, по цвету за проход: смена fillStyle стоит дороже
-  // самой заливки, а раньше она случалась на каждую из десяти тысяч клеток.
+  // Клетки — слоями, по пути на тип: один проход по карте, по заливке на слой.
   const layers: [number, string | CanvasPattern][] = [
     [G_BASE, COLORS.base],
     // сгоревший пол и выжженная трава — уголь с едва заметной фактурой
@@ -103,15 +105,20 @@ export function drawStatic(
     [G_SCORCH, charFill(ctx, "grass")],
     [G_FIRE, COLORS.fireBase],
   ];
-  for (const [value, color] of layers) {
-    ctx.fillStyle = color;
-    for (let y = y0; y < y1; y++) {
-      const row = y * GRID;
-      for (let x = x0; x < x1; x++) {
-        if (s.cells[row + x] === value) ctx.fillRect(x * cell, y * cell, cell, cell);
-      }
+  const paths = layers.map(() => new Path2D());
+  const slot: number[] = [];
+  layers.forEach(([value], i) => (slot[value] = i));
+  for (let y = y0; y < y1; y++) {
+    const row = y * GRID;
+    for (let x = x0; x < x1; x++) {
+      const i = slot[s.cells[row + x]];
+      if (i !== undefined) paths[i].rect(x * cell, y * cell, cell, cell);
     }
   }
+  layers.forEach(([, color], i) => {
+    ctx.fillStyle = color;
+    ctx.fill(paths[i]);
+  });
 
   slabBevel(ctx, s.cells, cell, area);
 
@@ -556,19 +563,16 @@ export function drawFrame(
   // Дроны: рама ±0.54 и винты 0.4 от неё — в размахе полторы клетки, как
   // раз зона попадания снаряда (0.8–0.9). Прежние 0.85 давали почти три.
   const r = cell * 0.54;
-  const frame = Math.max(1, cell * 0.13);
-  for (const d of s.drones) {
-    const px = d.x * cell;
-    const py = d.y * cell;
-    // в цикле: кольцо топлива ниже меняет толщину, и следующий дрон
-    // иначе рисовался бы его линией
-    ctx.lineWidth = frame;
-    drawDrone(ctx, px, py, r, COLORS.payload[d.payload] ?? COLORS.droneAccent);
+  ctx.lineWidth = Math.max(1, cell * 0.13);
+  drawDroneSwarm(ctx, s.drones, cell, r, (d) => COLORS.payload[d.payload] ?? COLORS.droneAccent);
 
+  for (const d of s.drones) {
     // Топливо подавителя — дугой вокруг боеголовки, как бак огнетушителя.
     // Горит только на круге над жертвой; пока летит — полный запас (~30 с).
     const look = d.hit ? undefined : COLORS.suppress[d.payload];
     if (look && d.fuel > 0) {
+      const px = d.x * cell;
+      const py = d.y * cell;
       const frac = Math.max(0, Math.min(1, d.fuel / SUPPRESS.loiter));
       const ring = r * 0.7;
       ctx.beginPath();
