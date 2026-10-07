@@ -1767,6 +1767,7 @@ export default function Lobby({
           enemy={writeTo}
           load={(email) => repo.messages(email)}
           onSend={(email, body) => repo.sendMessage(email, body)}
+          onEdit={(id, body) => repo.editMessage(id, body)}
           onClose={() => setWriteTo(null)}
         />
       )}

@@ -22,6 +22,7 @@ const fr: Dict = {
   "chat.empty": "Vous ne vous êtes encore rien écrit.",
   "chat.placeholder": "Écris à ton rival",
   "chat.send": "Envoyer",
+  "chat.editing": "Modification de ton dernier message · Échap pour annuler",
   "chat.arrived": "{name} t’a écrit : {body}",
   "raidComment.openerField": "Message",
   "raidComment.openerFieldPlaceholder": "Une courte ligne avant le combat…",

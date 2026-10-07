@@ -135,6 +135,8 @@ export interface Repo {
   messages(email: string): Promise<Message[]>;
   /** Пишет сопернику. Отдаёт ошибку строкой, если писать нельзя. */
   sendMessage(email: string, body: string): Promise<string | null>;
+  /** Правит своё сообщение. Отдаёт ошибку строкой, если нельзя. */
+  editMessage(id: string, body: string): Promise<string | null>;
   /** Отмечает прочитанным всё, что пришло от этого соперника. */
   readMessages(email: string): Promise<void>;
   /** Язык игры — на нём бот пишет в телеграм. */
@@ -278,6 +280,10 @@ class LocalRepo implements Repo {
   }
 
   async sendMessage() {
+    return "not authenticated";
+  }
+
+  async editMessage() {
     return "not authenticated";
   }
 
@@ -805,6 +811,11 @@ class CloudRepo implements Repo {
     const row = (data as { id: string }[] | null)?.[0];
     if (row) notifyMessage(email, row.id);
     return null;
+  }
+
+  async editMessage(id: string, body: string) {
+    const { error } = await this.db().rpc("edit_message", { msg: id, body });
+    return error ? error.message : null;
   }
 
   async readMessages(email: string) {

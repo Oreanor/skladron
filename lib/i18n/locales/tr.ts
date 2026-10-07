@@ -22,6 +22,7 @@ const tr: Dict = {
   "chat.empty": "Henüz birbirinize bir şey yazmadınız.",
   "chat.placeholder": "Rakibine yaz",
   "chat.send": "Gönder",
+  "chat.editing": "Son mesajını düzenliyorsun · İptal için Esc",
   "chat.arrived": "{name} sana yazdı: {body}",
   "raidComment.openerField": "Mesaj",
   "raidComment.openerFieldPlaceholder": "Savaştan önce kısaca…",

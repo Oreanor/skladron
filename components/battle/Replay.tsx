@@ -18,9 +18,11 @@ import { Button, Chip, ChipBar, Panel, Row, inputClass } from "../ui";
 import { PayloadLegend } from "./Battle";
 import BattleFrame, { BattleWindow, MAP_EVERY_MS } from "./BattleFrame";
 import { usePanelFold } from "./usePanelFold";
+import { useEditLast } from "../useEditLast";
 import Avatar from "../Avatar";
 import {
   deleteComment,
+  editComment,
   loadComments,
   postRaidComment,
   signedIn,
@@ -55,6 +57,7 @@ function Talk({ battleId, tall = false }: { battleId: string; tall?: boolean }) 
   const [canWrite, setCanWrite] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const edit = useEditLast(items, draft, setDraft);
 
   useEffect(() => {
     let alive = true;
@@ -73,9 +76,16 @@ function Talk({ battleId, tall = false }: { battleId: string; tall?: boolean }) 
     setBusy(true);
     setError(null);
     try {
-      const fresh = await postRaidComment(battleId, body);
-      setItems((cur) => [...cur, fresh]);
-      setDraft("");
+      if (edit.editing) {
+        const id = edit.editing;
+        await editComment(id, body);
+        setItems((cur) => cur.map((c) => (c.id === id ? { ...c, body } : c)));
+        edit.cancel();
+      } else {
+        const fresh = await postRaidComment(battleId, body);
+        setItems((cur) => [...cur, fresh]);
+        setDraft("");
+      }
     } catch (e) {
       setError(explainAlone(e, t));
     } finally {
@@ -128,6 +138,7 @@ function Talk({ battleId, tall = false }: { battleId: string; tall?: boolean }) 
             placeholder={t("talk.placeholder")}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
+              if (edit.onKey(e)) return;
               if (e.key === "Enter") void send();
             }}
             className={inputClass}
@@ -139,6 +150,7 @@ function Talk({ battleId, tall = false }: { battleId: string; tall?: boolean }) 
       ) : (
         <p className="mt-2 text-xs text-neutral-600">{t("talk.signIn")}</p>
       )}
+      {edit.editing && <p className="mt-1 text-xs text-emerald-300/80">{t("chat.editing")}</p>}
       {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
     </div>
   );

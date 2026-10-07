@@ -22,6 +22,7 @@ const ko: Dict = {
   "chat.empty": "아직 서로 아무것도 쓰지 않았습니다.",
   "chat.placeholder": "라이벌에게 쓰기",
   "chat.send": "보내기",
+  "chat.editing": "마지막 메시지 수정 중 · Esc로 취소",
   "chat.arrived": "{name}의 메시지: {body}",
   "raidComment.openerField": "메시지",
   "raidComment.openerFieldPlaceholder": "전투 전에 한마디…",

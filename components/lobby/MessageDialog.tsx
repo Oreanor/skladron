@@ -18,6 +18,7 @@ import { useT } from "@/lib/i18n";
 import { explainAlone } from "@/lib/errors";
 import Avatar from "../Avatar";
 import { Button, IconButton, Modal, inputClass } from "../ui";
+import { useEditLast } from "../useEditLast";
 
 /** Длиннее сервер и не примет: в send_message то же число. */
 export const MESSAGE_MAX = 500;
@@ -26,11 +27,13 @@ export default function MessageDialog({
   enemy,
   load,
   onSend,
+  onEdit,
   onClose,
 }: {
   enemy: Enemy;
   load: (email: string) => Promise<Message[]>;
   onSend: (email: string, body: string) => Promise<string | null>;
+  onEdit: (id: string, body: string) => Promise<string | null>;
   onClose: () => void;
 }) {
   const t = useT();
@@ -39,6 +42,7 @@ export default function MessageDialog({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const tailRef = useRef<HTMLDivElement>(null);
+  const edit = useEditLast(thread, draft, setDraft);
 
   useEffect(() => {
     let alive = true;
@@ -62,11 +66,34 @@ export default function MessageDialog({
     tailRef.current?.scrollIntoView({ block: "end" });
   }, [thread]);
 
+  /** Правка: только что отправленное живёт с временным номером — настоящий берём с сервера. */
+  const saveEdit = async (id: string, body: string) => {
+    let real = id;
+    if (id.startsWith("local-")) {
+      const fresh = await load(enemy.email);
+      real = [...fresh].reverse().find((m) => m.mine)?.id ?? id;
+    }
+    const err = await onEdit(real, body);
+    if (err) return err;
+    setThread((was) => (was ?? []).map((m) => (m.id === id ? { ...m, id: real, body } : m)));
+    return null;
+  };
+
   const send = async () => {
     const body = draft.trim();
     if (!body || busy) return;
     setBusy(true);
     setError(null);
+    if (edit.editing) {
+      const err = await saveEdit(edit.editing, body);
+      setBusy(false);
+      if (err) {
+        setError(explainAlone(err, t));
+        return;
+      }
+      edit.cancel();
+      return;
+    }
     const err = await onSend(enemy.email, body);
     setBusy(false);
     if (err) {
@@ -101,6 +128,7 @@ export default function MessageDialog({
               autoFocus
               onChange={(e) => setDraft(e.target.value.slice(0, MESSAGE_MAX))}
               onKeyDown={(e) => {
+                if (edit.onKey(e)) return;
                 if (e.key === "Enter") void send();
               }}
               placeholder={t("chat.placeholder")}
@@ -152,6 +180,7 @@ export default function MessageDialog({
         )}
         <div ref={tailRef} />
       </div>
+      {edit.editing && <p className="mt-2 text-xs text-emerald-300/80">{t("chat.editing")}</p>}
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
     </Modal>
   );

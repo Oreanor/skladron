@@ -22,6 +22,7 @@ const zh: Dict = {
   "chat.empty": "你们还没有互相写过信。",
   "chat.placeholder": "给对手写点什么",
   "chat.send": "发送",
+  "chat.editing": "正在编辑上一条消息 · 按 Esc 取消",
   "chat.arrived": "{name} 给你写信：{body}",
   "raidComment.openerField": "留言",
   "raidComment.openerFieldPlaceholder": "战前说一句……",

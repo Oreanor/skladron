@@ -73,6 +73,16 @@ export async function deleteComment(id: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Поправить свою реплику. Извещение второму не шлём: это не новое слово. */
+export async function editComment(id: string, message: string): Promise<void> {
+  const db = supabase();
+  if (!db) return;
+  const body = message.trim().slice(0, RAID_COMMENT_MAX);
+  if (!body) throw new Error("empty message");
+  const { error } = await db.rpc("edit_battle_comment", { comment_id: id, message: body });
+  if (error) throw error;
+}
+
 /** Сохранить реплику и известить второго участника (если привязан Telegram). */
 export async function postRaidComment(attackId: string, message: string): Promise<BattleComment> {
   const body = message.trim().slice(0, RAID_COMMENT_MAX);

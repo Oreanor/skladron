@@ -22,6 +22,7 @@ const uk: Dict = {
   "chat.empty": "Ви ще нічого одне одному не писали.",
   "chat.placeholder": "Напиши суперникові",
   "chat.send": "Надіслати",
+  "chat.editing": "Редагування останнього повідомлення · Esc — скасувати",
   "chat.arrived": "{name} пише тобі: {body}",
   "raidComment.openerField": "Повідомлення",
   "raidComment.openerFieldPlaceholder": "Коротко перед боєм…",

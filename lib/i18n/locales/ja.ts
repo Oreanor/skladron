@@ -22,6 +22,7 @@ const ja: Dict = {
   "chat.empty": "まだお互いに何も書いていません。",
   "chat.placeholder": "ライバルに書く",
   "chat.send": "送信",
+  "chat.editing": "最後のメッセージを編集中 · Esc で取り消し",
   "chat.arrived": "{name} からメッセージ：{body}",
   "raidComment.openerField": "メッセージ",
   "raidComment.openerFieldPlaceholder": "戦闘前にひとこと…",

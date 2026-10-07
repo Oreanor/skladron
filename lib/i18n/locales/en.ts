@@ -23,6 +23,7 @@ const en = {
   "chat.empty": "Nothing written to each other yet.",
   "chat.placeholder": "Write to your rival",
   "chat.send": "Send",
+  "chat.editing": "Editing your last message · Esc to cancel",
   "chat.arrived": "{name} wrote to you: {body}",
   "raidComment.openerField": "Message",
   "raidComment.openerFieldPlaceholder": "A short line before the battle…",
