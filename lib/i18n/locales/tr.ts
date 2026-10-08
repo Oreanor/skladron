@@ -138,7 +138,7 @@ const tr: Dict = {
   "battle.defenseBounty": "Savunma ödülü",
   "restart.menu": "Baştan başla",
   "restart.title": "Oyuna baştan başlansın mı?",
-  "restart.hint": "Depo, krediler, dronlar, toplar ve seviyeler en başa döner. İsim ve rakip listesi kalır. Geri alınamaz.",
+  "restart.hint": "Depo, krediler, dronlar, toplar, seviyeler ve görev ilerlemesi en başa döner. İsim, rakip listesi, planlar ve savaş kaydı kalır. Geri alınamaz.",
   "restart.confirm": "Baştan başla",
   "restart.done": "Temiz başlangıç: depo boş, hesapta 10 000 kr",
   "restart.failed": "Baştan başlanamadı: {error}",

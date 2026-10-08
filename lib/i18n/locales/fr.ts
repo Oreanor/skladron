@@ -138,7 +138,7 @@ const fr: Dict = {
   "battle.defenseBounty": "Prime de défense",
   "restart.menu": "Tout recommencer",
   "restart.title": "Recommencer la partie ?",
-  "restart.hint": "L’entrepôt, les crédits, les drones, les canons et les niveaux repartent de zéro. Le nom et la liste des rivaux restent. C’est irréversible.",
+  "restart.hint": "L’entrepôt, les crédits, les drones, les canons, les niveaux et la progression des missions repartent de zéro. Le nom, la liste des rivaux, les plans et le journal des combats restent. C’est irréversible.",
   "restart.confirm": "Recommencer",
   "restart.done": "Page blanche : l’entrepôt est vide, 10 000 cr sur le compte",
   "restart.failed": "Impossible de recommencer : {error}",

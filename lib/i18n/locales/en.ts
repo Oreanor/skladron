@@ -139,7 +139,7 @@ const en = {
   "battle.defenseBounty": "Defence bounty",
   "restart.menu": "Start over",
   "restart.title": "Start the game over?",
-  "restart.hint": "The warehouse, credits, drones, guns and levels go back to the very beginning. The name and the rival list stay. This cannot be undone.",
+  "restart.hint": "The warehouse, credits, drones, guns, levels and mission progress go back to the very beginning. The name, the rival list, blueprints and the battle log stay. This cannot be undone.",
   "restart.confirm": "Start over",
   "restart.done": "A clean start: the warehouse is empty, 10 000 cr in the account",
   "restart.failed": "Could not start over: {error}",

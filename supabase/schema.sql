@@ -2201,8 +2201,8 @@ grant execute on function public_replay to anon, authenticated;
 
 -- ---------- начать сначала ----------
 -- Полный сброс: пустой стартовый склад, стартовые деньги, обнулённые
--- счётчики и уровни. Имя склада и список соперников остаются — это
--- знакомства, а не имущество.
+-- счётчики, уровни и пройденные миссии. Имя склада, список соперников,
+-- чертежи и журнал боёв остаются — это знакомства и память, а не имущество.
 
 create or replace function restart_game()
 returns void language plpgsql security definer set search_path = public as $$
@@ -2223,6 +2223,8 @@ begin
          loan_due = null,
          founded = true,
          last_income_at = now(),
+         competition_at = 1,
+         competition_best = '{}'::jsonb,
          levels = '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"balloons":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb,
          stats = '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,
                    "wipes":0,"raids":0,"looted":0}'::jsonb

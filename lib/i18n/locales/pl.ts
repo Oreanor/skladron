@@ -138,7 +138,7 @@ const pl: Dict = {
   "battle.defenseBounty": "Premia za obronę",
   "restart.menu": "Zacznij od nowa",
   "restart.title": "Zacząć grę od nowa?",
-  "restart.hint": "Magazyn, kredyty, drony, działa i poziomy wrócą do samego początku. Nazwa i lista rywali zostaną. Tego nie da się cofnąć.",
+  "restart.hint": "Magazyn, kredyty, drony, działa, poziomy i postęp misji wrócą do samego początku. Nazwa, lista rywali, plany i dziennik bitew zostaną. Tego nie da się cofnąć.",
   "restart.confirm": "Zacznij od nowa",
   "restart.done": "Czysty start: magazyn pusty, na koncie 10 000 kr",
   "restart.failed": "Nie udało się zacząć od nowa: {error}",

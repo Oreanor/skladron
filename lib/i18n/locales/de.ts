@@ -138,7 +138,7 @@ const de: Dict = {
   "battle.defenseBounty": "Abwehrprämie",
   "restart.menu": "Neu anfangen",
   "restart.title": "Das Spiel neu anfangen?",
-  "restart.hint": "Lager, Kredite, Drohnen, Geschütze und Stufen gehen ganz an den Anfang zurück. Name und Gegnerliste bleiben. Rückgängig geht das nicht.",
+  "restart.hint": "Lager, Kredite, Drohnen, Geschütze, Stufen und Missionsfortschritt gehen ganz an den Anfang zurück. Name, Gegnerliste, Baupläne und Kampfprotokoll bleiben. Rückgängig geht das nicht.",
   "restart.confirm": "Neu anfangen",
   "restart.done": "Von vorn: das Lager ist leer, 10 000 Cr auf dem Konto",
   "restart.failed": "Neustart nicht möglich: {error}",

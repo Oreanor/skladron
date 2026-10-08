@@ -388,8 +388,6 @@ class LocalRepo implements Repo {
     fresh.name = p.name;
     fresh.enemies = p.enemies;
     fresh.founded = p.founded;
-    fresh.competitionAt = p.competitionAt;
-    fresh.competitionBest = p.competitionBest;
     localSave(fresh);
     return fresh;
   }
@@ -1058,11 +1056,10 @@ class CloudRepo implements Repo {
     const { error } = await this.db().rpc("restart_game");
     if (error) throw error;
     const fresh = newPlayer();
-    // имя и знакомства переживают перезапуск: это не имущество
+    // имя и знакомства переживают перезапуск: это не имущество;
+    // миссии начинаются заново вместе со складом
     fresh.name = p.name;
     fresh.enemies = p.enemies;
-    fresh.competitionAt = p.competitionAt;
-    fresh.competitionBest = p.competitionBest;
     return fresh;
   }
 

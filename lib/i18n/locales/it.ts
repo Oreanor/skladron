@@ -138,7 +138,7 @@ const it: Dict = {
   "battle.defenseBounty": "Premio di difesa",
   "restart.menu": "Ricomincia",
   "restart.title": "Ricominciare la partita?",
-  "restart.hint": "Magazzino, crediti, droni, cannoni e livelli tornano all’inizio. Il nome e la lista dei rivali restano. Non si torna indietro.",
+  "restart.hint": "Magazzino, crediti, droni, cannoni, livelli e progressi delle missioni tornano all’inizio. Il nome, la lista dei rivali, i progetti e il registro delle battaglie restano. Non si torna indietro.",
   "restart.confirm": "Ricomincia",
   "restart.done": "Da zero: il magazzino è vuoto e ci sono 10 000 cr sul conto",
   "restart.failed": "Non è stato possibile ricominciare: {error}",

@@ -138,7 +138,7 @@ const pt: Dict = {
   "battle.defenseBounty": "Prémio de defesa",
   "restart.menu": "Começar de novo",
   "restart.title": "Começar o jogo de novo?",
-  "restart.hint": "O armazém, os créditos, os drones, os canhões e os níveis voltam ao início. O nome e a lista de rivais ficam. Isto não se desfaz.",
+  "restart.hint": "O armazém, os créditos, os drones, os canhões, os níveis e o progresso das missões voltam ao início. O nome, a lista de rivais, as plantas e o registo de batalhas ficam. Isto não se desfaz.",
   "restart.confirm": "Começar de novo",
   "restart.done": "Do zero: o armazém está vazio e há 10 000 cr na conta",
   "restart.failed": "Não foi possível começar de novo: {error}",
