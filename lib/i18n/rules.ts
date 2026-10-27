@@ -61,7 +61,7 @@ const en: RuleSection[] = [
     title: "Raids",
     lines: [
       "Add a rival by e-mail — they have to be playing too.",
-      "Build the raid from waves: each has its own pattern, side and warheads (empty, explosive, gun, sprinkler or trap jammer, stealth, blower, turbo, armor, shooter). Up to {maxRaid} drones. A bigger swarm makes the formation denser — the raid barely lasts longer. Drones leave the warehouse at once; warheads cost an extra credit surcharge. Rings and spirals have a spin instead of a side: clockwise, counter-clockwise or, for a ring, none.",
+      "Build the raid from waves: each has its own pattern, side and warheads (empty, explosive, gun, sprinkler or trap jammer, stealth, blower, turbo, armor, shooter). A bigger swarm makes the formation denser — the raid barely lasts longer. Drones leave the warehouse at once; warheads cost an extra credit surcharge. Rings and spirals have a spin instead of a side: clockwise, counter-clockwise or, for a ring, none.",
       "A blower warhead explodes like a plain one and, on the way in, shoves barrage balloons aside — several cells away from the drone, without popping them. A handful of blowers in the swarm noticeably cuts what the balloons take; a third of the swarm brings it near zero.",
       "The trap jammer works the same way, but its circle is half a trap's — it has to come in close, under the guns. While the circle covers a trap, the trap holds nobody and lets the caught go.",
       "A stealth warhead blows up like a plain one, but guns and launchers do not see it at all — neither will aim, and no missile will lock on. Against it you have only your own hands, the traps and the barrage balloons: it crashes into a balloon like any drone, and it sets off a balloon launcher too.",
@@ -171,7 +171,7 @@ const ru: RuleSection[] = [
     title: "Налёты",
     lines: [
       "Добавь соперника по почте — он тоже должен играть.",
-      "Собери налёт из волн: у каждой свой рисунок, сторона и начинка (пустая, взрывчатка, подавление пушек, огнетушителей или ловушек, невидимка, обдув, турбо, броня, стрелок). До {maxRaid} дронов. Чем больше рой, тем гуще строй — налёт почти не растягивается. Дроны уходят со склада сразу, за начинку доплачиваются кредиты. У кольца и спирали вместо стороны — вращение: по часовой, против или, у кольца, без него.",
+      "Собери налёт из волн: у каждой свой рисунок, сторона и начинка (пустая, взрывчатка, подавление пушек, огнетушителей или ловушек, невидимка, обдув, турбо, броня, стрелок). Чем больше рой, тем гуще строй — налёт почти не растягивается. Дроны уходят со склада сразу, за начинку доплачиваются кредиты. У кольца и спирали вместо стороны — вращение: по часовой, против или, у кольца, без него.",
       "Начинка «обдув» взрывается как простая, а на подлёте расталкивает аэростаты: шар отходит на несколько клеток в сторону от дрона, не лопаясь. Несколько таких в рое заметно сокращают потери на заграждении, треть роя — сводит их почти к нулю.",
       "Подавление ловушек работает так же, но круг у него вдвое меньше, чем у самой ловушки: приходится подходить вплотную, под пушки. Пока круг накрывает магнит, тот никого не держит и отпускает захваченных.",
       "Начинка «невидимка» взрывается как обычная, но пушки и ракетницы её не видят вовсе: ни целятся, ни наводят ракету. Против неё остаются руки игрока, ловушки и шары: о шар она разбивается, как любой дрон, и пусковую установку тоже запускает.",
@@ -281,7 +281,7 @@ const es: RuleSection[] = [
     title: "Ataques",
     lines: [
       "Añade un rival por correo: también tiene que estar jugando.",
-      "Arma el ataque en oleadas: cada una con su patrón, lado y carga (vacía, explosivo, inhibidor de cañones, de extintores o de trampas, invisible, soplador, turbo, blindado, tirador). Hasta {maxRaid} drones. Un enjambre mayor hace la formación más densa — el ataque casi no se alarga. Los drones salen del almacén enseguida; las cargas cuestan un recargo en créditos. El anillo y la espiral tienen giro en vez de lado: horario, antihorario o, en el anillo, ninguno.",
+      "Arma el ataque en oleadas: cada una con su patrón, lado y carga (vacía, explosivo, inhibidor de cañones, de extintores o de trampas, invisible, soplador, turbo, blindado, tirador). Un enjambre mayor hace la formación más densa — el ataque casi no se alarga. Los drones salen del almacén enseguida; las cargas cuestan un recargo en créditos. El anillo y la espiral tienen giro en vez de lado: horario, antihorario o, en el anillo, ninguno.",
       "La carga de soplado estalla como la simple y, de camino, aparta los globos de barrera: el globo se desplaza varias celdas lejos del dron sin reventar. Unos pocos sopladores en el enjambre ya recortan mucho lo que se llevan los globos; un tercio del enjambre lo deja casi en cero.",
       "El inhibidor de trampas funciona igual, pero su círculo es la mitad del de la trampa: tiene que acercarse mucho, bajo los cañones. Mientras el círculo cubre el imán, este no retiene a nadie y suelta a los capturados.",
       "La carga invisible estalla como la simple, pero los cañones y las lanzaderas no la ven en absoluto: ni apuntan ni guían el misil. Contra ella solo quedan tus manos, las trampas y los globos: choca con un globo como cualquier dron y también activa la lanzadera de globos.",
@@ -391,7 +391,7 @@ const pt: RuleSection[] = [
     title: "Ataques",
     lines: [
       "Adiciona um rival por e-mail — ele também tem de estar a jogar.",
-      "Monta o ataque em vagas: cada uma com o seu padrão, lado e carga (vazia, explosivo, inibidor de canhões, de extintores ou de armadilhas, invisível, soprador, turbo, blindado, atirador). Até {maxRaid} drones. Um enxame maior torna a formação mais densa — o ataque quase não se alonga. Os drones saem do armazém logo; as cargas custam um extra em créditos. O anel e a espiral têm rotação em vez de lado: horária, anti-horária ou, no anel, nenhuma.",
+      "Monta o ataque em vagas: cada uma com o seu padrão, lado e carga (vazia, explosivo, inibidor de canhões, de extintores ou de armadilhas, invisível, soprador, turbo, blindado, atirador). Um enxame maior torna a formação mais densa — o ataque quase não se alonga. Os drones saem do armazém logo; as cargas custam um extra em créditos. O anel e a espiral têm rotação em vez de lado: horária, anti-horária ou, no anel, nenhuma.",
       "A carga de sopro explode como a simples e, na aproximação, afasta os balões de barragem: o balão desloca-se várias células para longe do drone sem rebentar. Alguns sopradores no enxame já cortam bastante o que os balões levam; um terço do enxame deixa isso quase em zero.",
       "O inibidor de armadilhas funciona igual, mas o seu círculo é metade do da armadilha: tem de chegar perto, debaixo dos canhões. Enquanto o círculo cobre o íman, este não segura ninguém e larga os capturados.",
       "A carga invisível explode como a simples, mas canhões e lançadores não a veem de todo: não apontam nem guiam o míssil. Contra ela restam as tuas mãos, as armadilhas e os balões: bate num balão como qualquer drone e também dispara o lançador de balões.",
@@ -501,7 +501,7 @@ const fr: RuleSection[] = [
     title: "Raids",
     lines: [
       "Ajoute un rival par e-mail — il doit jouer lui aussi.",
-      "Compose le raid en vagues : chacune a son schéma, son côté et sa charge (vide, explosif, brouilleur de canons, d’extincteurs ou de pièges, furtive, souffleur, turbo, blindé, tireur). Jusqu’à {maxRaid} drones. Un plus gros essaim densifie la formation — le raid s’allonge à peine. Les drones quittent l’entrepôt aussitôt ; les charges coûtent un surcoût en crédits. L’anneau et la spirale ont une rotation au lieu d’un côté : horaire, antihoraire ou, pour l’anneau, aucune.",
+      "Compose le raid en vagues : chacune a son schéma, son côté et sa charge (vide, explosif, brouilleur de canons, d’extincteurs ou de pièges, furtive, souffleur, turbo, blindé, tireur). Un plus gros essaim densifie la formation — le raid s’allonge à peine. Les drones quittent l’entrepôt aussitôt ; les charges coûtent un surcoût en crédits. L’anneau et la spirale ont une rotation au lieu d’un côté : horaire, antihoraire ou, pour l’anneau, aucune.",
       "La charge souffleuse explose comme une charge simple et, à l’approche, écarte les ballons de barrage : le ballon dérive de plusieurs cases loin du drone sans crever. Quelques souffleurs dans l’essaim réduisent déjà nettement ce que prennent les ballons ; un tiers de l’essaim ramène cela presque à zéro.",
       "Le brouilleur de pièges fonctionne pareil, mais son cercle vaut la moitié de celui du piège : il doit venir tout près, sous les canons. Tant que le cercle couvre l’aimant, celui-ci ne retient personne et lâche ses prises.",
       "La charge furtive explose comme une charge simple, mais canons et lance-roquettes ne la voient pas du tout : ni visée, ni guidage. Contre elle il ne reste que tes mains, les pièges et les ballons : elle s’écrase sur un ballon comme n’importe quel drone et déclenche aussi le lanceur de ballons.",
@@ -611,7 +611,7 @@ const de: RuleSection[] = [
     title: "Angriffe",
     lines: [
       "Füge einen Gegner per E-Mail hinzu — er muss ebenfalls spielen.",
-      "Baue den Angriff aus Wellen: jede mit eigenem Muster, Seite und Ladung (leer, Sprengstoff, Geschütz-, Sprinkler- oder Fallenstörer, Tarnkappe, Bläser, Turbo, Panzerung, Schütze). Bis {maxRaid} Drohnen. Ein größerer Schwarm macht die Formation dichter — der Angriff dauert kaum länger. Die Drohnen verlassen das Lager sofort; Ladungen kosten einen Kreditaufschlag. Ring und Spirale haben statt einer Seite einen Drehsinn: im, gegen den Uhrzeigersinn oder, beim Ring, gar keinen.",
+      "Baue den Angriff aus Wellen: jede mit eigenem Muster, Seite und Ladung (leer, Sprengstoff, Geschütz-, Sprinkler- oder Fallenstörer, Tarnkappe, Bläser, Turbo, Panzerung, Schütze). Ein größerer Schwarm macht die Formation dichter — der Angriff dauert kaum länger. Die Drohnen verlassen das Lager sofort; Ladungen kosten einen Kreditaufschlag. Ring und Spirale haben statt einer Seite einen Drehsinn: im, gegen den Uhrzeigersinn oder, beim Ring, gar keinen.",
       "Der Bläser-Sprengkopf explodiert wie ein einfacher und schiebt im Anflug Sperrballons beiseite: der Ballon treibt mehrere Felder von der Drohne weg, ohne zu zerplatzen. Schon ein paar Bläser im Schwarm senken deutlich, was die Ballons holen; ein Drittel des Schwarms bringt es nahe null.",
       "Der Fallenstörer arbeitet genauso, doch sein Kreis ist halb so groß wie der der Falle: er muss dicht heran, unter die Geschütze. Solange der Kreis den Magneten deckt, hält dieser niemanden und lässt die Gefangenen los.",
       "Der Tarnkappen-Sprengkopf explodiert wie ein einfacher, doch Geschütze und Werfer sehen ihn gar nicht: kein Zielen, kein Lenken. Gegen ihn bleiben deine Hände, die Fallen und die Ballons: an einem Ballon zerschellt er wie jede Drohne, und auch den Ballonwerfer löst er aus.",
@@ -721,7 +721,7 @@ const it: RuleSection[] = [
     title: "Attacchi",
     lines: [
       "Aggiungi un rivale per e-mail: deve giocare anche lui.",
-      "Componi l’attacco a ondate: ognuna con schema, lato e carica (vuota, esplosivo, disturbatore di cannoni, di estintori o di trappole, invisibile, soffiatore, turbo, corazzato, tiratore). Fino a {maxRaid} droni. Uno sciame più grande rende la formazione più fitta — l’attacco quasi non si allunga. I droni lasciano subito il magazzino; le cariche costano un sovrapprezzo in crediti. Anello e spirale hanno una rotazione invece di un lato: oraria, antioraria o, per l’anello, nessuna.",
+      "Componi l’attacco a ondate: ognuna con schema, lato e carica (vuota, esplosivo, disturbatore di cannoni, di estintori o di trappole, invisibile, soffiatore, turbo, corazzato, tiratore). Uno sciame più grande rende la formazione più fitta — l’attacco quasi non si allunga. I droni lasciano subito il magazzino; le cariche costano un sovrapprezzo in crediti. Anello e spirale hanno una rotazione invece di un lato: oraria, antioraria o, per l’anello, nessuna.",
       "La carica soffiante esplode come quella semplice e, in avvicinamento, scosta i palloni di sbarramento: il pallone si allontana di qualche cella dal drone senza scoppiare. Bastano pochi soffiatori nello sciame per ridurre molto quel che prendono i palloni; un terzo dello sciame lo porta quasi a zero.",
       "Il disturbatore di trappole funziona allo stesso modo, ma il suo cerchio è metà di quello della trappola: deve avvicinarsi molto, sotto i cannoni. Finché il cerchio copre il magnete, questo non trattiene nessuno e libera i catturati.",
       "La carica invisibile esplode come quella semplice, ma cannoni e lanciarazzi non la vedono affatto: niente mira, niente guida. Contro di lei restano le tue mani, le trappole e i palloni: si schianta su un pallone come qualsiasi drone e fa scattare anche il lanciatore di palloni.",
@@ -831,7 +831,7 @@ const uk: RuleSection[] = [
     title: "Нальоти",
     lines: [
       "Додай суперника за поштою — він теж має грати.",
-      "Збери наліт із хвиль: у кожної свій малюнок, бік і начинка (порожня, вибухівка, глушіння гармат, вогнегасників чи пасток, невидимка, обдув, турбо, броня, стрілець). До {maxRaid} дронів. Що більший рій, то щільніший стрій — наліт майже не розтягується. Дрони йдуть зі складу одразу, за начинку доплачуються кредити. У кільця й спіралі замість боку — обертання: за годинниковою, проти чи, у кільця, без нього.",
+      "Збери наліт із хвиль: у кожної свій малюнок, бік і начинка (порожня, вибухівка, глушіння гармат, вогнегасників чи пасток, невидимка, обдув, турбо, броня, стрілець). Що більший рій, то щільніший стрій — наліт майже не розтягується. Дрони йдуть зі складу одразу, за начинку доплачуються кредити. У кільця й спіралі замість боку — обертання: за годинниковою, проти чи, у кільця, без нього.",
       "Начинка «обдув» вибухає як звичайна, а на підльоті розштовхує аеростати: куля відходить на кілька клітинок убік від дрона, не луснувши. Кілька таких у рої помітно зменшують втрати на загородженні, третина рою — зводить їх майже до нуля.",
       "Розмагнічування працює так само, але коло в нього вдвічі менше, ніж у самої пастки: доводиться підходити впритул, під гармати. Поки коло накриває магніт, той нікого не тримає й відпускає захоплених.",
       "Начинка «невидимка» вибухає як звичайна, але гармати й ракетниці її не бачать зовсім: ні цілять, ні наводять ракету. Проти неї лишаються руки гравця, пастки й кулі: об кулю вона розбивається, як будь-який дрон, і пускову установку теж запускає.",
@@ -941,7 +941,7 @@ const pl: RuleSection[] = [
     title: "Naloty",
     lines: [
       "Dodaj rywala po e-mailu — on też musi grać.",
-      "Złóż nalot z fal: każda ma swój wzór, stronę i ładunek (pusty, materiał wybuchowy, zagłuszanie dział, gaśnic lub pułapek, niewidzialny, dmuchawa, turbo, pancerz, strzelec). Do {maxRaid} dronów. Większy rój to gęstszy szyk — nalot prawie się nie wydłuża. Drony schodzą z magazynu od razu, za ładunki dopłaca się kredyty. Pierścień i spirala mają zamiast strony obrót: zgodnie z ruchem wskazówek, przeciwnie albo, w pierścieniu, bez obrotu.",
+      "Złóż nalot z fal: każda ma swój wzór, stronę i ładunek (pusty, materiał wybuchowy, zagłuszanie dział, gaśnic lub pułapek, niewidzialny, dmuchawa, turbo, pancerz, strzelec). Większy rój to gęstszy szyk — nalot prawie się nie wydłuża. Drony schodzą z magazynu od razu, za ładunki dopłaca się kredyty. Pierścień i spirala mają zamiast strony obrót: zgodnie z ruchem wskazówek, przeciwnie albo, w pierścieniu, bez obrotu.",
       "Ładunek «dmuchawa» wybucha jak zwykły, a w locie odpycha balony zaporowe: balon odsuwa się o kilka pól od drona, nie pękając. Kilka takich w roju wyraźnie zmniejsza straty na zaporze, a trzecia część roju sprowadza je prawie do zera.",
       "Rozmagnesowanie działa tak samo, ale jego koło jest o połowę mniejsze niż koło pułapki: trzeba podejść blisko, pod działa. Póki koło nakrywa magnes, ten nikogo nie trzyma i puszcza schwytanych.",
       "Ładunek «niewidzialny» wybucha jak zwykły, ale działa i wyrzutnie w ogóle go nie widzą: ani nie celują, ani nie naprowadzają rakiety. Przeciw niemu zostają ręce gracza, pułapki i balony: o balon rozbija się jak każdy dron i też uruchamia wyrzutnię balonów.",
@@ -1051,7 +1051,7 @@ const tr: RuleSection[] = [
     title: "Baskınlar",
     lines: [
       "Rakibi e-postasıyla ekle — o da oynuyor olmalı.",
-      "Baskını dalgalardan kur: her birinin kendi deseni, yönü ve yükü var (boş, patlayıcı, top, söndürücü ya da tuzak karıştırıcı, görünmez, üfleyici, turbo, zırh, nişancı). En fazla {maxRaid} dron. Büyük sürü daha sık düzen demektir — baskın neredeyse uzamaz. Dronlar depodan hemen çıkar; yükler için ek kredi ödenir. Halka ve sarmalda yön yerine dönüş vardır: saat yönünde, tersine ya da halkada dönüşsüz.",
+      "Baskını dalgalardan kur: her birinin kendi deseni, yönü ve yükü var (boş, patlayıcı, top, söndürücü ya da tuzak karıştırıcı, görünmez, üfleyici, turbo, zırh, nişancı). Büyük sürü daha sık düzen demektir — baskın neredeyse uzamaz. Dronlar depodan hemen çıkar; yükler için ek kredi ödenir. Halka ve sarmalda yön yerine dönüş vardır: saat yönünde, tersine ya da halkada dönüşsüz.",
       "Üfleyici yük sıradan biri gibi patlar, yaklaşırken baraj balonlarını iter: balon patlamadan dronun birkaç hücre yanına kayar. Sürüdeki birkaç üfleyici balon kayıplarını belirgin azaltır; sürünün üçte biri onları sıfıra yakın indirir.",
       "Tuzak karıştırıcı da aynı şekilde çalışır ama dairesi tuzağınkinin yarısıdır: yakına, topların altına girmesi gerekir. Daire bir mıknatısı kapladığı sürece o kimseyi tutmaz ve yakaladıklarını bırakır.",
       "Görünmez yük sıradan biri gibi patlar ama toplar ve fırlatıcılar onu hiç görmez: ne nişan alır ne füze yönlendirir. Ona karşı elinde yalnızca kendi ellerin, tuzaklar ve baraj balonları kalır: her dron gibi balona çarpar ve balon fırlatıcısını da tetikler.",
@@ -1161,7 +1161,7 @@ const zh: RuleSection[] = [
     title: "空袭",
     lines: [
       "用邮箱添加对手——对方也必须在玩。",
-      "用波次组成空袭：每波有自己的图形、方向和弹头（空载、炸药、高射炮/灭火器/陷阱干扰、隐形、吹气球、涡轮、装甲、射手）。最多 {maxRaid} 架。蜂群越大队形越密——空袭几乎不会拉长。无人机立即离开仓库；弹头要额外付积分。圆环和螺旋没有方向，而是旋转：顺时针、逆时针，圆环还可以不旋转。",
+      "用波次组成空袭：每波有自己的图形、方向和弹头（空载、炸药、高射炮/灭火器/陷阱干扰、隐形、吹气球、涡轮、装甲、射手）。蜂群越大队形越密——空袭几乎不会拉长。无人机立即离开仓库；弹头要额外付积分。圆环和螺旋没有方向，而是旋转：顺时针、逆时针，圆环还可以不旋转。",
       "吹气球弹头和普通的一样爆炸，在接近途中会把阻塞气球推开：气球被推离无人机几格，但不会破。蜂群里有几架这样的无人机，气球造成的损失就明显减少；占三分之一时几乎降到零。",
       "消磁也是同样原理，但它的圆只有陷阱的一半大：必须贴近，冒着炮火。只要圆罩住磁铁，磁铁就困不住任何无人机，并会放走已捕获的。",
       "隐形弹头和普通的一样爆炸，但高射炮和火箭发射器完全看不见它：既不瞄准，也不引导导弹。对付它只剩你自己的手、陷阱和阻塞气球：它会像任何无人机一样撞上气球，也会触发气球发射装置。",
@@ -1271,7 +1271,7 @@ const ja: RuleSection[] = [
     title: "空襲",
     lines: [
       "メールでライバルを追加しましょう — 相手もプレイしている必要があります。",
-      "ウェーブを組み合わせて空襲を作ります：それぞれに形、方向、弾頭（空、爆薬、砲台・消火器・トラップの妨害、ステルス、気球吹き、ターボ、装甲、射手）があります。最大 {maxRaid} 機。群れが大きいほど隊形が密になり、空襲はほとんど長引きません。ドローンはすぐに倉庫を出発し、弾頭には追加料金がかかります。リングとらせんには方向の代わりに回転があります：時計回り、反時計回り、またはリングなら回転なし。",
+      "ウェーブを組み合わせて空襲を作ります：それぞれに形、方向、弾頭（空、爆薬、砲台・消火器・トラップの妨害、ステルス、気球吹き、ターボ、装甲、射手）があります。群れが大きいほど隊形が密になり、空襲はほとんど長引きません。ドローンはすぐに倉庫を出発し、弾頭には追加料金がかかります。リングとらせんには方向の代わりに回転があります：時計回り、反時計回り、またはリングなら回転なし。",
       "気球吹きの弾頭は普通のものと同じく爆発し、接近中に阻塞気球を押しのけます：気球は割れずにドローンから数マス横へ動きます。群れに何機か混ぜるだけで気球による損失がはっきり減り、群れの3分の1でほぼゼロになります。",
       "消磁も同じしくみですが、円はトラップの半分の大きさです：砲台の下まで近づく必要があります。円が磁石を覆っている間、トラップは何も捕らえず、捕らえていたドローンも放します。",
       "ステルス弾頭は普通のものと同じく爆発しますが、高射砲とランチャーにはまったく見えません：狙いもせず、ミサイルも誘導しません。対抗手段はあなた自身の手、トラップ、阻塞気球だけ：どのドローンとも同じように気球にぶつかり、気球ランチャーも作動させます。",
@@ -1381,7 +1381,7 @@ const ko: RuleSection[] = [
     title: "공습",
     lines: [
       "이메일로 라이벌을 추가하세요 — 상대도 게임을 하고 있어야 합니다.",
-      "웨이브로 공습을 짜세요: 각각 모양, 방향, 탄두(빈 드론, 폭약, 대공포·소화기·함정 교란, 스텔스, 풍선 날리기, 터보, 장갑, 사수)가 있습니다. 최대 {maxRaid}대. 떼가 클수록 대형이 촘촘해져 공습은 거의 길어지지 않습니다. 드론은 즉시 창고를 떠나고, 탄두에는 추가 요금이 붙습니다. 고리와 나선에는 방향 대신 회전이 있습니다: 시계 방향, 반시계 방향, 또는 고리라면 회전 없음.",
+      "웨이브로 공습을 짜세요: 각각 모양, 방향, 탄두(빈 드론, 폭약, 대공포·소화기·함정 교란, 스텔스, 풍선 날리기, 터보, 장갑, 사수)가 있습니다. 떼가 클수록 대형이 촘촘해져 공습은 거의 길어지지 않습니다. 드론은 즉시 창고를 떠나고, 탄두에는 추가 요금이 붙습니다. 고리와 나선에는 방향 대신 회전이 있습니다: 시계 방향, 반시계 방향, 또는 고리라면 회전 없음.",
       "풍선 날리기 탄두는 보통 것처럼 터지고, 접근하면서 차단 풍선을 밀어냅니다: 풍선은 터지지 않고 드론에서 몇 칸 옆으로 비켜납니다. 떼에 몇 대만 섞어도 풍선으로 인한 손실이 눈에 띄게 줄고, 떼의 3분의 1이면 거의 0이 됩니다.",
       "자석 무력화도 같은 방식이지만 원은 함정의 절반 크기입니다: 포대 밑까지 다가가야 합니다. 원이 자석을 덮는 동안 함정은 아무것도 붙잡지 못하고 붙잡은 드론도 풀어 줍니다.",
       "스텔스 탄두는 보통 것처럼 터지지만, 대공포와 발사기에는 전혀 보이지 않습니다: 조준도 미사일 유도도 하지 않습니다. 맞설 수단은 당신의 손, 함정, 차단 풍선뿐입니다: 다른 드론처럼 풍선에 부딪히고, 풍선 발사기도 작동시킵니다.",

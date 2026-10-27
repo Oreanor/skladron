@@ -48,7 +48,6 @@ language sql immutable as $$
     when 'loan_max'   then 10000 -- потолок займа = стартовая казна
     when 'loan_rate'  then 10    -- процент за сутки
     when 'loan_hours' then 24    -- срок займа
-    when 'max_raid' then 500 -- потолок одного налёта, тот же и на клиенте
     when 'start'    then 10000 -- с чего начинает новый склад и к чему сбрасывает restart_game
     when 'defend_clean' then 15 -- защитнику за дрона при чистом отбое (~2–3× меньше лута атаки)
     when 'defend_dirty' then 6  -- за дрона, если что-то сгорело
@@ -585,7 +584,8 @@ begin
   if uid is null then raise exception 'not authenticated'; end if;
   perform check_waves(attack_waves);
   drone_count := waves_drones(attack_waves);
-  if drone_count < 1 or drone_count > price('max_raid') then
+  -- Потолка на рой нет: больше, чем лежит на складе, не даст take_from_depots.
+  if drone_count < 1 then
     raise exception 'bad drone count';
   end if;
   head := attack_waves -> 0;

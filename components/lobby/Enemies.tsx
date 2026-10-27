@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { RAID_COMMENT_MAX } from "@/lib/comments";
 import { payloadCost, raidTotal, type WavePlan } from "@/lib/attack";
-import { MAX_ATTACK_DRONES, type Enemy } from "@/lib/enemy";
+import type { Enemy } from "@/lib/enemy";
 import { scoutCounts, seenGuns } from "@/lib/scout";
 import { decodeRle, fogPatches, type Gun } from "@/lib/base";
 import InstallCounts from "../scout/InstallCounts";
@@ -441,8 +441,7 @@ function RaidDialog({
   onSend: (waves: WavePlan[], comment?: string) => Promise<string | null>;
 }) {
   const t = useT();
-  const max = Math.min(drones, MAX_ATTACK_DRONES);
-  const [waves, setWaves] = useState<WavePlan[]>(() => [newWave(Math.min(50, Math.max(1, max)))]);
+  const [waves, setWaves] = useState<WavePlan[]>(() => [newWave(Math.min(50, Math.max(1, drones)))]);
   const [comment, setComment] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -454,7 +453,7 @@ function RaidDialog({
   const problem =
     total < 1
       ? t("raid.empty")
-      : total > max
+      : total > drones
       ? t("raid.tooMany")
       : surcharge > credits
       ? t("raid.noCredits")
@@ -490,7 +489,6 @@ function RaidDialog({
         waves={waves}
         onChange={setWaves}
         stock={drones}
-        max={MAX_ATTACK_DRONES}
         unitCost={droneCost}
         credits={credits}
       />

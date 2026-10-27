@@ -35,7 +35,7 @@ import {
 } from "@/lib/economy";
 
 import { DRONES_PER_CELL } from "@/lib/base";
-import { FIRE, GUN, RAID, ROCKET, SHOOTER, TRAP } from "@/lib/tuning";
+import { FIRE, GUN, ROCKET, SHOOTER, TRAP } from "@/lib/tuning";
 import { RULES } from "@/lib/i18n/rules";
 import { useSettings } from "@/lib/i18n";
 import { Button, Modal, SectionTitle } from "./ui";
@@ -75,7 +75,6 @@ const values: Record<string, string> = {
   balloon: String(BALLOON_COST),
   shooterRange: String(SHOOTER.range),
   spread: String(FIRE.spread),
-  maxRaid: String(RAID.max),
   loot: String(CELL_LOOT_REWARD),
   // Потолок премии: столько дают за клетку, когда сожжён весь склад.
   lootMax: String(attackLoot(1, 1)),

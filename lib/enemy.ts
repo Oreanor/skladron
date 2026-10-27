@@ -15,9 +15,6 @@ import {
 } from "./base";
 import { mulberry32 } from "./attack";
 import type { Avatar } from "./avatar";
-import { RAID } from "./tuning";
-
-export const MAX_ATTACK_DRONES = RAID.max;
 
 /** Что удалось снять разведкой: карта врага и маска того, что мы видели. */
 export interface ScoutSnapshot {

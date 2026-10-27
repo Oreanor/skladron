@@ -130,10 +130,7 @@ export function raidSize(
       RAID.waterSharePerLevel * ((levels.water ?? 1) - 1)
   );
   const survivable = leaksOk(intact) + gunPower + intact * RAID.perCell;
-  return Math.max(
-    RAID.min,
-    Math.min(RAID.max, Math.round((survivable / (1 - hands)) * difficulty))
-  );
+  return Math.max(RAID.min, Math.round((survivable / (1 - hands)) * difficulty));
 }
 
 /** Случайная сложность очередного налёта. */

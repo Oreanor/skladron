@@ -47,8 +47,6 @@ export interface PlannerProps {
   onChange: (waves: WavePlan[]) => void;
   /** Сколько дронов лежит на складе — больше не отправить. */
   stock: number;
-  /** Потолок одного налёта. */
-  max: number;
   /** Во что обходится один дрон сейчас: от этого считается надбавка. */
   unitCost: number;
   /** Текущий кошелёк: недоступные начинки и итоговая доплата краснеют. */
@@ -69,7 +67,6 @@ export default function RaidPlanner({
   waves,
   onChange,
   stock,
-  max,
   unitCost,
   credits,
   free = false,
@@ -270,11 +267,11 @@ export default function RaidPlanner({
                     <input
                       type="number"
                       min={1}
-                      max={max}
+                      max={stock}
                       value={group.n}
                       aria-label={t("raid.groupSize")}
                       onChange={(e) =>
-                        patchGroup(wi, gi, Math.max(0, Math.min(max, Number(e.target.value) || 0)))
+                        patchGroup(wi, gi, Math.max(0, Math.min(stock, Number(e.target.value) || 0)))
                       }
                       className={numberClass}
                     />
@@ -320,7 +317,7 @@ export default function RaidPlanner({
             const prev = waves[waves.length - 1]?.delay ?? 0;
             onChange([
               ...waves,
-              newWave(Math.max(1, Math.min(20, max - total)), Math.min(99, prev + 1)),
+              newWave(Math.max(1, Math.min(20, stock - total)), Math.min(99, prev + 1)),
             ]);
           }}
         >
@@ -332,8 +329,8 @@ export default function RaidPlanner({
       <dl className="mt-5 space-y-1 font-mono text-sm">
         <div className="flex items-center justify-between gap-3">
           <dt className="text-neutral-400">{t("raid.total")}</dt>
-          <dd className={total > Math.min(stock, max) ? "text-red-400" : "text-neutral-100"}>
-            {total} / {Math.min(stock, max)}
+          <dd className={total > stock ? "text-red-400" : "text-neutral-100"}>
+            {total} / {stock}
           </dd>
         </div>
         {!free && (

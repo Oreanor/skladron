@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { MAX_ATTACK_DRONES, type Enemy } from "@/lib/enemy";
+import type { Enemy } from "@/lib/enemy";
 import { payloadCost, raidTotal, type WavePlan } from "@/lib/attack";
 import { RAID_COMMENT_MAX } from "@/lib/comments";
 import RaidPlanner, { newWave } from "./RaidPlanner";
@@ -44,13 +44,12 @@ export default function SummonRaidDialog({
 
   const enemy = enemies.find((e) => e.id === targetId) ?? null;
   const total = raidTotal(waves);
-  const max = Math.min(drones, MAX_ATTACK_DRONES);
   const surcharge = payloadCost(droneCost, waves);
 
   const problem =
     total < 1
       ? t("raid.empty")
-      : total > max
+      : total > drones
         ? t("raid.tooMany")
         : surcharge > credits
           ? t("raid.noCredits")
@@ -100,7 +99,6 @@ export default function SummonRaidDialog({
         waves={waves}
         onChange={setWaves}
         stock={drones}
-        max={max}
         unitCost={droneCost}
         credits={credits}
         free={false}
