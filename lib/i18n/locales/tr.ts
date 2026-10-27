@@ -271,6 +271,7 @@ const tr: Dict = {
   "avatar.uploading": "Yükleniyor…",
   "avatar.clear": "Baş harfler",
   "avatar.change": "Avatar seç",
+  "avatar.google": "Google fotoğrafı",
   "avatar.tooBig": "Resim hâlâ çok ağır — daha sadesini dene.",
   "avatar.needSignIn": "Kendi resmin için giriş gerekli.",
   "panel.account": "Hesap",

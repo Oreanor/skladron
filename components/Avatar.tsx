@@ -59,6 +59,8 @@ export default function Avatar({
         className="h-full w-full object-cover"
         // Загруженные лежат в хранилище Supabase, готовые — в public.
         unoptimized={url.startsWith("http")}
+        // Google не всегда отдаёт фото чужому сайту, если видит, откуда зовут.
+        referrerPolicy="no-referrer"
       />
     </span>
   );

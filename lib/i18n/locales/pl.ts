@@ -271,6 +271,7 @@ const pl: Dict = {
   "avatar.uploading": "Wgrywamy…",
   "avatar.clear": "Inicjały",
   "avatar.change": "Wybierz awatar",
+  "avatar.google": "Zdjęcie z Google",
   "avatar.tooBig": "Obrazek wciąż za ciężki — spróbuj prostszego.",
   "avatar.needSignIn": "Własne obrazki tylko po zalogowaniu.",
   "panel.account": "Konto",

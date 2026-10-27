@@ -6,11 +6,20 @@ import Lobby from "./Lobby";
 import { Button } from "./ui";
 import { useT } from "@/lib/i18n";
 import { explainAlone } from "@/lib/errors";
+import { googleAvatar } from "@/lib/avatar";
 
 export interface Account {
   email: string | null;
   name: string | null;
+  /** Фото из Google-аккаунта — к нему можно вернуться в окне аватара. */
+  google: string | null;
 }
+
+const accountOf = (u: { email?: string; user_metadata?: Record<string, unknown> }): Account => ({
+  email: u.email ?? null,
+  name: (u.user_metadata?.full_name as string | undefined) ?? null,
+  google: googleAvatar(u.user_metadata),
+});
 
 /**
  * Без ключей Supabase пускает играть локально. С ключами — требует входа
@@ -32,7 +41,7 @@ export default function AuthGate() {
     db.auth.getSession().then(({ data }) => {
       const u = data.session?.user;
       if (u) {
-        setAccount({ email: u.email ?? null, name: u.user_metadata?.full_name ?? null });
+        setAccount(accountOf(u));
         setState("signed");
       } else {
         setState("anon");
@@ -42,7 +51,7 @@ export default function AuthGate() {
     const { data: sub } = db.auth.onAuthStateChange((_e, session) => {
       const u = session?.user;
       if (u) {
-        setAccount({ email: u.email ?? null, name: u.user_metadata?.full_name ?? null });
+        setAccount(accountOf(u));
         setState("signed");
       } else {
         setAccount(null);

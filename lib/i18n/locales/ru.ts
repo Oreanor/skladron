@@ -276,6 +276,7 @@ const ru: Dict = {
   "avatar.uploading": "Загружаю…",
   "avatar.clear": "Инициалы",
   "avatar.change": "Выбрать аватар",
+  "avatar.google": "Фото из Google",
   "avatar.tooBig": "Картинка всё равно тяжёлая — возьми попроще.",
   "avatar.needSignIn": "Своя картинка — только после входа.",
   "panel.account": "Аккаунт",

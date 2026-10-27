@@ -271,6 +271,7 @@ const ko: Dict = {
   "avatar.uploading": "올리는 중…",
   "avatar.clear": "이니셜",
   "avatar.change": "아바타 선택",
+  "avatar.google": "Google 사진",
   "avatar.tooBig": "그림이 아직 너무 무겁습니다 — 더 단순한 것을 써 보세요.",
   "avatar.needSignIn": "내 그림은 로그인 후에 쓸 수 있습니다.",
   "panel.account": "계정",

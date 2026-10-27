@@ -2,9 +2,10 @@
  * Аватарка игрока: либо одно из готовых лиц, либо своя картинка.
  *
  * В профиле лежит одна строка. Пусто — инициалы (если сами сбросили);
- * «1»…«112» — готовое лицо из public/avatars; всё, что начинается с http, —
- * своя загруженная картинка. Новым и тем, у кого пусто в базе, даём
- * случайный пресет. Разбирать строку умеет только этот файл.
+ * «1»…«112» — готовое лицо из public/avatars; ссылка на lh3.googleusercontent
+ * — фото из Google-аккаунта; любая другая http-ссылка — своя загруженная
+ * картинка. Новым даём фото из Google, а нет его — случайный пресет.
+ * Разбирать строку умеет только этот файл.
  */
 
 /** Сколько готовых лиц лежит в public/avatars. */
@@ -31,9 +32,25 @@ export function userAvatarStoragePath(userId: string): string {
   return `${userId}.webp`;
 }
 
-/** Своя загрузка в профиле — http(s), не номер пресета. */
+const GOOGLE_PREFIX = "https://lh3.googleusercontent.com/";
+
+/**
+ * Фото из Google-аккаунта по данным входа, или null. Google отдаёт кружок
+ * в 96 точек — просим 320, как у остальных аватаров. Ту же замену делает
+ * google_avatar на сервере: он принимает только ссылку, совпавшую с его.
+ */
+export function googleAvatar(meta: Record<string, unknown> | null | undefined): string | null {
+  const pic = meta?.avatar_url ?? meta?.picture;
+  if (typeof pic !== "string" || !pic.startsWith(GOOGLE_PREFIX)) return null;
+  return pic.replace(/=s\d+-c$/, "=s320-c");
+}
+
+export const isGoogleAvatar = (avatar: Avatar): avatar is string =>
+  !!avatar && avatar.startsWith(GOOGLE_PREFIX);
+
+/** Своя загрузка в профиле — http(s), не номер пресета и не фото из Google. */
 export function isUploadedAvatarUrl(avatar: Avatar): avatar is string {
-  return !!avatar && avatar.startsWith("http");
+  return !!avatar && avatar.startsWith("http") && !isGoogleAvatar(avatar);
 }
 
 /** В профиле храним постоянный URL без ?v= для сброса кэша в UI. */

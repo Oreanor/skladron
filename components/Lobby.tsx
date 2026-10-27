@@ -913,6 +913,7 @@ export default function Lobby({
           avatar={p.avatar}
           name={p.name || (account?.name ?? null)}
           email={account?.email ?? null}
+          google={account?.google ?? null}
           onPick={async (value) => {
             try {
               await repo.setAvatar(p, value);

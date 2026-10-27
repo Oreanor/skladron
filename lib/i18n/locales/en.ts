@@ -277,6 +277,7 @@ const en = {
   "avatar.uploading": "Uploading…",
   "avatar.clear": "Initials",
   "avatar.change": "Choose avatar",
+  "avatar.google": "Google photo",
   "avatar.tooBig": "The picture is still too heavy — try a simpler one.",
   "avatar.needSignIn": "Own pictures need a sign-in.",
   "panel.account": "Account",

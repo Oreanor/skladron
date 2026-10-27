@@ -44,24 +44,28 @@ const THUMB = 56;
 /** Пока сдвиг меньше — считаем клик по лицу, не перетаскивание ленты. */
 const DRAG_THRESHOLD_PX = 6;
 
-/** В ленте — одна своя картинка максимум, без накопления старых URL. */
-function stripFaces(avatar: AvatarValue): string[] {
-  if (avatar && isUploadedAvatarUrl(avatar)) {
-    return [normalizeAvatarForStorage(avatar)!, ...PRESET_LIST];
-  }
-  return PRESET_LIST;
+/**
+ * Лента: фото из Google первым, за ним своя картинка (одна, без накопления
+ * старых URL), дальше готовые лица.
+ */
+function stripFaces(avatar: AvatarValue, google: string | null): string[] {
+  const own = avatar && isUploadedAvatarUrl(avatar) ? [normalizeAvatarForStorage(avatar)!] : [];
+  return [...(google ? [google] : []), ...own, ...PRESET_LIST];
 }
 
 export default function AvatarPicker({
   avatar,
   name,
   email,
+  google = null,
   onPick,
   onClose,
 }: {
   avatar: AvatarValue;
   name: string | null;
   email: string | null;
+  /** Фото из Google-аккаунта: к нему можно вернуться одной кнопкой. */
+  google?: string | null;
   onPick: (value: AvatarValue) => Promise<void> | void;
   onClose: () => void;
 }) {
@@ -79,7 +83,7 @@ export default function AvatarPicker({
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
 
-  const [faces, setFaces] = useState<string[]>(() => stripFaces(avatar));
+  const [faces, setFaces] = useState<string[]>(() => stripFaces(avatar, google));
   const [picked, setPicked] = useState<AvatarValue>(() => normalizeAvatarForStorage(avatar));
   const [uploadVersion, setUploadVersion] = useState(0);
   const facesRef = useRef(faces);
@@ -148,7 +152,7 @@ export default function AvatarPicker({
       const { data: pub } = db.storage.from("avatars").getPublicUrl(path);
       const stored = normalizeAvatarForStorage(pub.publicUrl)!;
       setUploadVersion(Date.now());
-      setFaces(stripFaces(stored));
+      setFaces(stripFaces(stored, google));
       setPicked(stored);
       stripRef.current?.scrollTo({ left: 0, behavior: "smooth" });
     } catch (e) {
@@ -196,6 +200,18 @@ export default function AvatarPicker({
             >
               {busy ? t("avatar.uploading") : t("avatar.upload")}
             </Button>
+            {google && (
+              <Button
+                className="whitespace-nowrap"
+                disabled={busy}
+                onClick={() => {
+                  void applyPick(google);
+                  onClose();
+                }}
+              >
+                {t("avatar.google")}
+              </Button>
+            )}
             <Button
               className="whitespace-nowrap"
               disabled={busy}
@@ -300,6 +316,7 @@ export default function AvatarPicker({
                 draggable={false}
                 className="pointer-events-none h-full w-full object-cover"
                 unoptimized={face.startsWith("http")}
+                referrerPolicy="no-referrer"
               />
             </button>
           ))}

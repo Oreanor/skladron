@@ -271,6 +271,7 @@ const uk: Dict = {
   "avatar.uploading": "Завантажуємо…",
   "avatar.clear": "Ініціали",
   "avatar.change": "Обрати аватар",
+  "avatar.google": "Фото з Google",
   "avatar.tooBig": "Картинка все ще завелика — спробуй простішу.",
   "avatar.needSignIn": "Свої картинки — лише після входу.",
   "panel.account": "Обліковий запис",

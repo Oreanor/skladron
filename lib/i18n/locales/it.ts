@@ -276,6 +276,7 @@ const it: Dict = {
   "avatar.uploading": "Caricamento…",
   "avatar.clear": "Iniziali",
   "avatar.change": "Scegli avatar",
+  "avatar.google": "Foto di Google",
   "avatar.tooBig": "L’immagine pesa ancora troppo: prendine una più semplice.",
   "avatar.needSignIn": "Un’immagine tua richiede l’accesso.",
   "panel.account": "Account",

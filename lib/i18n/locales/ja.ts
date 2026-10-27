@@ -271,6 +271,7 @@ const ja: Dict = {
   "avatar.uploading": "アップロード中…",
   "avatar.clear": "イニシャル",
   "avatar.change": "アバターを選ぶ",
+  "avatar.google": "Google の写真",
   "avatar.tooBig": "画像がまだ重すぎます — もっと単純なものを試してください。",
   "avatar.needSignIn": "自分の画像はログイン後に使えます。",
   "panel.account": "アカウント",

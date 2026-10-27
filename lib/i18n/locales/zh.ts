@@ -271,6 +271,7 @@ const zh: Dict = {
   "avatar.uploading": "上传中……",
   "avatar.clear": "首字母",
   "avatar.change": "选择头像",
+  "avatar.google": "Google 头像",
   "avatar.tooBig": "图片仍然太大——换一张简单些的。",
   "avatar.needSignIn": "上传自己的图片需要先登录。",
   "panel.account": "账户",
