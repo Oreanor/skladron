@@ -136,6 +136,7 @@ const en = {
   "replay.progress": "Replay progress",
   "battle.insurance": "Insurance",
   "battle.defenseBounty": "Defence bounty",
+  "battle.bountyNoRecord": "none — record not beaten",
   "restart.menu": "Start over",
   "restart.title": "Start the game over?",
   "restart.hint": "The warehouse, credits, drones, guns, levels and mission progress go back to the very beginning. The name, the rival list, blueprints and the battle log stay. This cannot be undone.",

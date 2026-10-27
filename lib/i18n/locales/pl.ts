@@ -135,6 +135,7 @@ const pl: Dict = {
   "replay.progress": "Postęp powtórki",
   "battle.insurance": "Ubezpieczenie",
   "battle.defenseBounty": "Premia za obronę",
+  "battle.bountyNoRecord": "brak — rekord nie pobity",
   "restart.menu": "Zacznij od nowa",
   "restart.title": "Zacząć grę od nowa?",
   "restart.hint": "Magazyn, kredyty, drony, działa, poziomy i postęp misji wrócą do samego początku. Nazwa, lista rywali, plany i dziennik bitew zostaną. Tego nie da się cofnąć.",

@@ -1292,8 +1292,14 @@ $$;
 -- боя с настоящим налётом теперь считает сервер, и он приходит не от имени
 -- защитника. Функция принимает игрока параметром, поэтому ниже с неё снято
 -- право исполнения: звать её может только сервер под служебным ключом.
+-- Прежняя сигнатура без pay_bounty: иначе рядом осталась бы вторая функция
+-- с тем же именем, и вызов с пятью аргументами стал бы неоднозначным.
+drop function if exists apply_battle_for(uuid, text, jsonb, jsonb, jsonb);
+
 create or replace function apply_battle_for(
-  player uuid, new_cells text, new_guns jsonb, new_depots jsonb, result jsonb
+  player uuid, new_cells text, new_guns jsonb, new_depots jsonb, result jsonb,
+  -- Премию за отбой платить? Миссия платит её только за новый рекорд номера.
+  pay_bounty boolean default true
 )
 returns table (credits int, intact int)
 language plpgsql security definer set search_path = public as $$
@@ -1388,8 +1394,11 @@ begin
                 * price('trap')) * cover) / 100;
 
   -- Премия за отбой: чистый платит лучше; сожжённые клетки съедают грязную ставку.
+  -- Страховка выше платится всегда: она возмещает ущерб, а не награждает.
   drones_sent := greatest(0, coalesce((result->>'dronesSent')::int, 0));
-  if burned = 0 then
+  if not pay_bounty then
+    null;
+  elsif burned = 0 then
     payout := payout + drones_sent * price('defend_clean');
   else
     payout := payout + greatest(
@@ -1540,6 +1549,10 @@ declare
   base_at timestamptz;
   comp_pct int;
   comp_score int;
+  pays boolean := true;
+  new_map bytea;
+  after_intact int;
+  before_intact int;
 begin
   select a.* into order_row from attacks a where a.id = attack_id for update;
   if not found then raise exception 'attack not found'; end if;
@@ -1565,9 +1578,26 @@ begin
     raise exception 'base changed during battle';
   end if;
 
+  -- Миссия платит премию только за первую попытку номера или за счёт выше
+  -- прежнего лучшего: столько же или меньше — денег нет, иначе один номер
+  -- переигрывали бы ради заработка. Счёт — как ниже и как competitionScore
+  -- на клиенте: доля уцелевшего склада; сгоревшее apply_battle_for сверит
+  -- с картой.
+  if order_row.competition_stage is not null then
+    new_map := rle_decode(new_cells);
+    after_intact := (select count(*) from generate_series(0, 9999) i
+                      where get_byte(new_map, i) = 1);
+    before_intact := after_intact + coalesce((result->>'burned')::int, 0);
+    pays := before_intact > 0
+      and (after_intact * 100) / before_intact > coalesce(
+            (select (p.competition_best -> order_row.competition_stage::text ->> 'score')::int
+               from profiles p where p.id = order_row.defender_id),
+            -1);
+  end if;
+
   select applied.credits, applied.intact
     into defender_credits, defender_intact
-    from apply_battle_for(order_row.defender_id, new_cells, new_guns, new_depots, result) applied;
+    from apply_battle_for(order_row.defender_id, new_cells, new_guns, new_depots, result, pays) applied;
 
   -- Премия растёт не по клеткам, а по доле склада: половина даёт +25%,
   -- четыре пятых — вдвое, весь склад — втрое. Добить выгоднее, чем
@@ -2467,7 +2497,7 @@ do $perm$
 declare fn text;
 begin
   foreach fn in array array[
-    'apply_battle_for(uuid, text, jsonb, jsonb, jsonb)',
+    'apply_battle_for(uuid, text, jsonb, jsonb, jsonb, boolean)',
     'resolve_attack(uuid, text, jsonb, jsonb, jsonb, text, uuid)',
     'claim_attack(uuid)',
     'release_attack(uuid, uuid)',

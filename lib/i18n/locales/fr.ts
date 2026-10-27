@@ -135,6 +135,7 @@ const fr: Dict = {
   "replay.progress": "Progression de la rediffusion",
   "battle.insurance": "Assurance",
   "battle.defenseBounty": "Prime de défense",
+  "battle.bountyNoRecord": "aucune — record non battu",
   "restart.menu": "Tout recommencer",
   "restart.title": "Recommencer la partie ?",
   "restart.hint": "L’entrepôt, les crédits, les drones, les canons, les niveaux et la progression des missions repartent de zéro. Le nom, la liste des rivaux, les plans et le journal des combats restent. C’est irréversible.",

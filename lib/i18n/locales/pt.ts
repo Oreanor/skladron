@@ -135,6 +135,7 @@ const pt: Dict = {
   "replay.progress": "Progresso da repetição",
   "battle.insurance": "Seguro",
   "battle.defenseBounty": "Prémio de defesa",
+  "battle.bountyNoRecord": "não — recorde não batido",
   "restart.menu": "Começar de novo",
   "restart.title": "Começar o jogo de novo?",
   "restart.hint": "O armazém, os créditos, os drones, os canhões, os níveis e o progresso das missões voltam ao início. O nome, a lista de rivais, as plantas e o registo de batalhas ficam. Isto não se desfaz.",

@@ -64,6 +64,20 @@ export function competitionScore(intactBefore: number, intactAfter: number) {
   return { pct, score: pct };
 }
 
+/**
+ * Платит ли эта попытка премию за отбой. Только первая попытка номера или
+ * счёт выше прежнего лучшего: столько же или меньше — без денег, иначе один
+ * номер переигрывали бы ради заработка. Сервер решает так же в resolve_attack.
+ */
+export function missionPays(
+  best: CompetitionBest | undefined,
+  intactBefore: number,
+  burned: number
+) {
+  if (intactBefore <= 0) return false;
+  return competitionScore(intactBefore, intactBefore - burned).score > (best?.score ?? -1);
+}
+
 /** Лучшая попытка номера. */
 export interface CompetitionBest {
   score: number;

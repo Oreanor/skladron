@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { GRID, type Depot, type Gun } from "@/lib/base";
+import { GRID, G_BASE, countCells, type Depot, type Gun } from "@/lib/base";
+import { missionPays, type CompetitionBest } from "@/lib/competition";
 import { buildPlan, type AttackOrder } from "@/lib/attack";
 import {
   afterglow,
@@ -37,6 +38,8 @@ interface Props {
   levels?: BattleLevels;
   /** Уровень страхового полиса — по нему считается выплата. */
   insuranceLevel?: number;
+  /** Лучшая попытка этой миссии: премию платит только её превышение. */
+  missionBest?: CompetitionBest;
   onFinish: (o: BattleOutcome) => void;
 }
 
@@ -68,6 +71,7 @@ export default function Battle({
   order,
   levels,
   insuranceLevel = 1,
+  missionBest,
   onFinish,
 }: Props) {
   const stateRef = useRef<GameState | null>(null);
@@ -83,6 +87,10 @@ export default function Battle({
   const finished = useRef(false);
   /** Во что обходился товар до боя: из него считаем, сколько сгорело. */
   const startGoods = useMemo(() => goodsValue(depots), [depots]);
+  const startIntact = useMemo(() => countCells(cells, G_BASE), [cells]);
+  /** Платит ли бой премию за отбой с таким числом сгоревших клеток. */
+  const paysBounty = (burned: number) =>
+    !order.competitionStage || missionPays(missionBest, startIntact, burned);
   /** Кадры действий защитника — из них собирается повтор для нападавшего. */
   const trace = useRef<(Frame | null)[]>([]);
 
@@ -202,7 +210,7 @@ export default function Battle({
     hud?.gunsLost ?? 0,
     insuranceLevel
   );
-  const bountyPay = defenseBounty(order.drones, hud?.burned ?? 0);
+  const bountyPay = paysBounty(hud?.burned ?? 0) ? defenseBounty(order.drones, hud?.burned ?? 0) : 0;
   const payout = insurePay + bountyPay;
 
   const header = t(order.competitionStage ? "battle.headerCompetition" : "battle.header", {
@@ -294,9 +302,13 @@ export default function Battle({
               />
               <Row
                 label={t("battle.defenseBounty")}
-                value={`+${fmt(defenseBounty(order.drones, done.result.burned))} ${t(
-                  "battle.creditsSuffix"
-                )}`}
+                value={
+                  paysBounty(done.result.burned)
+                    ? `+${fmt(defenseBounty(order.drones, done.result.burned))} ${t(
+                        "battle.creditsSuffix"
+                      )}`
+                    : t("battle.bountyNoRecord")
+                }
               />
               <Row label={t("battle.leaked")} value={String(done.result.leaked)} />
               <Row

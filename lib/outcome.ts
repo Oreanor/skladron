@@ -67,6 +67,9 @@ export function applyOutcome(p: Player, battle: AttackOrder, o: BattleOutcome): 
   // уцелел. Сервер считает то же у себя, и при следующем входе его
   // прогресс перекроет этот.
   let mission: OutcomeSummary["mission"];
+  // Премию за отбой миссия платит только за первую попытку номера или за
+  // новый рекорд (missionPays); страховка — всегда.
+  let paysBounty = true;
   const stage = battle.competitionStage;
   if (stage) {
     const attempt = competitionScore(intactBefore, intactCells(p));
@@ -85,6 +88,7 @@ export function applyOutcome(p: Player, battle: AttackOrder, o: BattleOutcome): 
     if (o.won) {
       p.competitionAt = Math.max(p.competitionAt, Math.min(COMPETITION_STAGES, stage + 1));
     }
+    paysBounty = record && intactBefore > 0;
     mission = { stage, pct: attempt.pct, score: attempt.score, record };
   }
 
@@ -97,7 +101,7 @@ export function applyOutcome(p: Player, battle: AttackOrder, o: BattleOutcome): 
       o.result.spraysLost,
       o.result.trapsLost,
       o.result.rocketsLost
-    ) + defenseBounty(battle.drones, o.result.burned);
+    ) + (paysBounty ? defenseBounty(battle.drones, o.result.burned) : 0);
 
   // Счёт вражды: сколько он у нас сжёг.
   const foe = findFoe(p, battle);

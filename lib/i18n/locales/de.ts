@@ -135,6 +135,7 @@ const de: Dict = {
   "replay.progress": "Fortschritt der Wiederholung",
   "battle.insurance": "Versicherung",
   "battle.defenseBounty": "Abwehrprämie",
+  "battle.bountyNoRecord": "keine — Bestleistung nicht übertroffen",
   "restart.menu": "Neu anfangen",
   "restart.title": "Das Spiel neu anfangen?",
   "restart.hint": "Lager, Kredite, Drohnen, Geschütze, Stufen und Missionsfortschritt gehen ganz an den Anfang zurück. Name, Gegnerliste, Baupläne und Kampfprotokoll bleiben. Rückgängig geht das nicht.",

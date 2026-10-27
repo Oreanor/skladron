@@ -309,6 +309,7 @@ export default function Lobby({
           water: p.levels.water,
         }}
         insuranceLevel={p.levels.insurance}
+        missionBest={battle.competitionStage ? p.competitionBest[battle.competitionStage] : undefined}
         onFinish={(o) => flow.finishBattle(battle, o)}
       />
     );

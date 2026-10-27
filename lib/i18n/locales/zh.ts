@@ -135,6 +135,7 @@ const zh: Dict = {
   "replay.progress": "回放进度",
   "battle.insurance": "保险",
   "battle.defenseBounty": "防守奖金",
+  "battle.bountyNoRecord": "无——未刷新纪录",
   "restart.menu": "重新开始",
   "restart.title": "重新开始游戏？",
   "restart.hint": "仓库、积分、无人机、炮台、等级和任务进度都会回到最初。名称、对手列表、蓝图和战斗记录保留。此操作无法撤销。",

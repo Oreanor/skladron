@@ -135,6 +135,7 @@ const tr: Dict = {
   "replay.progress": "Tekrar ilerlemesi",
   "battle.insurance": "Sigorta",
   "battle.defenseBounty": "Savunma ödülü",
+  "battle.bountyNoRecord": "yok — rekor kırılmadı",
   "restart.menu": "Baştan başla",
   "restart.title": "Oyuna baştan başlansın mı?",
   "restart.hint": "Depo, krediler, dronlar, toplar, seviyeler ve görev ilerlemesi en başa döner. İsim, rakip listesi, planlar ve savaş kaydı kalır. Geri alınamaz.",

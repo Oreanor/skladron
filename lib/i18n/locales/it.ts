@@ -135,6 +135,7 @@ const it: Dict = {
   "replay.progress": "Avanzamento del replay",
   "battle.insurance": "Assicurazione",
   "battle.defenseBounty": "Premio di difesa",
+  "battle.bountyNoRecord": "nessuno — record non battuto",
   "restart.menu": "Ricomincia",
   "restart.title": "Ricominciare la partita?",
   "restart.hint": "Magazzino, crediti, droni, cannoni, livelli e progressi delle missioni tornano all’inizio. Il nome, la lista dei rivali, i progetti e il registro delle battaglie restano. Non si torna indietro.",

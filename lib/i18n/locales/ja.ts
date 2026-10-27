@@ -135,6 +135,7 @@ const ja: Dict = {
   "replay.progress": "リプレイの進行",
   "battle.insurance": "保険",
   "battle.defenseBounty": "防衛報酬",
+  "battle.bountyNoRecord": "なし — 自己ベスト未更新",
   "restart.menu": "最初からやり直す",
   "restart.title": "ゲームを最初からやり直しますか？",
   "restart.hint": "倉庫、クレジット、ドローン、砲台、レベル、ミッションの進行がすべて最初に戻ります。名前、ライバル一覧、設計図、戦闘記録は残ります。元に戻せません。",
