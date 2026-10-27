@@ -80,6 +80,27 @@ console.log('\n— словари сходятся между языками —
     }
   }
   if (!holes) pass('подстановки совпадают во всех строках');
+
+  // Ключ, которого код не зовёт, — хвост: его переводят на тринадцать
+  // языков впустую. Ключи вида `pattern.${id}` собираются на ходу — их
+  // приставки считаем живыми.
+  const code = [];
+  const walk = (dir) => {
+    for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, f.name);
+      if (f.isDirectory()) {
+        if (!/node_modules|[\\/]sims$|[\\/]locales$/.test(p)) walk(p);
+      } else if (/\.tsx?$/.test(f.name)) code.push(read(p));
+    }
+  };
+  ['app', 'components', 'lib'].forEach(walk);
+  const src = code.join('\n');
+  const dynamic = [...new Set([...src.matchAll(/`([a-zA-Z]+(?:\.[a-zA-Z]+)*\.)\$\{/g)].map((m) => m[1]))];
+  const unused = [...base.keys()].filter(
+    (k) => !src.includes(`"${k}"`) && !src.includes(`'${k}'`) && !dynamic.some((d) => k.startsWith(d))
+  );
+  if (unused.length) fail(`ключи, которых код не зовёт: ${unused.join(', ')}`);
+  else pass('каждый ключ где-то используется');
 }
 
 // ---------- начинки ----------
