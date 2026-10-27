@@ -67,7 +67,7 @@ export default function ReplayPage({ params }: { params: Promise<{ id: string }>
   const { id } = use(params);
   return (
     <SettingsProvider>
-      <main className="mx-auto flex h-[100dvh] w-full max-w-6xl flex-col p-2 sm:p-3 lg:p-5">
+      <main className="mx-auto flex h-[100dvh] w-full game-frame flex-col p-2 sm:p-3 lg:p-5">
         <div className="flex min-h-0 flex-1 flex-col">
           <Screen id={id} />
         </div>
