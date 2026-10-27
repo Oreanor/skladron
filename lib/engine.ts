@@ -319,6 +319,16 @@ export interface GameState {
    * полдюжины, что попали ему под круг.
    */
   gunBlocks: Map<number, Gun[]>;
+  /**
+   * Установки по клетке. gunAt зовётся всякий раз, как дрон переходит в
+   * новую клетку, — сотни раз за кадр, и перебор всех установок ради одной
+   * клетки был заметной долей боя.
+   */
+  gunCells: Map<number, Gun[]>;
+  /** Одни ловушки: магниту каждый кадр нужны только они, а не весь склад. */
+  traps: Gun[];
+  /** Номера ловушек в traps, разложенные по блокам поля. */
+  trapBlocks: Map<number, number[]>;
   /** Своя случайность вместо Math.random: бой должен быть повторим. */
   rnd: () => number;
   /** Уровень дронов нападающего и уровни защитника. */
@@ -454,6 +464,9 @@ export function createBattle(
     targetsStale: false,
     gunsById: new Map(),
     gunBlocks: new Map(),
+    gunCells: new Map(),
+    traps: [],
+    trapBlocks: new Map(),
     rnd: mulberry32(levels.seed ?? ((Math.random() * 1e9) | 0)),
     result: {
       dronesSent: plan.length,
@@ -481,6 +494,15 @@ export function createBattle(
     const cell = s.gunBlocks.get(k);
     if (cell) cell.push(g);
     else s.gunBlocks.set(k, [g]);
+    const at = s.gunCells.get(idx(g.cx, g.cy));
+    if (at) at.push(g);
+    else s.gunCells.set(idx(g.cx, g.cy), [g]);
+    if (g.trap) {
+      const list = s.trapBlocks.get(k);
+      if (list) list.push(s.traps.length);
+      else s.trapBlocks.set(k, [s.traps.length]);
+      s.traps.push(g);
+    }
   }
   return s;
 }
@@ -566,7 +588,8 @@ function stepLaunchers(s: GameState) {
 }
 
 export function gunAt(s: GameState, x: number, y: number) {
-  return s.guns.find((g) => g.alive && g.cx === x && g.cy === y);
+  // Координаты сверяем и здесь: за краем карты idx(x, y) попадает в чужую клетку.
+  return s.gunCells.get(idx(x, y))?.find((g) => g.alive && g.cx === x && g.cy === y);
 }
 
 export function setAim(s: GameState, aim: { x: number; y: number } | null) {
@@ -1176,9 +1199,10 @@ function pullHeld(s: GameState, d: Drone, host: Gun, dt: number) {
 function captureTraps(s: GameState, dt: number) {
   // Глушение стекает и у магнитов — так же, как у стреляющих установок:
   // подавителя сбили, и через SUPPRESS.release ловушка снова держит.
-  for (const g of s.guns) {
-    if (g.trap && g.jammed > 0) g.jammed = Math.max(0, g.jammed - dt);
+  for (const g of s.traps) {
+    if (g.jammed > 0) g.jammed = Math.max(0, g.jammed - dt);
   }
+  if (!s.traps.length) return;
   const reach = trapRange(s);
   const r2 = reach * reach;
   const held = new Map<number, number>();
@@ -1187,26 +1211,38 @@ function captureTraps(s: GameState, dt: number) {
   }
   for (const d of s.drones) {
     if (d.heldBy > 0 || d.hit || d.over || s.time < d.grabAt) continue;
-    let best: Gun | null = null;
+    // Ловушки по блокам, а не все подряд. Ответ тот же, что у перебора по
+    // s.traps: из равных по расстоянию тот брал последнюю, берём и мы.
+    let best = -1;
     let bestD = r2;
-    for (const g of s.guns) {
-      // Размагниченная ловушка не хватает: её собственный радиус на это
-      // время как будто исчез.
-      if (!g.alive || !g.trap || g.jammed > 0) continue;
-      if ((held.get(g.id) ?? 0) >= TRAP.capacity) continue;
-      const dx = g.cx + 0.5 - d.x;
-      const dy = g.cy + 0.5 - d.y;
-      const dd = dx * dx + dy * dy;
-      if (dd <= bestD) {
-        bestD = dd;
-        best = g;
+    const bx1 = blockOf(d.x + reach);
+    const by1 = blockOf(d.y + reach);
+    for (let by = blockOf(d.y - reach); by <= by1; by++) {
+      for (let bx = blockOf(d.x - reach); bx <= bx1; bx++) {
+        const here = s.trapBlocks.get(by * BLOCKS + bx);
+        if (!here) continue;
+        for (const k of here) {
+          const g = s.traps[k];
+          // Размагниченная ловушка не хватает: её собственный радиус на это
+          // время как будто исчез.
+          if (!g.alive || g.jammed > 0) continue;
+          if ((held.get(g.id) ?? 0) >= TRAP.capacity) continue;
+          const dx = g.cx + 0.5 - d.x;
+          const dy = g.cy + 0.5 - d.y;
+          const dd = dx * dx + dy * dy;
+          if (dd < bestD || (dd === bestD && k > best)) {
+            bestD = dd;
+            best = k;
+          }
+        }
       }
     }
-    if (!best) continue;
-    d.heldBy = best.id;
+    if (best < 0) continue;
+    const g = s.traps[best];
+    d.heldBy = g.id;
     d.heldUntil = s.time + TRAP.hold;
     d.form = false;
-    held.set(best.id, (held.get(best.id) ?? 0) + 1);
+    held.set(g.id, (held.get(g.id) ?? 0) + 1);
   }
 }
 
@@ -1469,27 +1505,116 @@ function stepSprays(s: GameState, dt: number) {
 
 /** Зенитки: доворачивают башню и пускают ракеты. */
 /**
+ * Рой, разложенный по блокам поля. Пятьсот зениток, каждая из которых
+ * перебирает пятьсот дронов, — четверть миллиона сравнений за кадр; по
+ * блокам каждая смотрит только тех, кто в её круге.
+ *
+ * Ответ обязан совпадать с полным перебором до бита: на этом стоит
+ * пересчёт боя сервером. Поэтому в блоках лежат номера дронов в s.drones,
+ * а при равном расстоянии побеждает меньший номер — как у перебора, который
+ * берёт первого из равных.
+ */
+interface DroneGrid {
+  list: Drone[];
+  /** Начало блока k в items — start[k], конец — start[k + 1]. */
+  start: Int32Array;
+  items: Int32Array;
+}
+
+/**
+ * Блок, в который ложится координата. За краем поля — крайний блок: дроны
+ * заходят из-за карты. Отсечение монотонно, так что круг вокруг точки
+ * накрывает блоки всех, кто в нём лежит.
+ */
+const blockOf = (v: number) => Math.min(BLOCKS - 1, Math.max(0, (v / BLOCK) | 0));
+
+function gridDrones(list: Drone[], keep: (d: Drone) => boolean): DroneGrid {
+  const n = list.length;
+  const key = new Int32Array(n);
+  const start = new Int32Array(BLOCKS * BLOCKS + 1);
+  for (let i = 0; i < n; i++) {
+    const d = list[i];
+    if (!keep(d)) {
+      key[i] = -1;
+      continue;
+    }
+    const k = blockOf(d.y) * BLOCKS + blockOf(d.x);
+    key[i] = k;
+    start[k + 1]++;
+  }
+  for (let k = 0; k < BLOCKS * BLOCKS; k++) start[k + 1] += start[k];
+  const fill = start.slice(0, BLOCKS * BLOCKS);
+  const items = new Int32Array(start[BLOCKS * BLOCKS]);
+  for (let i = 0; i < n; i++) if (key[i] >= 0) items[fill[key[i]]++] = i;
+  return { list, start, items };
+}
+
+/** Кого видит автоматика: невидимку — никто, сбитого — уже незачем. */
+const visible = (d: Drone) => !d.hit && d.payload !== "stealth";
+
+/**
  * Ближайший ещё летящий дрон к точке, не дальше reach. Этим поиском живёт
  * вся автоматика склада — и зенитки, и ракетницы, — а значит здесь же
- * отваливается невидимка: её ни одна из них не видит.
+ * отваливается невидимка: её ни одна из них не видит (сетку собирают с
+ * visible).
  *
  * Сбитый пулемётом дрон ещё планирует к земле, но он уже посчитан — по
  * нему не стреляют, иначе один дрон уходил бы в счёт дважды.
  */
-function nearestDrone(s: GameState, x: number, y: number, reach: number, taken?: Set<number>) {
-  let best: Drone | null = null;
+function nearestDrone(
+  grid: DroneGrid,
+  x: number,
+  y: number,
+  reach: number,
+  taken?: Set<number>
+): Drone | null {
+  const { list, start, items } = grid;
+  let best = -1;
   let bestD = reach * reach;
-  for (const d of s.drones) {
-    if (d.hit || d.payload === "stealth" || taken?.has(d.id)) continue;
-    const dx = d.x - x;
-    const dy = d.y - y;
-    const dd = dx * dx + dy * dy;
-    if (dd < bestD) {
-      bestD = dd;
-      best = d;
+  const bx1 = blockOf(x + reach);
+  const by1 = blockOf(y + reach);
+  for (let by = blockOf(y - reach); by <= by1; by++) {
+    for (let bx = blockOf(x - reach); bx <= bx1; bx++) {
+      const k = by * BLOCKS + bx;
+      for (let j = start[k]; j < start[k + 1]; j++) {
+        const i = items[j];
+        const d = list[i];
+        if (taken?.has(d.id)) continue;
+        const dx = d.x - x;
+        const dy = d.y - y;
+        const dd = dx * dx + dy * dy;
+        if (dd < bestD || (dd === bestD && best >= 0 && i < best)) {
+          bestD = dd;
+          best = i;
+        }
+      }
     }
   }
-  return best;
+  return best >= 0 ? list[best] : null;
+}
+
+/**
+ * Первый по порядку в s.drones дрон ближе r к точке — то, что вернул бы
+ * findIndex. gone — номера, выбывшие с тех пор, как сетку собрали.
+ */
+function firstDrone(grid: DroneGrid, x: number, y: number, r: number, gone: Uint8Array) {
+  const { list, start, items } = grid;
+  const r2 = r * r;
+  let first = -1;
+  const bx1 = blockOf(x + r);
+  const by1 = blockOf(y + r);
+  for (let by = blockOf(y - r); by <= by1; by++) {
+    for (let bx = blockOf(x - r); bx <= bx1; bx++) {
+      const k = by * BLOCKS + bx;
+      for (let j = start[k]; j < start[k + 1]; j++) {
+        const i = items[j];
+        if (gone[i] || (first >= 0 && i > first)) continue;
+        const d = list[i];
+        if ((d.x - x) * (d.x - x) + (d.y - y) * (d.y - y) < r2) first = i;
+      }
+    }
+  }
+  return first;
 }
 
 /** То, во что целится зенитка: где оно и куда летит. */
@@ -1509,12 +1634,13 @@ function takenTargets(s: GameState) {
 /** Ближайшая свободная цель зенитки: дрон или ракета стрелка. */
 function nearestTarget(
   s: GameState,
+  grid: DroneGrid,
   x: number,
   y: number,
   reach: number,
   taken: Set<number>
 ): Mover | null {
-  let best: Mover | null = nearestDrone(s, x, y, reach, taken);
+  let best: Mover | null = nearestDrone(grid, x, y, reach, taken);
   let bestD = best ? (best.x - x) ** 2 + (best.y - y) ** 2 : reach * reach;
   for (const r of s.foeRockets) {
     if (taken.has(r.id)) continue;
@@ -1538,6 +1664,10 @@ function turnTurret(g: Gun, rate: number, dt: number) {
 
 function stepGuns(s: GameState, dt: number) {
   const taken = takenTargets(s);
+  const grid = gridDrones(s.drones, visible);
+  const tempo = gunTempo(s);
+  const reach = gunRange(s) + 0.5;
+  const speed = missileSpeed(s);
   for (const g of s.guns) {
     if (!g.alive || g.spray || g.trap || g.rocket || g.balloon) continue;
 
@@ -1545,7 +1675,6 @@ function stepGuns(s: GameState, dt: number) {
     // шевелящемуся стволу видно, что пушка жива, просто её глушат.
     g.jammed = Math.max(0, g.jammed - dt);
 
-    const tempo = gunTempo(s);
     g.cd -= dt;
     const gx = g.cx + 0.5;
     const gy = g.cy + 0.5;
@@ -1556,9 +1685,9 @@ function stepGuns(s: GameState, dt: number) {
     const ready = g.cd <= 0 && g.jammed <= 0;
     let best: Mover | null = null;
     if (g.jammed <= 0 && g.cd <= GUN.aimAhead) {
-      best = nearestTarget(s, gx, gy, gunRange(s) + 0.5, taken);
+      best = nearestTarget(s, grid, gx, gy, reach, taken);
       // Снаряд неуправляемый — целимся туда, где дрон окажется к встрече.
-      if (best) g.aim = leadAngle(gx, gy, best, missileSpeed(s));
+      if (best) g.aim = leadAngle(gx, gy, best, speed);
     }
     turnTurret(g, GUN.turretTurn * tempo, dt);
     if (!ready || !best) continue;
@@ -1625,6 +1754,12 @@ function stepMissiles(s: GameState, dt: number) {
   const byId = new Map<number, { x: number; y: number }>();
   for (const d of s.drones) if (!d.hit) byId.set(d.id, d);
   for (const r of s.foeRockets) byId.set(r.id, r);
+  // Попадания ищем по сетке: снарядов в воздухе бывают сотни, дронов — до
+  // пятисот. Сбитые в этом же такте помечаются в gone.
+  // снимок: из s.drones по ходу вырезают сбитых, а номера в сетке — по нему
+  const grid = gridDrones(s.drones.slice(), (d) => !d.hit);
+  const gone = new Uint8Array(grid.list.length);
+  const speed = missileSpeed(s);
   for (let i = s.missiles.length - 1; i >= 0; i--) {
     const m = s.missiles[i];
     m.life -= dt;
@@ -1646,16 +1781,13 @@ function stepMissiles(s: GameState, dt: number) {
         else m.near = Math.min(m.near, dist);
       }
     }
-    const speed = missileSpeed(s);
     m.x += m.dx * speed * dt;
     m.y += m.dy * speed * dt;
     // Попал в того, кто оказался на пути. Сбитый пулемётом дрон ещё
     // планирует к земле, но он уже посчитан — снаряд проходит сквозь, иначе
     // один дрон уходил бы в счёт дважды.
+    const at = firstDrone(grid, m.x, m.y, MISSILE.hitRadius, gone);
     const hit = MISSILE.hitRadius * MISSILE.hitRadius;
-    const at = s.drones.findIndex(
-      (d) => !d.hit && (d.x - m.x) * (d.x - m.x) + (d.y - m.y) * (d.y - m.y) < hit
-    );
     const foe = s.foeRockets.findIndex(
       (r) => (r.x - m.x) * (r.x - m.x) + (r.y - m.y) * (r.y - m.y) < hit
     );
@@ -1668,7 +1800,7 @@ function stepMissiles(s: GameState, dt: number) {
       continue;
     }
     if (at >= 0) {
-      const t = s.drones[at];
+      const t = grid.list[at];
       s.missiles.splice(i, 1);
       // Броня держит снаряд: искра, дым — и дрон летит дальше.
       if (t.armor > 0) {
@@ -1679,7 +1811,8 @@ function stepMissiles(s: GameState, dt: number) {
         continue;
       }
       s.booms.push({ x: t.x, y: t.y, t: 0, r: 2 * PAYLOAD[t.payload].blast });
-      s.drones.splice(at, 1);
+      s.drones.splice(s.drones.indexOf(t), 1);
+      gone[at] = 1;
       s.result.killedByGuns++;
       continue;
     }
@@ -1703,6 +1836,9 @@ function stepRockets(s: GameState, dt: number, dronesById: Map<number, Drone>) {
   const taken = takenTargets(s);
 
   const tempo = rocketTempo(s);
+  const reach = rocketRange(s) + 0.5;
+  // сетку собираем, только когда какой-то ракетнице и правда пора пускать
+  let grid: DroneGrid | null = null;
   for (const g of s.guns) {
     if (!g.alive || !g.rocket) continue;
     g.jammed = Math.max(0, g.jammed - dt);
@@ -1712,7 +1848,8 @@ function stepRockets(s: GameState, dt: number, dronesById: Map<number, Drone>) {
     if (g.cd > 0 || g.jammed > 0 || busy.has(g.id)) continue;
     const gx = g.cx + 0.5;
     const gy = g.cy + 0.5;
-    const best = nearestDrone(s, gx, gy, rocketRange(s) + 0.5, taken);
+    grid ??= gridDrones(s.drones, visible);
+    const best = nearestDrone(grid, gx, gy, reach, taken);
     if (!best) continue;
     taken.add(best.id);
 
