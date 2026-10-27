@@ -1,399 +1,17 @@
-// Хранилище состояния игрока. Одна и та же игра работает поверх localStorage
-// и поверх Supabase — Lobby знает только этот интерфейс.
+// Игра поверх Supabase: склад, налёты и почта живут на сервере.
 
-import {
-  type Depot,
-  type Gun,
-  CELLS,
-  decodeCells,
-  decodePgBytea,
-  encodeRle,
-  sanitizeGuns,
-} from "./base";
-
-import {
-  CREDITS_START,
-  LOAN_HOURS,
-  maxLevel,
-  STARTER_CELLS,
-  loanDebt,
-  upgradeCost,
-} from "./economy";
-import { normalizeAvatarForStorage, type Avatar } from "./avatar";
-import { SIMULATION_VERSION } from "./tuning";
-import { notifyMessage } from "./notify";
-import type {
-  AttackOrder,
-  AttackReport,
-  Message,
-  Pattern,
-  RaidLog,
-  SnapLevels,
-  WavePlan,
-} from "./attack";
+import { type Depot, type Gun, decodeCells, decodePgBytea, encodeRle, sanitizeGuns, G_BASE } from "../base";
+import { CREDITS_START, STARTER_CELLS, type UpgradeKind } from "../economy";
+import { normalizeAvatarForStorage, type Avatar } from "../avatar";
+import { SIMULATION_VERSION } from "../tuning";
+import { notifyMessage } from "../notify";
+import type { Message, Pattern, SnapLevels, WavePlan } from "../attack";
 import type { ReplayData } from "@/components/battle/Replay";
-import type { BattleResult } from "./engine";
-import type { UpgradeKind } from "./economy";
-import {
-  collectIncome as localIncome,
-  load as localLoad,
-  newPlayer,
-  startLevels,
-  save as localSave,
-  wipe as localWipe,
-  type Player,
-} from "./player";
-import { takeDrones } from "./enemy";
-import { MAX_BLUEPRINTS, rebuildCost, type Blueprint } from "./blueprint";
-import { G_BASE, decodeRle } from "./base";
-import { cloudEnabled, supabase } from "./supabase";
-
-export interface Income {
-  credits: number;
-  days: number;
-  /** Что ушло с отгрузкой: склад продаёт остатки раз в сутки. */
-  sold?: { drones: number } | null;
-}
-
-export interface Repo {
-  mode: "local" | "cloud";
-  /** Профиль плюс доход, начисленный при входе. */
-  load(): Promise<{ player: Player; income: Income; reports: AttackReport[] }>;
-  syncAttacks(): Promise<{
-    incoming: AttackOrder[];
-    reports: AttackReport[];
-    credits?: number;
-    stats?: Player["stats"];
-    loan?: number;
-    loanDue?: number | null;
-  }>;
-  /** Склад после правок в лобби. Возвращает авторитетные цифры сервера. */
-  saveBase(p: Player): Promise<Partial<Player>>;
-  /** Список добавленных по e-mail соперников и их текущее состояние. */
-  saveEnemies(p: Player): Promise<void>;
-  /**
-   * Как называются склады по этим адресам. Врага зовут именем его склада,
-   * а не выдумкой клиента, поэтому имя всегда спрашиваем у сервера.
-   */
-  baseNames(emails: string[]): Promise<Map<string, { name: string; avatar: Avatar; level: number }>>;
-  /** Сменить своё лицо: номер готового, адрес своей картинки или null. */
-  setAvatar(p: Player, value: Avatar): Promise<void>;
-  /**
-   * Вылет разведки одной операцией: сервер одновременно списывает самолёты
-   * и отдаёт карту, чтобы карту нельзя было запросить бесплатно.
-   */
-  launchScout(
-    p: Player,
-    email: string,
-    n: number
-  ): Promise<{ cells: Uint8Array; guns: Gun[]; gunLevel: number }>;
-  /**
-   * Заносит нас в список соперника: знакомство должно быть взаимным, иначе
-   * ему нечем ответить. Возвращает его настоящее имя склада.
-   */
-  addRival(email: string): Promise<string | null>;
-  /** Взять заём: деньги сразу, долг с процентом и срок — на сутки. */
-  takeLoan(p: Player, amount: number): Promise<void>;
-  /** Отдать заём целиком и досрочно. */
-  repayLoan(p: Player): Promise<void>;
-  /**
-   * Что на чужом складе изменилось с нашей прошлой разведки. Отдаются
-   * квадраты, а не карта: знать чужую раскладку клиенту не положено.
-   */
-  stalePatches(email: string, snapCells: string): Promise<number[]>;
-  /** Апгрейд класса на уровень выше. Цену считает сервер. */
-  upgrade(p: Player, kind: UpgradeKind): Promise<Partial<Player>>;
-  /**
-   * Перечитывает склад с сервера. Нужен, когда сервер отверг правку: значит
-   * наша копия разъехалась с его, и правда — на сервере.
-   */
-  reloadBase(p: Player): Promise<void>;
-  /** Докупка в контейнеры: дроны или шары, счёт в штуках. */
-  buyDepot(p: Player, amount: number): Promise<Partial<Player>>;
-  /**
-   * Состязание на свой склад: сервер ставит его в очередь как налёт на
-   * самого себя, и бой идёт той же дорогой, что живой. Возвращает id налёта.
-   */
-  queueCompetition(
-    stage: number,
-    waves: WavePlan[],
-    seed: number,
-    droneLevel: number
-  ): Promise<string>;
-  /**
-   * Налёт волнами. Дронов снимает сервер со своей копии склада, надбавку за
-   * начинку списывает кредитами, обратно приходит id и новый склад.
-   */
-  sendAttack(
-    p: Player,
-    targetEmail: string,
-    waves: WavePlan[],
-    seed: number,
-    opener?: string
-  ): Promise<string | null>;
-  /** Весь разговор с этим соперником, старые сверху. */
-  messages(email: string): Promise<Message[]>;
-  /** Пишет сопернику. Отдаёт ошибку строкой, если писать нельзя. */
-  sendMessage(email: string, body: string): Promise<string | null>;
-  /** Правит своё сообщение. Отдаёт ошибку строкой, если нельзя. */
-  editMessage(id: string, body: string): Promise<string | null>;
-  /** Отмечает прочитанным всё, что пришло от этого соперника. */
-  readMessages(email: string): Promise<void>;
-  /** Язык игры — на нём бот пишет в телеграм. */
-  setLocale(locale: string): Promise<void>;
-  /** Сохранённые чертежи, старые сверху. */
-  blueprints(): Promise<Blueprint[]>;
-  /** Сохранить раскладку под именем. Денег не берёт. */
-  saveBlueprint(name: string, plan: Pick<Blueprint, "cells" | "guns" | "depots">): Promise<Blueprint>;
-  deleteBlueprint(id: string): Promise<void>;
-  /** Снести склад и построить чертёж на его месте; p обновляется. */
-  buildBlueprint(p: Player, b: Blueprint): Promise<void>;
-  /** Продать контейнер, который уже снят с p.depots. Вернёт кошелёк сервера. */
-  sellDepot(p: Player, x: number, y: number): Promise<Partial<Player>>;
-  /** Сколько непрочитанного и от кого: по этому в списке горит счётчик. */
-  unread(): Promise<Record<string, number>>;
-  /** Код привязки телеграма и то, привязан ли он уже. */
-  telegram(): Promise<{ code: string; linked: boolean } | null>;
-  telegramUnlink(): Promise<void>;
-  acknowledgeReport(id: string): Promise<void>;
-  /** Журнал боёв — и своих налётов, и чужих: из него открываются повторы. */
-  raidLog(): Promise<RaidLog[]>;
-  /** Убрать бой из своего журнала. У второй стороны он остаётся. */
-  hideRaid(id: string): Promise<void>;
-  /** Повтор одного боя целиком: карта, пушки, запись действий. */
-  replayOf(id: string): Promise<ReplayData | null>;
-  /** Переименование склада — отдельная операция, карты не касается. */
-  rename(p: Player, name: string): Promise<void>;
-  applyBattle(
-    p: Player,
-    result: BattleResult,
-    attackId?: string,
-    /** Запись боя: её увидит нападавший в отчёте о налёте. */
-    trace?: string
-  ): Promise<Partial<Player>>;
-  wipe(p: Player): Promise<Player>;
-  /** Начать сначала: пустой стартовый склад, стартовые деньги, всё с нуля. */
-  restart(p: Player): Promise<Player>;
-}
-
-// ---------- локально ----------
-
-class LocalRepo implements Repo {
-  mode = "local" as const;
-
-  async load() {
-    const player = localLoad();
-    const income = localIncome(player, Date.now()) as Income;
-    localSave(player);
-    return { player, income, reports: [] };
-  }
-
-  async syncAttacks() {
-    return { incoming: [], reports: [] };
-  }
-
-  async saveBase(p: Player) {
-    p.guns = sanitizeGuns(p.guns);
-    localSave(p);
-    return {};
-  }
-
-  async saveEnemies(p: Player) {
-    localSave(p);
-  }
-
-  async baseNames(_emails: string[]) {
-    return new Map<string, { name: string; avatar: Avatar; level: number }>();
-  }
-
-  async setAvatar(p: Player, value: Avatar) {
-    p.avatar = normalizeAvatarForStorage(value);
-    localSave(p);
-  }
-
-  async launchScout(p: Player, email: string, n: number) {
-    takeDrones(p.depots, n);
-    localSave(p);
-    const enemy = p.enemies.find((item) => item.email.toLowerCase() === email.toLowerCase());
-    return {
-      cells: enemy ? decodeCells(enemy.cells) : new Uint8Array(CELLS),
-      guns: enemy?.guns ?? [],
-      gunLevel: 1,
-    };
-  }
-
-  async reloadBase() {
-    // локальная копия и есть единственная
-  }
-
-  async addRival(_email: string) {
-    return null; // локально соперник живёт только у нас
-  }
-
-  async stalePatches() {
-    return [] as number[];
-  }
-
-  async takeLoan(p: Player, amount: number) {
-    p.credits += amount;
-    p.loan = loanDebt(amount);
-    p.loanDue = Date.now() + LOAN_HOURS * 3600_000;
-    localSave(p);
-  }
-
-  async repayLoan(p: Player) {
-    if (p.credits < p.loan) throw new Error("not enough credits");
-    p.credits -= p.loan;
-    p.loan = 0;
-    p.loanDue = null;
-    localSave(p);
-  }
-
-  async upgrade(p: Player, kind: UpgradeKind) {
-    if (p.levels[kind] >= maxLevel(kind)) throw new Error("already at max level");
-    const cost = upgradeCost(p.levels[kind], kind);
-    if (p.credits < cost) throw new Error("not enough credits");
-    p.credits -= cost;
-    p.levels = { ...p.levels, [kind]: p.levels[kind] + 1 };
-    localSave(p);
-    return { credits: p.credits, levels: p.levels };
-  }
-
-  async buyDepot(p: Player) {
-    localSave(p);
-    return {};
-  }
-
-  async sendAttack(): Promise<string | null> {
-    throw new Error("not authenticated");
-  }
-
-  async queueCompetition(): Promise<string> {
-    // Без входа сервера нет: лобби ставит состязание в очередь у себя.
-    throw new Error("offline");
-  }
-
-  // Локальная игра идёт без сервера, а разговаривать не с кем: соперники
-  // тут выдуманные. Отдаём пустоту, чтобы окно открывалось и не падало.
-  async messages() {
-    return [];
-  }
-
-  async sendMessage() {
-    return "not authenticated";
-  }
-
-  async editMessage() {
-    return "not authenticated";
-  }
-
-  async readMessages() {}
-
-  // без сервера и бота нет — язык сообщать некому
-  async setLocale() {}
-
-  // Без входа чертежи живут в браузере, как и сам склад.
-  private readBlueprints(): Blueprint[] {
-    try {
-      const list = JSON.parse(window.localStorage.getItem(BLUEPRINTS_KEY) ?? "[]") as Blueprint[];
-      // чертежи, сохранённые до контейнеров, — без них
-      return list.map((b) => ({ ...b, depots: b.depots ?? [] }));
-    } catch {
-      return [];
-    }
-  }
-
-  private writeBlueprints(list: Blueprint[]) {
-    try {
-      window.localStorage.setItem(BLUEPRINTS_KEY, JSON.stringify(list));
-    } catch {
-      // не сохранилось — живём до конца сессии
-    }
-  }
-
-  async blueprints() {
-    return this.readBlueprints();
-  }
-
-  async saveBlueprint(name: string, plan: Pick<Blueprint, "cells" | "guns" | "depots">) {
-    const list = this.readBlueprints();
-    if (list.length >= MAX_BLUEPRINTS) throw new Error("too many blueprints");
-    const b: Blueprint = { id: `${Date.now().toString(36)}`, name, ...plan, createdAt: Date.now() };
-    this.writeBlueprints([...list, b]);
-    return b;
-  }
-
-  async deleteBlueprint(id: string) {
-    this.writeBlueprints(this.readBlueprints().filter((b) => b.id !== id));
-  }
-
-  async sellDepot(p: Player) {
-    localSave(p);
-    return {};
-  }
-
-  async buildBlueprint(p: Player, b: Blueprint) {
-    const { delta } = rebuildCost(p, b);
-    if (p.credits < delta) throw new Error("not enough credits");
-    const cells = decodeRle(b.cells);
-    p.credits -= delta;
-    p.cells = cells;
-    p.guns = b.guns.map((g) => ({ ...g }));
-    p.depots = b.depots.map((d) => ({ ...d }));
-    let intact = 0;
-    for (const v of cells) if (v === G_BASE) intact++;
-    if (intact >= STARTER_CELLS) p.founded = true;
-    localSave(p);
-  }
-
-  async unread() {
-    return {};
-  }
-
-  async telegram() {
-    return null;
-  }
-
-  async telegramUnlink() {}
-
-  async acknowledgeReport() {}
-
-  async raidLog() {
-    return [] as RaidLog[];
-  }
-
-  async hideRaid(_id: string) {}
-
-  async replayOf(_id: string) {
-    return null;
-  }
-
-  async applyBattle(p: Player) {
-    localSave(p);
-    return {};
-  }
-
-  async rename(p: Player, _name: string) {
-    localSave(p);
-  }
-
-  async wipe(p: Player) {
-    const fresh = localWipe(p);
-    localSave(fresh);
-    return fresh;
-  }
-
-  async restart(p: Player) {
-    const fresh = newPlayer();
-    fresh.name = p.name;
-    fresh.enemies = p.enemies;
-    fresh.founded = p.founded;
-    localSave(fresh);
-    return fresh;
-  }
-}
-
-// ---------- Supabase ----------
+import type { BattleResult } from "../engine";
+import { newPlayer, startLevels, type Player } from "../player";
+import type { Blueprint } from "../blueprint";
+import { supabase } from "../supabase";
+import type { Repo } from "./types";
 
 /**
  * Повтор боя по id — и для журнала в игре, и для страницы по ссылке, куда
@@ -526,7 +144,34 @@ interface AttackReportRow {
   simulation_version: number;
 }
 
-class CloudRepo implements Repo {
+/**
+ * Уровни с сервера, дополненные первыми: у профиля, заведённого до нового
+ * класса, его ключа нет, и цена с радиусом считались бы от пустоты — NaN.
+ */
+const fullLevels = (lv: Partial<Player["levels"]> | null): Player["levels"] => ({
+  ...startLevels(),
+  ...(lv ?? {}),
+});
+
+interface BlueprintRow {
+  id: string;
+  name: string;
+  cells: string;
+  guns: Gun[];
+  depots?: Depot[] | null;
+  created_at: string;
+}
+
+const blueprintFromRow = (r: BlueprintRow): Blueprint => ({
+  id: r.id,
+  name: r.name,
+  cells: r.cells,
+  guns: r.guns,
+  depots: r.depots ?? [],
+  createdAt: Date.parse(r.created_at),
+});
+
+export class CloudRepo implements Repo {
   mode = "cloud" as const;
 
   private db() {
@@ -1079,40 +724,4 @@ class CloudRepo implements Repo {
     fresh.competitionBest = p.competitionBest;
     return fresh;
   }
-}
-
-let repo: Repo | null = null;
-
-/**
- * Уровни с сервера, дополненные первыми: у профиля, заведённого до нового
- * класса, его ключа нет, и цена с радиусом считались бы от пустоты — NaN.
- */
-const fullLevels = (lv: Partial<Player["levels"]> | null): Player["levels"] => ({
-  ...startLevels(),
-  ...(lv ?? {}),
-});
-
-const BLUEPRINTS_KEY = "wb.blueprints";
-
-interface BlueprintRow {
-  id: string;
-  name: string;
-  cells: string;
-  guns: Gun[];
-  depots?: Depot[] | null;
-  created_at: string;
-}
-
-const blueprintFromRow = (r: BlueprintRow): Blueprint => ({
-  id: r.id,
-  name: r.name,
-  cells: r.cells,
-  guns: r.guns,
-  depots: r.depots ?? [],
-  createdAt: Date.parse(r.created_at),
-});
-
-export function getRepo(): Repo {
-  if (!repo) repo = cloudEnabled ? new CloudRepo() : new LocalRepo();
-  return repo;
 }
