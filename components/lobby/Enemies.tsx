@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { RAID_COMMENT_MAX } from "@/lib/comments";
 import { payloadCost, raidTotal, type WavePlan } from "@/lib/attack";
-import type { Enemy } from "@/lib/enemy";
+import { shortEmail, type Enemy } from "@/lib/enemy";
 import { scoutCounts, seenGuns } from "@/lib/scout";
 import { decodeRle, fogPatches, type Gun } from "@/lib/base";
 import InstallCounts from "../scout/InstallCounts";
@@ -122,7 +122,7 @@ export default function Enemies({
                       </span>
                     </div>
                     <div className="truncate font-mono text-[11px] text-neutral-500">
-                      {e.email}
+                      {shortEmail(e.email)}
                     </div>
                   </div>
                 </button>
@@ -270,7 +270,7 @@ export function EnemyProfile({
     <>
       <Modal
         title={enemy.name}
-        subtitle={enemy.email}
+        subtitle={shortEmail(enemy.email)}
         wide={Boolean(enemy.scout)}
         onClose={onClose}
         footer={

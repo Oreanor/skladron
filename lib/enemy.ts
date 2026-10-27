@@ -101,6 +101,13 @@ function genBase(rnd: () => number) {
 export const nameFromEmail = (email: string) => email.split("@")[0] || email;
 
 /**
+ * Почта для показа: «@gmail.com» у всех одинаковый и только съедает место,
+ * поэтому его прячем. Другие домены оставляем — иначе vasya@mail.ru и
+ * vasya@gmail.com выглядели бы одним игроком.
+ */
+export const shortEmail = (email: string) => email.replace(/@gmail\.com$/i, "");
+
+/**
  * Соперник без выдуманного склада. Настоящую карту живого игрока отдаёт
  * сервер (launchScout), и генерировать ему фиктивную — это проход по десяти
  * тысячам клеток ради поля, которое потом никто не прочтёт.

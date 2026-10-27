@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import type { Enemy } from "@/lib/enemy";
+import { shortEmail, type Enemy } from "@/lib/enemy";
 import { payloadCost, raidTotal, type WavePlan } from "@/lib/attack";
 import { RAID_COMMENT_MAX } from "@/lib/comments";
 import RaidPlanner, { newWave } from "./RaidPlanner";
@@ -125,7 +125,7 @@ function TargetLine({ enemy }: { enemy: Enemy }) {
   return (
     <span className="min-w-0 truncate">
       <b className="font-semibold text-neutral-100">{enemy.name}</b>
-      <span className="text-neutral-400"> · {enemy.email}</span>
+      <span className="text-neutral-400"> · {shortEmail(enemy.email)}</span>
     </span>
   );
 }

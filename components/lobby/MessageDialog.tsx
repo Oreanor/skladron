@@ -12,7 +12,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Send } from "lucide-react";
-import type { Enemy } from "@/lib/enemy";
+import { shortEmail, type Enemy } from "@/lib/enemy";
 import type { Message } from "@/lib/attack";
 import { useT } from "@/lib/i18n";
 import { explainAlone } from "@/lib/errors";
@@ -118,7 +118,7 @@ export default function MessageDialog({
   return (
     <Modal
       title={t("chat.with", { name: enemy.name })}
-      subtitle={enemy.email}
+      subtitle={shortEmail(enemy.email)}
       onClose={onClose}
       footer={
         <>

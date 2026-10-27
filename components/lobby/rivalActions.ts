@@ -10,7 +10,7 @@ import {
   raidTotal,
   type WavePlan,
 } from "@/lib/attack";
-import { blankEnemy, makeEnemy, type Enemy } from "@/lib/enemy";
+import { blankEnemy, makeEnemy, shortEmail, type Enemy } from "@/lib/enemy";
 import { explain, explainAlone } from "@/lib/errors";
 import { notifyBattle, notifyComment, notifyRivalAdded } from "@/lib/notify";
 import type { Player } from "@/lib/player";
@@ -155,7 +155,7 @@ export function rivalActions(
         if (comment?.trim()) notifyComment(id);
       }
       // счётчик налётов поднимает сам send_attack — второй раз здесь не нужно
-      say(t("raid.sent", { email: enemy.email }));
+      say(t("raid.sent", { email: shortEmail(enemy.email) }));
       loadRaids();
       core.redraw();
       return null;
