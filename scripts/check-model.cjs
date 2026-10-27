@@ -21,8 +21,11 @@ let bad = 0;
 const fail = (s) => { bad++; console.log('  FAIL  ' + s); };
 const pass = (s) => console.log('  ok    ' + s);
 
-const LOCS = ['en', 'ru', 'es', 'pt', 'fr', 'de', 'it'];
 const LOC_DIR = path.join('lib', 'i18n', 'locales');
+// Языки — из самого реестра: список здесь отставал и шесть словарей не проверял.
+const LOCS = [...(/LOCALES = \[([^\]]+)\]/.exec(read(path.join('lib', 'i18n', 'dict.ts')))?.[1] ?? '')
+  .matchAll(/"(\w+)"/g)].map((m) => m[1]);
+if (LOCS[0] !== 'en') throw new Error('не прочёл LOCALES из dict.ts');
 
 /** Словарь как есть: значение бывает перенесено на следующую строку. */
 const readDict = (loc) => {
