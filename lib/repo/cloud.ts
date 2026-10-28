@@ -243,6 +243,11 @@ export class CloudRepo implements Repo {
     return { player, income: incomeOf(inc.data), reports: attacks.reports };
   }
 
+  async beginBattle() {
+    const { error } = await this.db().rpc("begin_battle");
+    if (error) throw error;
+  }
+
   async collectShift(p: Player) {
     const inc = await this.db().rpc("collect_income");
     if (inc.error) throw inc.error;

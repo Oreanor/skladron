@@ -27,6 +27,10 @@ export class LocalRepo implements Repo {
     return income;
   }
 
+  async beginBattle() {
+    // локально отгрузку проводит сама вкладка, и в бою она уже ждёт
+  }
+
   async syncAttacks() {
     return { incoming: [], reports: [] };
   }

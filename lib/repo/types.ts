@@ -27,6 +27,8 @@ export interface Repo {
    * смену (если ещё не начислена) и подтянуть склад — отгрузка увезла дронов.
    */
   collectShift(p: Player): Promise<Income>;
+  /** Защитник вошёл в бой: ночная отгрузка ждёт, пока он не кончится. */
+  beginBattle(): Promise<void>;
   syncAttacks(): Promise<{
     incoming: AttackOrder[];
     reports: AttackReport[];

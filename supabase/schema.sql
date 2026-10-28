@@ -369,8 +369,14 @@ create table if not exists profiles (
   -- {"<номер>": {"score": очки, "pct": уцелело %, "area": клеток до боя}}.
   competition_at int not null default 1,
   competition_best jsonb not null default '{}'::jsonb,
+  -- Идёт бой до этого мига: ночная отгрузка ждёт, пока он кончится, а не
+  -- увозит ящики из-под горящего склада. Ставит begin_battle при входе в
+  -- бой, снимает запись исхода; брошенный бой отпускает отгрузку сам.
+  battle_until timestamptz,
   created_at timestamptz not null default now()
 );
+
+alter table profiles add column if not exists battle_until timestamptz;
 
 create unique index if not exists profiles_tg_code on profiles (tg_code) where tg_code is not null;
 
@@ -992,6 +998,14 @@ begin
   select * into prof from profiles where id = uid for update;
   if not found then raise exception 'no profile'; end if;
 
+  -- Идёт бой — отгрузка ждёт его конца: что сгорит, то сгорит, остальное
+  -- уедет после. Иначе ящики уезжали бы посреди боя, а бой потом считался
+  -- бы по пустому складу.
+  if prof.battle_until is not null and prof.battle_until > now() then
+    return query select 0, 0, 0, 0;
+    return;
+  end if;
+
   select b.intact_cells, b.drone_cells
     into intact, cur_depots
     from bases b where b.user_id = uid for update;
@@ -1030,6 +1044,16 @@ begin
    where id = uid;
 
   return query select gain + sale, paid, drones_out, sale;
+end;
+$$;
+
+-- Защитник вошёл в бой: до его конца ночная отгрузка ждёт. Двадцать минут
+-- с запасом: бой без игрока сам кончается за пятнадцать.
+create or replace function begin_battle()
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'not authenticated'; end if;
+  update profiles set battle_until = now() + interval '20 minutes' where id = auth.uid();
 end;
 $$;
 
@@ -1428,6 +1452,7 @@ begin
   update profiles
      set drones = depot_sum_kind(new_depots, 'basic'),
          credits = profiles.credits + payout,
+         battle_until = null,
          stats = profiles.stats
        || jsonb_build_object(
             'battles', (profiles.stats->>'battles')::int + 1,
@@ -2535,7 +2560,7 @@ grant execute on function ensure_player, collect_income, save_base,
   buy_depot, apply_battle, wipe_base, rename_base, save_enemies,
   base_names, stale_patches, launch_scout, upgrade, add_rival,
   send_message, message_thread, read_messages, unread_messages,
-  take_loan, repay_loan, raid_log, hide_raid,
+  take_loan, repay_loan, raid_log, hide_raid, begin_battle,
   send_attack, queue_competition, pending_attacks, attack_reports, ack_attack_report, restart_game to authenticated;
 
 -- PostgREST держит список функций в кэше. Supabase обычно перечитывает его сам,

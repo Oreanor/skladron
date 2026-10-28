@@ -32,6 +32,15 @@ export function battleFlow(
 ) {
   const { repo, t, say } = core;
 
+  /**
+   * В бой. Сервер узнаёт об этом сразу, а не только по исходу: пока бой
+   * идёт, ночная отгрузка ждёт и не увозит ящики из-под горящего склада.
+   */
+  const enter = (order: AttackOrder) => {
+    void repo.beginBattle().catch(() => {});
+    ui.setBattle(order);
+  };
+
   const defend = async (order: AttackOrder) => {
     ui.closeSheet();
     await core.flushPersist();
@@ -40,7 +49,7 @@ export function battleFlow(
       ui.setOpenerGate(order);
       return;
     }
-    ui.setBattle(order);
+    enter(order);
   };
 
   /** Записка нападающего прочитана, ответ (если есть) ушёл — в бой. */
@@ -53,7 +62,7 @@ export function battleFlow(
         // реплика — мелочь, бой важнее
       }
     }
-    ui.setBattle(order);
+    enter(order);
   };
 
   /**
