@@ -22,7 +22,6 @@ import {
   INSURANCE_PER_LEVEL,
   DRONE_TOP,
   LOAN_HOURS,
-  LOAN_MAX,
   MAX_LOAN_LEVEL,
   loanMax,
   LOAN_MIN,
@@ -37,7 +36,7 @@ import {
 } from "@/lib/economy";
 
 import { DRONES_PER_CELL } from "@/lib/base";
-import { FIRE, GUN, ROCKET, SHOOTER, TRAP } from "@/lib/tuning";
+import { FIRE, GUN, ROCKET, TRAP } from "@/lib/tuning";
 import { RULES } from "@/lib/i18n/rules";
 import { useSettings } from "@/lib/i18n";
 import { Button, Modal, SectionTitle } from "./ui";
@@ -75,7 +74,7 @@ const values: Record<string, string> = {
   perCell: String(DRONES_PER_CELL),
   droneBox: String(DRONE_UNIT_COST * DRONES_PER_CELL),
   balloon: String(BALLOON_COST),
-  shooterRange: String(SHOOTER.range),
+  shooterRange: String(GUN.range),
   spread: String(FIRE.spread),
   loot: String(CELL_LOOT_REWARD),
   // Потолок премии: столько дают за клетку, когда сожжён весь склад.
@@ -91,7 +90,7 @@ const values: Record<string, string> = {
   scrap: String(SCRAP_REWARD),
   droneBoxTop: String(DRONE_TOP * DRONES_PER_CELL),
   loanMin: fmt(LOAN_MIN),
-  loanMax: fmt(LOAN_MAX),
+  loanMax: fmt(loanMax(1)),
   loanTop: fmt(loanMax(MAX_LOAN_LEVEL)),
   loanRate: String(LOAN_RATE),
   loanHours: String(LOAN_HOURS),

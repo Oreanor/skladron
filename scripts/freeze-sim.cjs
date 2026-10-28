@@ -22,6 +22,7 @@ const FILES = [
   "replay.ts",
   "avatar.ts",
   "render/index.ts",
+  "render/depots.ts",
   "render/pieces.ts",
   "render/colors.ts",
   "render/light.ts",

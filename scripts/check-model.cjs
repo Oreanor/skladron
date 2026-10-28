@@ -165,7 +165,7 @@ console.log('\n— цены клиента и сервера совпадают 
     ['INSURANCE_UPGRADE_STEP', 'insurance_upgrade'],
     ['GUN_TOP', 'gun_top'], ['ROCKET_TOP', 'rocket_top'], ['SPRAY_TOP', 'spray_top'],
     ['TRAP_TOP', 'trap_top'], ['BALLOON_TOP', 'balloon_top'], ['DRONE_TOP', 'drone_top'],
-    ['LOAN_MIN', 'loan_min'], ['LOAN_MAX', 'loan_max'], ['LOAN_RATE', 'loan_rate'],
+    ['LOAN_MIN', 'loan_min'], ['LOAN_RATE', 'loan_rate'],
   ];
   let clean = true;
   for (const [name, key] of PRICES) {
@@ -176,6 +176,15 @@ console.log('\n— цены клиента и сервера совпадают 
     if (cv !== Number(s[1])) { fail(`${name}: клиент ${cv}, сервер ${s[1]}`); clean = false; }
   }
   if (clean) pass(`${PRICES.length} цен сходятся`);
+
+  // Лимиты займа по уровню кредита — таблицей и там и там.
+  const num = (list) => list.split(',').map((v) => Number(v.trim().split('_').join('')));
+  const cl = economy.match(/LOAN_LIMITS = \[([^\]]+)\]/);
+  const sl = sql.match(/function loan_limit[\s\S]*?array\[([^\]]+)\]/);
+  if (!cl || !sl) fail('лимиты займа: не сравнить');
+  else if (JSON.stringify(num(cl[1])) !== JSON.stringify(num(sl[1])))
+    fail(`лимиты займа: клиент ${num(cl[1])}, сервер ${num(sl[1])}`);
+  else pass(`лимиты займа сходятся: ${num(cl[1]).length} уровней`);
 }
 
 // ---------- версия боя ----------

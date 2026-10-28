@@ -9,7 +9,7 @@
 -- Версия боевого движка. Должна совпадать с SIMULATION_VERSION в
 -- lib/tuning.ts: по ней отсекаются бои, посчитанные прежней геометрией волн.
 create or replace function sim_version() returns int
-language sql immutable as $$ select 29 $$;
+language sql immutable as $$ select 30 $$;
 
 -- держим в одном месте, чтобы клиент и сервер не разъезжались
 create or replace function price(kind text) returns int
@@ -45,7 +45,6 @@ language sql immutable as $$
     when 'balloon_top' then 150
     when 'drone_top'   then 30
     when 'loan_min'   then 1000  -- меньше этого банк не выдаёт
-    when 'loan_max'   then 10000 -- потолок займа на нулевом уровне кредита; дальше — loan_limit
     when 'loan_rate'  then 10    -- процент за сутки
     when 'loan_hours' then 24    -- срок займа
     when 'start'    then 10000 -- с чего начинает новый склад и к чему сбрасывает restart_game
@@ -1729,7 +1728,7 @@ end;
 $$;
 
 -- ---------- заём ----------
--- Банк даёт от price('loan_min') до price('loan_max') на сутки под процент.
+-- Банк даёт от price('loan_min') до loan_limit(уровень кредита) на сутки под процент.
 -- Долг гасится при заходе в игру по сроку или руками в любой момент. Не
 -- расплатился вовремя — процент начисляется заново, и срок едет на сутки.
 

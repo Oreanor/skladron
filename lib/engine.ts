@@ -348,6 +348,15 @@ export interface GameState {
 export const gunRange = (s: { gunLevel: number }) =>
   GUN.range * levelBonus(s.gunLevel, GUN.perLevel);
 
+/**
+ * С какого расстояния до своей цели стрелок пускает снаряд: как пушка того
+ * же уровня, только по уровню дронов. При равных уровнях пушка достаёт
+ * стрелка ровно там, где он стреляет; прокачана выше — снимет раньше
+ * выстрела, ниже — он выстрелит из-за её круга. Так же устроены глушилки.
+ */
+export const shooterRange = (s: { droneLevel: number }) =>
+  GUN.range * levelBonus(s.droneLevel, GUN.perLevel);
+
 /** Дальность струи с учётом уровня — по ней же рисуется красный круг. */
 export const sprayRange = (s: { sprayLevel: number }) =>
   SPRAY.range * levelBonus(s.sprayLevel, SPRAY.perLevel);
@@ -516,7 +525,7 @@ function shoot(s: GameState, d: Drone, droneSpeed: number) {
   const dx = d.tx - d.x;
   const dy = d.ty - d.y;
   const dist = Math.hypot(dx, dy);
-  if (dist > SHOOTER.range || dist < 0.5) return;
+  if (dist > shooterRange(s) || dist < 0.5) return;
   d.fired = true;
   const v = droneSpeed * SHOOTER.speed;
   s.foeRockets.push({ id: s.nextId++, x: d.x, y: d.y, vx: (dx / dist) * v, vy: (dy / dist) * v, ti: d.ti });

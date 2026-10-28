@@ -441,30 +441,27 @@ export function drawFrame(
   // Ракеты ракетниц. Их мало и живут они долго, так что рисуем как предмет:
   // корпус, красная головка и факел из сопла. Дымный след за ними сыплется
   // в общую кучу клубов и нарисован выше.
-  // Ракеты стрелков: тёмный корпус и красный факел — чужие, не спутать с нашими.
+  // Снаряд стрелка — шарик цвета стрелка с тёмной обводкой и светлым ядром.
+  // Раньше это была ракета в полклетки, и её за секунду полёта никто не
+  // замечал. Шарик крупнее и чуть пульсирует, чтобы читался на любом фоне.
   for (const r of s.foeRockets) {
-    const len = cell * 0.5;
-    const f = 0.6 + 0.4 * Math.sin(now / 35 + r.id);
-    ctx.save();
-    ctx.translate(r.x * cell, r.y * cell);
-    ctx.rotate(Math.atan2(r.vy, r.vx));
+    const pulse = 1 + 0.12 * Math.sin(now / 60 + r.id);
+    // не меньше пяти точек: на общем виде клетка — около семи, и шарик в
+    // треть клетки терялся бы среди самих дронов
+    const rad = Math.max(cell * 0.3, 5) * pulse;
+    const x = r.x * cell;
+    const y = r.y * cell;
     ctx.beginPath();
-    ctx.moveTo(-len * 0.35, -cell * 0.11);
-    ctx.lineTo(-len * (0.8 + f * 0.7), 0);
-    ctx.lineTo(-len * 0.35, cell * 0.11);
-    ctx.closePath();
-    ctx.fillStyle = COLORS.foeFlame;
-    ctx.fill();
-    ctx.fillStyle = COLORS.foeBody;
-    ctx.fillRect(-len * 0.4, -cell * 0.1, len * 0.8, cell * 0.2);
-    ctx.beginPath();
-    ctx.moveTo(len * 0.4, -cell * 0.1);
-    ctx.lineTo(len * 0.62, 0);
-    ctx.lineTo(len * 0.4, cell * 0.1);
-    ctx.closePath();
+    ctx.arc(x, y, rad, 0, Math.PI * 2);
     ctx.fillStyle = COLORS.payload.shooter;
     ctx.fill();
-    ctx.restore();
+    ctx.lineWidth = Math.max(1.5, cell * 0.06);
+    ctx.strokeStyle = COLORS.foeBody;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x - rad * 0.3, y - rad * 0.3, rad * 0.35, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+    ctx.fill();
   }
 
   for (const m of s.rockets) {
