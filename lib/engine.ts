@@ -130,8 +130,8 @@ export interface Drone {
 }
 
 /**
- * Ракета стрелка: летит прямо в клетку склада и поджигает её. Её видят
- * зенитки и сбивают с упреждением, как дрона, а шар на пути её лопает.
+ * Снаряд стрелка: летит прямо в клетку склада и поджигает её. Его видят
+ * зенитки и сбивают с упреждением, как дрона, а шар на пути его лопает.
  */
 export interface FoeRocket {
   id: number;
@@ -151,7 +151,7 @@ export interface Missile {
   dy: number;
   life: number;
   /**
-   * В кого выпущен — id дрона или ракеты стрелка, 0 — ни в кого. Снаряд
+   * В кого выпущен — id дрона или снаряда стрелка, 0 — ни в кого. Снаряд
    * неуправляемый, и это не наводка, а заявка: пока снаряд летит к цели,
    * остальные зенитки и ракетницы её не берут. Промахнулся — заявка снята.
    */
@@ -270,7 +270,7 @@ export interface BattleResult {
   rocketsLost: number;
   /** Сколько дронов разбилось о шары: ни пушки, ни руки тут ни при чём. */
   killedByBalloons: number;
-  /** Сколько ракет стрелков сбили на подлёте. В счёт дронов не идут. */
+  /** Сколько снарядов стрелков сбили на подлёте. В счёт дронов не идут. */
   foeRocketsDown: number;
   dronesLost: number; // сгорело в контейнерах на складе
   depotsLost: number; // сколько контейнеров сгорело вместе с клетками
@@ -286,7 +286,7 @@ export interface GameState {
   drones: Drone[];
   missiles: Missile[];
   rockets: Rocket[];
-  /** Ракеты стрелков, летящие в склад. */
+  /** Снаряды стрелков, летящие в склад. */
   foeRockets: FoeRocket[];
   balloons: Balloon[];
   booms: Boom[];
@@ -517,7 +517,7 @@ export function createBattle(
 }
 
 /**
- * Стрелок дошёл до своей дальности — пускает ракету в свою же цель. Сам он
+ * Стрелок дошёл до своей дальности — пускает снаряд в свою же цель. Сам он
  * летит дальше: цель к его прилёту уже горит, и он берёт другую, как любой
  * дрон, чья клетка сгорела.
  */
@@ -531,7 +531,7 @@ function shoot(s: GameState, d: Drone, droneSpeed: number) {
   s.foeRockets.push({ id: s.nextId++, x: d.x, y: d.y, vx: (dx / dist) * v, vy: (dy / dist) * v, ti: d.ti });
 }
 
-/** Ракеты стрелков: летят прямо, долетели — клетка горит. */
+/** Снаряды стрелков: летят прямо, долетели — клетка горит. */
 function stepFoeRockets(s: GameState, dt: number) {
   for (let i = s.foeRockets.length - 1; i >= 0; i--) {
     const r = s.foeRockets[i];
@@ -1640,7 +1640,7 @@ function takenTargets(s: GameState) {
   return taken;
 }
 
-/** Ближайшая свободная цель зенитки: дрон или ракета стрелка. */
+/** Ближайшая свободная цель зенитки: дрон или снаряд стрелка. */
 function nearestTarget(
   s: GameState,
   grid: DroneGrid,
@@ -1759,7 +1759,7 @@ function leadAngle(gx: number, gy: number, d: Mover, speed: number) {
  * сбивают того, в кого попали, а не того, в кого целились.
  */
 function stepMissiles(s: GameState, dt: number) {
-  // по номеру — и дроны, и ракеты стрелков: заявка бывает на тех и других
+  // по номеру — и дроны, и снаряды стрелков: заявка бывает на тех и других
   const byId = new Map<number, { x: number; y: number }>();
   for (const d of s.drones) if (!d.hit) byId.set(d.id, d);
   for (const r of s.foeRockets) byId.set(r.id, r);
