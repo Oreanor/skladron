@@ -115,7 +115,7 @@ const en = {
   "tool.insuranceHint": "Covers battle losses",
   "tool.priceCell": "{cost} cr/cell",
   "upgrade.insurance": "Insurance",
-  "upgrade.loan": "Credit",
+  "upgrade.loan": "Loan",
   "insurance.cells": "{cost} cr for every burnt cell — exactly what it costs to repair it.",
   "insurance.basic": "The basic policy covers nothing else: goods and guns burn at your own risk.",
   "insurance.covers": "On top of that it returns {share}% of the value of goods and guns lost in the fire.",

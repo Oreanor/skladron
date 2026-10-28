@@ -114,7 +114,7 @@ const pl: Dict = {
   "tool.insuranceHint": "Pokrywa straty w bitwie",
   "tool.priceCell": "{cost} kr/pole",
   "upgrade.insurance": "Ubezpieczenie",
-  "upgrade.loan": "Kredyt",
+  "upgrade.loan": "Pożyczka",
   "insurance.cells": "{cost} kr za każde spalone pole — dokładnie na naprawę.",
   "insurance.basic": "Podstawowa polisa nic więcej nie pokrywa: towar i działa płoną na twoje ryzyko.",
   "insurance.covers": "Ponadto zwraca {share}% wartości spalonego towaru i dział.",

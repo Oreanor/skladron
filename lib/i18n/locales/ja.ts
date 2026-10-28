@@ -114,7 +114,7 @@ const ja: Dict = {
   "tool.insuranceHint": "戦闘の損失を補償",
   "tool.priceCell": "{cost} cr/マス",
   "upgrade.insurance": "保険",
-  "upgrade.loan": "融資",
+  "upgrade.loan": "ローン",
   "insurance.cells": "焼けたマス1つにつき {cost} cr — ちょうど修理代です。",
   "insurance.basic": "基本保険はそれ以外を補償しません：商品と砲台は自己責任で燃えます。",
   "insurance.covers": "さらに焼けた商品と砲台の価値の {share}% を返します。",

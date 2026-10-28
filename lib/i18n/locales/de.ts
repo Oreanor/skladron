@@ -136,7 +136,7 @@ const de: Dict = {
   "replay.progress": "Fortschritt der Wiederholung",
   "battle.insurance": "Versicherung",
   "battle.defenseBounty": "Abwehrprämie",
-  "battle.bountyNoRecord": "keine — Bestleistung nicht übertroffen",
+  "battle.bountyNoRecord": "keine — Rekord nicht gebrochen",
   "restart.menu": "Neu anfangen",
   "restart.title": "Das Spiel neu anfangen?",
   "restart.hint": "Lager, Kredite, Drohnen, Geschütze, Stufen und Missionsfortschritt gehen ganz an den Anfang zurück. Name, Gegnerliste, Baupläne und Kampfprotokoll bleiben. Rückgängig geht das nicht.",
@@ -295,9 +295,9 @@ const de: Dict = {
   "base.starter":
     "Das Startlager {side}×{side} steht schon in der Mitte — es gehört dir umsonst. Jeder Anbau kostet {cost} Cr pro Feld.",
   "base.drawHint":
-    "Zieh über die Karte — es erscheint ein roter Entwurf. Verschieben, an den Ecken ziehen, Klick bestätigt, «Entfernen» bricht ab. Ein Tipp auf ein Feld neben dem Gebäude baut es sofort.",
-  "base.founded": "Lager «{name}» gegründet. Der Ertrag läuft.",
-  "base.renamed": "Jetzt heißt es «{name}»",
+    "Zieh über die Karte — es erscheint ein roter Entwurf. Verschieben, an den Ecken ziehen, Klick bestätigt, „Entfernen“ bricht ab. Ein Tipp auf ein Feld neben dem Gebäude baut es sofort.",
+  "base.founded": "Lager „{name}“ gegründet. Der Ertrag läuft.",
+  "base.renamed": "Jetzt heißt es „{name}“",
   "base.renameFailed": "Umbenennen fehlgeschlagen: {error}",
   "base.nameNotSaved": "Der Name wurde nicht gespeichert: {error}",
 
@@ -442,7 +442,7 @@ const de: Dict = {
   "stats.looted": "Kredite erbeutet",
 
   "burnt.notice":
-    "Das Lager ist völlig abgebrannt. «Reparieren» hebt ein Feld für {cost} Cr, «Abreißen» räumt die Asche und stellt das Startlager {side}×{side} wieder hin.",
+    "Das Lager ist völlig abgebrannt. „Reparieren“ hebt ein Feld für {cost} Cr, „Abreißen“ räumt die Asche und stellt das Startlager {side}×{side} wieder hin.",
   "burnt.raze": "Abreißen",
   "burnt.razeTitle": "Asche abräumen?",
   "burnt.razeHint":

@@ -114,7 +114,7 @@ const uk: Dict = {
   "tool.insuranceHint": "Покриває втрати в бою",
   "tool.priceCell": "{cost} кр/клітинка",
   "upgrade.insurance": "Страховка",
-  "upgrade.loan": "Кредит",
+  "upgrade.loan": "Позика",
   "insurance.cells": "{cost} кр за кожну згорілу клітинку — рівно на ремонт.",
   "insurance.basic": "Базовий поліс більше нічого не покриває: товар і гармати горять на твій ризик.",
   "insurance.covers": "Понад те повертає {share}% вартості товару й гармат, що згоріли.",
