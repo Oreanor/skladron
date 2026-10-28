@@ -45,7 +45,7 @@ language sql immutable as $$
     when 'balloon_top' then 150
     when 'drone_top'   then 30
     when 'loan_min'   then 1000  -- меньше этого банк не выдаёт
-    when 'loan_max'   then 10000 -- потолок займа на нулевом уровне кредита; +столько же за уровень
+    when 'loan_max'   then 10000 -- потолок займа на нулевом уровне кредита; дальше — loan_limit
     when 'loan_rate'  then 10    -- процент за сутки
     when 'loan_hours' then 24    -- срок займа
     when 'start'    then 10000 -- с чего начинает новый склад и к чему сбрасывает restart_game
@@ -1250,9 +1250,8 @@ begin
   select coalesce((p.levels->>kind)::int, 1) into cur
     from profiles p where p.id = uid for update;
   if cur is null then raise exception 'no profile'; end if;
-  -- у страховки потолок свой: пятый уровень покрывает потери целиком;
-  -- у кредита — десятый: банк даёт до 100 000 и не больше
-  if cur >= (case kind when 'insurance' then 5 when 'loan' then 10 else 11 end) then
+  -- у страховки потолок свой: пятый уровень покрывает потери целиком
+  if cur >= (case when kind = 'insurance' then 5 else 11 end) then
     raise exception 'already at max level';
   end if;
   cost := price(case when kind = 'insurance' then 'insurance_upgrade' else 'upgrade' end)
@@ -1763,6 +1762,13 @@ begin
 end;
 $$;
 
+-- Сколько банк даёт на этом уровне кредита (хранимый 1…11 = видимый 0…10).
+-- Та же таблица — LOAN_LIMITS в lib/economy.ts.
+create or replace function loan_limit(level int)
+returns int language sql immutable as $$
+  select (array[10000, 25000, 50000, 75000, 100000, 150000, 200000, 250000, 300000, 400000, 500000])[least(11, greatest(1, level))];
+$$;
+
 create or replace function take_loan(amount int)
 returns table (credits int, loan int, loan_due timestamptz)
 language plpgsql security definer set search_path = public as $$
@@ -1772,8 +1778,8 @@ declare
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   perform settle_loan(uid);
-  -- Потолок растёт прокачкой кредита: loan_max за каждый уровень, до десятого.
-  select price('loan_max') * least(10, greatest(1, coalesce((p.levels->>'loan')::int, 1)))
+  -- Потолок растёт прокачкой кредита — по таблице loan_limit.
+  select loan_limit(coalesce((p.levels->>'loan')::int, 1))
     into top from profiles p where p.id = uid;
   if amount is null or amount < price('loan_min') or amount > top then
     -- Говорим суммой, а не 'bad amount': без цифр не понять, потолок
