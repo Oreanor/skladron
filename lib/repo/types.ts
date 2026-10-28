@@ -22,6 +22,11 @@ export interface Repo {
   mode: "local" | "cloud";
   /** Профиль плюс доход, начисленный при входе. */
   load(): Promise<{ player: Player; income: Income; reports: AttackReport[] }>;
+  /**
+   * Наступили новые лондонские сутки, а вкладка открыта с вечера: начислить
+   * смену (если ещё не начислена) и подтянуть склад — отгрузка увезла дронов.
+   */
+  collectShift(p: Player): Promise<Income>;
   syncAttacks(): Promise<{
     incoming: AttackOrder[];
     reports: AttackReport[];

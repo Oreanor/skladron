@@ -21,6 +21,12 @@ export class LocalRepo implements Repo {
     return { player, income, reports: [] };
   }
 
+  async collectShift(p: Player) {
+    const income = localIncome(p, Date.now()) as Income;
+    localSave(p);
+    return income;
+  }
+
   async syncAttacks() {
     return { incoming: [], reports: [] };
   }

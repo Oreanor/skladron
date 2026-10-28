@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { countFreeCells, countKind, decodeRle, droneCount, fogPatches, normRect } from "@/lib/base";
-import { LOAN_MIN, SHIFT_HOURS, STARTER_SIDE, dronePrice, fmt, saleValue } from "@/lib/economy";
+import { LOAN_MIN, STARTER_SIDE, dronePrice, fmt } from "@/lib/economy";
 import type { AttackOrder, AttackReport } from "@/lib/attack";
 import { MAX_BASE_NAME, burntCells, intactCells, isDoomed, type Player } from "@/lib/player";
 import { titleCompetitions } from "@/lib/competition";
@@ -49,6 +49,7 @@ import { useBaseSync } from "./lobby/useBaseSync";
 import { usePanels } from "./lobby/usePanels";
 import { useBlueprints } from "./lobby/useBlueprints";
 import { useTestRaids } from "./lobby/useTestRaids";
+import { incomeMessage, useShift } from "./lobby/useShift";
 import { mapActions } from "./lobby/mapActions";
 import { baseActions } from "./lobby/baseActions";
 import { rivalActions, suggestedRaid, type ScoutRun } from "./lobby/rivalActions";
@@ -180,21 +181,7 @@ export default function Lobby({
         setReports(loadedReports);
         setReady(true);
         loadRaids();
-        if (income.credits > 0) {
-          const sold = income.sold;
-          setMessage(
-            t("income.collected", {
-              hours: income.days * SHIFT_HOURS,
-              credits: fmt(income.credits),
-            }) +
-              (sold && sold.drones
-                ? t("income.sold", {
-                    drones: sold.drones,
-                    dronesValue: fmt(saleValue(sold.drones, player.levels.drones)),
-                  })
-                : "")
-          );
-        }
+        if (income.credits > 0) setMessage(incomeMessage(t, income, player.levels.drones));
       })
       .catch((e) => {
         if (!alive) return;
@@ -211,6 +198,9 @@ export default function Lobby({
   }, [repo]);
 
   useTestRaids(core, playerRef, ready);
+  // Полночь по Лондону при открытой вкладке: смена приходит без перезагрузки.
+  // В бою и на разведке ждём — их исход пишется поверх нынешнего склада.
+  useShift(core, playerRef, ready && !battle && !scout);
 
   useEffect(() => {
     if (!message) return;

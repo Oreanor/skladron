@@ -11,7 +11,7 @@ import type { BattleResult } from "../engine";
 import { newPlayer, startLevels, type Player } from "../player";
 import type { Blueprint } from "../blueprint";
 import { supabase } from "../supabase";
-import type { Repo } from "./types";
+import type { Income, Repo } from "./types";
 
 /**
  * Повтор боя по id — и для журнала в игре, и для страницы по ссылке, куда
@@ -98,6 +98,15 @@ interface IncomeRow {
   days: number;
   sold_drones: number;
 }
+
+const incomeOf = (data: unknown): Income => {
+  const first = (data as IncomeRow[] | null)?.[0];
+  return {
+    credits: first?.credits_added ?? 0,
+    days: first?.days ?? 0,
+    sold: first?.sold_drones ? { drones: first.sold_drones } : null,
+  };
+};
 
 interface BaseRow {
   cells: string; // приходит как \x… hex
@@ -231,18 +240,16 @@ export class CloudRepo implements Repo {
       // имена — украшение списка, из-за них вход в игру ломаться не должен
     }
 
-    const first = (inc.data as IncomeRow[] | null)?.[0];
-    return {
-      player,
-      income: {
-        credits: first?.credits_added ?? 0,
-        days: first?.days ?? 0,
-        sold: first?.sold_drones
-            ? { drones: first.sold_drones }
-            : null,
-      },
-      reports: attacks.reports,
-    };
+    return { player, income: incomeOf(inc.data), reports: attacks.reports };
+  }
+
+  async collectShift(p: Player) {
+    const inc = await this.db().rpc("collect_income");
+    if (inc.error) throw inc.error;
+    // Перечитываем склад, даже если смену уже начислил ночной крон: ящики
+    // он увёз, а у нас они ещё лежат.
+    await this.reloadBase(p);
+    return incomeOf(inc.data);
   }
 
   async syncAttacks() {
@@ -533,7 +540,7 @@ export class CloudRepo implements Repo {
     const db = this.db();
     const [{ data: base, error }, { data: prof, error: e2 }] = await Promise.all([
       db.from("bases").select("cells, guns, drone_cells").single(),
-      db.from("profiles").select("credits, levels").single(),
+      db.from("profiles").select("credits, levels, last_income_at").single(),
     ]);
     if (error) throw error;
     if (e2) throw e2;
@@ -541,9 +548,10 @@ export class CloudRepo implements Repo {
     p.cells = decodePgBytea(b.cells);
     p.guns = b.guns;
     p.depots = b.drone_cells;
-    const row = prof as { credits: number; levels: Player["levels"] };
+    const row = prof as { credits: number; levels: Player["levels"]; last_income_at: string };
     p.credits = row.credits;
     p.levels = fullLevels(row.levels);
+    p.lastIncomeAt = Date.parse(row.last_income_at);
   }
 
 
