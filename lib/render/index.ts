@@ -441,7 +441,7 @@ export function drawFrame(
   // Ракеты ракетниц. Их мало и живут они долго, так что рисуем как предмет:
   // корпус, красная головка и факел из сопла. Дымный след за ними сыплется
   // в общую кучу клубов и нарисован выше.
-  // Снаряд стрелка — шарик цвета стрелка с тёмной обводкой и светлым ядром.
+  // Снаряд стрелка — шарик цвета ганметал с тёмной обводкой и бликом.
   // Раньше это была ракета в полклетки, и её за секунду полёта никто не
   // замечал. Шарик крупнее и чуть пульсирует, чтобы читался на любом фоне.
   for (const r of s.foeRockets) {
@@ -453,14 +453,14 @@ export function drawFrame(
     const y = r.y * cell;
     ctx.beginPath();
     ctx.arc(x, y, rad, 0, Math.PI * 2);
-    ctx.fillStyle = COLORS.payload.shooter;
+    ctx.fillStyle = COLORS.foeShell;
     ctx.fill();
     ctx.lineWidth = Math.max(1.5, cell * 0.06);
     ctx.strokeStyle = COLORS.foeBody;
     ctx.stroke();
     ctx.beginPath();
     ctx.arc(x - rad * 0.3, y - rad * 0.3, rad * 0.35, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
     ctx.fill();
   }
 
