@@ -23,6 +23,8 @@ import {
   DRONE_TOP,
   LOAN_HOURS,
   LOAN_MAX,
+  MAX_LOAN_LEVEL,
+  loanMax,
   LOAN_MIN,
   LOAN_RATE,
   REPAIR_COST,
@@ -90,6 +92,7 @@ const values: Record<string, string> = {
   droneBoxTop: String(DRONE_TOP * DRONES_PER_CELL),
   loanMin: fmt(LOAN_MIN),
   loanMax: fmt(LOAN_MAX),
+  loanTop: fmt(loanMax(MAX_LOAN_LEVEL)),
   loanRate: String(LOAN_RATE),
   loanHours: String(LOAN_HOURS),
 };

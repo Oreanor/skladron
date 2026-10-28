@@ -45,7 +45,7 @@ language sql immutable as $$
     when 'balloon_top' then 150
     when 'drone_top'   then 30
     when 'loan_min'   then 1000  -- меньше этого банк не выдаёт
-    when 'loan_max'   then 10000 -- потолок займа = стартовая казна
+    when 'loan_max'   then 10000 -- потолок займа на нулевом уровне кредита; +столько же за уровень
     when 'loan_rate'  then 10    -- процент за сутки
     when 'loan_hours' then 24    -- срок займа
     when 'start'    then 10000 -- с чего начинает новый склад и к чему сбрасывает restart_game
@@ -356,7 +356,7 @@ create table if not exists profiles (
     '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,"wipes":0,"raids":0,"looted":0}'::jsonb,
   -- уровни классов: с ними растут скорость дронов, дальнобойность пушек и обзор разведки
   levels jsonb not null default
-    '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"balloons":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb,
+    '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"balloons":1,"scouts":1,"mg":1,"water":1,"insurance":1,"loan":1}'::jsonb,
   -- заём: сколько отдать и когда
   loan int not null default 0,
   loan_due timestamptz,
@@ -1243,15 +1243,16 @@ declare
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   if kind not in
-     ('drones', 'guns', 'rockets', 'sprays', 'traps', 'balloons', 'mg', 'water', 'insurance') then
+     ('drones', 'guns', 'rockets', 'sprays', 'traps', 'balloons', 'mg', 'water', 'insurance', 'loan') then
     raise exception 'bad upgrade kind';
   end if;
 
   select coalesce((p.levels->>kind)::int, 1) into cur
     from profiles p where p.id = uid for update;
   if cur is null then raise exception 'no profile'; end if;
-  -- у страховки потолок свой: пятый уровень покрывает потери целиком
-  if cur >= (case when kind = 'insurance' then 5 else 11 end) then
+  -- у страховки потолок свой: пятый уровень покрывает потери целиком;
+  -- у кредита — десятый: банк даёт до 100 000 и не больше
+  if cur >= (case kind when 'insurance' then 5 when 'loan' then 10 else 11 end) then
     raise exception 'already at max level';
   end if;
   cost := price(case when kind = 'insurance' then 'insurance_upgrade' else 'upgrade' end)
@@ -1765,15 +1766,20 @@ $$;
 create or replace function take_loan(amount int)
 returns table (credits int, loan int, loan_due timestamptz)
 language plpgsql security definer set search_path = public as $$
-declare uid uuid := auth.uid();
+declare
+  uid uuid := auth.uid();
+  top int;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   perform settle_loan(uid);
-  if amount is null or amount < price('loan_min') or amount > price('loan_max') then
+  -- Потолок растёт прокачкой кредита: loan_max за каждый уровень, до десятого.
+  select price('loan_max') * least(10, greatest(1, coalesce((p.levels->>'loan')::int, 1)))
+    into top from profiles p where p.id = uid;
+  if amount is null or amount < price('loan_min') or amount > top then
     -- Говорим суммой, а не 'bad amount': без цифр не понять, потолок
     -- это, порог или устаревшая на сервере цена.
     raise exception 'loan must be between % and %, asked %',
-      price('loan_min'), price('loan_max'), amount;
+      price('loan_min'), top, amount;
   end if;
   if (select p.loan from profiles p where p.id = uid) > 0 then
     raise exception 'previous loan of % is not repaid',
@@ -2297,7 +2303,7 @@ begin
          last_income_at = now(),
          competition_at = 1,
          competition_best = '{}'::jsonb,
-         levels = '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"balloons":1,"scouts":1,"mg":1,"water":1,"insurance":1}'::jsonb,
+         levels = '{"drones":1,"guns":1,"rockets":1,"sprays":1,"traps":1,"balloons":1,"scouts":1,"mg":1,"water":1,"insurance":1,"loan":1}'::jsonb,
          stats = '{"battles":0,"dronesKilled":0,"cellsBurned":0,"cellsRepaired":0,
                    "wipes":0,"raids":0,"looted":0}'::jsonb
    where id = uid;

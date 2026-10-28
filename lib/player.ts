@@ -63,6 +63,8 @@ export interface Levels {
   water: number;
   /** Страховой полис: какую долю потерь возместят. */
   insurance: number;
+  /** Кредит: сколько банк даёт в долг (loanMax). */
+  loan: number;
 }
 
 export const startLevels = (): Levels => ({
@@ -75,6 +77,7 @@ export const startLevels = (): Levels => ({
   mg: 1,
   water: 1,
   insurance: 1,
+  loan: 1,
 });
 
 export interface Player {

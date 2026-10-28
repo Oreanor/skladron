@@ -21,8 +21,15 @@ export const SCRAP_REWARD = 5;
 
 /** Заём: от и до, ставка за срок и сам срок. */
 export const LOAN_MIN = 1000;
+/** Потолок займа на нулевом уровне кредита; каждый уровень добавляет столько же. */
 export const LOAN_MAX = 10_000;
 export const LOAN_STEP = 500;
+/**
+ * Сколько банк даёт на этом уровне кредита: 10 000 на нулевом, +10 000 за
+ * уровень, до 100 000 на девятом — поэтому у кредита свой потолок уровней.
+ */
+export const MAX_LOAN_LEVEL = 10;
+export const loanMax = (level: number) => LOAN_MAX * Math.min(MAX_LOAN_LEVEL, Math.max(1, level));
 export const LOAN_RATE = 10; // процентов
 export const LOAN_HOURS = 24;
 
@@ -151,7 +158,8 @@ export type UpgradeKind =
   | "balloons"
   | "mg"
   | "water"
-  | "insurance";
+  | "insurance"
+  | "loan";
 export const UPGRADE_KINDS: UpgradeKind[] = [
   "drones",
   "guns",
@@ -162,11 +170,12 @@ export const UPGRADE_KINDS: UpgradeKind[] = [
   "mg",
   "water",
   "insurance",
+  "loan",
 ];
 
 /** Потолок у страховки свой: дальше полного покрытия расти некуда. */
 export const maxLevel = (kind: UpgradeKind) =>
-  kind === "insurance" ? MAX_INSURANCE_LEVEL : MAX_LEVEL;
+  kind === "insurance" ? MAX_INSURANCE_LEVEL : kind === "loan" ? MAX_LOAN_LEVEL : MAX_LEVEL;
 
 /** Прибавка за уровень: первый уровень — множитель 1. */
 /**

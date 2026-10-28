@@ -191,6 +191,7 @@ export const TOOLS: {
     vars: { cost: LOAN_MIN, rate: LOAN_RATE },
     priceKey: "tool.priceFrom",
     icon: <Banknote className={ICON} />,
+    levelKind: "loan",
     countKind: "loan",
   },
   {

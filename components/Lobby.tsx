@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { countFreeCells, countKind, decodeRle, droneCount, fogPatches, normRect } from "@/lib/base";
-import { LOAN_MIN, STARTER_SIDE, dronePrice, fmt } from "@/lib/economy";
+import { LOAN_MIN, STARTER_SIDE, dronePrice, fmt, loanMax } from "@/lib/economy";
 import type { AttackOrder, AttackReport } from "@/lib/attack";
 import { MAX_BASE_NAME, burntCells, intactCells, isDoomed, type Player } from "@/lib/player";
 import { titleCompetitions } from "@/lib/competition";
@@ -922,11 +922,12 @@ export default function Lobby({
           amount={loanAmount}
           onAmount={setLoanAmount}
           onTake={async () => {
-            if (await base.takeLoan(loanAmount)) setModal(null);
+            if (await base.takeLoan(Math.min(loanAmount, loanMax(p.levels.loan)))) setModal(null);
           }}
           onRepay={async () => {
             if (await base.repayLoan()) setModal(null);
           }}
+          onUpgrade={base.upgrade}
           onClose={() => setModal(null)}
         />
       )}

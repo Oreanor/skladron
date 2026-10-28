@@ -27,7 +27,7 @@ const en: RuleSection[] = [
     lines: [
       "You start with {credits} cr and a {starter}×{starter} warehouse standing in the middle of the field — it is yours for free.",
       "Every midnight, London time, the shipment goes out: everything stored is sold at double the purchase price — a container of drones goes for {droneBoxSale} cr at drone level 0 and up to {droneBoxSaleTop} at level 10. That is the warehouse's income: cells pay no rent. Whatever you did not send into battle is sold. The server runs the shipment by itself and reports it in Telegram, if the bot is linked.",
-      "Short of money? The bank lends {loanMin}–{loanMax} cr for {loanHours} hours at {loanRate}%. The goods you buy with it can burn in a raid — the debt will not.",
+      "Short of money? The bank lends {loanMin}–{loanMax} cr for {loanHours} hours at {loanRate}%. The goods you buy with it can burn in a raid — the debt will not. The limit grows with the Credit upgrade: +{loanMax} cr per level, up to {loanTop} cr at the top level.",
       "Money strategy: the real income is burning rival warehouses ({loot} cr per cell). Defence bounty is smaller — a clean stop of a big swarm pays hundreds or about a thousand, usually two to three times less than a successful attack; missions earn it too. Flat broke — take a loan, play a mission, or wipe and get a floor of at least {credits} cr.",
     ],
   },
@@ -137,7 +137,7 @@ const ru: RuleSection[] = [
     lines: [
       "Начинаешь с {credits} кр и складом {starter}×{starter} посреди поля — он твой даром.",
       "Каждую полночь по Лондону уходит отгрузка: всё, что лежит на складе, продаётся вдвое дороже закупки — контейнер дронов уходит за {droneBoxSale} кр на нулевом уровне дронов и до {droneBoxSaleTop} на десятом. Это и есть доход склада: аренды с клеток нет. Что не пустил в дело, то продано. Сервер проводит отгрузку сам и пишет итог в телеграм, если бот привязан.",
-      "Не хватает денег — банк даёт {loanMin}–{loanMax} кр на {loanHours} часа под {loanRate}%. Купленный на них товар может сгореть в налёте, долг — нет.",
+      "Не хватает денег — банк даёт {loanMin}–{loanMax} кр на {loanHours} часа под {loanRate}%. Купленный на них товар может сгореть в налёте, долг — нет. Лимит растёт прокачкой кредита: +{loanMax} кр за уровень, до {loanTop} кр на последнем.",
       "Стратегия кассы: основные деньги — с чужих складов ({loot} кр за сожжённую клетку). Премия за отбой меньше — при чистом отбое крупного роя это сотни или около тысячи, в среднем вдвое–втрое скромнее атаки; миссии тоже её дают. Упал в ноль — заём, миссия или полный снос с подушкой не меньше {credits} кр.",
     ],
   },
@@ -247,7 +247,7 @@ const es: RuleSection[] = [
     lines: [
       "Empiezas con {credits} cr y un almacén de {starter}×{starter} en medio del campo: es tuyo gratis.",
       "Cada medianoche, hora de Londres, sale el envío: todo lo almacenado se vende al doble del precio de compra — un contenedor de drones sale por {droneBoxSale} cr con drones de nivel 0 y hasta {droneBoxSaleTop} en el nivel 10. Ese es el ingreso del almacén: las celdas no pagan renta. Lo que no enviaste al combate, se vende. El servidor hace el envío solo y avisa en Telegram, si el bot está vinculado.",
-      "¿Falta dinero? El banco presta {loanMin}–{loanMax} cr por {loanHours} horas al {loanRate}%. La mercancía comprada puede arder en un ataque; la deuda no.",
+      "¿Falta dinero? El banco presta {loanMin}–{loanMax} cr por {loanHours} horas al {loanRate}%. La mercancía comprada puede arder en un ataque; la deuda no. El límite crece con la mejora de Crédito: +{loanMax} cr por nivel, hasta {loanTop} cr en el último nivel.",
       "Estrategia de caja: el dinero gordo viene de quemar almacenes rivales ({loot} cr por celda). La prima de defensa es menor — un rechazo limpio de un enjambre grande da cientos o cerca de mil, unas dos o tres veces menos que un ataque bueno; las misiones también la pagan. Sin un cr — préstamo, una misión o derribo total con un suelo de al menos {credits} cr.",
     ],
   },
@@ -357,7 +357,7 @@ const pt: RuleSection[] = [
     lines: [
       "Começas com {credits} cr e um armazém de {starter}×{starter} no meio do campo — é teu de graça.",
       "Todas as meias-noites, hora de Londres, sai a expedição: tudo o que está guardado vende-se ao dobro da compra — um contentor de drones sai por {droneBoxSale} cr com drones de nível 0 e até {droneBoxSaleTop} no nível 10. É esse o rendimento do armazém: as células não pagam renda. O que não mandaste ao combate é vendido. O servidor faz a expedição sozinho e avisa no Telegram, se o bot estiver ligado.",
-      "Falta dinheiro? O banco empresta {loanMin}–{loanMax} cr por {loanHours} horas a {loanRate}%. A mercadoria comprada pode arder num ataque; a dívida não.",
+      "Falta dinheiro? O banco empresta {loanMin}–{loanMax} cr por {loanHours} horas a {loanRate}%. A mercadoria comprada pode arder num ataque; a dívida não. O limite cresce com a melhoria de Crédito: +{loanMax} cr por nível, até {loanTop} cr no último nível.",
       "Estratégia de caixa: o dinheiro grosso vem de queimar armazéns rivais ({loot} cr por célula). O prémio de defesa é menor — uma defesa limpa de um enxame grande dá centenas ou cerca de mil, em média duas a três vezes menos que um ataque bom; as missões também o pagam. A zero — empréstimo, uma missão ou derrube total com chão de pelo menos {credits} cr.",
     ],
   },
@@ -467,7 +467,7 @@ const fr: RuleSection[] = [
     lines: [
       "Tu commences avec {credits} cr et un entrepôt de {starter}×{starter} au milieu du terrain — il est à toi gratuitement.",
       "Chaque minuit, heure de Londres, part l’expédition : tout ce qui est stocké se vend au double du prix d’achat — un conteneur de drones part pour {droneBoxSale} cr avec des drones de niveau 0 et jusqu’à {droneBoxSaleTop} au niveau 10. C’est le revenu de l’entrepôt : les cases ne rapportent pas de loyer. Ce que tu n’as pas envoyé au combat est vendu. Le serveur fait l’expédition lui-même et en informe sur Telegram, si le bot est relié.",
-      "À court d’argent ? La banque prête {loanMin}–{loanMax} cr pour {loanHours} heures à {loanRate} %. La marchandise achetée peut brûler dans un raid, la dette non.",
+      "À court d’argent ? La banque prête {loanMin}–{loanMax} cr pour {loanHours} heures à {loanRate} %. La marchandise achetée peut brûler dans un raid, la dette non. Le plafond monte avec l’amélioration Crédit : +{loanMax} cr par niveau, jusqu’à {loanTop} cr au dernier niveau.",
       "Stratégie de caisse : le gros de l’argent vient des entrepôts rivaux ({loot} cr par case brûlée). La prime de défense est plus petite — un rejet propre d’un gros essaim rapporte des centaines ou environ mille, en moyenne deux à trois fois moins qu’une bonne attaque ; les missions la donnent aussi. À zéro — emprunt, une mission, ou wipe avec un plancher d’au moins {credits} cr.",
     ],
   },
@@ -577,7 +577,7 @@ const de: RuleSection[] = [
     lines: [
       "Du startest mit {credits} Cr und einem {starter}×{starter}-Lager mitten im Feld — es gehört dir umsonst.",
       "Jede Mitternacht Londoner Zeit geht der Versand raus: alles Eingelagerte wird zum doppelten Einkaufspreis verkauft — ein Drohnencontainer bringt {droneBoxSale} Cr bei Drohnenstufe 0 und bis {droneBoxSaleTop} auf Stufe 10. Das ist das Einkommen des Lagers: Felder bringen keine Miete. Was du nicht in den Kampf geschickt hast, ist verkauft. Der Server erledigt den Versand selbst und meldet ihn in Telegram, wenn der Bot verknüpft ist.",
-      "Zu wenig Geld? Die Bank leiht {loanMin}–{loanMax} Cr für {loanHours} Stunden zu {loanRate} %. Die dafür gekaufte Ware kann bei einem Angriff verbrennen — die Schuld nicht.",
+      "Zu wenig Geld? Die Bank leiht {loanMin}–{loanMax} Cr für {loanHours} Stunden zu {loanRate} %. Die dafür gekaufte Ware kann bei einem Angriff verbrennen — die Schuld nicht. Das Limit wächst mit dem Kredit-Upgrade: +{loanMax} Cr pro Stufe, bis {loanTop} Cr auf der höchsten Stufe.",
       "Geldstrategie: das große Geld kommt von fremden Lagern ({loot} Cr je abgebranntem Feld). Die Abwehrprämie ist kleiner — saubere Abwehr eines großen Schwarms bringt Hunderte oder etwa tausend, im Schnitt zwei- bis dreimal weniger als ein guter Angriff; Missionen zahlen sie auch. Bei null — Kredit, eine Mission oder Totalverlust mit Boden von mindestens {credits} Cr.",
     ],
   },
@@ -687,7 +687,7 @@ const it: RuleSection[] = [
     lines: [
       "Parti con {credits} cr e un magazzino {starter}×{starter} in mezzo al campo: è tuo gratis.",
       "Ogni mezzanotte, ora di Londra, parte la spedizione: tutto ciò che è stoccato si vende al doppio dell’acquisto — un container di droni va via per {droneBoxSale} cr con droni di livello 0 e fino a {droneBoxSaleTop} al livello 10. È questo il reddito del magazzino: le celle non rendono affitto. Quello che non hai mandato in battaglia è venduto. Il server fa la spedizione da sé e lo comunica su Telegram, se il bot è collegato.",
-      "Soldi finiti? La banca presta {loanMin}–{loanMax} cr per {loanHours} ore al {loanRate}%. La merce comprata può bruciare in un attacco, il debito no.",
+      "Soldi finiti? La banca presta {loanMin}–{loanMax} cr per {loanHours} ore al {loanRate}%. La merce comprata può bruciare in un attacco, il debito no. Il limite cresce con il potenziamento Credito: +{loanMax} cr per livello, fino a {loanTop} cr all’ultimo livello.",
       "Strategia di cassa: i soldi grossi vengono dai magazzini rivali ({loot} cr per cella bruciata). Il premio di difesa è minore — un respingimento pulito di uno sciame grande dà centinaia o circa mille, in media due-tre volte meno di un buon attacco; anche le missioni lo pagano. A zero — prestito, una missione o wipe con un pavimento di almeno {credits} cr.",
     ],
   },
@@ -797,7 +797,7 @@ const uk: RuleSection[] = [
     lines: [
       "Починаєш з {credits} кр і складом {starter}×{starter} посеред поля — він твій безкоштовно.",
       "Щоночі опівночі за Лондоном іде відвантаження: усе, що лежить на складі, продається вдвічі дорожче за закупівлю — ящик дронів іде за {droneBoxSale} кр на нульовому рівні дронів і до {droneBoxSaleTop} на десятому. Це і є дохід складу: оренди з клітинок немає. Що не пустив у діло, те продано. Сервер проводить відвантаження сам і пише підсумок у Telegram, якщо бот прив’язаний.",
-      "Бракує грошей — банк дає {loanMin}–{loanMax} кр на {loanHours} годин під {loanRate}%. Куплений на них товар може згоріти в нальоті, борг — ні.",
+      "Бракує грошей — банк дає {loanMin}–{loanMax} кр на {loanHours} годин під {loanRate}%. Куплений на них товар може згоріти в нальоті, борг — ні. Ліміт росте прокачуванням кредиту: +{loanMax} кр за рівень, до {loanTop} кр на останньому.",
       "Стратегія каси: основні гроші — з чужих складів ({loot} кр за спалену клітинку). Премія за оборону менша — за чистий відбій великого рою це сотні або близько тисячі, зазвичай удвічі-втричі скромніше за атаку; місії теж її дають. Упав у нуль — позика, місія або повне знесення з подушкою не менше {credits} кр.",
     ],
   },
@@ -907,7 +907,7 @@ const pl: RuleSection[] = [
     lines: [
       "Zaczynasz z {credits} kr i magazynem {starter}×{starter} pośrodku pola — jest twój za darmo.",
       "Co noc o północy czasu londyńskiego wyrusza wysyłka: wszystko, co leży w magazynie, sprzedaje się za dwukrotność ceny zakupu — skrzynia dronów idzie za {droneBoxSale} kr przy poziomie dronów 0 i do {droneBoxSaleTop} na poziomie 10. To jest dochód magazynu: pola nie płacą czynszu. Czego nie użyłeś w walce, zostaje sprzedane. Serwer robi wysyłkę sam i pisze wynik w Telegramie, jeśli bot jest połączony.",
-      "Brak pieniędzy? Bank daje {loanMin}–{loanMax} kr na {loanHours} godzin na {loanRate}%. Towar kupiony za nie może spłonąć w nalocie — dług nie.",
+      "Brak pieniędzy? Bank daje {loanMin}–{loanMax} kr na {loanHours} godzin na {loanRate}%. Towar kupiony za nie może spłonąć w nalocie — dług nie. Limit rośnie z ulepszeniem Kredytu: +{loanMax} kr za poziom, do {loanTop} kr na ostatnim.",
       "Strategia kasy: główne pieniądze są z cudzych magazynów ({loot} kr za spalone pole). Premia za obronę jest mniejsza — za czyste odparcie dużego roju to setki albo około tysiąca, zwykle dwa–trzy razy mniej niż za udany atak; misje też ją dają. Zero na koncie — pożyczka, misja albo pełna rozbiórka z poduszką co najmniej {credits} kr.",
     ],
   },
@@ -1017,7 +1017,7 @@ const tr: RuleSection[] = [
     lines: [
       "{credits} kr ve alanın ortasında duran {starter}×{starter} bir depoyla başlarsın — ücretsiz senindir.",
       "Her gece Londra saatiyle gece yarısı sevkiyat çıkar: depodaki her şey alış fiyatının iki katına satılır — dron kasası dron seviyesi 0'da {droneBoxSale} kr'ye, 10. seviyede {droneBoxSaleTop} kr'ye kadar gider. Deponun geliri budur: hücreler kira getirmez. Savaşa sokmadığın şey satılır. Sunucu sevkiyatı kendisi yapar ve bot bağlıysa sonucu Telegram'a yazar.",
-      "Para mı yetmiyor? Banka {loanHours} saatliğine %{loanRate} faizle {loanMin}–{loanMax} kr verir. Onunla aldığın mal baskında yanabilir — borç yanmaz.",
+      "Para mı yetmiyor? Banka {loanHours} saatliğine %{loanRate} faizle {loanMin}–{loanMax} kr verir. Onunla aldığın mal baskında yanabilir — borç yanmaz. Limit, Kredi yükseltmesiyle büyür: seviye başına +{loanMax} kr, son seviyede {loanTop} kr'ye kadar.",
       "Kasa stratejisi: asıl para rakip depolardan gelir (yanan hücre başına {loot} kr). Savunma ödülü daha küçüktür — büyük bir sürüyü temiz püskürtmek yüzlerce ya da bine yakın kazandırır, genelde başarılı bir saldırının iki-üç katı azı; görevler de verir. Sıfıra mı düştün — kredi, görev ya da en az {credits} kr tabanla tamamen yıkıp baştan başla.",
     ],
   },
@@ -1127,7 +1127,7 @@ const zh: RuleSection[] = [
     lines: [
       "你从 {credits} 币和场地中央一座 {starter}×{starter} 的仓库开始——免费归你。",
       "每晚伦敦时间午夜发货：仓库里的一切以两倍进价卖出——无人机等级 0 时一箱卖 {droneBoxSale} 币，10 级时最高 {droneBoxSaleTop} 币。这就是仓库的收入：格子不产生租金。没投入战斗的都会被卖掉。服务器会自动发货，如果绑定了机器人，还会在 Telegram 报告结果。",
-      "缺钱？银行以 {loanRate}% 的利率借你 {loanMin}–{loanMax} 币，期限 {loanHours} 小时。用它买的货可能在空袭中烧掉——债务不会。",
+      "缺钱？银行以 {loanRate}% 的利率借你 {loanMin}–{loanMax} 币，期限 {loanHours} 小时。用它买的货可能在空袭中烧掉——债务不会。额度随贷款升级提高：每级 +{loanMax} 币，最高级时最多 {loanTop} 币。",
       "理财策略：主要收入来自烧毁对手的仓库（每格 {loot} 币）。防守奖金较少——干净地击退一大群无人机能拿到几百到一千左右，通常比一次成功的进攻少两三倍；任务也发奖金。一贫如洗——贷款、打任务，或者彻底推倒重来，账户至少保底 {credits} 币。",
     ],
   },
@@ -1237,7 +1237,7 @@ const ja: RuleSection[] = [
     lines: [
       "{credits} cr と、フィールド中央の {starter}×{starter} の倉庫から始まります — 倉庫は無料であなたのものです。",
       "毎晩ロンドン時間の午前0時に出荷されます：倉庫にあるものはすべて購入価格の2倍で売れ、ドローン箱はドローンLv0で {droneBoxSale} cr、Lv10で最大 {droneBoxSaleTop} cr になります。これが倉庫の収入で、マスに家賃はありません。戦闘に使わなかったものは売られます。サーバーが自動で出荷し、ボットを連携していれば結果を Telegram で知らせます。",
-      "お金が足りない？ 銀行は {loanMin}–{loanMax} cr を {loanHours} 時間、利率 {loanRate}% で貸します。それで買った商品は空襲で燃えることがありますが、借金は燃えません。",
+      "お金が足りない？ 銀行は {loanMin}–{loanMax} cr を {loanHours} 時間、利率 {loanRate}% で貸します。それで買った商品は空襲で燃えることがありますが、借金は燃えません。上限は融資のアップグレードで上がります：1レベルごとに +{loanMax} cr、最高レベルで最大 {loanTop} cr。",
       "お金の戦略：主な収入はライバルの倉庫を燃やすこと（1マス {loot} cr）。防衛報酬はそれより少なく、大きな群れをきれいに撃退して数百〜千ほど、ふつう攻撃成功の2〜3分の1です。ミッションでももらえます。すっからかんになったら、ローン、ミッション、または最低 {credits} cr が保証される全面解体で。",
     ],
   },
@@ -1347,7 +1347,7 @@ const ko: RuleSection[] = [
     lines: [
       "{credits} cr와 필드 가운데에 선 {starter}×{starter} 창고로 시작합니다 — 창고는 무료로 당신 것입니다.",
       "매일 밤 런던 시간 자정에 출고됩니다: 창고에 있는 모든 것이 구입가의 두 배에 팔리며, 드론 상자는 드론 Lv0에서 {droneBoxSale} cr, Lv10에서 최대 {droneBoxSaleTop} cr입니다. 이것이 창고의 수입이며 칸에는 임대료가 없습니다. 전투에 쓰지 않은 것은 팔립니다. 서버가 알아서 출고하고, 봇을 연결했다면 결과를 Telegram으로 알려 줍니다.",
-      "돈이 모자라나요? 은행은 {loanMin}–{loanMax} cr를 {loanHours}시간 동안 {loanRate}% 이자로 빌려줍니다. 그 돈으로 산 상품은 공습에 탈 수 있지만, 빚은 타지 않습니다.",
+      "돈이 모자라나요? 은행은 {loanMin}–{loanMax} cr를 {loanHours}시간 동안 {loanRate}% 이자로 빌려줍니다. 그 돈으로 산 상품은 공습에 탈 수 있지만, 빚은 타지 않습니다. 한도는 대출 업그레이드로 늘어납니다: 레벨마다 +{loanMax} cr, 최고 레벨에서 최대 {loanTop} cr.",
       "자금 전략: 주 수입은 라이벌 창고를 태우는 것입니다(칸당 {loot} cr). 방어 보상은 그보다 적습니다 — 큰 떼를 깔끔히 막으면 수백에서 천 남짓, 보통 성공한 공격의 2~3분의 1입니다. 미션에서도 받습니다. 빈털터리라면 대출, 미션, 또는 최소 {credits} cr가 보장되는 전면 철거로.",
     ],
   },
