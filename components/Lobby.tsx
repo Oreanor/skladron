@@ -927,7 +927,6 @@ export default function Lobby({
           onRepay={async () => {
             if (await base.repayLoan()) setModal(null);
           }}
-          onUpgrade={base.upgrade}
           onClose={() => setModal(null)}
         />
       )}

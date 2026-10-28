@@ -105,8 +105,6 @@ const ko: Dict = {
   "loan.taken": "대출: {amount} cr, 상환 {debt}",
   "loan.repaid": "대출 상환 완료",
   "loan.failed": "은행이 거절했습니다: {error}",
-  "loan.limit": "은행 한도: {max} cr",
-  "loan.raise": "다음 레벨에서 {max} cr로 오릅니다",
   "replay.share": "링크 복사",
   "replay.copied": "링크를 복사했습니다",
   "replay.gone": "이 리플레이는 더 이상 볼 수 없습니다.",

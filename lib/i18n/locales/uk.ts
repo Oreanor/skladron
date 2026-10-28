@@ -105,8 +105,6 @@ const uk: Dict = {
   "loan.taken": "Позику взято: {amount} кр, повернути {debt}",
   "loan.repaid": "Позику повернуто",
   "loan.failed": "Банк відмовив: {error}",
-  "loan.limit": "Ліміт банку: {max} кр",
-  "loan.raise": "наступний рівень підніме до {max} кр",
   "replay.share": "Скопіювати посилання",
   "replay.copied": "Посилання скопійовано",
   "replay.gone": "Цей повтор більше недоступний.",

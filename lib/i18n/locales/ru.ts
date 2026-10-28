@@ -105,8 +105,6 @@ const ru: Dict = {
   "loan.taken": "Взято {amount} кр, вернуть {debt}",
   "loan.repaid": "Кредит закрыт",
   "loan.failed": "Банк отказал: {error}",
-  "loan.limit": "Лимит банка: {max} кр",
-  "loan.raise": "следующий уровень поднимет до {max} кр",
   "replay.share": "Скопировать ссылку",
   "replay.copied": "Ссылка скопирована",
   "replay.gone": "Этого повтора больше нет.",

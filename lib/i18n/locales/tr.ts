@@ -105,8 +105,6 @@ const tr: Dict = {
   "loan.taken": "Kredi alındı: {amount} kr, geri ödenecek {debt}",
   "loan.repaid": "Kredi ödendi",
   "loan.failed": "Banka reddetti: {error}",
-  "loan.limit": "Banka limiti: {max} kr",
-  "loan.raise": "sonraki seviye {max} kr'ye çıkarır",
   "replay.share": "Bağlantıyı kopyala",
   "replay.copied": "Bağlantı kopyalandı",
   "replay.gone": "Bu tekrar artık mevcut değil.",

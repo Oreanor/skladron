@@ -106,8 +106,6 @@ const en = {
   "loan.taken": "Loan taken: {amount} cr, to repay {debt}",
   "loan.repaid": "Loan repaid",
   "loan.failed": "The bank refused: {error}",
-  "loan.limit": "Bank limit: {max} cr",
-  "loan.raise": "next level raises it to {max} cr",
   "replay.share": "Copy link",
   "replay.copied": "Link copied",
   "replay.gone": "This replay is no longer available.",

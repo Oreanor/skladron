@@ -149,7 +149,6 @@ export function LoanDialog({
   onAmount,
   onTake,
   onRepay,
-  onUpgrade,
   onClose,
 }: {
   player: Player;
@@ -159,16 +158,12 @@ export function LoanDialog({
   onAmount: (value: number) => void;
   onTake: () => void;
   onRepay: () => void;
-  /** Поднять лимит: кредит прокачивается, как и всё остальное. */
-  onUpgrade: (kind: UpgradeKind) => void;
   onClose: () => void;
 }) {
   const t = useT();
   const owed = player.loan > 0;
-  const level = player.levels.loan;
-  const max = loanMax(level);
-  const canRaise = level < maxLevel("loan");
-  const raiseCost = upgradeCost(level, "loan");
+  // Потолок — по уровню кредита; поднимается в окне прокачки.
+  const max = loanMax(player.levels.loan);
   // лимит мог стать меньше выбранного разве что при сбое — не даём просить больше
   const asked = Math.min(amount, max);
 
@@ -227,33 +222,16 @@ export function LoanDialog({
             className="h-8 w-full cursor-pointer accent-emerald-500"
             aria-label={t("loan.amount")}
           />
+          <div className="-mt-2 flex justify-between font-mono text-xs text-neutral-500">
+            <span>{fmt(LOAN_MIN)}</span>
+            <span>{fmt(max)}</span>
+          </div>
           <dl className="space-y-1 font-mono">
             <Row label={t("loan.amount")} value={fmt(asked)} />
             <Row label={t("loan.debt")} value={fmt(loanDebt(asked))} />
           </dl>
         </div>
       )}
-      <div className="mt-4 flex items-center justify-between gap-3 border-t border-neutral-800 pt-3 text-sm">
-        <span className="min-w-0 text-neutral-400">
-          {t("loan.limit", { max: fmt(max) })}
-          <span className="ml-2 font-mono text-xs text-amber-300">
-            {t("upgrade.level", { level: shownLevel(level) })}
-          </span>
-          {canRaise && (
-            <span className="block text-xs text-neutral-500">
-              {t("loan.raise", { max: fmt(loanMax(level + 1)) })}
-            </span>
-          )}
-        </span>
-        <Button
-          variant="build"
-          size="sm"
-          disabled={!canRaise || player.credits < raiseCost}
-          onClick={() => onUpgrade("loan")}
-        >
-          {canRaise ? t("upgrade.buy", { cost: fmt(raiseCost) }) : t("upgrade.max")}
-        </Button>
-      </div>
     </Modal>
   );
 }

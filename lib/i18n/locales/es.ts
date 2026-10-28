@@ -105,8 +105,6 @@ const es: Dict = {
   "loan.taken": "Tomados {amount} cr, a devolver {debt}",
   "loan.repaid": "Crédito saldado",
   "loan.failed": "El banco lo rechazó: {error}",
-  "loan.limit": "Límite del banco: {max} cr",
-  "loan.raise": "el siguiente nivel lo sube a {max} cr",
   "replay.share": "Copiar enlace",
   "replay.copied": "Enlace copiado",
   "replay.gone": "Esta repetición ya no está disponible.",

@@ -105,8 +105,6 @@ const de: Dict = {
   "loan.taken": "{amount} Cr genommen, zurück {debt}",
   "loan.repaid": "Kredit getilgt",
   "loan.failed": "Die Bank hat abgelehnt: {error}",
-  "loan.limit": "Banklimit: {max} Cr",
-  "loan.raise": "die nächste Stufe hebt es auf {max} Cr",
   "replay.share": "Link kopieren",
   "replay.copied": "Link kopiert",
   "replay.gone": "Diese Wiederholung gibt es nicht mehr.",

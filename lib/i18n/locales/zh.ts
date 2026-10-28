@@ -105,8 +105,6 @@ const zh: Dict = {
   "loan.taken": "已贷款：{amount} 币，应还 {debt}",
   "loan.repaid": "贷款已还清",
   "loan.failed": "银行拒绝：{error}",
-  "loan.limit": "银行额度：{max} 币",
-  "loan.raise": "下一级提升到 {max} 币",
   "replay.share": "复制链接",
   "replay.copied": "链接已复制",
   "replay.gone": "此回放已不可用。",

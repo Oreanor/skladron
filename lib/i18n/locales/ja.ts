@@ -105,8 +105,6 @@ const ja: Dict = {
   "loan.taken": "借入：{amount} cr、返済額 {debt}",
   "loan.repaid": "ローン完済",
   "loan.failed": "銀行に断られました：{error}",
-  "loan.limit": "銀行の上限：{max} cr",
-  "loan.raise": "次のレベルで {max} cr に上がります",
   "replay.share": "リンクをコピー",
   "replay.copied": "リンクをコピーしました",
   "replay.gone": "このリプレイはもう見られません。",
