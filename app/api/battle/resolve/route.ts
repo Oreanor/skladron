@@ -66,9 +66,11 @@ export async function POST(request: Request) {
       { status: 409 }
     );
   }
-  // Запись — это сжатые кадры прицела. Ограничиваем длину: разжимать
-  // мегабайты чужой строки на сервере незачем.
-  if (typeof trace !== "string" || trace.length > 400_000) {
+  // Запись — сжатые кадры прицела. Потолок с запасом на бой целиком до
+  // SIM.maxFrames, даже если прицел двигался каждый кадр: более тесный
+  // лимит отвечал «плохая запись», а игроку это показывалось как
+  // разошедшийся склад, и доигранная миссия не засчитывалась.
+  if (typeof trace !== "string" || trace.length > 1_000_000) {
     return Response.json({ error: "bad trace" }, { status: 400 });
   }
 
@@ -90,6 +92,18 @@ export async function POST(request: Request) {
   if (attack.status !== "pending") {
     return Response.json({ error: "attack already resolved" }, { status: 409 });
   }
+
+  // Клиент уже сыграл этот бой текущим движком — версия в запросе с ним
+  // совпала выше. На строке налёта при этом может остаться старый штамп:
+  // sim_version() в базе поднимает отдельный патч, и без него каждый новый
+  // налёт помечается прежней версией. Считать по штампу — отказать в бое,
+  // который игрок только что доиграл. Ставим текущую версию до снимка,
+  // чтобы и расчёт, и повтор шли тем же движком, что и бой на экране.
+  await db
+    .from("attacks")
+    .update({ simulation_version: SIMULATION_VERSION })
+    .eq("id", attackId)
+    .eq("status", "pending");
 
   // Claim атомарно снимает слепок и версию склада. Бой считаем только по ним.
   const { data: claimed, error: claimError } = await db.rpc("claim_attack", {
@@ -119,7 +133,9 @@ export async function POST(request: Request) {
     seed: snap.seed,
     waves: snap.waves,
     droneLevel: snap.drone_level,
-    simulationVersion: snap.simulation_version,
+    // Бой на экране шёл текущим движком. Штамп строки мог отстать от него,
+    // поэтому расчёт не берёт номер из базы.
+    simulationVersion: SIMULATION_VERSION,
   };
 
   /**

@@ -128,14 +128,16 @@ export default function Battle({
       // нападавшего разошёлся бы с тем, что видел защитник.
       carry += dt;
       let steps = 0;
-      while (carry >= SIM.step && steps++ < 8) {
+      while (carry >= SIM.step && steps++ < 8 && trace.current.length < SIM.maxFrames) {
         carry -= SIM.step;
-        if (trace.current.length < SIM.maxFrames) {
-          const a = s.aim;
-          trace.current.push(
-            a ? { x: Math.floor(a.x), y: Math.floor(a.y), firing: s.firing } : null
-          );
-        }
+        const a = s.aim;
+        // Кадр пишется до шага и без пропусков: сервер прогоняет ровно эту
+        // запись и отвергает бой, если она кончилась раньше него. Раньше
+        // после потолка кадров симуляция шла дальше без записи — на экране
+        // победа и премия, а сервер отвечал, что итог не сошёлся.
+        trace.current.push(
+          a ? { x: Math.floor(a.x), y: Math.floor(a.y), firing: s.firing } : null
+        );
         update(s, SIM.step);
         afterglow(s, SIM.step);
       }
