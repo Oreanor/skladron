@@ -41,6 +41,7 @@ interface Props {
   /** Лучшая попытка этой миссии: премию платит только её превышение. */
   missionBest?: CompetitionBest;
   onFinish: (o: BattleOutcome) => void;
+  saving?: boolean;
 }
 
 interface Hud {
@@ -73,6 +74,7 @@ export default function Battle({
   insuranceLevel = 1,
   missionBest,
   onFinish,
+  saving = false,
 }: Props) {
   const stateRef = useRef<GameState | null>(null);
   const hoverRef = useRef<{ x: number; y: number } | null>(null);
@@ -325,8 +327,8 @@ export default function Battle({
               <Row label={t("battle.trapsLost")} value={String(done.result.trapsLost)} />
             </dl>
             <div className="flex justify-center px-8 pt-1">
-              <Button variant="build" onClick={() => onFinish(done)}>
-                {t("battle.back")}
+              <Button variant="build" disabled={saving} onClick={() => onFinish(done)}>
+                {t(saving ? "competitions.saving" : "battle.back")}
               </Button>
             </div>
           </>

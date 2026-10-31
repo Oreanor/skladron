@@ -119,6 +119,8 @@ export interface BattleInput {
   levels: BattleLevels;
   /** Запись рук защитника. Пустая — значит он не пришёл, и бой идёт сам. */
   trace: string;
+  /** Живой защитник закончил бой: запись обязана довести его до конца. */
+  requireComplete?: boolean;
 }
 
 /**
@@ -129,9 +131,9 @@ export interface BattleInput {
  * симуляцию. Порядок важен — поменяй его, и исход разойдётся с тем, что
  * видел игрок.
  *
- * Когда запись кончилась, а бой ещё идёт, доигрываем без рук: так же ведёт
- * себя и повтор у нападающего. Дольше SIM.unattendedSeconds не крутим —
- * к этому времени догорание уже ничего не меняет.
+ * Для живого защитника requireComplete запрещает доигрывать после конца
+ * записи: незавершённый бой отклоняется до сохранения урона и выплаты.
+ * Автоматический расчёт ограничен SIM.unattendedSeconds.
  */
 export function resolveBattle(input: BattleInput): Verdict {
   const cells = typeof input.cells === "string" ? decodeCells(input.cells) : input.cells;
@@ -146,9 +148,11 @@ export function resolveBattle(input: BattleInput): Verdict {
   // брандспойтом встаёт дежурная смена. Пустой кадр посреди записи — совсем
   // другое дело: игрок был, просто убрал прицел с карты, и подменять его
   // автоматикой нельзя.
-  const crew = frames.length === 0 ? newCrew() : null;
+  const crew = frames.length === 0 && !input.requireComplete ? newCrew() : null;
 
-  const cap = Math.ceil(SIM.unattendedSeconds / SIM.step);
+  const cap = input.requireComplete
+    ? frames.length
+    : Math.ceil(SIM.unattendedSeconds / SIM.step);
   for (let step = 0; step < cap && s.phase === "playing"; step++) {
     const f = crew ? autoHands(s, crew, step * SIM.step) : frames[step] ?? null;
     // Прицел записан клеткой, а бой считает долями: целимся в середину,
@@ -156,6 +160,10 @@ export function resolveBattle(input: BattleInput): Verdict {
     setAim(s, f ? { x: f.x + 0.5, y: f.y + 0.5 } : null);
     setFiring(s, Boolean(f?.firing));
     update(s, SIM.step);
+  }
+
+  if (input.requireComplete && s.phase === "playing") {
+    throw new Error("battle trace ended before battle was complete");
   }
 
   const out = settle(s);

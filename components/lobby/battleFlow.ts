@@ -102,13 +102,14 @@ export function battleFlow(
 
   /** Бой кончился: исход — в склад, на экран и на сервер. */
   const finishBattle = async (battle: AttackOrder, o: BattleOutcome) => {
+    if (ui.saving) return;
+    ui.setSaving(true);
     const { killed, mission, foeChanged } = applyOutcome(p, battle, o);
     // Сервер узнает об исходе только из applyBattle ниже, а опрос идёт
     // раз в десять секунд и собирает очередь заново. Без этой отметки
     // только что отбитый рой успевал вернуться в список.
     ui.attacks.markResolved(battle.id);
     if (foeChanged) void repo.saveEnemies(p).catch(() => {});
-    ui.setBattle(null);
     say(
       mission
         ? t(mission.record ? "competition.record" : "competition.result", {
@@ -121,7 +122,6 @@ export function battleFlow(
           : t("battle.burntDown", { from: battle.from })
     );
     core.redraw();
-    ui.setSaving(true);
     try {
       // урон пишем отдельной операцией: она умеет только ухудшать карту
       const patch = await repo.applyBattle(p, o.result, battle.remote ? battle.id : undefined, o.trace);
@@ -139,6 +139,10 @@ export function battleFlow(
       ui.attacks.unmarkResolved(battle.id);
       await core.resyncBase();
     } finally {
+      // До подтверждения сервером остаёмся на итогах: ремонт не должен
+      // пересекаться с пересчётом и загрузкой окончательной карты.
+      ui.setBattle(null);
+      core.redraw();
       ui.setSaving(false);
       ui.loadRaids();
     }

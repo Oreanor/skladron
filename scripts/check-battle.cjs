@@ -140,6 +140,7 @@ for (const [label, waves] of RAIDS) {
     const played = play(base(), DEFENCE, [], ord, LEVELS, hands);
     const v = S.resolveBattle({
       cells: base(), guns: DEFENCE, depots: [], order: ord, levels: LEVELS, trace: played.trace,
+      requireComplete: true,
     });
     check(
       `${label} / ${hname}`,
@@ -151,6 +152,20 @@ for (const [label, waves] of RAIDS) {
         `сыграно ${JSON.stringify(played.out.result)} против ${JSON.stringify(v.result)}`
     );
   }
+}
+
+for (const trace of ["", "-*60"]) {
+  let rejected = false;
+  try {
+    S.resolveBattle({
+      cells: base(), guns: [], depots: [],
+      order: order([wave("rings", [g("plain", 10)], { delay: 5 })]),
+      levels: {}, trace, requireComplete: true,
+    });
+  } catch (e) {
+    rejected = e.message === "battle trace ended before battle was complete";
+  }
+  check(`незавершённый бой не дожигается на сервере: ${trace || "пустая запись"}`, rejected);
 }
 
 console.log("\n— счёт роя сходится, бой всегда кончается —");

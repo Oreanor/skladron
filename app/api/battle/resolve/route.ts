@@ -149,6 +149,7 @@ export async function POST(request: Request) {
         water: snap.levels.water,
       },
       trace,
+      requireComplete: true,
     });
   } catch (err) {
     return giveUp(err instanceof Error ? err.message : "battle failed", 400);
