@@ -29,6 +29,40 @@ import {
 import { decodeTrace, type Frame } from "./replay";
 import { AUTO, SIM } from "./tuning";
 
+/**
+ * Что поймали события указателя между двумя шагами боя. Бой у защитника
+ * читает руки только через takeFrame и applyFrame — ровно так, как сервер
+ * читает запись. Раньше события писали прицел и гашетку прямо в бой, и
+ * запись теряла часть того, что бой видел: палец с зажатой гашеткой за
+ * краем поля шёл в запись как «не стреляет», а отпустил-нажал внутри одного
+ * шага не попадал в неё вовсе. Сервер при этом по-своему сбрасывал
+ * перезарядку пулемёта, бой расходился, и доигранный налёт отклонялся.
+ */
+export interface Hands {
+  /** Клетка под прицелом; за краем поля — null. */
+  cell: { x: number; y: number } | null;
+  /** Гашетка зажата. */
+  held: boolean;
+  /** Жали с прошлого шага: короткий тык тоже даёт выстрел. */
+  pressed: boolean;
+}
+
+export const newHands = (): Hands => ({ cell: null, held: false, pressed: false });
+
+/** Кадр записи для очередного шага. Снимает защёлку нажатия. */
+export function takeFrame(h: Hands): Frame | null {
+  const firing = h.held || h.pressed;
+  h.pressed = false;
+  return h.cell ? { x: h.cell.x, y: h.cell.y, firing } : null;
+}
+
+/** Ставит бою прицел и гашетку из кадра — одинаково у защитника и на сервере. */
+export function applyFrame(s: GameState, f: Frame | null) {
+  // Прицел записан клеткой, а бой считает долями: целимся в середину.
+  setAim(s, f ? { x: f.x + 0.5, y: f.y + 0.5 } : null);
+  setFiring(s, Boolean(f?.firing));
+}
+
 export interface Verdict {
   /** Склад после боя, уже в том виде, в каком ложится в базу. */
   cells: string;
@@ -154,11 +188,7 @@ export function resolveBattle(input: BattleInput): Verdict {
     ? frames.length
     : Math.ceil(SIM.unattendedSeconds / SIM.step);
   for (let step = 0; step < cap && s.phase === "playing"; step++) {
-    const f = crew ? autoHands(s, crew, step * SIM.step) : frames[step] ?? null;
-    // Прицел записан клеткой, а бой считает долями: целимся в середину,
-    // ровно как это делает сам бой.
-    setAim(s, f ? { x: f.x + 0.5, y: f.y + 0.5 } : null);
-    setFiring(s, Boolean(f?.firing));
+    applyFrame(s, crew ? autoHands(s, crew, step * SIM.step) : frames[step] ?? null);
     update(s, SIM.step);
   }
 

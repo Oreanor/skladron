@@ -67,19 +67,22 @@ const order = (waves, extra = {}) => ({
   waves, droneLevel: 1, simulationVersion: T.SIMULATION_VERSION, ...extra,
 });
 
-/** Играет бой ровно так, как Battle.tsx: кадр пишется до шага симуляции. */
+/**
+ * Играет бой ровно так, как Battle.tsx: руки меняют только события
+ * указателя, кадр снимается с них до шага и тем же applyFrame идёт в бой.
+ */
 function play(cells, guns, depots, ord, levels, hands) {
   const s = E.createBattle(cells, guns, depots, A.buildPlan(ord), {
     ...levels, drones: ord.droneLevel, seed: ord.seed,
   });
+  const h = S.newHands();
   const frames = [];
   const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);
-  for (let step = 0; step < cap && s.phase === "playing"; step++) {
-    hands(s, step);
-    const a = s.aim;
-    if (frames.length < T.SIM.maxFrames) {
-      frames.push(a ? { x: Math.floor(a.x), y: Math.floor(a.y), firing: s.firing } : null);
-    }
+  for (let step = 0; step < cap && s.phase === "playing" && frames.length < T.SIM.maxFrames; step++) {
+    hands(h, s, step);
+    const f = S.takeFrame(h);
+    frames.push(f);
+    S.applyFrame(s, f);
     E.update(s, T.SIM.step);
   }
   return { trace: R.encodeTrace(frames), out: E.settle(s), phase: s.phase };
@@ -87,28 +90,49 @@ function play(cells, guns, depots, ord, levels, hands) {
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
-// Прицел за край карты не уходит: в бою его ставит toCell, а он там даёт null.
+// События указателя между шагами: что пишут в руки onMove, onDown, onUp и
+// onLeave. За краем поля toCell даёт null, а гашетка может остаться зажатой.
+const live = (s) =>
+  s.drones.find((x) => !x.hit && x.x >= 0 && x.y >= 0 && x.x < GRID && x.y < GRID);
+const cellOf = (d) => (d ? { x: Math.floor(d.x), y: Math.floor(d.y) } : null);
+const down = (h) => { h.held = true; h.pressed = true; };
 const HANDS = [
-  ["руки сложены", (s) => { E.setAim(s, null); E.setFiring(s, false); }],
-  ["водит прицелом и стреляет", (s, step) => {
+  ["руки сложены", (h) => { h.cell = null; h.held = false; }],
+  ["водит прицелом и стреляет", (h, s, step) => {
     const t = step * T.SIM.step;
-    E.setAim(s, {
-      x: Math.floor(50 + Math.cos(t * 1.7) * 14) + 0.5,
-      y: Math.floor(50 + Math.sin(t * 1.3) * 14) + 0.5,
-    });
-    E.setFiring(s, step % 7 < 5);
+    h.cell = {
+      x: Math.floor(50 + Math.cos(t * 1.7) * 14),
+      y: Math.floor(50 + Math.sin(t * 1.3) * 14),
+    };
+    if (step % 7 < 5) { if (!h.held) down(h); } else h.held = false;
   }],
-  ["бьёт по ближайшему дрону", (s) => {
-    const d = s.drones.find((x) => !x.hit && x.x >= 0 && x.y >= 0 && x.x < GRID && x.y < GRID);
-    if (!d) { E.setAim(s, null); E.setFiring(s, false); return; }
-    E.setAim(s, { x: Math.floor(d.x) + 0.5, y: Math.floor(d.y) + 0.5 });
-    E.setFiring(s, true);
+  ["бьёт по ближайшему дрону", (h, s) => {
+    const d = live(s);
+    h.cell = cellOf(d);
+    if (d) { if (!h.held) down(h); } else h.held = false;
   }],
-  ["тушит пожар", (s) => {
+  ["тушит пожар", (h, s) => {
     const i = s.fire.keys().next().value;
-    if (i === undefined) { E.setFiring(s, false); return; }
-    E.setAim(s, { x: (i % GRID) + 0.5, y: ((i / GRID) | 0) + 0.5 });
-    E.setFiring(s, true);
+    if (i === undefined) { h.held = false; return; }
+    h.cell = { x: i % GRID, y: (i / GRID) | 0 };
+    if (!h.held) down(h);
+  }],
+  // Палец с зажатой гашеткой уходит за край поля и возвращается: в записи
+  // это «нет прицела», и бой у защитника обязан видеть то же самое.
+  ["держит гашетку и уводит прицел за край", (h, s, step) => {
+    h.cell = step % 90 < 60 ? cellOf(live(s)) : null;
+    if (step === 0) down(h);
+  }],
+  // Отпустил и снова нажал, пока шаг не наступил: в записи оба кадра
+  // «стреляет», без отпускания между ними.
+  ["отпускает и жмёт между шагами", (h, s, step) => {
+    h.cell = cellOf(live(s));
+    if (step % 13 === 0) h.held = false;
+    if (!h.held) down(h);
+  }],
+  ["короткий тык между шагами", (h, s, step) => {
+    h.cell = cellOf(live(s));
+    if (step % 11 === 0) { down(h); h.held = false; }
   }],
 ];
 

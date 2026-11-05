@@ -545,7 +545,13 @@ export class CloudRepo implements Repo {
     const db = this.db();
     const [{ data: base, error }, { data: prof, error: e2 }] = await Promise.all([
       db.from("bases").select("cells, guns, drone_cells").single(),
-      db.from("profiles").select("credits, levels, last_income_at").single(),
+      // Миссии — тоже: исход боя клиент сначала пишет себе сам, и если
+      // сервер его отверг, без этого остались бы рекорд и открытый номер,
+      // которых на сервере нет. Тогда повтор считался «не рекордом» и шёл
+      // без премии, а следующий номер сервер не давал.
+      db.from("profiles")
+        .select("credits, levels, last_income_at, competition_at, competition_best")
+        .single(),
     ]);
     if (error) throw error;
     if (e2) throw e2;
@@ -553,8 +559,16 @@ export class CloudRepo implements Repo {
     p.cells = decodePgBytea(b.cells);
     p.guns = b.guns;
     p.depots = b.drone_cells;
-    const row = prof as { credits: number; levels: Player["levels"]; last_income_at: string };
+    const row = prof as {
+      credits: number;
+      levels: Player["levels"];
+      last_income_at: string;
+      competition_at: number;
+      competition_best: Player["competitionBest"];
+    };
     p.credits = row.credits;
+    p.competitionAt = row.competition_at;
+    p.competitionBest = row.competition_best ?? {};
     p.levels = fullLevels(row.levels);
     p.lastIncomeAt = Date.parse(row.last_income_at);
   }

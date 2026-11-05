@@ -7,8 +7,6 @@ import { buildPlan, type AttackOrder } from "@/lib/attack";
 import {
   afterglow,
   createBattle,
-  setAim,
-  setFiring,
   settle,
   update,
   type BattleLevels,
@@ -22,6 +20,7 @@ import { usePanelFold } from "./usePanelFold";
 import { Button, Chip, ChipBar, IconButton, Panel, Row } from "../ui";
 import BattleFrame, { MAP_EVERY_MS } from "./BattleFrame";
 import { encodeTrace, type Frame } from "@/lib/replay";
+import { applyFrame, newHands, takeFrame } from "@/lib/resolve";
 import type { BattleOutcome } from "@/lib/outcome";
 import { SIM } from "@/lib/tuning";
 import { useT } from "@/lib/i18n";
@@ -78,6 +77,8 @@ export default function Battle({
 }: Props) {
   const stateRef = useRef<GameState | null>(null);
   const hoverRef = useRef<{ x: number; y: number } | null>(null);
+  /** Руки между шагами: в бой попадают только через запись кадра. */
+  const hands = useRef(newHands());
   const [hud, setHud] = useState<Hud | null>(null);
   const [done, setDone] = useState<BattleOutcome | null>(null);
   const [hints, setHints] = useState(false);
@@ -130,14 +131,13 @@ export default function Battle({
       let steps = 0;
       while (carry >= SIM.step && steps++ < 8 && trace.current.length < SIM.maxFrames) {
         carry -= SIM.step;
-        const a = s.aim;
         // Кадр пишется до шага и без пропусков: сервер прогоняет ровно эту
-        // запись и отвергает бой, если она кончилась раньше него. Раньше
-        // после потолка кадров симуляция шла дальше без записи — на экране
-        // победа и премия, а сервер отвечал, что итог не сошёлся.
-        trace.current.push(
-          a ? { x: Math.floor(a.x), y: Math.floor(a.y), firing: s.firing } : null
-        );
+        // запись и отвергает бой, если она кончилась раньше него. И в бой
+        // руки попадают только из этого кадра, тем же applyFrame, что на
+        // сервере, — иначе бой видел бы то, чего нет в записи.
+        const f = takeFrame(hands.current);
+        trace.current.push(f);
+        applyFrame(s, f);
         update(s, SIM.step);
         afterglow(s, SIM.step);
       }
@@ -190,14 +190,6 @@ export default function Battle({
     };
   }, [s, startGoods]);
 
-  /**
-   * Целимся в середину клетки, а не в точку под курсором. Иначе запись боя
-   * (в ней клетка) и сам бой (в нём доли клетки) считают по-разному, и
-   * повтор у нападавшего расходится с тем, что видел защитник.
-   */
-  const aimAt = (c: { x: number; y: number } | null) =>
-    c ? { x: c.x + 0.5, y: c.y + 0.5 } : null;
-
   const toCell = (p: Pt) => {
     const x = Math.floor(p.x);
     const y = Math.floor(p.y);
@@ -238,19 +230,22 @@ export default function Battle({
             overlay={(ctx, now) => drawFrame(ctx, s, 7, hoverRef.current, now, zones)}
             onMove={(p) => {
               hoverRef.current = toCell(p);
-              setAim(s, aimAt(hoverRef.current));
+              hands.current.cell = hoverRef.current;
             }}
             onDown={(p, button) => {
               if (button !== 0) return;
               hoverRef.current = toCell(p);
-              setAim(s, aimAt(hoverRef.current));
-              setFiring(s, true);
+              hands.current.cell = hoverRef.current;
+              hands.current.held = true;
+              hands.current.pressed = true;
             }}
-            onUp={() => setFiring(s, false)}
+            onUp={() => {
+              hands.current.held = false;
+            }}
             onLeave={() => {
               hoverRef.current = null;
-              setAim(s, null);
-              setFiring(s, false);
+              hands.current.cell = null;
+              hands.current.held = false;
             }}
           />
 
