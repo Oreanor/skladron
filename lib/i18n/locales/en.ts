@@ -66,6 +66,7 @@ const en = {
   "blueprint.nameHint": "Everything on your warehouse now: area, installations and drone containers. Burnt cells are saved as intact. It costs nothing.",
   "blueprint.addConfirm": "Add",
   "blueprint.nameField": "Blueprint name",
+  "blueprint.nameTaken": "A blueprint with this name already exists",
   "blueprint.defaultName": "Blueprint {n}",
   "blueprint.confirm": "Tear down the warehouse and build «{name}»?",
   "blueprint.built": "Warehouse rebuilt from «{name}»",

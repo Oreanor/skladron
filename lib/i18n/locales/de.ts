@@ -65,6 +65,7 @@ const de: Dict = {
   "blueprint.nameHint": "Alles, was jetzt im Lager ist: Fläche, Anlagen und Drohnencontainer. Verbrannte Felder werden heil gespeichert. Das kostet nichts.",
   "blueprint.addConfirm": "Hinzufügen",
   "blueprint.nameField": "Name des Bauplans",
+  "blueprint.nameTaken": "Ein Bauplan mit diesem Namen existiert bereits",
   "blueprint.defaultName": "Bauplan {n}",
   "blueprint.confirm": "Lager abreißen und „{name}“ bauen?",
   "blueprint.built": "Lager nach „{name}“ umgebaut",

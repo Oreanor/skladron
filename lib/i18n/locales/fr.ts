@@ -65,6 +65,7 @@ const fr: Dict = {
   "blueprint.nameHint": "Tout ce qu’il y a maintenant dans ton entrepôt : surface, installations et conteneurs de drones. Les cases brûlées sont enregistrées intactes. C’est gratuit.",
   "blueprint.addConfirm": "Ajouter",
   "blueprint.nameField": "Nom du plan",
+  "blueprint.nameTaken": "Un plan porte déjà ce nom",
   "blueprint.defaultName": "Plan {n}",
   "blueprint.confirm": "Raser l’entrepôt et construire « {name} » ?",
   "blueprint.built": "Entrepôt reconstruit d’après « {name} »",

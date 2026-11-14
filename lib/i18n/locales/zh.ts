@@ -65,6 +65,7 @@ const zh: Dict = {
   "blueprint.nameHint": "仓库里现有的一切：面积、设施和无人机箱子。烧毁的格子按完好保存。保存免费。",
   "blueprint.addConfirm": "添加",
   "blueprint.nameField": "蓝图名称",
+  "blueprint.nameTaken": "已有同名蓝图",
   "blueprint.defaultName": "蓝图 {n}",
   "blueprint.confirm": "拆除仓库并建造「{name}」？",
   "blueprint.built": "仓库已按蓝图「{name}」重建",

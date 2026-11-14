@@ -65,6 +65,7 @@ const ja: Dict = {
   "blueprint.nameHint": "今の倉庫にあるものすべて：面積、設備、ドローンの箱。焼けたマスは無傷として保存されます。保存は無料です。",
   "blueprint.addConfirm": "追加",
   "blueprint.nameField": "設計図の名前",
+  "blueprint.nameTaken": "同じ名前の設計図がすでにあります",
   "blueprint.defaultName": "設計図 {n}",
   "blueprint.confirm": "倉庫を解体して「{name}」を建てますか？",
   "blueprint.built": "倉庫を設計図「{name}」で建て直しました",

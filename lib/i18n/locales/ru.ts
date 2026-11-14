@@ -65,6 +65,7 @@ const ru: Dict = {
   "blueprint.nameHint": "Всё, что сейчас на складе: площадь, установки и контейнеры с дронами. Сгоревшее сохранится целым. Денег это не стоит.",
   "blueprint.addConfirm": "Добавить",
   "blueprint.nameField": "Название чертежа",
+  "blueprint.nameTaken": "Чертёж с таким названием уже есть",
   "blueprint.defaultName": "Чертёж {n}",
   "blueprint.confirm": "Снести склад и построить «{name}»?",
   "blueprint.built": "Склад перестроен по чертежу «{name}»",

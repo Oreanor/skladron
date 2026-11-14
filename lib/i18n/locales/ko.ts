@@ -65,6 +65,7 @@ const ko: Dict = {
   "blueprint.nameHint": "지금 창고에 있는 모든 것: 면적, 설비, 드론 상자. 탄 칸은 멀쩡한 칸으로 저장됩니다. 저장은 무료입니다.",
   "blueprint.addConfirm": "추가",
   "blueprint.nameField": "설계도 이름",
+  "blueprint.nameTaken": "같은 이름의 설계도가 이미 있습니다",
   "blueprint.defaultName": "설계도 {n}",
   "blueprint.confirm": "창고를 철거하고 «{name}»을(를) 지을까요?",
   "blueprint.built": "설계도 «{name}»대로 창고를 다시 지었습니다",

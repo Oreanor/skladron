@@ -15,7 +15,7 @@ import { titleCompetitions } from "@/lib/competition";
 import { getRepo } from "@/lib/repo";
 import type { Enemy } from "@/lib/enemy";
 import { draftPlan } from "@/lib/build";
-import { MAX_BLUEPRINT_NAME, blueprintOf, rebuildCost } from "@/lib/blueprint";
+import { MAX_BLUEPRINT_NAME, blueprintOf, freeBlueprintName, rebuildCost } from "@/lib/blueprint";
 import { postRaidComment } from "@/lib/comments";
 import { type View } from "@/lib/render";
 import { useSettings, useT } from "@/lib/i18n";
@@ -757,7 +757,8 @@ export default function Lobby({
         <NewBlueprintDialog
           plan={blueprintOf(p)}
           player={p}
-          defaultName={t("blueprint.defaultName", { n: blueprints.list.length + 1 })}
+          defaultName={freeBlueprintName(blueprints.list, (n) => t("blueprint.defaultName", { n }))}
+          taken={blueprints.list}
           maxLength={MAX_BLUEPRINT_NAME}
           onClose={() => blueprints.setNaming(false)}
           onAdd={(name) => void blueprints.save(name)}

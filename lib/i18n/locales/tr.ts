@@ -65,6 +65,7 @@ const tr: Dict = {
   "blueprint.nameHint": "Deponda şu an olan her şey: alan, kurulumlar ve dron kasaları. Yanan hücreler sağlam kaydedilir. Ücretsizdir.",
   "blueprint.addConfirm": "Ekle",
   "blueprint.nameField": "Plan adı",
+  "blueprint.nameTaken": "Bu adda bir plan zaten var",
   "blueprint.defaultName": "Plan {n}",
   "blueprint.confirm": "Depo yıkılıp «{name}» inşa edilsin mi?",
   "blueprint.built": "Depo «{name}» planına göre yeniden kuruldu",

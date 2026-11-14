@@ -13,7 +13,7 @@
 import { useState, type ReactNode } from "react";
 import { Hammer, Trash2 } from "lucide-react";
 import { fmt } from "@/lib/economy";
-import { blueprintCounts, rebuildCost, type Blueprint } from "@/lib/blueprint";
+import { blueprintCounts, blueprintNameTaken, rebuildCost, type Blueprint } from "@/lib/blueprint";
 import type { Player } from "@/lib/player";
 import { COLORS, installColors } from "@/lib/render";
 import { Button, IconButton, Modal, inputClass } from "../ui";
@@ -194,6 +194,7 @@ export function NewBlueprintDialog({
   plan,
   player,
   defaultName,
+  taken,
   maxLength,
   onAdd,
   onClose,
@@ -201,13 +202,16 @@ export function NewBlueprintDialog({
   plan: Pick<Blueprint, "cells" | "guns" | "depots">;
   player: Player;
   defaultName: string;
+  /** Уже сохранённые чертежи: второй с тем же именем не даём. */
+  taken: Pick<Blueprint, "name">[];
   maxLength: number;
   onAdd: (name: string) => void;
   onClose: () => void;
 }) {
   const t = useT();
   const [name, setName] = useState(defaultName);
-  const ready = name.trim().length > 0;
+  const duplicate = blueprintNameTaken(taken, name);
+  const ready = name.trim().length > 0 && !duplicate;
   const { price } = rebuildCost(player, plan);
 
   return (
@@ -245,6 +249,7 @@ export function NewBlueprintDialog({
             }}
             className={`${inputClass} w-full`}
           />
+          {duplicate && <p className="text-xs text-red-400">{t("blueprint.nameTaken")}</p>}
         </div>
       </BlueprintBody>
     </Modal>

@@ -65,6 +65,7 @@ const pt: Dict = {
   "blueprint.nameHint": "Tudo o que está agora no teu armazém: área, instalações e contentores de drones. As células queimadas ficam guardadas intactas. Não custa nada.",
   "blueprint.addConfirm": "Adicionar",
   "blueprint.nameField": "Nome da planta",
+  "blueprint.nameTaken": "Já existe uma planta com este nome",
   "blueprint.defaultName": "Planta {n}",
   "blueprint.confirm": "Demolir o armazém e construir «{name}»?",
   "blueprint.built": "Armazém reconstruído segundo «{name}»",

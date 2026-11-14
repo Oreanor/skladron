@@ -28,6 +28,24 @@ import type { Levels, Player } from "./player";
 
 /** Больше чертежей держать не дают: их всё равно листать глазами. */
 export const MAX_BLUEPRINTS = 20;
+
+/** Имя для сравнения: «Чертёж 3 » и «чертёж 3» — одно и то же. */
+const nameKey = (name: string) => name.trim().toLocaleLowerCase();
+
+/** Есть ли уже чертёж с таким именем. */
+export const blueprintNameTaken = (list: Pick<Blueprint, "name">[], name: string) =>
+  list.some((b) => nameKey(b.name) === nameKey(name));
+
+/**
+ * Имя нового чертежа по умолчанию: номер за последним, а если он уже занят —
+ * следующий свободный. По одному числу чертежей нельзя: при «1» и «3»
+ * новому предлагалось бы занятое «3».
+ */
+export function freeBlueprintName(list: Pick<Blueprint, "name">[], named: (n: number) => string) {
+  let n = list.length + 1;
+  while (blueprintNameTaken(list, named(n))) n++;
+  return named(n);
+}
 export const MAX_BLUEPRINT_NAME = 40;
 
 export interface Blueprint {

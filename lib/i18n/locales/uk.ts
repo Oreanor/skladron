@@ -65,6 +65,7 @@ const uk: Dict = {
   "blueprint.nameHint": "Усе, що зараз на складі: площа, установки і ящики з дронами. Згоріле збережеться цілим. Це безкоштовно.",
   "blueprint.addConfirm": "Додати",
   "blueprint.nameField": "Назва креслення",
+  "blueprint.nameTaken": "Креслення з такою назвою вже є",
   "blueprint.defaultName": "Креслення {n}",
   "blueprint.confirm": "Знести склад і збудувати «{name}»?",
   "blueprint.built": "Склад перебудовано за кресленням «{name}»",
