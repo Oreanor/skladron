@@ -21,5 +21,5 @@ update profiles p
                          where a.id::text = v ->> 'id'
                            and a.defender_id = p.id)
        ), '{}'::jsonb)
- where lower(p.email) = 'oreanor@gmail.com'
+ where lower(p.email) = lower('player@example.com')
 returning p.base_name, p.competition_at, p.competition_best;

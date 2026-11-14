@@ -11,7 +11,7 @@
 
 do $$
 declare
-  target_email text := 'oreanor@gmail.com';
+  target_email text := 'player@example.com';
   uid uuid;
   last attacks;
 begin

@@ -25,7 +25,7 @@ const svgLoader = {
 const nextConfig: NextConfig = {
   turbopack: {
     rules: {
-      "*.svg": { loaders: ["@svgr/webpack"], as: "*.js" },
+      "*.svg": { loaders: [svgLoader], as: "*.js" },
     },
   },
   webpack(config) {
