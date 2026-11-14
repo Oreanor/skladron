@@ -443,19 +443,19 @@ export function drawFrame(
   // в общую кучу клубов и нарисован выше.
   // Снаряд стрелка — шарик цвета ганметал с тёмной обводкой и бликом.
   // Раньше это была ракета в полклетки, и её за секунду полёта никто не
-  // замечал. Шарик крупнее и чуть пульсирует, чтобы читался на любом фоне.
+  // замечал. Шарик чуть пульсирует, чтобы читался на любом фоне.
   for (const r of s.foeRockets) {
     const pulse = 1 + 0.12 * Math.sin(now / 60 + r.id);
-    // не меньше пяти точек: на общем виде клетка — около семи, и шарик в
-    // треть клетки терялся бы среди самих дронов
-    const rad = Math.max(cell * 0.3, 5) * pulse;
+    // Десятая клетки: шарик в треть клетки выглядел пушечным ядром.
+    // Не меньше двух точек, чтобы на общем виде не пропал совсем.
+    const rad = Math.max(cell * 0.1, 2) * pulse;
     const x = r.x * cell;
     const y = r.y * cell;
     ctx.beginPath();
     ctx.arc(x, y, rad, 0, Math.PI * 2);
     ctx.fillStyle = COLORS.foeShell;
     ctx.fill();
-    ctx.lineWidth = Math.max(1.5, cell * 0.06);
+    ctx.lineWidth = Math.max(0.75, cell * 0.02);
     ctx.strokeStyle = COLORS.foeBody;
     ctx.stroke();
     ctx.beginPath();
