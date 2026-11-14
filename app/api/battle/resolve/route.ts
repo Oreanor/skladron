@@ -19,6 +19,13 @@ import { SIMULATION_VERSION } from "@/lib/tuning";
 import { notifyResolvedRaid } from "@/lib/server/battleNotify";
 import { caller } from "@/lib/server/auth";
 
+/**
+ * Сервер прогоняет бой целиком: минута боя — около полсекунды, а запись
+ * бывает до SIM.maxFrames (~17 минут). Старый потолок Vercel в 10 секунд
+ * такой бой обрывал бы, и доигранный налёт не засчитывался.
+ */
+export const maxDuration = 60;
+
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
