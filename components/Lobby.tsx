@@ -643,10 +643,22 @@ export default function Lobby({
       </div>
 
       {/*
-        Правая колонка не фиксированная, а сжимается вместе с окном: на
-        восьмистах точках прежние 24rem не оставляли карте ничего.
+        Правая колонка ровно под четырьмя последними кнопками инструментов:
+        ширина кнопки — доля строки за вычетом зазоров, колонка — четыре
+        такие доли плюс три зазора. Зазор между картой и колонкой тот же,
+        что между кнопками, поэтому края совпадают. На телефоне контейнер
+        не сетка, и шаблон колонок просто не действует.
       */}
-      <div className="order-2 flex min-h-0 flex-1 flex-col gap-2 lg:order-3 lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(14rem,26vw,24rem)] lg:gap-4">
+      <div
+        style={
+          {
+            "--tools": TOOLS.length,
+            gridTemplateColumns:
+              "minmax(0,1fr) calc((100% - (var(--tools) - 1) * 0.5rem) * 4 / var(--tools) + 1.5rem)",
+          } as CSSProperties
+        }
+        className="order-2 flex min-h-0 flex-1 flex-col gap-2 lg:order-3 lg:grid lg:gap-2"
+      >
         {/* Левая колонка: карта забирает всю свободную высоту. */}
         <div className="flex min-h-0 flex-1 flex-col gap-2 lg:min-h-0 lg:gap-3">
 
