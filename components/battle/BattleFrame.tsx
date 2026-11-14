@@ -50,9 +50,13 @@ export function BattleWindow({
           : undefined
       }
     >
-      {/* Ширина — на десятую шире прежних 64rem: карта квадратная и упиралась
-          в ширину колонки, оставляя пустые поля сверху и снизу. */}
-      <div className="m-auto flex h-full w-full max-w-[70.4rem] flex-col overflow-hidden rounded-md border border-neutral-700 bg-neutral-900 p-3 shadow-2xl">
+      {/* Ширина на десктопе: общая доля экрана (--frame-share в globals.css,
+          как у лобби), но не уже, чем нужно карте во всю высоту плюс колонка
+          счёта (100dvh минус поля фона и окна, плюс промежуток и clamp
+          колонки). На квадратном экране второе больше ширины, и окно встаёт
+          во весь экран. Лишнее по ширине забирает колонка счёта — карта
+          больше высоты не станет. */}
+      <div className="m-auto flex h-full w-full flex-col overflow-hidden rounded-md border border-neutral-700 bg-neutral-900 p-3 shadow-2xl lg:max-w-[max(var(--frame-share),calc(100dvh_-_1rem_+_clamp(12rem,20vw,18rem)))]">
         {children}
       </div>
     </div>
@@ -100,9 +104,11 @@ export default function BattleFrame({
   return (
     <BattleWindow variant={variant} onDismiss={onDismiss}>
       <div className="relative flex min-h-0 flex-1 flex-col">
-        {/* Колонка со счётом жмётся вместе с окном: на узком десктопе поле боя
-            важнее, чем ровная ширина цифр. */}
-        <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(12rem,20vw,18rem)] lg:gap-4">
+        {/* Колонка карты — не шире высоты окна (100dvh минус поля фона 2rem,
+            окна 1.5rem и бордюр): шире квадрат всё равно не станет, а лишнее
+            ушло бы в пустые поля. Остаток забирает колонка счёта; на узком
+            десктопе она жмётся до clamp, и уступает уже карта. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,calc(100dvh_-_3.5rem_-_2px))_minmax(clamp(12rem,20vw,18rem),1fr)] lg:gap-4">
           <div className="flex min-h-0 flex-1 flex-col gap-2">
             <div className="flex min-h-0 flex-1 items-center justify-center" style={{ containerType: "size" }}>
               <div className="flex flex-col" style={{ width: side }}>
