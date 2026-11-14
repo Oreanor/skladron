@@ -289,6 +289,8 @@ export default function Lobby({
   if (battle) {
     return (
       <Battle
+        // новый бой — новое окно: и движок, и рекорд «до боя» берутся при монтировании
+        key={battle.id}
         cells={p.cells}
         guns={p.guns}
         depots={p.depots}

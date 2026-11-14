@@ -91,9 +91,13 @@ export default function Battle({
   /** Во что обходился товар до боя: из него считаем, сколько сгорело. */
   const startGoods = useMemo(() => goodsValue(depots), [depots]);
   const startIntact = useMemo(() => countCells(cells, G_BASE), [cells]);
+  // Рекорд номера — каким он был до боя. По «Назад» лобби записывает новый
+  // рекорд этого же боя, пока итог ещё на экране; сравнивай итог с ним — и
+  // каждый первый проход показывал бы «рекорд не побит».
+  const [bestBefore] = useState(missionBest);
   /** Платит ли бой премию за отбой с таким числом сгоревших клеток. */
   const paysBounty = (burned: number) =>
-    !order.competitionStage || missionPays(missionBest, startIntact, burned);
+    !order.competitionStage || missionPays(bestBefore, startIntact, burned);
   /** Кадры действий защитника — из них собирается повтор для нападавшего. */
   const trace = useRef<(Frame | null)[]>([]);
 
