@@ -14,7 +14,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { DICTS, LOCALES, type Key, type Locale } from "./dict";
+import { EN, LOCALES, loadDict, type Dict, type Key, type Locale } from "./dict";
 
 export { LOCALES, LOCALE_NAMES, type Locale } from "./dict";
 
@@ -61,6 +61,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // его до первой отрисовки — так разметка сервера и клиента не расходятся.
   const [locale, setLocaleState] = useState<Locale>("en");
   const [theme, setThemeState] = useState<Theme>("dark");
+  // Словарь выбранного языка и язык, которому он принадлежит. Пока они не
+  // совпали, игру не рисуем: иначе русский игрок на миг видел бы английский.
+  const [dict, setDict] = useState<{ locale: Locale; words: Dict } | null>(null);
 
   useLayoutEffect(() => {
     setLocaleState(readStored(LOCALE_KEY, LOCALES) ?? detectLocale());
@@ -69,6 +72,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.lang = locale;
+    let live = true;
+    loadDict(locale)
+      // не догрузился кусок (сеть) — играем по-английски, а не висим
+      .catch(() => EN)
+      .then((words) => {
+        if (live) setDict({ locale, words });
+      });
+    return () => {
+      live = false;
+    };
   }, [locale]);
 
   useEffect(() => {
@@ -95,13 +108,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const t = useCallback<Translate>(
     (key, vars) => {
-      const raw = DICTS[locale][key] ?? DICTS.en[key] ?? key;
+      const raw = dict?.words[key] ?? EN[key] ?? key;
       if (!vars) return raw;
       return raw.replace(/\{(\w+)\}/g, (whole, name: string) =>
         name in vars ? String(vars[name]) : whole
       );
     },
-    [locale]
+    [dict]
   );
 
   const value = useMemo(
@@ -109,7 +122,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [locale, setLocale, theme, setTheme, t]
   );
 
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={value}>{dict ? children : null}</Ctx.Provider>;
 }
 
 export function useSettings(): Settings {

@@ -6,6 +6,7 @@
 // battleFlow, чертежи — useBlueprints.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { countFreeCells, countKind, decodeRle, droneCount, fogPatches, normRect } from "@/lib/base";
 import { LOAN_MIN, STARTER_SIDE, dronePrice, fmt, loanMax } from "@/lib/economy";
 import type { AttackOrder, AttackReport } from "@/lib/attack";
@@ -58,7 +59,6 @@ import { DoomedScreen, FoundPanel } from "./lobby/BasePanels";
 import MenuSheet from "./lobby/MenuSheet";
 import { PostRaidCommentModal, RaidOpenerModal } from "./lobby/RaidCommentModals";
 import { useZones } from "./ZonesToggle";
-import Rules from "./Rules";
 import MapCanvas from "./MapCanvas";
 import AccountMenu from "./AccountMenu";
 import {
@@ -75,6 +75,10 @@ import {
   Sheet,
   ToolButton,
 } from "./ui";
+
+// Правила — на тринадцати языках разом и открываются редко: качаем их,
+// только когда игрок их открыл, а не с каждым заходом в игру.
+const Rules = dynamic(() => import("./Rules"), { ssr: false });
 
 export default function Lobby({
   account,

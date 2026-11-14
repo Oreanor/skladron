@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
-import { DICTS, LOCALES, type Locale } from "@/lib/i18n/dict";
+import { LOCALES, type Locale } from "@/lib/i18n/dict";
+import { DICTS } from "@/lib/i18n/all";
 import "./globals.css";
 
 /** Заголовок и описание — на языке браузера: их видят в поиске и в превью ссылки. */
