@@ -50,7 +50,9 @@ export function BattleWindow({
           : undefined
       }
     >
-      <div className="m-auto flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-md border border-neutral-700 bg-neutral-900 p-3 shadow-2xl">
+      {/* Ширина — на десятую шире прежних 64rem: карта квадратная и упиралась
+          в ширину колонки, оставляя пустые поля сверху и снизу. */}
+      <div className="m-auto flex h-full w-full max-w-[70.4rem] flex-col overflow-hidden rounded-md border border-neutral-700 bg-neutral-900 p-3 shadow-2xl">
         {children}
       </div>
     </div>
