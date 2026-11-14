@@ -1474,7 +1474,10 @@ language plpgsql security definer set search_path = public as $$
 declare uid uuid := auth.uid();
 begin
   if uid is null then raise exception 'not authenticated'; end if;
-  return query select * from apply_battle_for(uid, new_cells, new_guns, new_depots, result);
+  -- Бой без строки налёта (пробный по ?raid=) премию не платит: число
+  -- дронов в result прислал клиент, и проверить его не по чему. Страховка
+  -- остаётся — она сверена с картой и лишь возмещает ущерб.
+  return query select * from apply_battle_for(uid, new_cells, new_guns, new_depots, result, false);
 end;
 $$;
 
