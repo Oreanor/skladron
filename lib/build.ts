@@ -144,7 +144,6 @@ export function scrapAt(p: Player, x: number, y: number): BuildResult {
   if (footprint(p.cells) - 1 < MIN_BASE_CELLS) return no("scrap.tooSmall", { n: MIN_BASE_CELLS });
 
   p.cells = cells;
-  p.guns = p.guns.filter((g) => g.kind !== "net" || g.cx !== x || g.cy !== y);
   p.credits += SCRAP_REWARD;
   return done(-SCRAP_REWARD);
 }
@@ -189,9 +188,12 @@ export function draftPlan(
   hasBuilding: boolean
 ): DraftPlan {
   if (tool === "net") {
+    // Есть где натянуть — натягиваем; нет — снимаем, что лежит, с возвратом
+    // по нынешней цене. Так же считает save_base: снятая сетка — минус в цене.
     const missing = rect ? netCells(p, rect).length : 0;
-    const cells = missing || (rect ? coveredNets(p, rect).length : 0);
-    return { cells, cost: missing * netCost(p.levels.nets), connects: true, busy: false, small: false };
+    const covered = missing || !rect ? 0 : coveredNets(p, rect).length;
+    const price = netCost(p.levels.nets);
+    return { cells: missing || covered, cost: (missing - covered) * price, connects: true, busy: false, small: false };
   }
   // Снос берёт любые клетки склада, целые и сгоревшие, по одной цене.
   const scrap = tool === "scrap" && rect ? scrapRect(p.cells.slice(), rect) : null;
@@ -251,8 +253,8 @@ export function applyDraft(
       break;
     }
     case "scrap":
+      // Сетка в рамке делает её занятой (plan.busy), так что сносим голый пол.
       scrapRect(cells, rect);
-      p.guns = p.guns.filter((g) => g.kind !== "net" || cells[idx(g.cx, g.cy)] === G_BASE);
       break;
     case "repair":
       repairRect(cells, rect);
@@ -274,38 +276,34 @@ const gunOn = (guns: Gun[], x: number, y: number) =>
 const depotOn = (depots: Depot[], x: number, y: number) =>
   depots.some((d) => d.cx === x && d.cy === y);
 
-/** Стоимость сетки на клетке, если она там есть (0, если нет). */
-const netValueAt = (p: Player, x: number, y: number) =>
-  p.guns.some((g) => g.kind === "net" && g.cx === x && g.cy === y) ? netCost(p.levels.nets) : 0;
+const netOn = (guns: Gun[], x: number, y: number) =>
+  guns.find((g) => g.kind === "net" && g.cx === x && g.cy === y);
 
-/** Снимает сетку с клетки и возвращает её стоимость. */
-const removeNetAt = (p: Player, x: number, y: number): number => {
-  const net = p.guns.find((g) => g.kind === "net" && g.cx === x && g.cy === y);
-  if (!net) return 0;
-  p.guns = p.guns.filter((g) => g !== net);
-  return netCost(p.levels.nets);
-};
-
-/** Покупка установки прямо на карте. */
+/**
+ * Покупка установки прямо на карте. Сетку на клетке установка вытесняет:
+ * сетка уходит по нынешней цене, и списываем только разницу. save_base
+ * считает так же — снятая сетка у него возвращается.
+ */
 export function placeGun(p: Player, x: number, y: number, kind: GunKind): BuildResult {
   if (!onMap(x, y)) return skip;
   if (p.cells[idx(x, y)] !== G_BASE) return no("gun.onlyIntact");
-  if (depotOn(p.depots, x, y)) return no("gun.cellBusy");
+  if (depotOn(p.depots, x, y) || gunOn(p.guns, x, y)) return no("gun.cellBusy");
 
-  const cost = gunCost(p.levels, kind);
-  const netGain = netValueAt(p, x, y);
-  if (p.credits + netGain < cost) return no("gun.noCredits");
+  const net = netOn(p.guns, x, y);
+  const cost = gunCost(p.levels, kind) - (net ? gunCost(p.levels, "net") : 0);
+  if (p.credits < cost) return no("gun.noCredits");
 
-  removeNetAt(p, x, y);
-  p.guns.push(kind === "gun" ? { cx: x, cy: y } : { cx: x, cy: y, kind });
-  p.credits -= cost - netGain;
-  return done(cost - netGain);
+  const gun: Gun = kind === "gun" ? { cx: x, cy: y } : { cx: x, cy: y, kind };
+  p.guns = [...p.guns.filter((g) => g !== net), gun];
+  p.credits -= cost;
+  return done(cost);
 }
 
 /**
  * Контейнер покупается так же, как пушка: ткнул в свободную клетку — ящик
  * на месте, деньги списаны. Сервер об этом узнаёт отдельно, и если он
- * откажет, лобби откатывает по сохранённому слепку.
+ * откажет, лобби откатывает по сохранённому слепку. Сетку не трогаем: она
+ * лежит над контейнером и укрывает его.
  */
 export function placeDepot(p: Player, x: number, y: number): BuildResult {
   if (!onMap(x, y)) return skip;
@@ -314,13 +312,11 @@ export function placeDepot(p: Player, x: number, y: number): BuildResult {
   if (depotOn(p.depots, x, y)) return skip;
 
   const cost = depotCost(p.levels);
-  const netGain = netValueAt(p, x, y);
-  if (p.credits + netGain < cost) return no("depot.noCredits", { cost });
+  if (p.credits < cost) return no("depot.noCredits", { cost });
 
-  removeNetAt(p, x, y);
   p.depots = [...p.depots, { cx: x, cy: y, n: DRONES_PER_CELL }];
-  p.credits -= cost - netGain;
-  return done(cost - netGain);
+  p.credits -= cost;
+  return done(cost);
 }
 
 /**
@@ -349,7 +345,7 @@ export function moveDepot(
 
   const at = p.depots.findIndex((d) => d.cx === from.cx && d.cy === from.cy);
   if (at < 0) return skip;
-  if (p.guns.some((g) => g.kind === "net" && g.cx === from.cx && g.cy === from.cy) && gunOn(p.guns, x, y)) return no("gun.cellBusy");
+  if (netOn(p.guns, from.cx, from.cy) && gunOn(p.guns, x, y)) return no("gun.cellBusy");
   const moving = p.depots[at];
   p.depots = p.depots.filter((_, i) => i !== at);
   swapInto(p, from, x, y);
@@ -372,7 +368,7 @@ export function moveGun(
     (g) => g.cx === from.cx && g.cy === from.cy && gunKind(g) === from.kind
   );
   if (at < 0) return skip;
-  if (p.guns.some((g) => g.kind === "net" && g.cx === x && g.cy === y)) return no("gun.cellBusy");
+  if (netOn(p.guns, x, y)) return no("gun.cellBusy");
   const moving = p.guns[at];
   p.guns = p.guns.filter((_, i) => i !== at);
   swapInto(p, from, x, y);

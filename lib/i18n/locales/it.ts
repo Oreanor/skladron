@@ -519,7 +519,7 @@ const it: Dict = {
   "tool.netHint": "{cost} cr/cella. Blocca un impatto diretto e rimuove le reti a croce di una cella. Il fuoco si diffonde normalmente. La rete diagonale copre solo celle integre vuote e contenitori. Rimuovila prima di collocare o spostare un’installazione sulla cella.",
   "net.done": "Reti su {cells} celle per {cost} cr.",
   "map.showNets": "Mostra reti",
-  "net.removed": "Reti rimosse da {cells} celle.",
+  "net.removed": "Reti rimosse da {cells} celle, {gain} cr restituiti.",
   "upgrade.nets": "Rete",
   "tool.netUpgradedHint": "{cost} cr/cella. Assorbe un impatto e rimuove solo questa rete. Il fuoco si diffonde normalmente. La rete diagonale copre solo celle integre vuote e contenitori. Rimuovila prima di collocare o spostare un’installazione sulla cella.",
   "tool.netFireproofHint": "{cost} cr/cella. Assorbe un impatto e rimuove solo questa rete. Le celle coperte resistono al fuoco vicino. La rete diagonale copre solo celle integre vuote e contenitori. Rimuovila prima di collocare o spostare un’installazione sulla cella.",

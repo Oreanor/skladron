@@ -74,7 +74,9 @@ export function mapActions(
     if (before > 0) {
       say(
         tool === "net"
-          ? t(r.spent === 0 ? "net.removed" : "net.done", r.spent === 0 ? { cells: before } : { cells: before, cost: fmt(r.spent) })
+          ? r.spent < 0
+            ? t("net.removed", { cells: before, gain: fmt(-r.spent) })
+            : t("net.done", { cells: before, cost: fmt(r.spent) })
           : tool === "scrap"
           ? t("scrap.done", { cells: before, gain: fmt(before * SCRAP_REWARD) })
           : tool === "repair"
@@ -88,11 +90,9 @@ export function mapActions(
     else core.rerender();
   };
 
+  /** Тап сеткой: натянуть на пустую клетку или снять с возвратом. */
   const netAt = (x: number, y: number) => {
-    const before = p.guns;
-    const r = applyDraft(p, "net", { x, y, w: 1, h: 1 }, hasBuilding);
-    act(r, { x, y });
-    if (r.ok && r.spent === 0 && p.guns !== before) core.touch();
+    act(applyDraft(p, "net", { x, y, w: 1, h: 1 }, hasBuilding), { x, y });
   };
 
   const buildOne = (x: number, y: number) => {

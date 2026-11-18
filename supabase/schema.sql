@@ -1109,7 +1109,7 @@ declare
   sprays_added int;
   traps_added int;
   balloons_added int;
-guns_gone int;
+  guns_gone int;
   rockets_gone int;
   sprays_gone int;
   traps_gone int;
@@ -1196,16 +1196,23 @@ begin
   sprays_gone := greatest(0, gun_count(cur_guns, 'spray') - gun_count(new_guns, 'spray'));
   traps_gone := greatest(0, gun_count(cur_guns, 'trap') - gun_count(new_guns, 'trap'));
   balloons_gone := greatest(0, gun_count(cur_guns, 'balloon') - gun_count(new_guns, 'balloon'));
-  nets_gone := greatest(0, gun_count(cur_guns, 'net') - gun_count(new_guns, 'net'));
 
   -- первые price('free') клеток склада бесплатны, считаем от того, что уже стоит
   free_left := greatest(0, price('free') - claimed);
   paid := greatest(0, built - free_left);
 
+  -- Сетка считается по клеткам, а не числом: снял в одном месте и натянул
+  -- в другом — заплатил за новую и получил назад за снятую. Снятая (руками
+  -- или вытесненная установкой) возвращается по нынешней цене, как и
+  -- установки; клиент в lib/build считает так же.
   select count(*) into nets_added from jsonb_array_elements(new_guns) n
     where n->>'kind' = 'net' and not exists (
       select 1 from jsonb_array_elements(cur_guns) c where c->>'kind' = 'net'
       and c->>'cx' = n->>'cx' and c->>'cy' = n->>'cy');
+  select count(*) into nets_gone from jsonb_array_elements(cur_guns) c
+    where c->>'kind' = 'net' and not exists (
+      select 1 from jsonb_array_elements(new_guns) n where n->>'kind' = 'net'
+      and n->>'cx' = c->>'cx' and n->>'cy' = c->>'cy');
   cost := nets_added * price_at('net', coalesce((prof.levels->>'nets')::int, 1)) + paid * price('cell')
         + repaired * price('repair')
         + guns_added * price_at('gun', coalesce((prof.levels->>'guns')::int, 1))

@@ -519,7 +519,7 @@ const pt: Dict = {
   "tool.netHint": "{cost} cr/célula. Bloqueia um impacto direto e remove redes numa cruz de uma célula. O fogo propaga-se normalmente. A rede diagonal só cobre células intactas vazias e contentores. Retire a rede antes de colocar ou mover uma instalação para essa célula.",
   "net.done": "Redes em {cells} células por {cost} cr.",
   "map.showNets": "Mostrar rede",
-  "net.removed": "Redes removidas de {cells} células.",
+  "net.removed": "Redes removidas de {cells} células, {gain} cr devolvidos.",
   "upgrade.nets": "Rede",
   "tool.netUpgradedHint": "{cost} cr/célula. Absorve um impacto e perde só a rede dessa célula. O fogo propaga-se normalmente. A rede diagonal só cobre células intactas vazias e contentores. Retire a rede antes de colocar ou mover uma instalação para essa célula.",
   "tool.netFireproofHint": "{cost} cr/célula. Absorve um impacto e perde só essa rede. Células cobertas resistem ao fogo vizinho. A rede diagonal só cobre células intactas vazias e contentores. Retire a rede antes de colocar ou mover uma instalação para essa célula.",

@@ -491,7 +491,7 @@ const pl: Dict = {
   "tool.netHint": "{cost} kr/pole. Blokuje jedno trafienie i usuwa siatki w krzyżu o jedno pole. Ogień rozchodzi się normalnie. Ukośna siatka przykrywa tylko puste, całe pola magazynu i kontenery. Zdejmij ją przed postawieniem lub przeniesieniem instalacji na to pole.",
   "net.done": "Siatki na {cells} polach za {cost} kr.",
   "map.showNets": "Pokaż siatkę",
-  "net.removed": "Usunięto siatki z {cells} pól.",
+  "net.removed": "Usunięto siatki z {cells} pól, zwrócono {gain} kr.",
   "upgrade.nets": "Siatka",
   "tool.netUpgradedHint": "{cost} kr/pole. Blokuje trafienie i usuwa tylko tę siatkę. Ogień rozchodzi się normalnie. Ukośna siatka przykrywa tylko puste, całe pola magazynu i kontenery. Zdejmij ją przed postawieniem lub przeniesieniem instalacji na to pole.",
   "tool.netFireproofHint": "{cost} kr/pole. Blokuje trafienie i usuwa tylko tę siatkę. Przykryte pola nie zapalają się od sąsiadów. Ukośna siatka przykrywa tylko puste, całe pola magazynu i kontenery. Zdejmij ją przed postawieniem lub przeniesieniem instalacji na to pole.",

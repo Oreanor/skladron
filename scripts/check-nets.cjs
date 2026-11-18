@@ -13,7 +13,7 @@ require.extensions['.ts'] = (module, file) => module._compile(ts.transpileModule
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
 }).outputText, file);
 const { newPlayer } = require('../lib/player.ts');
-const { applyDraft, placeGun, placeDepot, moveGun, moveDepot } = require('../lib/build.ts');
+const { applyDraft, placeGun, placeDepot, moveGun, moveDepot, gunCost } = require('../lib/build.ts');
 const { GRID, G_BASE, G_BURNT, G_FIRE, idx, encodeRle } = require('../lib/base.ts');
 const { createBattle, update, settle, absorbDroneHit } = require('../lib/engine.ts');
 const { buildPlan, makeOrder } = require('../lib/attack.ts');
@@ -26,7 +26,13 @@ p.guns=[{cx:40,cy:40}];p.depots=[{cx:41,cy:40,n:10}];
 assert.equal(applyDraft(p,'net',{x:39,y:39,w:5,h:5},true).spent,70);
 assert.equal(p.guns.filter(g=>g.kind==='net').length,7);
 assert.equal(p.credits,930);
-assert.equal(placeGun(p,40,41,'trap').ok,false);
+{ // установка вытесняет сетку и платит только разницу
+  const q=structuredClone(p),r=placeGun(q,40,41,'trap'),diff=gunCost(q.levels,'trap')-gunCost(q.levels,'net');
+  assert.deepEqual(r,{ok:true,spent:diff});assert.equal(q.credits,930-diff);
+  assert(!q.guns.some(g=>g.kind==='net'&&g.cx===40&&g.cy===41));assert(q.guns.some(g=>g.kind==='trap'&&g.cx===40&&g.cy===41));
+  q.credits=diff-1;assert.equal(placeGun(q,41,41,'trap').ok,false);
+  assert.equal(placeGun(q,40,41,'gun').ok,false);assert.equal(placeGun(q,41,40,'gun').ok,false);
+}
 const beforeSwap=structuredClone(p);
 assert.equal(moveGun(p,{cx:40,cy:40,kind:'gun'},42,41).ok,false);
 assert.deepEqual(p,beforeSwap);
@@ -40,10 +46,10 @@ assert(p.guns.some(g=>g.kind==='net'&&g.cx===41&&g.cy===41));
 const before=structuredClone(p);p.credits=0;
 assert.equal(applyDraft(p,'net',{x:43,y:40,w:1,h:1},true).spent,0);
 p.credits=before.credits;
-assert.equal(applyDraft(p,'net',{x:40,y:40,w:3,h:3},true).spent,0);
+assert.equal(applyDraft(p,'net',{x:40,y:40,w:3,h:3},true).spent,-70);
 assert.equal(p.guns.filter(g=>g.kind==='net').length,0);
-assert.equal(p.credits,before.credits);
-console.log('PASS area skips ground and burnt cells; charges by level; containers stay beneath nets; installations are excluded; removal is free');
+assert.equal(p.credits,before.credits+70);
+console.log('PASS area skips ground and burnt cells; charges by level; containers stay beneath nets; installations displace nets for the difference; removal refunds');
 const cells=new Uint8Array(GRID*GRID);const nets=[];
 for(let y=49;y<52;y++)for(let x=49;x<52;x++){cells[idx(x,y)]=G_BASE;nets.push({cx:x,cy:y,kind:'net'});}
 const state=createBattle(cells,nets,[],[],{});

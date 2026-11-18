@@ -491,7 +491,7 @@ const tr: Dict = {
   "tool.netHint": "{cost} kr/hücre. Bir doğrudan isabeti engeller ve bir hücrelik artı şeklinde ağları kaldırır. Ateş normal yayılır. Çapraz ağ yalnızca boş sağlam depo hücrelerini ve konteynerleri örter. Bir tesis yerleştirmeden veya taşımadan önce ağı kaldırın.",
   "net.done": "{cells} hücreye {cost} kr karşılığında ağ kuruldu.",
   "map.showNets": "Ağı göster",
-  "net.removed": "{cells} hücreden ağ kaldırıldı.",
+  "net.removed": "{cells} hücreden ağ kaldırıldı, {gain} kr iade edildi.",
   "upgrade.nets": "Ağ",
   "tool.netUpgradedHint": "{cost} kr/hücre. Bir isabeti emer, yalnızca bu ağ kalkar. Ateş normal yayılır. Çapraz ağ yalnızca boş sağlam depo hücrelerini ve konteynerleri örter. Bir tesis yerleştirmeden veya taşımadan önce ağı kaldırın.",
   "tool.netFireproofHint": "{cost} kr/hücre. Bir isabeti emer, yalnızca bu ağ kalkar. Kaplı hücrelere komşulardan ateş sıçramaz. Çapraz ağ yalnızca boş sağlam depo hücrelerini ve konteynerleri örter. Bir tesis yerleştirmeden veya taşımadan önce ağı kaldırın.",

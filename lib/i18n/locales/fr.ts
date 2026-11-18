@@ -519,7 +519,7 @@ const fr: Dict = {
   "tool.netHint": "{cost} cr/case. Bloque un impact direct et retire les filets en croix à une case. Le feu se propage normalement. Le filet diagonal couvre seulement les cases intactes vides et les conteneurs. Retirez le filet avant de placer ou déplacer une installation sur cette case.",
   "net.done": "Filets sur {cells} cases pour {cost} cr.",
   "map.showNets": "Afficher les filets",
-  "net.removed": "Filets retirés de {cells} cases.",
+  "net.removed": "Filets retirés de {cells} cases, {gain} cr rendus.",
   "upgrade.nets": "Filet",
   "tool.netUpgradedHint": "{cost} cr/case. Absorbe un impact et retire seulement ce filet. Le feu se propage normalement. Le filet diagonal couvre seulement les cases intactes vides et les conteneurs. Retirez le filet avant de placer ou déplacer une installation sur cette case.",
   "tool.netFireproofHint": "{cost} cr/case. Absorbe un impact et retire seulement ce filet. Les cases couvertes résistent au feu voisin. Le filet diagonal couvre seulement les cases intactes vides et les conteneurs. Retirez le filet avant de placer ou déplacer une installation sur cette case.",

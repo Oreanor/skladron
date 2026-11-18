@@ -519,7 +519,7 @@ const de: Dict = {
   "tool.netHint": "{cost} Kr/Zelle. Blockiert einen direkten Treffer und entfernt Netze im Kreuz um eine Zelle. Feuer breitet sich normal aus. Das diagonale Netz bedeckt nur leere intakte Lagerzellen und Container. Entferne es, bevor du dort eine Anlage aufstellst oder hinbewegst.",
   "net.done": "Netze auf {cells} Zellen für {cost} Kr.",
   "map.showNets": "Netze anzeigen",
-  "net.removed": "Netze von {cells} Zellen entfernt.",
+  "net.removed": "Netze von {cells} Zellen entfernt, {gain} Kr zurück.",
   "upgrade.nets": "Netz",
   "tool.netUpgradedHint": "{cost} Kr/Zelle. Fängt einen Treffer ab; nur dieses Netz fällt weg. Feuer breitet sich normal aus. Das diagonale Netz bedeckt nur leere intakte Lagerzellen und Container. Entferne es, bevor du dort eine Anlage aufstellst oder hinbewegst.",
   "tool.netFireproofHint": "{cost} Kr/Zelle. Fängt einen Treffer ab; nur dieses Netz fällt weg. Bedeckte Zellen widerstehen Nachbarfeuer. Das diagonale Netz bedeckt nur leere intakte Lagerzellen und Container. Entferne es, bevor du dort eine Anlage aufstellst oder hinbewegst.",

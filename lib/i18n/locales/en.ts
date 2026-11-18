@@ -520,7 +520,7 @@ const en = {
   "tool.netHint": "{cost} cr/cell. Blocks one direct drone hit, removing nets in a one-cell cross. Fire spreads normally. Diagonal netting can cover only empty intact warehouse cells and containers. Remove the net before placing or moving an installation there.",
   "net.done": "Covered {cells} cells with nets for {cost} cr.",
   "map.showNets": "Show net",
-  "net.removed": "Removed nets from {cells} cells.",
+  "net.removed": "Removed nets from {cells} cells, {gain} cr back.",
   "upgrade.nets": "Net",
   "tool.netUpgradedHint": "{cost} cr/cell. Absorbs one hit; only this cell loses its net. Fire spreads normally. Diagonal netting can cover only empty intact warehouse cells and containers. Remove the net before placing or moving an installation there.",
   "tool.netFireproofHint": "{cost} cr/cell. Absorbs one hit; only this cell loses its net. Covered cells resist neighbouring fire. Diagonal netting can cover only empty intact warehouse cells and containers. Remove the net before placing or moving an installation there.",

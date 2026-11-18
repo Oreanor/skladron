@@ -241,7 +241,9 @@ export function drawLobbyOverlay(
       case "spray":
       case "trap":
       case "rocket":
-        ok = v === G_BASE && !p.depots.some((q) => q.cx === hx && q.cy === hy) && !p.guns.some((g) => g.kind === "net" && g.cx === hx && g.cy === hy);
+      case "balloon":
+        // сетку установка вытесняет, так что клетка с сеткой тоже годится
+        ok = v === G_BASE && !p.depots.some((q) => q.cx === hx && q.cy === hy) && !p.guns.some((g) => g.kind !== "net" && g.cx === hx && g.cy === hy);
         break;
     }
     drawHoverCell(ctx, CELL, hx, hy, ok);

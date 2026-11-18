@@ -519,7 +519,7 @@ const es: Dict = {
   "tool.netHint": "{cost} cr/celda. Bloquea un impacto directo y elimina redes en cruz a una celda. El fuego se propaga normalmente. La red diagonal solo cubre celdas intactas vacías y contenedores. Retira la red antes de colocar o mover una instalación a esa celda.",
   "net.done": "Redes en {cells} celdas por {cost} cr.",
   "map.showNets": "Mostrar red",
-  "net.removed": "Redes retiradas de {cells} celdas.",
+  "net.removed": "Redes retiradas de {cells} celdas, {gain} cr devueltos.",
   "upgrade.nets": "Red",
   "tool.netUpgradedHint": "{cost} cr/celda. Absorbe un impacto y pierde solo la red de esa celda. El fuego se propaga normalmente. La red diagonal solo cubre celdas intactas vacías y contenedores. Retira la red antes de colocar o mover una instalación a esa celda.",
   "tool.netFireproofHint": "{cost} cr/celda. Absorbe un impacto y pierde solo esa red. Las celdas cubiertas resisten el fuego vecino. La red diagonal solo cubre celdas intactas vacías y contenedores. Retira la red antes de colocar o mover una instalación a esa celda.",

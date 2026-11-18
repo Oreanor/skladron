@@ -491,7 +491,7 @@ const zh: Dict = {
   "tool.netHint": "每格 {cost} 点。阻挡一次直接命中，移除本格及十字相邻格的网。火势正常蔓延。 斜向防护网只能覆盖完好的空仓库格和容器。放置或移入任何设施前，必须先拆网。",
   "net.done": "已覆盖 {cells} 格，花费 {cost} 点。",
   "map.showNets": "显示防护网",
-  "net.removed": "已移除 {cells} 格的网。",
+  "net.removed": "已移除 {cells} 格的网，退还 {gain} 币。",
   "upgrade.nets": "防护网",
   "tool.netUpgradedHint": "每格 {cost} 点。抵挡一次命中，只移除本格的网。火势正常蔓延。 斜向防护网只能覆盖完好的空仓库格和容器。放置或移入任何设施前，必须先拆网。",
   "tool.netFireproofHint": "每格 {cost} 点。抵挡一次命中，只移除本格的网。有网的格子不会被邻格引燃。 斜向防护网只能覆盖完好的空仓库格和容器。放置或移入任何设施前，必须先拆网。",
