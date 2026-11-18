@@ -384,7 +384,7 @@ export function Modal({
           )}
         </div>
         <div
-          className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 ${
+          className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-5 [scrollbar-color:rgb(64_64_64)_transparent] [scrollbar-width:thin] ${
             footer ? "pb-3" : "pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pb-5"
           }`}
         >

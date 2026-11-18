@@ -6,7 +6,7 @@ import { LocalRepo } from "./local";
 import type { Repo } from "./types";
 
 export type { Income, Repo } from "./types";
-export { publicReplay } from "./cloud";
+export { publicPractice, publicReplay, sharePractice } from "./cloud";
 
 let repo: Repo | null = null;
 

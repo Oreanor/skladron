@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { GRID, G_BASE, countCells, type Depot, type Gun } from "@/lib/base";
+import { GRID, G_BASE, countCells, encodeRle, type Depot, type Gun } from "@/lib/base";
 import { missionPays, missionReward, type CompetitionBest } from "@/lib/competition";
 import { buildPlan, type AttackOrder } from "@/lib/attack";
 import {
@@ -23,6 +23,9 @@ import { encodeTrace, type Frame } from "@/lib/replay";
 import { applyFrame, newHands, takeFrame } from "@/lib/resolve";
 import type { BattleOutcome } from "@/lib/outcome";
 import { SIM } from "@/lib/tuning";
+import { explain } from "@/lib/errors";
+import { sharePractice } from "@/lib/repo";
+import type { ReplayData } from "./Replay";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 import { PAYLOADS, type Payload } from "@/lib/attack";
@@ -98,6 +101,12 @@ export default function Battle({
   // рекорд этого же боя, пока итог ещё на экране; сравнивай итог с ним — и
   // каждый первый проход показывал бы «рекорд не побит».
   const [bestBefore] = useState(missionBest);
+  // Склад, каким он был до боя: из него тест собирается в повтор по ссылке.
+  const [snapshot] = useState(() => ({
+    cells: encodeRle(cells),
+    guns: structuredClone(guns),
+    depots: structuredClone(depots),
+  }));
   /** Платит ли бой премию за отбой с таким числом сгоревших клеток. */
   const paysBounty = (burned: number) =>
     !order.competitionStage || missionPays(bestBefore, startIntact, burned);
@@ -343,6 +352,18 @@ export default function Battle({
               <Row label={t("battle.spraysLost")} value={String(done.result.spraysLost)} />
               <Row label={t("battle.trapsLost")} value={String(done.result.trapsLost)} />
             </dl>
+            {practice && (
+              <ShareTest
+                replay={{
+                  order,
+                  cells: snapshot.cells,
+                  guns: snapshot.guns,
+                  depots: snapshot.depots,
+                  levels: levels ?? {},
+                  trace: done.trace,
+                }}
+              />
+            )}
             <div className="flex justify-center px-8 pt-1">
               <Button variant="build" disabled={saving} onClick={() => onFinish(done)}>
                 {t(saving ? "competitions.saving" : "battle.back")}
@@ -445,5 +466,44 @@ export function PayloadLegend({
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * Ссылка на тест налёта — такая же, как на повтор боя. Тест живёт только в
+ * браузере, поэтому сначала кладём его на сервер, а потом копируем ссылку.
+ * Не дал буфер обмена — показываем ссылку текстом, её можно выделить.
+ */
+function ShareTest({ replay }: { replay: ReplayData }) {
+  const t = useT();
+  const [state, setState] = useState<"idle" | "busy" | "copied" | { url: string } | { error: string }>("idle");
+  const share = async () => {
+    setState("busy");
+    try {
+      const id = await sharePractice(replay);
+      const url = `${location.origin}/replay/${id}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        setState("copied");
+      } catch {
+        setState({ url });
+      }
+    } catch (e) {
+      setState({ error: explain(e, t) });
+    }
+  };
+  return (
+    <div className="flex flex-col items-center gap-1 px-8 pt-1">
+      <Button disabled={state === "busy"} onClick={() => void share()}>
+        {t(state === "copied" ? "replay.copied" : "replay.share")}
+      </Button>
+      {typeof state === "object" && "url" in state && (
+        <input readOnly value={state.url} onFocus={(e) => e.currentTarget.select()}
+          className="w-full rounded border border-neutral-700 bg-neutral-950 px-2 py-1 font-mono text-xs text-neutral-300" />
+      )}
+      {typeof state === "object" && "error" in state && (
+        <p className="text-center text-xs text-red-400">{state.error}</p>
+      )}
+    </div>
   );
 }

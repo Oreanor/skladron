@@ -76,6 +76,34 @@ export async function publicReplay(id: string): Promise<{
   };
 }
 
+/**
+ * Тест налёта по ссылке: у него нет записи налёта, так что повтор целиком
+ * кладём на сервер и получаем id. Ссылка та же, что у боя: /replay/<id>.
+ */
+export async function sharePractice(replay: ReplayData): Promise<string> {
+  const db = supabase();
+  if (!db) throw new Error("supabase not configured");
+  const { data, error } = await db.rpc("share_practice", {
+    replay,
+    sim_version: SIMULATION_VERSION,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+/** Тест налёта по id; null — нет такого или он снят под прежнюю версию боя. */
+export async function publicPractice(id: string): Promise<{ defender: string; replay: ReplayData } | null> {
+  const db = supabase();
+  if (!db) throw new Error("supabase not configured");
+  const { data, error } = await db.rpc("public_practice", { replay_id: id });
+  if (error) throw error;
+  const row = (data as { owner: string; replay: ReplayData; simulation_version: number }[] | null)?.[0];
+  if (!row || row.simulation_version !== SIMULATION_VERSION) return null;
+  const r = row.replay;
+  if (!r?.order || typeof r.cells !== "string" || typeof r.trace !== "string") return null;
+  return { defender: row.owner, replay: r };
+}
+
 interface ProfileRow {
   base_name: string | null;
   avatar: string | null;

@@ -8,12 +8,12 @@ import Replay, { type ReplayData } from "@/components/battle/Replay";
 import { Button } from "@/components/ui";
 import { SettingsProvider, useT } from "@/lib/i18n";
 import { explainAlone } from "@/lib/errors";
-import { publicReplay } from "@/lib/repo";
+import { publicPractice, publicReplay } from "@/lib/repo";
 
 function Screen({ id }: { id: string }) {
   const t = useT();
   const [state, setState] = useState<
-    { name: string; replay: ReplayData } | "loading" | "gone"
+    { name: string; replay: ReplayData; practice?: boolean } | "loading" | "gone"
   >("loading");
   /** Чем именно ответил сервер: без этого «повтора нет» ничего не объясняет. */
   const [failed, setFailed] = useState<string | null>(null);
@@ -21,10 +21,14 @@ function Screen({ id }: { id: string }) {
   useEffect(() => {
     let alive = true;
     publicReplay(id)
-      .then((found) => {
+      .then(async (found) => {
         if (!alive) return;
         if (!found) {
-          setState("gone");
+          // не бой — может, показанный тест налёта: ссылка у него та же
+          const test = await publicPractice(id);
+          if (!alive) return;
+          if (test) setState({ name: test.defender, replay: test.replay, practice: true });
+          else setState("gone");
           return;
         }
         // у состязания нападающий — сам защитник: подписываем номером
@@ -60,7 +64,7 @@ function Screen({ id }: { id: string }) {
     );
   }
 
-  return <Replay name={state.name} replay={state.replay} shareId={id} />;
+  return <Replay name={state.name} replay={state.replay} shareId={id} talk={!state.practice} />;
 }
 
 export default function ReplayPage({ params }: { params: Promise<{ id: string }> }) {

@@ -158,7 +158,9 @@ export default function SummonRaidDialog({
 
       <p className="mb-3 text-xs text-neutral-500">{t("raid.practiceHint")}</p>
       {readOnly && <p className="mb-3 text-xs text-amber-300">{t("raid.locked")}</p>}
-      <fieldset disabled={sending || readOnly}>
+      {/* min-w-0: у fieldset по умолчанию min-width: min-content, и длинный
+          пункт в выпадающем списке распирал окно вбок */}
+      <fieldset disabled={sending || readOnly} className="min-w-0">
       <RaidPlanner
         waves={waves}
         onChange={setWaves}

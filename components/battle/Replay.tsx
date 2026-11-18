@@ -206,6 +206,7 @@ function ReplayView({
   replay,
   shareId,
   onClose,
+  talk = true,
 }: {
   /** Движок той версии, по которой бой шёл. */
   sim: Sim;
@@ -215,6 +216,8 @@ function ReplayView({
   /** Есть id — можно дать ссылку, по которой бой посмотрят другие. */
   shareId?: string;
   onClose?: () => void;
+  /** Разговор под боем. У теста налёта его нет: обсуждать не к чему привязать. */
+  talk?: boolean;
 }) {
   const t = useT();
   const [zones, setZones] = useZones();
@@ -525,7 +528,7 @@ function ReplayView({
               tone={hud.integrity < 60 ? "text-orange-300" : "text-emerald-300"}
             />
           </ChipBar>
-          {shareId && (
+          {shareId && talk && (
             <div className="border-t border-neutral-800 pt-2">
               <Talk battleId={shareId} />
             </div>
@@ -554,7 +557,7 @@ function ReplayView({
             <PayloadLegend t={t} counts={hud.byPayload} />
           </Panel>
           {/* разговор — своей панелью */}
-          {shareId && (
+          {shareId && talk && (
             <Panel title={t("panel.talk")} collapsed={talkFolded} onToggle={foldTalk}>
               <Talk battleId={shareId} tall />
             </Panel>
@@ -576,6 +579,7 @@ export default function Replay(props: {
   replay: ReplayData;
   shareId?: string;
   onClose?: () => void;
+  talk?: boolean;
 }) {
   const t = useT();
   const version = props.replay.order.simulationVersion;

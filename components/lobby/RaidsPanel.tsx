@@ -130,7 +130,16 @@ export default function RaidsPanel({
       })}
 
       {raids.map((r) => (
-        <li key={r.id} onClick={r.side === "attack" ? () => onPlan(r) : undefined} className="flex items-center justify-between gap-2 rounded-md px-3 py-1.5 transition-colors hover:bg-neutral-800/60">
+        <li
+          key={r.id}
+          // свой налёт открывается щелчком по строке: отдельная кнопка «План налёта» не нужна
+          onClick={r.side === "attack" ? () => onPlan(r) : undefined}
+          onKeyDown={r.side === "attack" ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPlan(r); } } : undefined}
+          role={r.side === "attack" ? "button" : undefined}
+          tabIndex={r.side === "attack" ? 0 : undefined}
+          title={r.side === "attack" ? t("raid.planTitle") : undefined}
+          className={`flex items-center justify-between gap-2 rounded-md px-3 py-1.5 transition-colors hover:bg-neutral-800/60 ${r.side === "attack" ? "cursor-pointer" : ""}`}
+        >
           <div className="min-w-0">
             <div className={`truncate ${r.pending ? "text-neutral-400" : "text-neutral-200"}`}>
               <span className={r.side === "attack" ? "text-red-300" : "text-sky-300"}>
@@ -151,7 +160,6 @@ export default function RaidsPanel({
                 : ""}
             </div>
           </div>
-          {r.side === "attack" && <Button size="sm" onClick={(e) => { e.stopPropagation(); onPlan(r); }}>{t("raid.planTitle")}</Button>}
           {/* пока бой не отыгран, смотреть и убирать нечего */}
           {!r.pending && (
             <div className="flex shrink-0 gap-1">
