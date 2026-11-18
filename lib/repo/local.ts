@@ -31,6 +31,8 @@ export class LocalRepo implements Repo {
     // локально отгрузку проводит сама вкладка, и в бою она уже ждёт
   }
 
+  async outgoingRaid() { return null; }
+
   async syncAttacks() {
     return { incoming: [], reports: [] };
   }
@@ -84,11 +86,12 @@ export class LocalRepo implements Repo {
     localSave(p);
   }
 
-  async repayLoan(p: Player) {
-    if (p.credits < p.loan) throw new Error("not enough credits");
-    p.credits -= p.loan;
-    p.loan = 0;
-    p.loanDue = null;
+  async repayLoan(p: Player, amount: number) {
+    if (!Number.isInteger(amount) || amount < 1 || amount > p.loan) throw new Error("bad repayment amount");
+    if (p.credits < amount) throw new Error("not enough credits");
+    p.credits -= amount;
+    p.loan -= amount;
+    if (p.loan === 0) p.loanDue = null;
     localSave(p);
   }
 

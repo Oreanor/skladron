@@ -17,7 +17,7 @@ export const isBuilding = (v: number) =>
  * Что стоит на клетке склада: зенитка, ракетница, огнетушитель, ловушка и
  * пусковая установка шаров.
  */
-export type GunKind = "gun" | "rocket" | "spray" | "trap" | "balloon";
+export type GunKind = "gun" | "rocket" | "spray" | "trap" | "balloon" | "net";
 
 export interface Gun {
   cx: number;
@@ -73,7 +73,7 @@ export function sanitizeGuns(guns: Gun[]): Gun[] {
 /** Клетки, куда можно поставить контейнер: целые, без пушки и без склада. */
 export function freeCells(cells: Uint8Array, guns: Gun[], depots: Depot[]) {
   const taken = new Set<number>();
-  for (const g of guns) taken.add(idx(g.cx, g.cy));
+  for (const g of guns) if (g.kind !== "net") taken.add(idx(g.cx, g.cy));
   for (const d of depots) taken.add(idx(d.cx, d.cy));
   const out: number[] = [];
   for (let i = 0; i < cells.length; i++) {
@@ -89,7 +89,7 @@ export function freeCells(cells: Uint8Array, guns: Gun[], depots: Depot[]) {
 export function countFreeCells(cells: Uint8Array, guns: Gun[], depots: Depot[]) {
   let n = 0;
   for (let i = 0; i < cells.length; i++) if (cells[i] === G_BASE) n++;
-  for (const g of guns) if (cells[idx(g.cx, g.cy)] === G_BASE) n--;
+  for (const g of guns) if (g.kind !== "net" && cells[idx(g.cx, g.cy)] === G_BASE) n--;
   for (const d of depots) if (cells[idx(d.cx, d.cy)] === G_BASE) n--;
   return Math.max(0, n);
 }

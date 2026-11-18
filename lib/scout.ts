@@ -210,7 +210,7 @@ export function updateScout(s: ScoutState, dt: number) {
     const g = s.guns[i];
     const kind = gunKind(g);
     // огнетушитель и ловушка по самолёту не бьют — только зенитка и ракетница
-    if (kind === "spray" || kind === "trap") continue;
+    if (kind === "net" || kind === "spray" || kind === "trap") continue;
     const d = Math.hypot(g.cx + 0.5 - p.x, g.cy + 0.5 - p.y);
     if (d <= s.gunRange && s.cool[i] <= 0) {
       fire(s, g, p);
@@ -229,7 +229,7 @@ export function updateScout(s: ScoutState, dt: number) {
 export function underFire(s: ScoutState, x: number, y: number) {
   for (const g of s.guns) {
     const kind = gunKind(g);
-    if (kind === "spray" || kind === "trap") continue;
+    if (kind === "net" || kind === "spray" || kind === "trap") continue;
     const dx = g.cx + 0.5 - x;
     const dy = g.cy + 0.5 - y;
     if (dx * dx + dy * dy <= s.gunRange * s.gunRange) return true;
@@ -257,7 +257,7 @@ export function seenGuns(guns: Gun[], seen: Uint8Array): Gun[] {
 
 export function scoutCounts(guns: Gun[]): ScoutCounts {
   const out: ScoutCounts = { gun: 0, rocket: 0, spray: 0, trap: 0, balloon: 0 };
-  for (const g of guns) out[gunKind(g)]++;
+  for (const g of guns) { const kind = gunKind(g); if (kind !== "net") out[kind]++; }
   return out;
 }
 

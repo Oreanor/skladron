@@ -42,7 +42,7 @@ export function mapActions(
 ) {
   const { repo, t, say } = core;
   // Рамкой работают «Площадь», «Ремонт» и «Снос»; остальным — площадь.
-  const draftTool = tool === "area" || tool === "repair" || tool === "scrap" ? tool : "area";
+  const draftTool = tool === "area" || tool === "repair" || tool === "scrap" || tool === "net" ? tool : "area";
 
   /** «−100 кр» над клеткой: видно, за что ушли деньги, и куда вернулись. */
   const showPrice = (x: number, y: number, amount: number) => pushPriceTag(map, t, x, y, amount);
@@ -73,7 +73,9 @@ export function mapActions(
     }
     if (before > 0) {
       say(
-        tool === "scrap"
+        tool === "net"
+          ? t(r.spent === 0 ? "net.removed" : "net.done", r.spent === 0 ? { cells: before } : { cells: before, cost: fmt(r.spent) })
+          : tool === "scrap"
           ? t("scrap.done", { cells: before, gain: fmt(before * SCRAP_REWARD) })
           : tool === "repair"
             ? t("repair.done", { cells: before, cost: fmt(r.spent) })
@@ -84,6 +86,13 @@ export function mapActions(
     map.drag.current = null;
     if (before > 0) core.touch();
     else core.rerender();
+  };
+
+  const netAt = (x: number, y: number) => {
+    const before = p.guns;
+    const r = applyDraft(p, "net", { x, y, w: 1, h: 1 }, hasBuilding);
+    act(r, { x, y });
+    if (r.ok && r.spent === 0 && p.guns !== before) core.touch();
   };
 
   const buildOne = (x: number, y: number) => {
@@ -143,7 +152,7 @@ export function mapActions(
    * отдельно: вне покупки число дронов сохранением менять нельзя.
    */
   const sellAt = async (x: number, y: number) => {
-    const gun = p.guns.find((g) => g.cx === x && g.cy === y);
+    const gun = p.guns.find((g) => g.kind !== "net" && g.cx === x && g.cy === y);
     if (gun) {
       const gain = installValue([gun], p.levels);
       p.guns = p.guns.filter((g) => g !== gun);
@@ -177,6 +186,7 @@ export function mapActions(
   return {
     commitDraft,
     buildOne,
+    netAt,
     scrapAt,
     repairAt,
     gunAt,

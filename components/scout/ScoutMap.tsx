@@ -7,7 +7,7 @@
 
 import { useMemo, useRef } from "react";
 import { GRID, decodeRle, fogPatches, gunKind, type Gun } from "@/lib/base";
-import { COLORS, drawCoverage, installColors } from "@/lib/render";
+import { COLORS, drawPiece, drawCoverage, installColors } from "@/lib/render";
 import type { ScoutSnapshot } from "@/lib/enemy";
 import { seenGuns } from "@/lib/scout";
 import MapCanvas, { CELL, SIZE } from "../MapCanvas";
@@ -19,6 +19,7 @@ import type { Key } from "@/lib/i18n/dict";
 /** Что написать над установкой под курсором. */
 const KIND_LABEL: Record<ReturnType<typeof gunKind>, Key> = {
   gun: "tool.gun",
+  net: "tool.net",
   rocket: "tool.rocket",
   spray: "tool.spray",
   trap: "tool.trap",
@@ -70,10 +71,11 @@ export default function ScoutMap({
 
   const scene = useMemo(() => ({ cells, guns: [] }), [cells]);
 
-  const overlay = (ctx: CanvasRenderingContext2D, _now: number, view: { zoom: number }) => {
+  const overlay = (ctx: CanvasRenderingContext2D, _now: number, view: { zoom: number; showNets?: boolean }) => {
     if (visible.length) {
       if (zones) drawCoverage(ctx, visible, CELL);
       for (const g of visible) {
+        if (g.kind === "net") { if (view.showNets !== false) drawPiece(ctx, "net", g.cx, g.cy, CELL, 0); continue; }
         const paint = installColors(gunKind(g));
         ctx.fillStyle = paint.body;
         ctx.fillRect(g.cx * CELL, g.cy * CELL, CELL, CELL);

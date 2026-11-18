@@ -37,10 +37,12 @@ export default function ZonesToggle({
   on,
   onChange,
   className = "",
+  label,
 }: {
   on: boolean;
   onChange: (on: boolean) => void;
   className?: string;
+  label?: string;
 }) {
   const t = useT();
   return (
@@ -53,7 +55,7 @@ export default function ZonesToggle({
         onChange={(e) => onChange(e.target.checked)}
         className="h-3.5 w-3.5 cursor-pointer accent-emerald-400"
       />
-      {t("battle.zones")}
+      {label ?? t("battle.zones")}
     </label>
   );
 }

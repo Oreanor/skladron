@@ -4,7 +4,7 @@
 
 import type { Gun } from "../base";
 import type { Avatar } from "../avatar";
-import type { AttackOrder, AttackReport, Message, RaidLog, WavePlan } from "../attack";
+import type { AttackOrder, AttackReport, Message, OutgoingRaid, RaidLog, WavePlan } from "../attack";
 import type { ReplayData } from "@/components/battle/Replay";
 import type { BattleResult } from "../engine";
 import type { UpgradeKind } from "../economy";
@@ -29,6 +29,7 @@ export interface Repo {
   collectShift(p: Player): Promise<Income>;
   /** Защитник вошёл в бой: ночная отгрузка ждёт, пока он не кончится. */
   beginBattle(): Promise<void>;
+  outgoingRaid(id: string): Promise<OutgoingRaid | null>;
   syncAttacks(): Promise<{
     incoming: AttackOrder[];
     reports: AttackReport[];
@@ -65,7 +66,7 @@ export interface Repo {
   /** Взять заём: деньги сразу, долг с процентом и срок — на сутки. */
   takeLoan(p: Player, amount: number): Promise<void>;
   /** Отдать заём целиком и досрочно. */
-  repayLoan(p: Player): Promise<void>;
+  repayLoan(p: Player, amount: number): Promise<void>;
   /**
    * Что на чужом складе изменилось с нашей прошлой разведки. Отдаются
    * квадраты, а не карта: знать чужую раскладку клиенту не положено.

@@ -28,7 +28,7 @@ const Foe = ({ name, open }: { name: string; open?: () => void }) =>
   open ? (
     <button
       type="button"
-      onClick={open}
+      onClick={(e) => { e.stopPropagation(); open(); }}
       className="font-semibold text-neutral-100 underline-offset-2 hover:underline"
     >
       {name}
@@ -64,6 +64,7 @@ export default function RaidsPanel({
   onWatch,
   onHide,
   onFoe,
+  onPlan,
 }: {
   /** Что к нам летит. Первый в списке и есть тот, кого отбивают. */
   incoming: AttackOrder[];
@@ -71,6 +72,7 @@ export default function RaidsPanel({
   onDefend: (order: AttackOrder) => void;
   onWatch: (raid: RaidLog) => void;
   onHide: (id: string) => void;
+  onPlan: (raid: RaidLog) => void;
   /**
    * Открыть карточку врага по почте. Возвращает undefined для тех, кого нет
    * в списке соперников, — их ник не кликается.
@@ -128,7 +130,7 @@ export default function RaidsPanel({
       })}
 
       {raids.map((r) => (
-        <li key={r.id} className="flex items-center justify-between gap-2 rounded-md px-3 py-1.5 transition-colors hover:bg-neutral-800/60">
+        <li key={r.id} onClick={r.side === "attack" ? () => onPlan(r) : undefined} className="flex items-center justify-between gap-2 rounded-md px-3 py-1.5 transition-colors hover:bg-neutral-800/60">
           <div className="min-w-0">
             <div className={`truncate ${r.pending ? "text-neutral-400" : "text-neutral-200"}`}>
               <span className={r.side === "attack" ? "text-red-300" : "text-sky-300"}>
@@ -149,6 +151,7 @@ export default function RaidsPanel({
                 : ""}
             </div>
           </div>
+          {r.side === "attack" && <Button size="sm" onClick={(e) => { e.stopPropagation(); onPlan(r); }}>{t("raid.planTitle")}</Button>}
           {/* пока бой не отыгран, смотреть и убирать нечего */}
           {!r.pending && (
             <div className="flex shrink-0 gap-1">
@@ -156,7 +159,7 @@ export default function RaidsPanel({
                 label={t("replays.hide")}
                 title={t("replays.hide")}
                 className="h-8 w-8"
-                onClick={() => onHide(r.id)}
+                onClick={(e) => { e.stopPropagation(); onHide(r.id); }}
               >
                 <Trash2 className="h-4 w-4" />
               </IconButton>
@@ -165,7 +168,7 @@ export default function RaidsPanel({
                   label={t("replay.watch")}
                   title={t("replay.watch")}
                   className="h-8 w-8"
-                  onClick={() => onWatch(r)}
+                  onClick={(e) => { e.stopPropagation(); onWatch(r); }}
                 >
                   <Play className="h-4 w-4" />
                 </IconButton>

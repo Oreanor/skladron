@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { RAID_COMMENT_MAX } from "@/lib/comments";
-import { payloadCost, raidTotal, type WavePlan } from "@/lib/attack";
+import { type WavePlan } from "@/lib/attack";
 import { shortEmail, type Enemy } from "@/lib/enemy";
 import { scoutCounts, seenGuns } from "@/lib/scout";
 import { decodeRle, fogPatches, type Gun } from "@/lib/base";
@@ -11,7 +10,8 @@ import { Crosshair, MessageSquare, Plane } from "lucide-react";
 import ScoutMap from "../scout/ScoutMap";
 import { Button, Card, ConfirmDialog, IconButton, Modal, inputClass } from "../ui";
 import Avatar from "../Avatar";
-import RaidPlanner, { newWave } from "./RaidPlanner";
+import SummonRaidDialog from "./SummonRaidDialog";
+import type { Player } from "@/lib/player";
 import NeedDrones from "./NeedDrones";
 import { useT } from "@/lib/i18n";
 
@@ -22,6 +22,7 @@ interface Props {
   /** Кредиты и цена дрона: из них считается надбавка за начинку. */
   credits: number;
   droneCost: number;
+  testBase: Player;
   onAdd: (email: string) => Promise<string | null>; // текст ошибки или null
   onRaid: (enemy: Enemy, waves: WavePlan[], comment?: string) => Promise<string | null>;
   /** Разведка одним дроном. Вернёт текст ошибки или null. */
@@ -44,6 +45,7 @@ export default function Enemies({
   drones,
   credits,
   droneCost,
+  testBase,
   onAdd,
   onRaid,
   onScout,
@@ -201,13 +203,16 @@ export default function Enemies({
       )}
 
       {target && (
-        <RaidDialog
-          enemy={target}
+        <SummonRaidDialog
+          fixedEnemy={target}
+          enemies={[target]}
+          initial={Math.min(50, Math.max(1, drones))}
+          testBase={testBase}
           drones={drones}
           credits={credits}
           droneCost={droneCost}
           onCancel={() => setTarget(null)}
-          onSend={async (waves, comment) => {
+          onSend={async (_enemy, waves, comment) => {
             const error = await onRaid(target, waves, comment);
             if (!error) {
               setTarget(null);
@@ -416,94 +421,6 @@ function ScoutConfirm({
       }
     >
       {error ? <p className="text-xs text-red-400">{error}</p> : <></>}
-    </Modal>
-  );
-}
-
-/**
- * Окно налёта. Волны набираются планировщиком: сколько волн, какой формы и
- * с какой начинкой — решает игрок, а окно только сторожит запас дронов и
- * кошелёк.
- */
-function RaidDialog({
-  enemy,
-  drones,
-  credits,
-  droneCost,
-  onCancel,
-  onSend,
-}: {
-  enemy: Enemy;
-  drones: number;
-  credits: number;
-  droneCost: number;
-  onCancel: () => void;
-  onSend: (waves: WavePlan[], comment?: string) => Promise<string | null>;
-}) {
-  const t = useT();
-  const [waves, setWaves] = useState<WavePlan[]>(() => [newWave(Math.min(50, Math.max(1, drones)))]);
-  const [comment, setComment] = useState("");
-  const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState<string | null>(null);
-
-  const total = raidTotal(waves);
-  const surcharge = payloadCost(droneCost, waves);
-  // Запас и деньги могли измениться, пока окно открыто, — проверяем перед
-  // самой отправкой, а не только при наборе.
-  const problem =
-    total < 1
-      ? t("raid.empty")
-      : total > drones
-      ? t("raid.tooMany")
-      : surcharge > credits
-      ? t("raid.noCredits")
-      : null;
-
-  const send = async () => {
-    if (sending || problem) return;
-    setSending(true);
-    setSendError(null);
-    const error = await onSend(waves, comment.trim() || undefined);
-    setSending(false);
-    setSendError(error);
-  };
-
-  return (
-    <Modal
-      title={t("raid.title", { name: enemy.name })}
-      onClose={onCancel}
-      footer={
-        <div className="flex flex-wrap justify-center gap-2">
-          <Button
-            variant="danger"
-            onClick={() => void send()}
-            disabled={sending || problem !== null}
-          >
-            {sending ? t("raid.sending") : t("raid.send", { n: total })}
-          </Button>
-          <Button variant="outline" onClick={onCancel}>{t("common.cancel")}</Button>
-        </div>
-      }
-    >
-      <RaidPlanner
-        waves={waves}
-        onChange={setWaves}
-        stock={drones}
-        unitCost={droneCost}
-        credits={credits}
-      />
-      <label className="mb-1 mt-3 block text-xs uppercase tracking-wider text-neutral-400">
-        {t("raidComment.openerField")}
-      </label>
-      <input
-        value={comment}
-        onChange={(e) => setComment(e.target.value.slice(0, RAID_COMMENT_MAX))}
-        placeholder={t("raidComment.openerFieldPlaceholder")}
-        className={inputClass}
-        maxLength={RAID_COMMENT_MAX}
-      />
-      {problem && <p className="mt-2 text-xs text-red-400">{problem}</p>}
-      {sendError && <p className="mt-2 text-xs text-red-400">{sendError}</p>}
     </Modal>
   );
 }

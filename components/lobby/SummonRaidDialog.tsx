@@ -8,7 +8,10 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { shortEmail, type Enemy } from "@/lib/enemy";
-import { payloadCost, raidTotal, type WavePlan } from "@/lib/attack";
+import { makeOrder, payloadCost, raidTotal, type AttackOrder, type OutgoingRaid, type WavePlan } from "@/lib/attack";
+import type { Player } from "@/lib/player";
+import { explainAlone } from "@/lib/errors";
+import Battle from "../battle/Battle";
 import { RAID_COMMENT_MAX } from "@/lib/comments";
 import RaidPlanner, { newWave } from "./RaidPlanner";
 import { Button, Modal, inputClass } from "../ui";
@@ -20,6 +23,9 @@ export default function SummonRaidDialog({
   drones,
   credits,
   droneCost,
+  fixedEnemy,
+  existing,
+  testBase,
   onCancel,
   onSend,
 }: {
@@ -28,6 +34,9 @@ export default function SummonRaidDialog({
   drones: number;
   credits: number;
   droneCost: number;
+  fixedEnemy?: Enemy;
+  existing?: OutgoingRaid;
+  testBase: Player;
   onCancel: () => void;
   onSend: (
     enemy: Enemy,
@@ -36,42 +45,93 @@ export default function SummonRaidDialog({
   ) => Promise<string | null>;
 }) {
   const t = useT();
-  const [targetId, setTargetId] = useState(enemies[0]?.id ?? "");
-  const [waves, setWaves] = useState<WavePlan[]>(() => [newWave(initial)]);
-  const [comment, setComment] = useState("");
+  const [targetId, setTargetId] = useState(fixedEnemy?.id ?? enemies[0]?.id ?? "");
+  const [waves, setWaves] = useState<WavePlan[]>(() => structuredClone(existing?.waves ?? [newWave(initial)]));
+  const [comment, setComment] = useState(existing?.opener ?? "");
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
+  const [test, setTest] = useState<{ order: AttackOrder; base: Player } | null>(null);
+  const [baseline] = useState(() => JSON.stringify({ targetId, waves, comment }));
+  const dirty = baseline !== JSON.stringify({ targetId, waves, comment });
+  const readOnly = Boolean(existing);
+  const close = () => {
+    if (sending) return;
+    if (dirty && !readOnly) setConfirmClose(true);
+    else onCancel();
+  };
 
-  const enemy = enemies.find((e) => e.id === targetId) ?? null;
+  const enemy = fixedEnemy ?? enemies.find((e) => e.id === targetId) ?? null;
   const total = raidTotal(waves);
-  const surcharge = payloadCost(droneCost, waves);
+  const unitCost = existing?.unitCost ?? droneCost;
+  const stock = drones + (existing ? raidTotal(existing.waves) : 0);
+  const budget = credits + (existing?.surcharge ?? 0);
+  const surcharge = payloadCost(unitCost, waves);
 
   const problem =
     total < 1
       ? t("raid.empty")
-      : total > drones
+      : total > stock
         ? t("raid.tooMany")
-        : surcharge > credits
+        : surcharge > budget
           ? t("raid.noCredits")
           : !enemy
             ? t("raid.pickTarget")
             : null;
 
   const send = async () => {
-    if (sending || problem || !enemy) return;
+    if (sending || readOnly || problem || !enemy) return;
     setSending(true);
     setError(null);
-    const err = await onSend(enemy, waves, comment.trim() || undefined);
-    setSending(false);
-    setError(err);
+    try {
+      const err = await onSend(enemy, waves, comment.trim() || undefined);
+      setError(err);
+      if (err) setConfirmClose(false);
+    } catch (e) {
+      setError(explainAlone(e, t));
+      setConfirmClose(false);
+    } finally {
+      setSending(false);
+    }
   };
+
+  if (test) return (
+    <div className="fixed inset-0 z-50 bg-neutral-950">
+      <Battle
+        cells={test.base.cells} guns={test.base.guns} depots={test.base.depots}
+        levels={test.base.levels} order={test.order} practice
+        onFinish={() => setTest(null)}
+      />
+      <Button className="fixed right-3 top-3 z-50" onClick={() => setTest(null)}>
+        {t("raid.backToPlan")}
+      </Button>
+    </div>
+  );
+
+  if (confirmClose) return (
+    <Modal title={t("raid.saveQuestion")} onClose={() => setConfirmClose(false)} footer={
+      <div className="flex flex-wrap justify-center gap-2">
+        <Button variant="build" disabled={sending || problem !== null} onClick={() => void send()}>{t("common.save")}</Button>
+        <Button disabled={sending} onClick={onCancel}>{t("raid.discard")}</Button>
+        <Button disabled={sending} onClick={() => setConfirmClose(false)}>{t("common.cancel")}</Button>
+      </div>
+    }>
+      <p className="text-sm text-neutral-400">{t("raid.saveNewHint")}</p>
+      {problem && <p className="mt-2 text-xs text-red-400">{problem}</p>}
+    </Modal>
+  );
 
   return (
     <Modal
-      title={t("raid.testTitle")}
-      onClose={onCancel}
+      title={existing ? t("raid.planTitle") : fixedEnemy ? t("raid.title", { name: fixedEnemy.name }) : t("raid.testTitle")}
+      onClose={close}
       footer={
         <div className="flex flex-wrap justify-center gap-2">
+          <Button disabled={sending || total < 1} onClick={() => setTest({
+            order: makeOrder(t("raid.practice"), structuredClone(waves), existing?.droneLevel ?? testBase.levels.drones),
+            base: structuredClone(testBase),
+          })}>{t("raid.test")}</Button>
+          {!readOnly && (
           <Button
             variant="danger"
             disabled={sending || problem !== null}
@@ -79,8 +139,9 @@ export default function SummonRaidDialog({
           >
             {sending ? t("raid.sending") : t("raid.send", { n: total })}
           </Button>
-          <Button variant="outline" onClick={onCancel}>
-            {t("common.cancel")}
+          )}
+          <Button variant="outline" disabled={sending} onClick={close}>
+            {t(readOnly ? "common.close" : "common.cancel")}
           </Button>
         </div>
       }
@@ -88,19 +149,22 @@ export default function SummonRaidDialog({
       <label className="mb-1 block text-xs uppercase tracking-wider text-neutral-400">
         {t("raid.target")}
       </label>
-      <TargetPicker
+      {fixedEnemy ? <div className="mb-3 text-sm"><TargetLine enemy={fixedEnemy} /></div> : <TargetPicker
         enemies={enemies}
         value={targetId}
         onChange={setTargetId}
         empty={t("raid.pickTarget")}
-      />
+      />}
 
+      <p className="mb-3 text-xs text-neutral-500">{t("raid.practiceHint")}</p>
+      {readOnly && <p className="mb-3 text-xs text-amber-300">{t("raid.locked")}</p>}
+      <fieldset disabled={sending || readOnly}>
       <RaidPlanner
         waves={waves}
         onChange={setWaves}
-        stock={drones}
-        unitCost={droneCost}
-        credits={credits}
+        stock={stock}
+        unitCost={unitCost}
+        credits={budget}
         free={false}
       />
       <label className="mb-1 mt-3 block text-xs uppercase tracking-wider text-neutral-400">
@@ -113,8 +177,9 @@ export default function SummonRaidDialog({
         className={inputClass}
         maxLength={RAID_COMMENT_MAX}
       />
+      </fieldset>
 
-      {problem && <p className="mt-2 text-xs text-red-400">{problem}</p>}
+      {!readOnly && problem && <p className="mt-2 text-xs text-red-400">{problem}</p>}
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
     </Modal>
   );

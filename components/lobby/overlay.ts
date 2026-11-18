@@ -119,6 +119,8 @@ export function drawDraft(
   d: Rect,
   o: {
     cells: Uint8Array;
+    onlyIntact?: boolean;
+    blocked?: Set<number>;
     /** Показывать залитыми сгоревшие клетки: ремонт и снос платят за них. */
     burntOnly?: "repair" | "scrap";
     /** Снос идёт целиком, без остатка. */
@@ -152,7 +154,11 @@ export function drawDraft(
 
   const bad = !o.connects || !o.afford;
   ctx.fillStyle = bad ? MARK.draftBad : MARK.draft;
-  ctx.fillRect(d.x * cell, d.y * cell, d.w * cell, d.h * cell);
+  if (o.onlyIntact) {
+    for (let y = Math.max(0, d.y); y < Math.min(GRID, d.y + d.h); y++)
+      for (let x = Math.max(0, d.x); x < Math.min(GRID, d.x + d.w); x++)
+        if (o.cells[idx(x, y)] === G_BASE && !o.blocked?.has(idx(x, y))) ctx.fillRect(x * cell, y * cell, cell, cell);
+  } else ctx.fillRect(d.x * cell, d.y * cell, d.w * cell, d.h * cell);
   ctx.strokeStyle = bad ? MARK.bad : MARK.draftLine;
   ctx.lineWidth = 1.5;
   ctx.strokeRect(d.x * cell, d.y * cell, d.w * cell, d.h * cell);

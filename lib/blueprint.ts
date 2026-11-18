@@ -87,7 +87,8 @@ export function installValue(guns: Gun[], lv: Levels) {
     countKind(guns, "rocket") * gunCost(lv, "rocket") +
     countKind(guns, "spray") * gunCost(lv, "spray") +
     countKind(guns, "trap") * gunCost(lv, "trap") +
-    countKind(guns, "balloon") * gunCost(lv, "balloon")
+    countKind(guns, "balloon") * gunCost(lv, "balloon") +
+    countKind(guns, "net") * gunCost(lv, "net")
   );
 }
 

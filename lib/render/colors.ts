@@ -157,7 +157,7 @@ export const COLORS = {
 };
 
 /** Цвета маркера установки на карте разведки — те же, что и в бою. */
-export function installColors(kind: "gun" | "rocket" | "spray" | "trap" | "balloon") {
+export function installColors(kind: "gun" | "rocket" | "spray" | "trap" | "balloon" | "net") {
   switch (kind) {
     case "balloon":
       return { body: COLORS.balloonPad, top: COLORS.balloonPadTop };

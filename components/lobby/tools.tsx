@@ -19,6 +19,7 @@ import {
   ROCKET_COST,
   SPRAY_COST,
   TRAP_COST,
+  NET_COST,
   UPGRADE_STEP,
   CELL_COST,
   type UpgradeKind,
@@ -37,6 +38,7 @@ export type Tool =
   | "rocket"
   | "spray"
   | "trap"
+  | "net"
   | "balloon"
   | "drones";
 /**
@@ -45,7 +47,7 @@ export type Tool =
  * Списком, а не четырьмя «или» по коду: с ракетницей их стало четверо, и
  * один забытый «или» уже стоил того, что ракетница не ставилась вовсе.
  */
-export const isBuildKind = (t: ToolId | null): t is GunKind =>
+export const isBuildKind = (t: ToolId | null): t is Exclude<GunKind, "net"> =>
   t === "gun" || t === "rocket" || t === "spray" || t === "trap" || t === "balloon";
 
 /** Кнопка «Апгрейд» карты не касается: она только открывает модалку. */
@@ -165,6 +167,15 @@ export const TOOLS: {
     icon: <PieceIcon kind="trap" />,
     levelKind: "traps",
     countKind: "traps",
+  },
+  {
+    id: "net",
+    label: "tool.net",
+    hint: "tool.netHint",
+    vars: { cost: NET_COST },
+    icon: <PieceIcon kind="net" />,
+    levelKind: "nets",
+    priceKey: "tool.priceCell",
   },
   {
     id: "balloon",

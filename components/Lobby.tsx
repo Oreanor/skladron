@@ -9,11 +9,11 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import dynamic from "next/dynamic";
 import { countFreeCells, countKind, decodeRle, droneCount, fogPatches, normRect } from "@/lib/base";
 import { LOAN_MIN, STARTER_SIDE, dronePrice, fmt, loanMax } from "@/lib/economy";
-import type { AttackOrder, AttackReport } from "@/lib/attack";
+import type { AttackOrder, AttackReport, OutgoingRaid } from "@/lib/attack";
 import { MAX_BASE_NAME, burntCells, intactCells, isDoomed, type Player } from "@/lib/player";
 import { titleCompetitions } from "@/lib/competition";
 import { getRepo } from "@/lib/repo";
-import type { Enemy } from "@/lib/enemy";
+import { blankEnemy, type Enemy } from "@/lib/enemy";
 import { draftPlan } from "@/lib/build";
 import { MAX_BLUEPRINT_NAME, blueprintOf, freeBlueprintName, rebuildCost } from "@/lib/blueprint";
 import { postRaidComment } from "@/lib/comments";
@@ -45,7 +45,7 @@ import { InsuranceDialog, LoanDialog, UpgradeDialog } from "./lobby/MoneyDialogs
 import RaidsPanel, { StatsPanel } from "./lobby/RaidsPanel";
 import AvatarPicker from "./lobby/AvatarPicker";
 import { TOOLS, type ModalId, type SheetId, type ToolId } from "./lobby/tools";
-import { toolPrice, toolVars } from "./lobby/toolNumbers";
+import { toolHint, toolPrice, toolVars } from "./lobby/toolNumbers";
 import { useBaseSync } from "./lobby/useBaseSync";
 import { usePanels } from "./lobby/usePanels";
 import { useBlueprints } from "./lobby/useBlueprints";
@@ -115,6 +115,7 @@ export default function Lobby({
   const [postCommentRaid, setPostCommentRaid] = useState<string | null>(null);
   /** Открыт ли планировщик пробного налёта на себя. */
   const [summonRaidOpen, setSummonRaid] = useState(false);
+  const [sentRaid, setSentRaid] = useState<OutgoingRaid | null>(null);
   // дронов нет — вместо окна налёта предложение купить их
   const [needDrones, setNeedDrones] = useState(false);
   // круги того, что ставят или тащат, — их можно убрать галочкой в углу карты
@@ -300,6 +301,7 @@ export default function Lobby({
           rockets: p.levels.rockets,
           sprays: p.levels.sprays,
           traps: p.levels.traps,
+          nets: p.levels.nets,
           balloons: p.levels.balloons,
           mg: p.levels.mg,
           water: p.levels.water,
@@ -334,7 +336,7 @@ export default function Lobby({
 
   // Рамкой работают и «Площадь», и «Ремонт»: выделил, подправил, утвердил.
   // Разница только в том, что считается внутри рамки и почём.
-  const drafting = tool === "area" || tool === "repair" || tool === "scrap";
+  const drafting = tool === "area" || tool === "repair" || tool === "scrap" || tool === "net";
   const draft = map.draft.current;
   const draftRect = draft ? normRect(draft) : null;
   // Сколько клеток, почём и можно ли — считает стройка; лобби только
@@ -434,6 +436,11 @@ export default function Lobby({
       onDefend={(order) => void flow.defend(order)}
       onWatch={(r) => void openReplay(r.id, r.side === "attack" ? r.foe : p.name)}
       onHide={(id) => void hideRaid(id)}
+      onPlan={(raid) => {
+        void repo.outgoingRaid(raid.id).then((plan) => {
+          if (plan) { setSheet(null); setSentRaid(plan); }
+        }).catch((e) => setMessage(explain(e, t)));
+      }}
       onFoe={(email) => {
         const enemy = email
           ? p.enemies.find((e) => e.email.toLowerCase() === email.toLowerCase())
@@ -487,6 +494,7 @@ export default function Lobby({
       droneCost={droneCost}
       onAdd={rivals.add}
       onRaid={rivals.raid}
+      testBase={p}
       onScout={rivals.scout}
       fetchStale={fetchStale}
       onWrite={openChat}
@@ -515,7 +523,7 @@ export default function Lobby({
     tool,
     // Те же числа, что и на самой кнопке: сырые vars не знают ни цены по
     // уровню, ни прокачанной дальности, и в строке оставались «{cost}».
-    hint: t(activeTool.hint, toolVars(p.levels, activeTool)),
+    hint: t(toolHint(p.levels, activeTool), toolVars(p.levels, activeTool)),
     draft:
       draftOpen && draftRect
         ? {
@@ -632,7 +640,7 @@ export default function Lobby({
               ...item.vars,
               cost: toolPrice(p.levels, item),
             })}
-            hint={t(item.hint, toolVars(p.levels, item))}
+            hint={t(toolHint(p.levels, item), toolVars(p.levels, item))}
             level={item.levelKind ? p.levels[item.levelKind] : undefined}
             count={item.countKind ? counters[item.countKind] : undefined}
             active={tool === item.id}
@@ -805,6 +813,7 @@ export default function Lobby({
         <SummonRaidDialog
           // не больше, чем лежит на складе
           initial={Math.max(1, Math.min(suggestedRaid(p, intact), drones))}
+          testBase={p}
           enemies={p.enemies}
           drones={drones}
           credits={p.credits}
@@ -815,6 +824,18 @@ export default function Lobby({
             if (!err) setSummonRaid(false);
             return err;
           }}
+        />
+      )}
+
+      {sentRaid && (
+        <SummonRaidDialog
+          key={sentRaid.id}
+          initial={1} existing={sentRaid} testBase={p}
+          enemies={[]}
+          fixedEnemy={blankEnemy(sentRaid.targetEmail, sentRaid.targetName)}
+          drones={drones} credits={p.credits} droneCost={droneCost}
+          onCancel={() => setSentRaid(null)}
+          onSend={async () => null}
         />
       )}
 
@@ -932,8 +953,8 @@ export default function Lobby({
           onTake={async () => {
             if (await base.takeLoan(Math.min(loanAmount, loanMax(p.levels.loan)))) setModal(null);
           }}
-          onRepay={async () => {
-            if (await base.repayLoan()) setModal(null);
+          onRepay={async (amount) => {
+            await base.repayLoan(amount);
           }}
           onClose={() => setModal(null)}
         />

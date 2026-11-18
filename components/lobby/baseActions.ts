@@ -90,10 +90,10 @@ export function baseActions(core: LobbyCore, player: RefObject<Player | null>, p
     }
   };
 
-  const repayLoan = async () => {
+  const repayLoan = async (amount: number) => {
     try {
-      await repo.repayLoan(p);
-      say(t("loan.repaid"));
+      await repo.repayLoan(p, amount);
+      say(t(p.loan > 0 ? "loan.partRepaid" : "loan.repaid"));
       core.rerender();
       return true;
     } catch (e) {

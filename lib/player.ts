@@ -55,6 +55,7 @@ export interface Levels {
   sprays: number;
   /** Ловушки: радиус захвата. */
   traps: number;
+  nets: number;
   /** Пусковые шаров: шире круг и на два шара больше за уровень. */
   balloons: number;
   /** Пулемёт игрока: меткость очереди. */
@@ -73,6 +74,7 @@ export const startLevels = (): Levels => ({
   rockets: 1,
   sprays: 1,
   traps: 1,
+  nets: 1,
   balloons: 1,
   mg: 1,
   water: 1,

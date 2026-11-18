@@ -15,9 +15,10 @@ import { COLORS } from "./colors";
 import { drawBattleDepots } from "./depots";
 import { drawBoom, drawSoft } from "./fx";
 import { slabBevel, slabShadow } from "./light";
-import { drawBalloons, drawDroneSwarm, drawPiece } from "./pieces";
+import { drawBalloons, drawDroneSwarm, drawPiece, drawNet } from "./pieces";
 
 // Палитра и сами предметы живут в render/: их правят отдельно от кадра боя.
+export { drawNet } from "./pieces";
 export { COLORS, installColors } from "./colors";
 export {
   drawBalloonPad,
@@ -42,6 +43,7 @@ export interface Scene {
 
 /** Как карта сейчас показана: масштаб и сдвиг. */
 export interface View {
+  showNets?: boolean;
   zoom: number;
   panX: number;
   panY: number;
@@ -146,7 +148,7 @@ export function drawStatic(
   }
 }
 /** Чьи круги покрытия показывать: зениток, ракетниц, огнетушителей, ловушек. */
-export type CoverageKind = "gun" | "rocket" | "spray" | "trap" | "balloon";
+export type CoverageKind = "gun" | "rocket" | "spray" | "trap" | "balloon" | "net";
 
 export function drawCoverage(
   ctx: CanvasRenderingContext2D,
@@ -184,7 +186,7 @@ export function drawCoverage(
     rocket?: boolean;
     balloon?: boolean;
   }): CoverageKind =>
-    g.kind === "balloon" || g.balloon === true
+    g.kind === "net" ? "net" : g.kind === "balloon" || g.balloon === true
       ? "balloon"
       : g.kind === "trap" || g.trap === true
       ? "trap"
@@ -210,6 +212,7 @@ export function drawCoverage(
       fill: COLORS.trapRange,
       stroke: COLORS.trapRangeLine,
     },
+    net: { r: 0, fill: "transparent", stroke: "transparent" },
     balloon: {
       r: balloonsRange,
       fill: COLORS.balloonRange,
@@ -321,7 +324,8 @@ export function drawFrame(
   hover: { x: number; y: number } | null,
   now: number,
   /** Круги действия установок и дронов-подавителей, зона обдува. В бою их можно убрать. */
-  zones = true
+  zones = true,
+  showNets = true
 ) {
   drawBattleDepots(ctx, s, cell);
 
@@ -367,6 +371,7 @@ export function drawFrame(
     });
   }
 
+  if (showNets) for (const i of s.nets) drawNet(ctx, i % GRID, Math.floor(i / GRID), cell);
   drawBalloons(ctx, s.balloons, cell);
   drawPops(ctx, s.pops, cell);
 

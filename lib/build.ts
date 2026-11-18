@@ -36,6 +36,7 @@ import {
   newCellsIn,
 } from "./base";
 import {
+  netCost,
   BALLOON_COST,
   CELL_COST,
   MIN_BASE_CELLS,
@@ -83,6 +84,7 @@ const onMap = (x: number, y: number) => x >= 0 && y >= 0 && x < GRID && y < GRID
  */
 export function gunCost(levels: Levels, kind: GunKind): number {
   switch (kind) {
+    case "net": return netCost(levels.nets);
     case "spray":
       return priceAt(SPRAY_COST, SPRAY_TOP, levels.sprays);
     case "trap":
@@ -134,7 +136,7 @@ export function scrapAt(p: Player, x: number, y: number): BuildResult {
   const i = idx(x, y);
   const was = p.cells[i];
   if (was !== G_BURNT && was !== G_BASE) return skip;
-  if (gunOn(p.guns, x, y) || depotOn(p.depots, x, y)) return no("scrap.busy");
+  if (p.guns.some((g) => g.cx === x && g.cy === y) || depotOn(p.depots, x, y)) return no("scrap.busy");
 
   const cells = p.cells.slice();
   cells[i] = G_GROUND;
@@ -142,6 +144,7 @@ export function scrapAt(p: Player, x: number, y: number): BuildResult {
   if (footprint(p.cells) - 1 < MIN_BASE_CELLS) return no("scrap.tooSmall", { n: MIN_BASE_CELLS });
 
   p.cells = cells;
+  p.guns = p.guns.filter((g) => g.kind !== "net" || g.cx !== x || g.cy !== y);
   p.credits += SCRAP_REWARD;
   return done(-SCRAP_REWARD);
 }
@@ -177,7 +180,7 @@ export interface DraftPlan {
   small: boolean;
 }
 
-export type DraftTool = "area" | "repair" | "scrap";
+export type DraftTool = "area" | "repair" | "scrap" | "net";
 
 export function draftPlan(
   p: Player,
@@ -185,6 +188,11 @@ export function draftPlan(
   rect: Rect | null,
   hasBuilding: boolean
 ): DraftPlan {
+  if (tool === "net") {
+    const missing = rect ? netCells(p, rect).length : 0;
+    const cells = missing || (rect ? coveredNets(p, rect).length : 0);
+    return { cells, cost: missing * netCost(p.levels.nets), connects: true, busy: false, small: false };
+  }
   // Снос берёт любые клетки склада, целые и сгоревшие, по одной цене.
   const scrap = tool === "scrap" && rect ? scrapRect(p.cells.slice(), rect) : null;
   const cells = rect
@@ -236,8 +244,15 @@ export function applyDraft(
 
   const cells = p.cells.slice();
   switch (tool) {
+    case "net": {
+      const missing = netCells(p, rect);
+      if (missing.length) p.guns = [...p.guns, ...missing.map((i) => ({ cx: i % GRID, cy: Math.floor(i / GRID), kind: "net" as const }))];
+      else { const remove = new Set(coveredNets(p, rect)); p.guns = p.guns.filter((g) => !remove.has(g)); }
+      break;
+    }
     case "scrap":
       scrapRect(cells, rect);
+      p.guns = p.guns.filter((g) => g.kind !== "net" || cells[idx(g.cx, g.cy)] === G_BASE);
       break;
     case "repair":
       repairRect(cells, rect);
@@ -255,7 +270,7 @@ export function applyDraft(
 // ---------- установки и контейнеры ----------
 
 const gunOn = (guns: Gun[], x: number, y: number) =>
-  guns.some((g) => g.cx === x && g.cy === y);
+  guns.some((g) => g.kind !== "net" && g.cx === x && g.cy === y);
 const depotOn = (depots: Depot[], x: number, y: number) =>
   depots.some((d) => d.cx === x && d.cy === y);
 
@@ -263,7 +278,7 @@ const depotOn = (depots: Depot[], x: number, y: number) =>
 export function placeGun(p: Player, x: number, y: number, kind: GunKind): BuildResult {
   if (!onMap(x, y)) return skip;
   if (p.cells[idx(x, y)] !== G_BASE) return no("gun.onlyIntact");
-  if (depotOn(p.depots, x, y)) return no("gun.cellBusy");
+  if (depotOn(p.depots, x, y) || p.guns.some((g) => g.kind === "net" && g.cx === x && g.cy === y)) return no("gun.cellBusy");
 
   const cost = gunCost(p.levels, kind);
   if (p.credits < cost) return no("gun.noCredits");
@@ -298,7 +313,7 @@ export function placeDepot(p: Player, x: number, y: number): BuildResult {
  */
 function swapInto(p: Player, from: { cx: number; cy: number }, x: number, y: number) {
   p.guns = sanitizeGuns(
-    p.guns.map((g) => (g.cx === x && g.cy === y ? { ...g, cx: from.cx, cy: from.cy } : g))
+    p.guns.map((g) => (g.kind !== "net" && g.cx === x && g.cy === y ? { ...g, cx: from.cx, cy: from.cy } : g))
   );
   p.depots = p.depots.map((d) =>
     d.cx === x && d.cy === y ? { ...d, cx: from.cx, cy: from.cy } : d
@@ -318,6 +333,7 @@ export function moveDepot(
 
   const at = p.depots.findIndex((d) => d.cx === from.cx && d.cy === from.cy);
   if (at < 0) return skip;
+  if (p.guns.some((g) => g.kind === "net" && g.cx === from.cx && g.cy === from.cy) && gunOn(p.guns, x, y)) return no("gun.cellBusy");
   const moving = p.depots[at];
   p.depots = p.depots.filter((_, i) => i !== at);
   swapInto(p, from, x, y);
@@ -340,9 +356,26 @@ export function moveGun(
     (g) => g.cx === from.cx && g.cy === from.cy && gunKind(g) === from.kind
   );
   if (at < 0) return skip;
+  if (p.guns.some((g) => g.kind === "net" && g.cx === x && g.cy === y)) return no("gun.cellBusy");
   const moving = p.guns[at];
   p.guns = p.guns.filter((_, i) => i !== at);
   swapInto(p, from, x, y);
   p.guns = sanitizeGuns([...p.guns, { ...moving, cx: x, cy: y }]);
   return done(0);
+}
+
+/** Сетка — слой над пустым целым полом и контейнерами, без установок. */
+export function netCells(p: Player, rect: Rect): number[] {
+  const occupied = new Set(p.guns.map((g) => idx(g.cx, g.cy)));
+  const out: number[] = [];
+  for (let y = Math.max(0, rect.y); y < Math.min(GRID, rect.y + rect.h); y++)
+    for (let x = Math.max(0, rect.x); x < Math.min(GRID, rect.x + rect.w); x++) {
+      const i = idx(x, y);
+      if (p.cells[i] === G_BASE && !occupied.has(i)) out.push(i);
+    }
+  return out;
+}
+
+function coveredNets(p: Player, rect: Rect): Gun[] {
+  return p.guns.filter((g) => g.kind === "net" && g.cx >= rect.x && g.cy >= rect.y && g.cx < rect.x + rect.w && g.cy < rect.y + rect.h);
 }

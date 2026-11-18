@@ -5,7 +5,7 @@ import { CREDITS_START, STARTER_CELLS, type UpgradeKind } from "../economy";
 import { normalizeAvatarForStorage, type Avatar } from "../avatar";
 import { SIMULATION_VERSION } from "../tuning";
 import { notifyMessage } from "../notify";
-import type { Message, Pattern, SnapLevels, WavePlan } from "../attack";
+import type { Message, OutgoingRaid, Pattern, SnapLevels, WavePlan } from "../attack";
 import type { ReplayData } from "@/components/battle/Replay";
 import type { BattleResult } from "../engine";
 import { newPlayer, startLevels, type Player } from "../player";
@@ -410,14 +410,14 @@ export class CloudRepo implements Repo {
     }
   }
 
-  async repayLoan(p: Player) {
-    const { data, error } = await this.db().rpc("repay_loan");
+  async repayLoan(p: Player, amount: number) {
+    const { data, error } = await this.db().rpc("repay_loan", { amount });
     if (error) throw error;
     const row = (data as { credits: number; loan: number }[] | null)?.[0];
     if (row) {
       p.credits = row.credits;
       p.loan = row.loan;
-      p.loanDue = null;
+      if (p.loan === 0) p.loanDue = null;
     }
   }
 
@@ -615,6 +615,12 @@ export class CloudRepo implements Repo {
     if (row?.depots) p.depots = row.depots;
     if (row?.credits !== undefined) p.credits = row.credits;
     return row?.id ?? null;
+  }
+
+  async outgoingRaid(id: string): Promise<OutgoingRaid | null> {
+    const { data, error } = await this.db().rpc("outgoing_raid", { attack_id: id });
+    if (error) throw error;
+    return (data as OutgoingRaid[] | null)?.[0] ?? null;
   }
 
   async telegram() {

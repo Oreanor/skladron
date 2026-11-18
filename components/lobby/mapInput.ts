@@ -88,6 +88,7 @@ export interface MapActions {
   drafting: boolean;
   /** Перерисовать лобби: что-то видимое поменялось вне карты. */
   rerender: () => void;
+  netAt: (x: number, y: number) => void;
   buildOne: (x: number, y: number) => void;
   repairAt: (x: number, y: number) => void;
   scrapAt: (x: number, y: number) => void;
@@ -124,13 +125,13 @@ export function mapHandlers(m: MapRefs, a: MapActions) {
     // Что стоит на складе, то и берётся мышкой — в любом режиме. Иначе
     // непонятно, почему пушка тащится при одной кнопке и не тащится при другой.
     const depot = p.depots.find((q) => q.cx === c.x && q.cy === c.y);
-    if (depot) {
+    if (depot && tool !== "net") {
       m.dragDepot.current = { cx: depot.cx, cy: depot.cy };
       rerender();
       return;
     }
-    const gun = p.guns.find((q) => q.cx === c.x && q.cy === c.y);
-    if (gun) {
+    const gun = p.guns.find((q) => q.kind !== "net" && q.cx === c.x && q.cy === c.y);
+    if (gun && tool !== "net") {
       m.dragGun.current = { cx: gun.cx, cy: gun.cy, kind: gunKind(gun) };
       rerender();
       return;
@@ -264,7 +265,8 @@ export function mapHandlers(m: MapRefs, a: MapActions) {
       // одиночный тап: достраиваем или чиним ровно одну клетку
       m.draft.current = null;
       const c = cellOf(pt);
-      if (tool === "repair") a.repairAt(c.x, c.y);
+      if (tool === "net") a.netAt(c.x, c.y);
+      else if (tool === "repair") a.repairAt(c.x, c.y);
       else if (tool === "scrap") a.scrapAt(c.x, c.y);
       else a.buildOne(c.x, c.y);
       return;

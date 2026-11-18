@@ -277,6 +277,8 @@ export interface BattleResult {
 }
 
 export interface GameState {
+  nets: Set<number>;
+  netLevel: number;
   phase: Phase;
   cells: Uint8Array;
   baseCells: number[];
@@ -390,6 +392,7 @@ export const rocketTempo = (s: { rocketLevel: number }) =>
 
 /** Уровни, с которыми идёт бой. Чего нет — то первого уровня. */
 export interface BattleLevels {
+  nets?: number;
   drones?: number;
   guns?: number;
   sprays?: number;
@@ -425,7 +428,9 @@ export function createBattle(
     cells: map,
     baseCells,
     fire: new Map(),
-    guns: guns.map((g) => ({
+    netLevel: levels.nets ?? 1,
+    nets: new Set(guns.filter((g) => g.kind === "net").map((g) => idx(g.cx, g.cy))),
+    guns: guns.filter((g) => g.kind !== "net").map((g) => ({
       id: nextId++,
       cx: g.cx,
       cy: g.cy,
@@ -625,6 +630,7 @@ export function extinguish(s: GameState, x: number, y: number) {
 
 function ignite(s: GameState, i: number) {
   if (s.cells[i] !== G_BASE) return;
+  s.nets.delete(i);
   s.cells[i] = G_FIRE;
   s.targetsStale = true;
   s.fire.set(i, FIRE.spread);
@@ -770,6 +776,7 @@ function aimTick(s: GameState) {
 function crash(s: GameState, d: Pick<Drone, "x" | "y" | "payload">) {
   const cx = Math.max(0, Math.min(GRID - 1, Math.floor(d.x)));
   const cy = Math.max(0, Math.min(GRID - 1, Math.floor(d.y)));
+  if (absorbDroneHit(s, idx(cx, cy))) return;
   const ring = PAYLOAD[d.payload].ring;
   for (let y = cy - ring; y <= cy + ring; y++) {
     for (let x = cx - ring; x <= cx + ring; x++) {
@@ -1023,6 +1030,10 @@ function arrive(s: GameState, d: Drone): boolean {
     return false;
   }
 
+  if (absorbDroneHit(s, d.ti)) {
+    s.booms.push({ x: d.tx, y: d.ty, t: 0, r: 1 });
+    return true;
+  }
   ignite(s, d.ti);
   s.booms.push({ x: d.tx, y: d.ty, t: 0, r: 2.5 * PAYLOAD[d.payload].blast });
   // Взрывчатка забирает не одну клетку, а крест вокруг неё: радиус меряем
@@ -1443,7 +1454,7 @@ function stepDrones(s: GameState, dt: number, gunsById: Map<number, Gun>) {
       // собой ему нечем. Раньше он сбивал пушки случайными касаниями и сам
       // при этом пропадал — выглядело как необъяснимые потери.
       if (g && prey(d.payload) === null && s.rnd() < DRONE.gunCollision) {
-        killGun(s, g);
+        if (!absorbDroneHit(s, idx(cx, cy))) killGun(s, g);
         s.booms.push({ x: cx + 0.5, y: cy + 0.5, t: 0, r: 3 * PAYLOAD[d.payload].blast });
         s.drones.splice(i, 1);
         // Его никто не сбивал — он дошёл и снёс установку собой. В счёт идёт
@@ -2136,7 +2147,7 @@ function stepFire(s: GameState, dt: number) {
       if (x < GRID - 1) near.push(i + 1);
       if (y > 0) near.push(i - GRID);
       if (y < GRID - 1) near.push(i + GRID);
-      const fuel = near.filter((n) => s.cells[n] === G_BASE);
+      const fuel = near.filter((n) => s.cells[n] === G_BASE && !(s.netLevel >= 3 && s.nets.has(n)));
       if (fuel.length === 0) {
         // гореть больше нечему — очаг догорает сам, иначе бой не кончится
         s.cells[i] = G_BURNT;
@@ -2252,7 +2263,7 @@ export function settle(s: GameState) {
   for (const i of s.fire.keys()) cells[i] = G_BURNT;
   return {
     cells,
-    guns: s.guns
+    guns: [...Array.from(s.nets).filter((i) => cells[i] === G_BASE).map((i) => ({ cx: i % GRID, cy: Math.floor(i / GRID), kind: "net" as const })), ...s.guns
       .filter((g) => g.alive)
       .map((g) =>
         g.balloon
@@ -2264,8 +2275,20 @@ export function settle(s: GameState) {
             : g.rocket
               ? { cx: g.cx, cy: g.cy, kind: "rocket" as const }
               : { cx: g.cx, cy: g.cy }
-      ),
+      )],
     depots: s.depots.map((d) => ({ ...d })),
     result: s.result,
   };
+}
+
+/** Прямое попадание снимает слой, не передавая взрыв складу. Огонь сюда не приходит. */
+export function absorbDroneHit(s: GameState, i: number): boolean {
+  if (!s.nets.has(i)) return false;
+  const cx = i % GRID, cy = Math.floor(i / GRID);
+  const affected = s.netLevel >= 2 ? [[cx, cy]] : [[cx, cy], [cx - 1, cy], [cx + 1, cy], [cx, cy - 1], [cx, cy + 1]];
+  for (const [x, y] of affected) {
+    if (x >= 0 && y >= 0 && x < GRID && y < GRID) s.nets.delete(idx(x, y));
+  }
+  s.dirty = true;
+  return true;
 }

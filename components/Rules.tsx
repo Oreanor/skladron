@@ -4,6 +4,11 @@
 // правила не расходились с балансом после очередной правки.
 
 import {
+  NET_COST,
+  NET_COST_MID,
+  NET_COST_TOP,
+  NET_UPGRADE_FIRST,
+  NET_UPGRADE_SECOND,
   CELL_COST,
   BALLOON_COST,
   CELL_LOOT_REWARD,
@@ -70,6 +75,11 @@ const values: Record<string, string> = {
   spray: String(SPRAY_COST),
   rocket: String(ROCKET_COST),
   trap: String(TRAP_COST),
+  net: String(NET_COST),
+  netMid: String(NET_COST_MID),
+  netTop: String(NET_COST_TOP),
+  netFirst: String(NET_UPGRADE_FIRST),
+  netSecond: String(NET_UPGRADE_SECOND),
   trapCap: String(TRAP.capacity),
   perCell: String(DRONES_PER_CELL),
   droneBox: String(DRONE_UNIT_COST * DRONES_PER_CELL),

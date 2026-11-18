@@ -12,7 +12,7 @@ import {
 } from "@/lib/render";
 import { Button } from "./ui";
 import { useT } from "@/lib/i18n";
-import ZonesToggle from "./ZonesToggle";
+import ZonesToggle, { useZones } from "./ZonesToggle";
 
 export const CELL = 7; // px на клетку в логических координатах
 export const SIZE = GRID * CELL;
@@ -83,6 +83,7 @@ export default function MapCanvas({
   children,
   zones,
 }: MapCanvasProps) {
+  const [showNets, setShowNets] = useZones("wb.showNets", true);
   const t = useT();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -116,10 +117,10 @@ export default function MapCanvas({
     setShowFps(new URLSearchParams(window.location.search).has("fps"));
   }, []);
 
-  sceneRef.current = scene;
-  overlayRef.current = overlay;
+  sceneRef.current = showNets ? scene : { ...scene, guns: scene.guns.filter((g) => g.kind !== "net") };
+  overlayRef.current = overlay ? (ctx, now, view) => overlay(ctx, now, { ...view, showNets }) : undefined;
   idleRef.current = idle;
-  sceneVersionRef.current = sceneVersion;
+  sceneVersionRef.current = sceneVersion * 2 + Number(showNets);
   boxSize.current = box;
 
   /**
@@ -476,11 +477,14 @@ export default function MapCanvas({
         </span>
       )}
       {zones && (
+        <div className="absolute bottom-2 left-2 z-10 flex flex-wrap gap-3 rounded bg-black/50 px-2 py-1">
         <ZonesToggle
           on={zones.on}
           onChange={zones.onChange}
-          className="absolute bottom-2 left-2 z-10 rounded bg-black/50 px-2 py-1 text-white"
+          className="text-white"
         />
+        <ZonesToggle on={showNets} onChange={setShowNets} label={t("map.showNets")} className="text-white" />
+        </div>
       )}
       {children}
     </div>

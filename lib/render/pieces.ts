@@ -115,6 +115,7 @@ export function drawPiece(
   o: PieceState = {}
 ) {
   switch (kind) {
+    case "net": return alive ? drawNet(ctx, cx, cy, cell) : undefined;
     case "spray":
       return drawSpray(ctx, cx, cy, cell, angle, o.wet ?? 0, alive, o.range);
     case "trap":
@@ -778,4 +779,24 @@ export function drawRocket(
   if (loaded) stamp(ctx, "rocketLoaded", paintRocketLoaded, x, y, cell, angle);
   else stamp(ctx, "rocketEmpty", paintRocketEmpty, x, y, cell, angle);
   applyLight(ctx, "square", x, y, cell * MOUNT_R);
+}
+
+/** Три диагонали в каждую сторону, обрезанные границами клетки. */
+export function drawNet(ctx: CanvasRenderingContext2D, cx: number, cy: number, cell: number) {
+  ctx.save();
+  ctx.translate(cx * cell, cy * cell);
+  ctx.beginPath(); ctx.rect(0, 0, cell, cell); ctx.clip();
+  ctx.beginPath();
+  for (const offset of [-0.5, 0, 0.5]) {
+    ctx.moveTo(offset * cell, 0); ctx.lineTo((offset + 1) * cell, cell);
+    ctx.moveTo((offset + 1) * cell, 0); ctx.lineTo(offset * cell, cell);
+  }
+  // Тёмный контур отделяет нити и от пола, и от светлых контейнеров.
+  ctx.strokeStyle = "rgba(12, 28, 34, 0.5)";
+  ctx.lineWidth = Math.max(0.7, cell * 0.09);
+  ctx.stroke();
+  ctx.strokeStyle = "#e6fbff";
+  ctx.lineWidth = Math.max(0.45, cell * 0.055);
+  ctx.stroke();
+  ctx.restore();
 }

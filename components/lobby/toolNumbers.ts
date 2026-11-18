@@ -25,6 +25,7 @@ const round1 = (v: number) => Math.round(v * 10) / 10;
  * разойтись с тем, что снимут с кошелька.
  */
 export const toolPrice = (levels: Player["levels"], item: ToolItem) => {
+  if (item.id === "net") return gunCost(levels, "net");
   if (isBuildKind(item.id)) return gunCost(levels, item.id);
   if (item.id === "drones") return depotCost(levels);
   return item.vars.cost;
@@ -50,6 +51,11 @@ export const toolVars = (levels: Player["levels"], item: ToolItem) => {
       range: Math.round(balloonRange({ balloonLevel: levels.balloons })),
       count: balloonCount(levels.balloons),
     };
+  if (item.id === "net") return { ...item.vars, cost: gunCost(levels, "net") };
   if (item.id === "drones") return { ...item.vars, cost: toolPrice(levels, item) };
   return item.vars;
 };
+
+export const toolHint = (levels: Player["levels"], item: ToolItem) =>
+  item.id === "net" && levels.nets >= 3 ? "tool.netFireproofHint" as const :
+  item.id === "net" && levels.nets >= 2 ? "tool.netUpgradedHint" as const : item.hint;

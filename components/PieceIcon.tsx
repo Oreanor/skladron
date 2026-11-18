@@ -9,7 +9,7 @@
 import { useEffect, useRef } from "react";
 import { COLORS, drawDepots, drawDrone, drawPiece } from "@/lib/render";
 
-export type PieceKind = "gun" | "rocket" | "spray" | "trap" | "balloon" | "depot";
+export type PieceKind = "gun" | "rocket" | "spray" | "trap" | "balloon" | "depot" | "net";
 
 /** Клетка картинки в точках холста: предмет рисуется на одной клетке с полями. */
 const CELL = 10;

@@ -194,6 +194,18 @@ export interface RaidLog {
   hasReplay: boolean;
 }
 
+/** План отправленного налёта для просмотра и тестирования. */
+export interface OutgoingRaid {
+  id: string;
+  targetEmail: string;
+  targetName: string;
+  waves: WavePlan[];
+  opener: string;
+  droneLevel: number;
+  unitCost: number;
+  surcharge: number;
+}
+
 /** Итог исходящего налёта, который приходит только после боя защитника. */
 export interface AttackReport {
   id: string;
@@ -229,6 +241,7 @@ export interface Message {
  * но каждый необязателен: снимок мог быть сделан до того, как класс завели.
  */
 export interface SnapLevels {
+  nets?: number;
   guns?: number;
   rockets?: number;
   sprays?: number;

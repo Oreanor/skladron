@@ -36,7 +36,7 @@
 //
 // ПЕРЕД тем как поднять номер — node scripts/freeze-sim.cjs: нынешний движок
 // ляжет в lib/sims/v<номер>, и повторы боёв этой версии не умрут.
-export const SIMULATION_VERSION = 30;
+export const SIMULATION_VERSION = 31;
 
 export const SIM = {
   /** И бой, и его повтор идут строго этими шагами — иначе повтор разойдётся. */

@@ -158,7 +158,7 @@ console.log('\n— цены клиента и сервера совпадают 
 {
   const PRICES = [
     ['GUN_COST', 'gun'], ['ROCKET_COST', 'rocket'], ['SPRAY_COST', 'spray'],
-    ['TRAP_COST', 'trap'], ['DRONE_UNIT_COST', 'drone'], ['BALLOON_COST', 'balloon'],
+    ['NET_UPGRADE_FIRST', 'net_upgrade_first'], ['NET_UPGRADE_SECOND', 'net_upgrade_second'], ['NET_COST', 'net'], ['NET_COST_MID', 'net_mid'], ['NET_COST_TOP', 'net_top'], ['TRAP_COST', 'trap'], ['DRONE_UNIT_COST', 'drone'], ['BALLOON_COST', 'balloon'],
     ['CELL_COST', 'cell'], ['REPAIR_COST', 'repair'], ['SCRAP_REWARD', 'scrap'],
     ['CELL_LOOT_REWARD', 'loot'], ['LOOT_CURVE', 'loot_curve'],
     ['INSURANCE_CELL', 'insure_cell'], ['UPGRADE_STEP', 'upgrade'],

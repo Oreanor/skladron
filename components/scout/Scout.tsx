@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CELLS, GRID, gunKind, type Gun } from "@/lib/base";
-import { COLORS, drawCoverage, drawScoutPlane, installColors } from "@/lib/render";
+import { COLORS, drawPiece, drawCoverage, drawScoutPlane, installColors } from "@/lib/render";
 import {
   createScout,
   scoutCounts,
@@ -187,12 +187,13 @@ export default function Scout({
     return () => cancelAnimationFrame(raf);
   }, [s, fog]);
 
-  const overlay = (ctx: CanvasRenderingContext2D) => {
+  const overlay = (ctx: CanvasRenderingContext2D, _now: number, view: { showNets?: boolean }) => {
     // пушки показываем только там, где туман уже снят
     const known: Gun[] = s.guns.filter((g) => s.seen[g.cy * GRID + g.cx]);
     if (known.length) {
       if (zones) drawCoverage(ctx, known, CELL, s.gunRange);
       for (const g of known) {
+        if (g.kind === "net") { if (view.showNets !== false) drawPiece(ctx, "net", g.cx, g.cy, CELL, 0); continue; }
         const paint = installColors(gunKind(g));
         ctx.fillStyle = paint.body;
         ctx.fillRect(g.cx * CELL, g.cy * CELL, CELL, CELL);

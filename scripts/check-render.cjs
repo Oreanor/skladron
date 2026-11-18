@@ -55,6 +55,7 @@ function checkInBrowser(sources) {
       ({ cx: i % 100, cy: Math.floor(i / 100) + 20, n: 10 }));
     const guns = Array.from({ length: 200 }, (_, i) =>
       ({ cx: i % 100, cy: Math.floor(i / 100) + 50 }));
+    guns.push(...Array.from({ length: 100 }, (_, i) => ({ cx: i % 20, cy: Math.floor(i / 20) + 22, kind: "net" })));
     const s = engine.createBattle(cells, guns, depots, [], { seed: 1 });
     s.drones = Array.from({ length: 1000 }, (_, i) => ({ id: i,
       x: (i * 7.73) % 100, y: (i * 3.43) % 100,
@@ -69,14 +70,14 @@ function checkInBrowser(sources) {
   const canvases = renderers.map(() => document.createElement('canvas'));
   const contexts = canvases.map(c => c.getContext('2d'));
   const tests = [];
-  function compare(label, size = 700, scale = 1, panX = 0, panY = 0) {
+  function compare(label, size = 700, scale = 1, panX = 0, panY = 0, showNets = true) {
     contexts.forEach((ctx, i) => {
       if (canvases[i].width !== size) canvases[i].width = canvases[i].height = size;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.fillStyle = '#789456';
       ctx.fillRect(0, 0, size, size);
       ctx.setTransform(scale, 0, 0, scale, panX, panY);
-      renderers[i].drawFrame(ctx, s, 7, null, 5000, true);
+      renderers[i].drawFrame(ctx, s, 7, null, 5000, true, showNets);
     });
     const [a, b] = contexts.map(ctx => ctx.getImageData(0, 0, size, size).data);
     let maxDelta = 0;
@@ -85,6 +86,12 @@ function checkInBrowser(sources) {
   }
   compare('first frame');
   compare('cached frame');
+  const shownMesh = contexts[0].getImageData(0, 0, 700, 700).data;
+  compare('nets hidden over containers', 700, 1, 0, 0, false);
+  const hiddenMesh = contexts[0].getImageData(0, 0, 700, 700).data;
+  tests.push({ label: 'net visibility changes pixels', maxDelta: shownMesh.some((v, i) => v !== hiddenMesh[i]) ? 0 : 255 });
+  s.nets.delete(2200);
+  compare('one net removed');
   s.depots.splice(99, 1);
   compare('container burned');
   compare('zoom and pan', 700, 4, -1120, -700);

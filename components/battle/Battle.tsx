@@ -41,6 +41,7 @@ interface Props {
   missionBest?: CompetitionBest;
   onFinish: (o: BattleOutcome) => void;
   saving?: boolean;
+  practice?: boolean;
 }
 
 interface Hud {
@@ -74,6 +75,7 @@ export default function Battle({
   missionBest,
   onFinish,
   saving = false,
+  practice = false,
 }: Props) {
   const stateRef = useRef<GameState | null>(null);
   const hoverRef = useRef<{ x: number; y: number } | null>(null);
@@ -231,7 +233,7 @@ export default function Battle({
             sceneVersion={version}
             cursor="none"
             zones={{ on: zones, onChange: setZones }}
-            overlay={(ctx, now) => drawFrame(ctx, s, 7, hoverRef.current, now, zones)}
+            overlay={(ctx, now, view) => drawFrame(ctx, s, 7, hoverRef.current, now, zones, view.showNets)}
             onMove={(p) => {
               hoverRef.current = toCell(p);
               hands.current.cell = hoverRef.current;
@@ -281,6 +283,7 @@ export default function Battle({
               {done.won ? t("battle.won") : t("battle.lost")}
             </div>
             <p className="mb-4 text-sm text-neutral-400">{header}</p>
+            {practice && <p className="mb-3 text-sm text-amber-300">{t("raid.practiceHint")}</p>}
             <dl className="mb-5 space-y-1 font-mono text-sm">
               <Row label={t("battle.sent")} value={String(order.drones)} />
               <Row label={t("battle.killedByGuns")} value={String(done.result.killedByGuns)} />
@@ -291,7 +294,7 @@ export default function Battle({
               />
               <Row
                 label={t("battle.insurance")}
-                value={`+${fmt(
+                value={`+${fmt(practice ? 0 :
                   insurance(
                     done.result.burned,
                     goodsValue(depots) - goodsValue(done.depots),
@@ -306,11 +309,11 @@ export default function Battle({
               <Row
                 label={t("battle.defenseBounty")}
                 value={
-                  paysBounty(done.result.burned)
+                  !practice && paysBounty(done.result.burned)
                     ? `+${fmt(defenseBounty(order.drones, done.result.burned))} ${t(
                         "battle.creditsSuffix"
                       )}`
-                    : t("battle.bountyNoRecord")
+                    : practice ? `0 ${t("battle.creditsSuffix")}` : t("battle.bountyNoRecord")
                 }
               />
               <Row label={t("battle.leaked")} value={String(done.result.leaked)} />

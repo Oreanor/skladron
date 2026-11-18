@@ -1,3 +1,9 @@
+export const NET_COST = 10;
+export const NET_COST_MID = 25;
+export const NET_COST_TOP = 50;
+export const netCost = (level: number) => level >= 3 ? NET_COST_TOP : level >= 2 ? NET_COST_MID : NET_COST;
+export const NET_UPGRADE_FIRST = 8000;
+export const NET_UPGRADE_SECOND = 64000;
 // Цены, доход и всё, что считается в кредитах. Числа из диздока §02.
 
 export const CREDITS_START = 10_000;
@@ -146,7 +152,7 @@ export const shownLevel = (level: number) => Math.max(0, level - 1);
 
 /** Цена следующего уровня: хранимый 1 означает переход с видимого 0 на 1. */
 export const upgradeCost = (level: number, kind?: UpgradeKind) =>
-  kind === "insurance"
+  kind === "nets" ? (level === 1 ? NET_UPGRADE_FIRST : NET_UPGRADE_SECOND) : kind === "insurance"
     ? INSURANCE_UPGRADE_STEP * 4 ** (level - 1)
     : UPGRADE_STEP * 2 ** (level - 1);
 
@@ -156,6 +162,7 @@ export type UpgradeKind =
   | "rockets"
   | "sprays"
   | "traps"
+  | "nets"
   | "balloons"
   | "mg"
   | "water"
@@ -167,6 +174,7 @@ export const UPGRADE_KINDS: UpgradeKind[] = [
   "rockets",
   "sprays",
   "traps",
+  "nets",
   "balloons",
   "mg",
   "water",
@@ -176,7 +184,7 @@ export const UPGRADE_KINDS: UpgradeKind[] = [
 
 /** Потолок у страховки свой: дальше полного покрытия расти некуда. */
 export const maxLevel = (kind: UpgradeKind) =>
-  kind === "insurance" ? MAX_INSURANCE_LEVEL : kind === "loan" ? MAX_LOAN_LEVEL : MAX_LEVEL;
+  kind === "nets" ? 3 : kind === "insurance" ? MAX_INSURANCE_LEVEL : kind === "loan" ? MAX_LOAN_LEVEL : MAX_LEVEL;
 
 /** Прибавка за уровень: первый уровень — множитель 1. */
 /**

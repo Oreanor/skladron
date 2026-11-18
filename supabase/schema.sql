@@ -9,7 +9,7 @@
 -- Версия боевого движка. Должна совпадать с SIMULATION_VERSION в
 -- lib/tuning.ts: по ней отсекаются бои, посчитанные прежней геометрией волн.
 create or replace function sim_version() returns int
-language sql immutable as $$ select 30 $$;
+language sql immutable as $$ select 31 $$;
 
 -- держим в одном месте, чтобы клиент и сервер не разъезжались
 create or replace function price(kind text) returns int
@@ -20,6 +20,11 @@ language sql immutable as $$
     when 'scrap'  then 5   -- за сданные во вторсырьё остатки сгоревшей клетки
     when 'gun'    then 100
     when 'spray'  then 150  -- огнетушитель дороже зенитки: бережёт и площадь, и товар
+    when 'net' then 10
+    when 'net_mid' then 25
+    when 'net_top' then 50
+    when 'net_upgrade_first' then 8000
+    when 'net_upgrade_second' then 64000
     when 'trap'   then 200  -- ловушка дороже огнетушителя: держит рой в радиусе
     when 'rocket' then 200  -- ракетница вдвое дороже зенитки: и достаёт вдвое дальше
     when 'drones' then 1000
@@ -202,7 +207,7 @@ begin
     seen := seen || k;
     if exists (
       select 1 from jsonb_array_elements(coalesce(guns, '[]'::jsonb)) g
-       where (g->>'cx')::int = cx and (g->>'cy')::int = cy
+       where coalesce(g->>'kind', 'gun') <> 'net' and (g->>'cx')::int = cx and (g->>'cy')::int = cy
     ) then return false; end if;
   end loop;
   return true;
@@ -229,7 +234,7 @@ begin
        where key not in ('cx', 'cy', 'kind')
     ) then return false; end if;
     if e->>'cx' is null or e->>'cy' is null then return false; end if;
-    if coalesce(e->>'kind', 'gun') not in ('gun', 'rocket', 'spray', 'trap', 'balloon') then
+    if coalesce(e->>'kind', 'gun') not in ('gun', 'rocket', 'spray', 'trap', 'balloon', 'net') then
       return false;
     end if;
     begin
@@ -239,11 +244,17 @@ begin
       return false;
     end;
     if cx < 0 or cy < 0 or cx > 99 or cy > 99 then return false; end if;
+    if e->>'kind' = 'net' and exists (
+      select 1 from jsonb_array_elements(g) other
+      where coalesce(other->>'kind', 'gun') <> 'net'
+        and (other->>'cx')::int = cx and (other->>'cy')::int = cy
+    ) then return false; end if;
     k := cy * 100 + cx;
     if get_byte(map, k) <> 1 then return false; end if;
+    if e->>'kind' = 'net' then k := k + 10000; end if;
     if seen @> array[k] then return false; end if;
     seen := seen || k;
-    if exists (
+    if coalesce(e->>'kind', 'gun') <> 'net' and exists (
       select 1 from jsonb_array_elements(coalesce(depots, '[]'::jsonb)) d
        where (d->>'cx')::int = cx and (d->>'cy')::int = cy
     ) then return false; end if;
@@ -298,9 +309,9 @@ $$;
 -- ступеньками в десятую часть разницы. Та же арифметика на клиенте.
 create or replace function price_at(kind text, level int) returns int
 language sql immutable as $$
-  select price(kind)
+  select case when kind = 'net' then price(case when level >= 3 then 'net_top' when level >= 2 then 'net_mid' else 'net' end) else price(kind)
        + ((coalesce(price(kind || '_top'), price(kind)) - price(kind))
-          * (least(11, greatest(1, coalesce(level, 1))) - 1)) / 10;
+          * (least(11, greatest(1, coalesce(level, 1))) - 1)) / 10 end;
 $$;
 
 -- Снимает со склада нужное число дронов заданного вида. Пустые ящики
@@ -1104,6 +1115,7 @@ declare
   traps_gone int;
   balloons_gone int;
   cost int;
+  nets_added int;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   if octet_length(bin) <> 10000 then raise exception 'bad map size'; end if;
@@ -1188,7 +1200,11 @@ begin
   free_left := greatest(0, price('free') - claimed);
   paid := greatest(0, built - free_left);
 
-  cost := paid * price('cell')
+  select count(*) into nets_added from jsonb_array_elements(new_guns) n
+    where n->>'kind' = 'net' and not exists (
+      select 1 from jsonb_array_elements(cur_guns) c where c->>'kind' = 'net'
+      and c->>'cx' = n->>'cx' and c->>'cy' = n->>'cy');
+  cost := nets_added * price_at('net', coalesce((prof.levels->>'nets')::int, 1)) + paid * price('cell')
         + repaired * price('repair')
         + guns_added * price_at('gun', coalesce((prof.levels->>'guns')::int, 1))
         + rockets_added * price_at('rocket', coalesce((prof.levels->>'rockets')::int, 1))
@@ -1242,7 +1258,7 @@ declare
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   if kind not in
-     ('drones', 'guns', 'rockets', 'sprays', 'traps', 'balloons', 'mg', 'water', 'insurance', 'loan') then
+     ('drones', 'guns', 'rockets', 'sprays', 'traps', 'nets', 'balloons', 'mg', 'water', 'insurance', 'loan') then
     raise exception 'bad upgrade kind';
   end if;
 
@@ -1250,11 +1266,11 @@ begin
     from profiles p where p.id = uid for update;
   if cur is null then raise exception 'no profile'; end if;
   -- у страховки потолок свой: пятый уровень покрывает потери целиком
-  if cur >= (case when kind = 'insurance' then 5 else 11 end) then
+  if cur >= (case when kind = 'nets' then 3 when kind = 'insurance' then 5 else 11 end) then
     raise exception 'already at max level';
   end if;
-  cost := price(case when kind = 'insurance' then 'insurance_upgrade' else 'upgrade' end)
-          * (1 << ((cur - 1) * (case when kind = 'insurance' then 2 else 1 end)));
+  cost := case when kind = 'nets' then price(case when cur = 1 then 'net_upgrade_first' else 'net_upgrade_second' end) else price(case when kind = 'insurance' then 'insurance_upgrade' else 'upgrade' end)
+          * (1 << ((cur - 1) * (case when kind = 'insurance' then 2 else 1 end))) end;
 
   update profiles
      set credits = profiles.credits - cost,
@@ -1752,12 +1768,13 @@ begin
          loan = profiles.loan - pay
    where profiles.id = uid;
 
-  -- не хватило — долг растёт, срок едет дальше
-  if prof.loan - pay > 0 then
-    update profiles
-       set loan = profiles.loan + (profiles.loan * price('loan_rate')) / 100,
-           loan_due = profiles.loan_due + (price('loan_hours') || ' hours')::interval
-     where profiles.id = uid;
+-- не хватило — долг растёт, срок едет дальше. Проценты считаются
+   -- на остаток: кто-то отдал часть вручную — на оставшуюся сумму.
+   if prof.loan - pay > 0 then
+     update profiles
+        set loan = profiles.loan + ((profiles.loan - pay) * price('loan_rate')) / 100,
+            loan_due = profiles.loan_due + (price('loan_hours') || ' hours')::interval
+      where profiles.id = uid;
   else
     update profiles set loan_due = null where profiles.id = uid;
   end if;
@@ -2346,7 +2363,7 @@ revoke insert, update, delete on blueprints from anon, authenticated;
 -- Сколько стоят установки по нынешним ценам с учётом уровней.
 create or replace function install_value(g jsonb, lv jsonb) returns int
 language sql immutable as $$
-  select gun_count(g, 'gun') * price_at('gun', coalesce((lv->>'guns')::int, 1))
+  select gun_count(g, 'net') * price_at('net', coalesce((lv->>'nets')::int, 1)) + gun_count(g, 'gun') * price_at('gun', coalesce((lv->>'guns')::int, 1))
        + gun_count(g, 'rocket') * price_at('rocket', coalesce((lv->>'rockets')::int, 1))
        + gun_count(g, 'spray') * price_at('spray', coalesce((lv->>'sprays')::int, 1))
        + gun_count(g, 'trap') * price_at('trap', coalesce((lv->>'traps')::int, 1))
@@ -2581,3 +2598,40 @@ grant execute on function ensure_player, collect_income, save_base,
 -- но после смены сигнатур надёжнее попросить явно — иначе клиент ещё какое-то
 -- время будет звать функцию, которой уже нет.
 notify pgrst, 'reload schema';
+
+-- Просмотр и тестирование отправленных налётов; частичное погашение кредита.
+-- Выполнить до деплоя клиента. Можно выполнять повторно.
+
+create or replace function outgoing_raid(attack_id uuid)
+returns table (id uuid, "targetEmail" text, "targetName" text, waves jsonb,
+  opener text, "droneLevel" int, "unitCost" int, surcharge int)
+language sql security definer set search_path = public as $$
+  select a.id, p.email, coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
+    a.waves, coalesce((select c.body from battle_comments c
+      where c.attack_id = a.id and c.author_id = a.attacker_id order by c.created_at limit 1), ''),
+    a.drone_level, price_at('drone', a.drone_level), waves_surcharge(a.waves, price_at('drone', a.drone_level))
+  from attacks a join profiles p on p.id = a.defender_id
+  where a.id = attack_id and a.attacker_id = auth.uid() and a.competition_stage is null;
+$$;
+
+-- Старый вызов без аргументов оставляем совместимым: погасить весь долг.
+create or replace function repay_loan(amount int)
+returns table (credits int, loan int)
+language plpgsql security definer set search_path = public as $$
+declare uid uuid := auth.uid(); owed int;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  select p.loan into owed from profiles p where p.id = uid for update;
+  if coalesce(owed, 0) <= 0 then raise exception 'nothing to repay'; end if;
+  if amount is null or amount < 1 or amount > owed then raise exception 'bad repayment amount'; end if;
+  update profiles set credits = profiles.credits - amount, loan = profiles.loan - amount,
+    loan_due = case when profiles.loan = amount then null else profiles.loan_due end
+    where profiles.id = uid and profiles.credits >= amount
+    returning profiles.credits, profiles.loan into credits, loan;
+  if not found then raise exception 'not enough credits'; end if;
+  return next;
+end;
+$$;
+
+revoke all on function outgoing_raid(uuid), repay_loan(int) from public, anon;
+grant execute on function outgoing_raid(uuid), repay_loan(int) to authenticated;

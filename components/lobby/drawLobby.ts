@@ -8,6 +8,7 @@
  */
 
 import {
+  drawNet,
   drawCoverage,
   drawDepots,
   drawHoverLabel,
@@ -100,6 +101,7 @@ function hoverLabel({ p, t }: LobbyScene, hx: number, hy: number): string | null
   const gun = p.guns.find((g) => g.cx === hx && g.cy === hy);
   if (gun) {
     switch (gunKind(gun)) {
+      case "net": return t("tool.net");
       case "spray":
         return t("tool.spray");
       case "trap":
@@ -153,6 +155,8 @@ export function drawLobbyOverlay(
   if (d) {
     drawDraft(ctx, CELL, d, {
       cells: p.cells,
+      onlyIntact: tool === "net",
+      blocked: tool === "net" ? new Set(p.guns.filter((g) => g.kind !== "net").map((g) => idx(g.cx, g.cy))) : undefined,
       burntOnly: tool === "repair" || tool === "scrap" ? tool : undefined,
       // У сноса «соединяет» и значит «не разорвёт склад» — одна и та же
       // проверка, второй флаг ей не нужен.
@@ -224,6 +228,9 @@ export function drawLobbyOverlay(
     const v = p.cells[idx(hx, hy)];
     let ok = false;
     switch (tool) {
+      case "net":
+        ok = v === G_BASE && !p.guns.some((g) => g.cx === hx && g.cy === hy);
+        break;
       case "area":
         ok = !isBuilding(v) && (!s.hasBuilding || touchesBuilding(p.cells, hx, hy));
         break;
@@ -234,7 +241,7 @@ export function drawLobbyOverlay(
       case "spray":
       case "trap":
       case "rocket":
-        ok = v === G_BASE && !p.depots.some((q) => q.cx === hx && q.cy === hy);
+        ok = v === G_BASE && !p.depots.some((q) => q.cx === hx && q.cy === hy) && !p.guns.some((g) => g.kind === "net" && g.cx === hx && g.cy === hy);
         break;
     }
     drawHoverCell(ctx, CELL, hx, hy, ok);
@@ -243,6 +250,8 @@ export function drawLobbyOverlay(
   // Выбранную категорию обводим: иначе среди пёстрой карты не найти, есть
   // ли у тебя разведка и где она стоит.
   drawPicked(ctx, CELL, pickedSpots(s), frameNow);
+
+  if (view?.showNets !== false) for (const g of p.guns) if (g.kind === "net") drawNet(ctx, g.cx, g.cy, CELL);
 
   m.priceTags.current = drawPriceTags(ctx, CELL, m.priceTags.current, frameNow);
 
