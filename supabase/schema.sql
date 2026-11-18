@@ -1109,11 +1109,12 @@ declare
   sprays_added int;
   traps_added int;
   balloons_added int;
-  guns_gone int;
+guns_gone int;
   rockets_gone int;
   sprays_gone int;
   traps_gone int;
   balloons_gone int;
+  nets_gone int;
   cost int;
   nets_added int;
 begin
@@ -1195,6 +1196,7 @@ begin
   sprays_gone := greatest(0, gun_count(cur_guns, 'spray') - gun_count(new_guns, 'spray'));
   traps_gone := greatest(0, gun_count(cur_guns, 'trap') - gun_count(new_guns, 'trap'));
   balloons_gone := greatest(0, gun_count(cur_guns, 'balloon') - gun_count(new_guns, 'balloon'));
+  nets_gone := greatest(0, gun_count(cur_guns, 'net') - gun_count(new_guns, 'net'));
 
   -- первые price('free') клеток склада бесплатны, считаем от того, что уже стоит
   free_left := greatest(0, price('free') - claimed);
@@ -1216,6 +1218,7 @@ begin
         - sprays_gone * price_at('spray', coalesce((prof.levels->>'sprays')::int, 1))
         - traps_gone * price_at('trap', coalesce((prof.levels->>'traps')::int, 1))
         - balloons_gone * price_at('balloon', coalesce((prof.levels->>'balloons')::int, 1))
+        - nets_gone * price_at('net', coalesce((prof.levels->>'nets')::int, 1))
         - scrapped * price('scrap');
 
   if prof.credits < cost then

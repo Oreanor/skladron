@@ -274,18 +274,32 @@ const gunOn = (guns: Gun[], x: number, y: number) =>
 const depotOn = (depots: Depot[], x: number, y: number) =>
   depots.some((d) => d.cx === x && d.cy === y);
 
+/** Стоимость сетки на клетке, если она там есть (0, если нет). */
+const netValueAt = (p: Player, x: number, y: number) =>
+  p.guns.some((g) => g.kind === "net" && g.cx === x && g.cy === y) ? netCost(p.levels.nets) : 0;
+
+/** Снимает сетку с клетки и возвращает её стоимость. */
+const removeNetAt = (p: Player, x: number, y: number): number => {
+  const net = p.guns.find((g) => g.kind === "net" && g.cx === x && g.cy === y);
+  if (!net) return 0;
+  p.guns = p.guns.filter((g) => g !== net);
+  return netCost(p.levels.nets);
+};
+
 /** Покупка установки прямо на карте. */
 export function placeGun(p: Player, x: number, y: number, kind: GunKind): BuildResult {
   if (!onMap(x, y)) return skip;
   if (p.cells[idx(x, y)] !== G_BASE) return no("gun.onlyIntact");
-  if (depotOn(p.depots, x, y) || p.guns.some((g) => g.kind === "net" && g.cx === x && g.cy === y)) return no("gun.cellBusy");
+  if (depotOn(p.depots, x, y)) return no("gun.cellBusy");
 
   const cost = gunCost(p.levels, kind);
-  if (p.credits < cost) return no("gun.noCredits");
+  const netGain = netValueAt(p, x, y);
+  if (p.credits + netGain < cost) return no("gun.noCredits");
 
+  removeNetAt(p, x, y);
   p.guns.push(kind === "gun" ? { cx: x, cy: y } : { cx: x, cy: y, kind });
-  p.credits -= cost;
-  return done(cost);
+  p.credits -= cost - netGain;
+  return done(cost - netGain);
 }
 
 /**
@@ -300,11 +314,13 @@ export function placeDepot(p: Player, x: number, y: number): BuildResult {
   if (depotOn(p.depots, x, y)) return skip;
 
   const cost = depotCost(p.levels);
-  if (p.credits < cost) return no("depot.noCredits", { cost });
+  const netGain = netValueAt(p, x, y);
+  if (p.credits + netGain < cost) return no("depot.noCredits", { cost });
 
+  removeNetAt(p, x, y);
   p.depots = [...p.depots, { cx: x, cy: y, n: DRONES_PER_CELL }];
-  p.credits -= cost;
-  return done(cost);
+  p.credits -= cost - netGain;
+  return done(cost - netGain);
 }
 
 /**
