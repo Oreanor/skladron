@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { GRID, G_BASE, countCells, encodeRle, type Depot, type Gun } from "@/lib/base";
+import { GRID, G_BASE, countCells, encodeCells, type Depot, type Gun } from "@/lib/base";
 import { missionPays, missionReward, type CompetitionBest } from "@/lib/competition";
 import { buildPlan, type AttackOrder } from "@/lib/attack";
 import {
@@ -102,8 +102,9 @@ export default function Battle({
   // каждый первый проход показывал бы «рекорд не побит».
   const [bestBefore] = useState(missionBest);
   // Склад, каким он был до боя: из него тест собирается в повтор по ссылке.
+  // Клетки — base64, как snap_cells у настоящего боя: повтор читает их decodeCells.
   const [snapshot] = useState(() => ({
-    cells: encodeRle(cells),
+    cells: encodeCells(cells),
     guns: structuredClone(guns),
     depots: structuredClone(depots),
   }));

@@ -101,6 +101,13 @@ export async function publicPractice(id: string): Promise<{ defender: string; re
   if (!row || row.simulation_version !== SIMULATION_VERSION) return null;
   const r = row.replay;
   if (!r?.order || typeof r.cells !== "string" || typeof r.trace !== "string") return null;
+  // Первые показанные тесты легли с клетками в RLE, а не в base64: такой
+  // повтор не прочесть — лучше «повтора нет», чем упавшая страница.
+  try {
+    decodeCells(r.cells);
+  } catch {
+    return null;
+  }
   return { defender: row.owner, replay: r };
 }
 
