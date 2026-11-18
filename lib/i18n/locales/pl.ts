@@ -137,6 +137,7 @@ const pl: Dict = {
   "replay.progress": "Postęp powtórki",
   "battle.insurance": "Ubezpieczenie",
   "battle.defenseBounty": "Premia za obronę",
+  "battle.missionReward": "Nagroda za misję",
   "battle.bountyNoRecord": "brak — rekord nie pobity",
   "restart.menu": "Zacznij od nowa",
   "restart.title": "Zacząć grę od nowa?",

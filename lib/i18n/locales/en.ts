@@ -138,6 +138,7 @@ const en = {
   "replay.progress": "Replay progress",
   "battle.insurance": "Insurance",
   "battle.defenseBounty": "Defence bounty",
+  "battle.missionReward": "Mission reward",
   "battle.bountyNoRecord": "none — record not beaten",
   "restart.menu": "Start over",
   "restart.title": "Start the game over?",

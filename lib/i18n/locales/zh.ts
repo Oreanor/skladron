@@ -137,6 +137,7 @@ const zh: Dict = {
   "replay.progress": "回放进度",
   "battle.insurance": "保险",
   "battle.defenseBounty": "防守奖金",
+  "battle.missionReward": "任务奖励",
   "battle.bountyNoRecord": "无——未刷新纪录",
   "restart.menu": "重新开始",
   "restart.title": "重新开始游戏？",

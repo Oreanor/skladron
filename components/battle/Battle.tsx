@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GRID, G_BASE, countCells, type Depot, type Gun } from "@/lib/base";
-import { missionPays, type CompetitionBest } from "@/lib/competition";
+import { missionPays, missionReward, type CompetitionBest } from "@/lib/competition";
 import { buildPlan, type AttackOrder } from "@/lib/attack";
 import {
   afterglow,
@@ -50,6 +50,7 @@ interface Hud {
   left: number;
   killedByGuns: number;
   killedByMg: number;
+  killedByBalloons: number;
   fires: number;
   burned: number;
   goodsLost: number;
@@ -100,6 +101,11 @@ export default function Battle({
   /** Платит ли бой премию за отбой с таким числом сгоревших клеток. */
   const paysBounty = (burned: number) =>
     !order.competitionStage || missionPays(bestBefore, startIntact, burned);
+  /** Что заплатят сверх страховки: миссия — своей наградой, налёт — премией за отбой. */
+  const rewardFor = (burned: number, killed: number) =>
+    order.competitionStage
+      ? missionReward(order.competitionStage, bestBefore, startIntact, burned, killed)
+      : defenseBounty(order.drones, burned);
   /** Кадры действий защитника — из них собирается повтор для нападавшего. */
   const trace = useRef<(Frame | null)[]>([]);
 
@@ -168,6 +174,7 @@ export default function Battle({
           left: s.plan.length - s.planAt,
           killedByGuns: s.result.killedByGuns,
           killedByMg: s.result.killedByMg,
+          killedByBalloons: s.result.killedByBalloons,
           fires: s.fire.size,
           burned: s.result.burned,
           goodsLost: startGoods - goodsValue(s.depots),
@@ -205,14 +212,17 @@ export default function Battle({
 
   const patternName = t(`pattern.${order.pattern}` as Key).toLowerCase();
   const seconds = `${Math.floor(hud?.time ?? 0)} ${t("battle.seconds")}`;
-  // За сбитых не платят. Что реально придёт — страховка и премия за отбой.
+  // Что реально придёт — страховка и премия за отбой (у миссии — её награда).
   const insurePay = insurance(
     hud?.burned ?? 0,
     hud?.goodsLost ?? 0,
     hud?.gunsLost ?? 0,
     insuranceLevel
   );
-  const bountyPay = paysBounty(hud?.burned ?? 0) ? defenseBounty(order.drones, hud?.burned ?? 0) : 0;
+  const bountyPay = rewardFor(
+    hud?.burned ?? 0,
+    (hud?.killedByGuns ?? 0) + (hud?.killedByMg ?? 0) + (hud?.killedByBalloons ?? 0)
+  );
   const payout = insurePay + bountyPay;
 
   const header = t(order.competitionStage ? "battle.headerCompetition" : "battle.header", {
@@ -307,10 +317,13 @@ export default function Battle({
                 )} ${t("battle.creditsSuffix")}`}
               />
               <Row
-                label={t("battle.defenseBounty")}
+                label={t(order.competitionStage ? "battle.missionReward" : "battle.defenseBounty")}
                 value={
                   !practice && paysBounty(done.result.burned)
-                    ? `+${fmt(defenseBounty(order.drones, done.result.burned))} ${t(
+                    ? `+${fmt(rewardFor(
+                        done.result.burned,
+                        done.result.killedByGuns + done.result.killedByMg + done.result.killedByBalloons
+                      ))} ${t(
                         "battle.creditsSuffix"
                       )}`
                     : practice ? `0 ${t("battle.creditsSuffix")}` : t("battle.bountyNoRecord")

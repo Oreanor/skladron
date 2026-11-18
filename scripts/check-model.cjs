@@ -166,6 +166,7 @@ console.log('\n— цены клиента и сервера совпадают 
     ['GUN_TOP', 'gun_top'], ['ROCKET_TOP', 'rocket_top'], ['SPRAY_TOP', 'spray_top'],
     ['TRAP_TOP', 'trap_top'], ['BALLOON_TOP', 'balloon_top'], ['DRONE_TOP', 'drone_top'],
     ['LOAN_MIN', 'loan_min'], ['LOAN_RATE', 'loan_rate'],
+    ['MISSION_STAGE_REWARD', 'mission_stage'], ['MISSION_KILL_REWARD', 'mission_kill'],
   ];
   let clean = true;
   for (const [name, key] of PRICES) {

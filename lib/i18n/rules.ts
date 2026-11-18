@@ -86,7 +86,7 @@ const en: RuleSection[] = [
       "Every mission is 8–10 waves: the first come one after another, small and simple; towards the end they grow, come thicker and overlap. The whole thing grows with the number too — from 120 drones on the first to 1000 on the hundredth, with levelled-up drones and every kind of warhead mixed in.",
       "A mission's score is the share of your warehouse that survived: save it all and you get 100. The best score for every number is kept.",
       "The next mission opens if any of the warehouse survives. Passed ones can be replayed — a number always brings the same swarm, so scores compare fairly. Tap a passed mission in the panel to watch the replay of your best attempt.",
-      "A mission pays the defence bounty — {defendClean} cr per drone for a clean stop — so the further the number and the bigger the swarm, the bigger the reward. What burns in a mission burns for real, but insurance covers it as in any battle. The bounty is paid only for the first attempt at a number or for beating its best score; the same score or lower pays nothing.",
+      "A mission pays its own reward instead of the defence bounty: the mission number × {missionStage} cr the first time you pass it (score above zero), plus {missionKill} cr for every drone shot down — but only when you beat the number's best score; the same score or lower pays nothing. What burns in a mission burns for real, but insurance covers it as in any battle.",
     ],
   },
   {
@@ -199,7 +199,7 @@ const ru: RuleSection[] = [
       "В каждой миссии 8–10 волн: первые идут по очереди, мелкие и простые, к концу волны крупнеют, приходят кучнее и накладываются друг на друга. С номером растёт и всё вместе — от 120 дронов на первой до 1000 на сотой, с прокачанными дронами и вперемешку всеми видами начинки.",
       "Счёт миссии — сколько процентов склада уцелело: сберёг всё — 100. Лучший счёт по каждому номеру хранится.",
       "Следующая миссия открывается, если склад уцелел хоть сколько-то. Пройденные можно переиграть: у номера всегда один и тот же рой, так что счёт честно сравним. Нажми на пройденную в журнале — откроется повтор лучшей попытки.",
-      "Миссия платит премией за отбой — {defendClean} кр за каждого дрона при чистом отбое, так что чем дальше номер и больше рой, тем выше награда. Сгоревшее в миссии сгорает по-настоящему, но страховка его покрывает, как в любом бою. Премия платится только за первую попытку номера или за новый рекорд: столько же или меньше — денег нет.",
+      "Миссия платит своей наградой вместо премии за отбой: номер миссии × {missionStage} кр за первое прохождение (счёт выше нуля) и {missionKill} кр за каждого сбитого дрона — но только при новом рекорде номера: столько же или меньше — денег нет. Сгоревшее в миссии сгорает по-настоящему, но страховка его покрывает, как в любом бою.",
     ],
   },
   {
@@ -312,7 +312,7 @@ const es: RuleSection[] = [
       "Cada misión tiene 8–10 oleadas: las primeras llegan una tras otra, pequeñas y simples; hacia el final crecen, se apiñan y se solapan. Con el número crece todo: de 120 drones en la primera a 1000 en la centésima, con drones mejorados y todo tipo de carga mezclada.",
       "La puntuación de una misión es el porcentaje del almacén que sobrevivió: si lo salvas todo, 100. Se guarda la mejor puntuación de cada número.",
       "La siguiente misión se abre si sobrevive algo del almacén. Las superadas se pueden repetir: cada número trae siempre el mismo enjambre, así que las puntuaciones se comparan con justicia. Pulsa una misión superada en el panel para ver la repetición de tu mejor intento.",
-      "Una misión paga la prima de defensa — {defendClean} cr por dron si no arde nada —, así que cuanto más alto el número y mayor el enjambre, mayor la recompensa. Lo que arde en una misión arde de verdad, pero el seguro lo cubre como en cualquier combate. La prima solo se paga en el primer intento de un número o al superar su mejor puntuación; con la misma o menos no hay dinero.",
+      "Una misión paga su propia recompensa en lugar de la prima de defensa: el número de la misión × {missionStage} cr la primera vez que la superas (puntuación mayor que cero), más {missionKill} cr por cada dron derribado, pero solo si superas el récord de ese número; la misma puntuación o menos no paga nada. Lo que arde en una misión arde de verdad, pero el seguro lo cubre como en cualquier batalla.",
     ],
   },
   {
@@ -425,7 +425,7 @@ const pt: RuleSection[] = [
       "Cada missão tem 8–10 vagas: as primeiras chegam uma após outra, pequenas e simples; para o fim crescem, vêm mais juntas e sobrepõem-se. Com o número cresce tudo: de 120 drones na primeira a 1000 na centésima, com drones melhorados e todo o tipo de carga misturada.",
       "A pontuação de uma missão é a percentagem do armazém que sobreviveu: salvas tudo, 100. Guarda-se a melhor pontuação de cada número.",
       "A missão seguinte abre se sobreviver algo do armazém. As passadas podem repetir-se: cada número traz sempre o mesmo enxame, por isso as pontuações comparam-se com justiça. Toca numa missão concluída no painel para ver a repetição da tua melhor tentativa.",
-      "Uma missão paga o prémio de defesa — {defendClean} cr por drone se nada arder —, por isso quanto mais alto o número e maior o enxame, maior a recompensa. O que arde numa missão arde a sério, mas o seguro cobre-o como em qualquer combate. O prémio só é pago na primeira tentativa de um número ou ao bater a melhor pontuação; com a mesma ou menos não há dinheiro.",
+      "Uma missão paga a sua própria recompensa em vez do prémio de defesa: o número da missão × {missionStage} cr da primeira vez que a passas (pontuação acima de zero), mais {missionKill} cr por cada drone abatido, mas só quando bates o recorde desse número; a mesma pontuação ou menos não paga nada. O que arde numa missão arde a sério, mas o seguro cobre-o como em qualquer batalha.",
     ],
   },
   {
@@ -538,7 +538,7 @@ const fr: RuleSection[] = [
       "Chaque mission compte 8 à 10 vagues : les premières arrivent l’une après l’autre, petites et simples ; vers la fin elles grossissent, se resserrent et se chevauchent. Avec le numéro, tout grandit : de 120 drones à la première à 1000 à la centième, drones améliorés et toutes les charges mêlées.",
       "Le score d’une mission est la part de l’entrepôt qui a survécu : tout sauvé, 100. Le meilleur score de chaque numéro est gardé.",
       "La mission suivante s’ouvre si une partie de l’entrepôt survit. Celles déjà passées se rejouent : un numéro amène toujours le même essaim, les scores se comparent donc honnêtement. Touche une mission réussie dans le panneau pour revoir ta meilleure tentative.",
-      "Une mission rapporte la prime de défense — {defendClean} cr par drone si rien ne brûle —, donc plus le numéro est haut et l’essaim gros, plus la récompense grimpe. Ce qui brûle en mission brûle pour de vrai, mais l’assurance le couvre comme dans tout combat. La prime n’est versée qu’au premier essai d’un numéro ou quand tu bats ton meilleur score ; à score égal ou inférieur, rien.",
+      "Une mission paie sa propre récompense à la place de la prime de défense : le numéro de la mission × {missionStage} cr la première fois que vous la réussissez (score supérieur à zéro), plus {missionKill} cr par drone abattu, mais seulement si vous battez le record de ce numéro ; le même score ou moins ne rapporte rien. Ce qui brûle pendant une mission brûle pour de vrai, mais l'assurance le couvre comme dans tout combat.",
     ],
   },
   {
@@ -651,7 +651,7 @@ const de: RuleSection[] = [
       "Jede Mission hat 8–10 Wellen: die ersten kommen nacheinander, klein und einfach; gegen Ende werden sie größer, dichter und überlappen sich. Mit der Nummer wächst alles: von 120 Drohnen in der ersten bis 1000 in der hundertsten, mit aufgewerteten Drohnen und allen Ladungen gemischt.",
       "Die Punktzahl einer Mission ist der Anteil des Lagers, der übersteht: alles gerettet — 100. Die beste Punktzahl jeder Nummer bleibt gespeichert.",
       "Die nächste Mission öffnet sich, wenn etwas vom Lager übersteht. Geschaffte lassen sich wiederholen: eine Nummer bringt immer denselben Schwarm, die Punkte sind also fair vergleichbar. Tippe auf eine geschaffte Mission im Panel, um die Wiederholung deines besten Versuchs zu sehen.",
-      "Eine Mission zahlt die Abwehrprämie — {defendClean} Cr pro Drohne, wenn nichts brennt —, je höher also die Nummer und größer der Schwarm, desto höher die Belohnung. Was in einer Mission brennt, brennt wirklich, aber die Versicherung deckt es wie in jedem Kampf. Die Prämie gibt es nur beim ersten Versuch einer Nummer oder für einen neuen Rekord; bei gleicher oder schlechterer Punktzahl gibt es nichts.",
+      "Eine Mission zahlt statt der Abwehrprämie ihre eigene Belohnung: Missionsnummer × {missionStage} Cr beim ersten Bestehen (Wertung über null), dazu {missionKill} Cr für jede abgeschossene Drohne – aber nur, wenn du den Rekord dieser Nummer schlägst; gleiche oder schlechtere Wertung bringt nichts. Was in einer Mission brennt, brennt wirklich, aber die Versicherung deckt es wie in jedem Kampf.",
     ],
   },
   {
@@ -764,7 +764,7 @@ const it: RuleSection[] = [
       "Ogni missione ha 8–10 ondate: le prime arrivano una dopo l’altra, piccole e semplici; verso la fine crescono, si infittiscono e si sovrappongono. Con il numero cresce tutto: da 120 droni nella prima a 1000 nella centesima, con droni potenziati e ogni tipo di carica mescolata.",
       "Il punteggio di una missione è la quota del magazzino sopravvissuta: salvi tutto, 100. Il miglior punteggio di ogni numero resta salvato.",
       "La missione successiva si apre se qualcosa del magazzino sopravvive. Quelle superate si possono rigiocare: un numero porta sempre lo stesso sciame, quindi i punteggi si confrontano onestamente. Tocca una missione superata nel pannello per rivedere il tuo tentativo migliore.",
-      "Una missione paga il premio di difesa — {defendClean} cr per drone se non brucia nulla —, quindi più alto è il numero e più grande lo sciame, più alta la ricompensa. Ciò che brucia in missione brucia davvero, ma l’assicurazione lo copre come in ogni battaglia. Il premio si paga solo al primo tentativo di un numero o quando batti il miglior punteggio; a pari o inferiore non si guadagna nulla.",
+      "Una missione paga una ricompensa propria al posto del premio di difesa: il numero della missione × {missionStage} cr la prima volta che la superi (punteggio sopra zero), più {missionKill} cr per ogni drone abbattuto, ma solo se batti il record di quel numero; lo stesso punteggio o meno non paga nulla. Ciò che brucia in una missione brucia davvero, ma l'assicurazione lo copre come in ogni battaglia.",
     ],
   },
   {
@@ -877,7 +877,7 @@ const uk: RuleSection[] = [
       "У кожній місії 8–10 хвиль: перші йдуть по черзі, дрібні й прості, під кінець хвилі більшають, ідуть щільніше й накладаються. З номером росте все разом — від 120 дронів на першій до 1000 на сотій, із прокачаними дронами й усіма видами начинки впереміш.",
       "Рахунок місії — скільки відсотків складу вціліло: зберіг усе — 100. Найкращий рахунок за кожним номером зберігається.",
       "Наступна місія відкривається, якщо склад уцілів хоч трохи. Пройдені можна перегравати: у номера завжди той самий рій, тож рахунок чесно порівнянний. Натисни на пройдену в панелі — відкриється повтор найкращої спроби.",
-      "Місія платить премію за оборону — {defendClean} кр за кожного дрона при чистому відбої, тож що далі номер і більший рій, то вища нагорода. Згоріле в місії горить по-справжньому, але страховка його покриває, як у будь-якому бою. Премія платиться лише за першу спробу номера або за новий рекорд: стільки ж або менше — грошей немає.",
+      "Місія платить власною нагородою замість премії за оборону: номер місії × {missionStage} кр за перше проходження (рахунок вище нуля) і {missionKill} кр за кожного збитого дрона — але лише за новий рекорд номера: стільки ж або менше — грошей немає. Згоріле в місії згоряє по-справжньому, але страховка його покриває, як у будь-якому бою.",
     ],
   },
   {
@@ -990,7 +990,7 @@ const pl: RuleSection[] = [
       "Każda misja to 8–10 fal: pierwsze idą po kolei, małe i proste, pod koniec rosną, nadchodzą gęściej i nakładają się. Z numerem rośnie wszystko naraz — od 120 dronów w pierwszej do 1000 w setnej, z ulepszonymi dronami i wszystkimi ładunkami naraz.",
       "Wynik misji to odsetek magazynu, który przetrwał: ocalisz wszystko — masz 100. Najlepszy wynik dla każdego numeru jest zapisywany.",
       "Następna misja otwiera się, jeśli choć trochę magazynu przetrwało. Przebyte można powtarzać: numer zawsze przynosi ten sam rój, więc wyniki są uczciwie porównywalne. Dotknij zaliczonej misji w panelu, by obejrzeć powtórkę najlepszej próby.",
-      "Misja płaci premię za obronę — {defendClean} kr za każdego drona przy czystym odparciu — więc im dalszy numer i większy rój, tym większa nagroda. Co spłonie w misji, płonie naprawdę, ale ubezpieczenie to pokrywa jak w każdej bitwie. Premia jest wypłacana tylko za pierwszą próbę numeru albo za nowy rekord; przy takim samym lub gorszym wyniku nie ma pieniędzy.",
+      "Misja płaci własną nagrodę zamiast premii za obronę: numer misji × {missionStage} kr za pierwsze przejście (wynik powyżej zera) oraz {missionKill} kr za każdego zestrzelonego drona — ale tylko przy nowym rekordzie numeru; ten sam wynik lub gorszy nic nie daje. To, co spłonie w misji, płonie naprawdę, ale ubezpieczenie pokrywa to jak w każdej bitwie.",
     ],
   },
   {
@@ -1103,7 +1103,7 @@ const tr: RuleSection[] = [
       "Her görevde 8–10 dalga vardır: ilkleri sırayla, küçük ve basit gelir; sona doğru büyür, sıklaşır ve üst üste biner. Numarayla her şey büyür — ilkinde 120 drondan yüzüncüde 1000'e, geliştirilmiş dronlar ve her türlü yük karışık.",
       "Görev puanı deponun ayakta kalan yüzdesidir: hepsini kurtarırsan 100. Her numara için en iyi puan saklanır.",
       "Deponun bir kısmı bile ayakta kaldıysa sonraki görev açılır. Geçilenler yeniden oynanabilir — bir numara hep aynı sürüyü getirir, bu yüzden puanlar adil karşılaştırılır. Paneldeki geçilmiş bir göreve dokun, en iyi denemenin tekrarını izle.",
-      "Görev savunma ödülü öder — temiz püskürtmede dron başına {defendClean} kr — yani numara ve sürü büyüdükçe ödül de büyür. Görevde yanan gerçekten yanar ama sigorta her savaştaki gibi karşılar. Ödül yalnızca bir numaranın ilk denemesinde ya da en iyi skor geçildiğinde ödenir; aynı ya da daha düşük skor para getirmez.",
+      "Görev, savunma ödülü yerine kendi ödülünü öder: ilk geçişte (skor sıfırın üstünde) görev numarası × {missionStage} kr, ayrıca düşürülen her dron için {missionKill} kr — ama yalnızca o numaranın rekorunu kırarsan; aynı veya daha düşük skor hiçbir şey ödemez. Görevde yanan gerçekten yanar, ama sigorta her savaşta olduğu gibi karşılar.",
     ],
   },
   {
@@ -1216,7 +1216,7 @@ const zh: RuleSection[] = [
       "每个任务有 8–10 波：前几波逐个来，规模小且简单；越往后波次越大、越密并相互重叠。随着编号增加一切都在增长——从第一个任务的 120 架到第一百个任务的 1000 架，无人机经过升级，各种弹头混杂。",
       "任务得分是仓库存活的百分比：全部保住就是 100。每个编号的最佳得分都会保存。",
       "只要仓库还剩一点，下一个任务就会开放。已通过的任务可以重玩——同一编号总是同样的蜂群，所以得分可以公平比较。在面板里点已通过的任务，即可观看最佳一次的回放。",
-      "任务支付防守奖金——干净击退时每架无人机 {defendClean} 币——编号越靠后、蜂群越大，奖励越高。任务中烧毁的东西是真的烧了，但保险会像任何战斗一样赔付。奖金只在某一关的首次尝试或刷新最佳成绩时发放；成绩持平或更低则没有奖金。",
+      "任务不发防守奖金，而是发自己的奖励：首次通关（得分高于零）得 任务编号 × {missionStage} 币，另外每击落一架无人机得 {missionKill} 币——但只在打破该编号的最佳成绩时才发；成绩相同或更低则没有奖励。任务中烧掉的东西是真的烧掉，但保险会像在任何战斗中一样赔付。",
     ],
   },
   {
@@ -1329,7 +1329,7 @@ const ja: RuleSection[] = [
       "各ミッションは8〜10ウェーブ：最初は順番に小さく単純に来て、終盤ほど大きく密になり重なり合います。番号とともにすべてが大きくなり、最初の120機から100番目の1000機まで、強化されたドローンとあらゆる弾頭が入り混じります。",
       "ミッションのスコアは倉庫の残存率です：すべて守れば100。番号ごとのベストスコアが保存されます。",
       "倉庫が少しでも残れば次のミッションが開きます。クリア済みのミッションは再挑戦できます — 同じ番号は常に同じ群れなので、スコアを公平に比べられます。パネルでクリア済みのミッションをタップすると、ベストの挑戦のリプレイが見られます。",
-      "ミッションは防衛報酬を払います — きれいに撃退すればドローン1機につき {defendClean} cr — 番号が進み群れが大きいほど報酬も大きくなります。ミッションで燃えたものは本当に燃えますが、どの戦闘とも同じく保険が補償します。報酬が出るのは、その番号の初回挑戦か自己ベストを更新したときだけです。同じかそれ以下のスコアでは何も出ません。",
+      "ミッションは防衛報酬の代わりに独自の報酬を払います：初めてクリアしたとき（スコアがゼロより上）に ミッション番号 × {missionStage} cr、さらに撃墜したドローン1機ごとに {missionKill} cr——ただしその番号の最高スコアを更新したときだけです。同じかそれ以下のスコアでは何ももらえません。ミッションで燃えたものは本当に燃えますが、どの戦闘とも同じく保険が補償します。",
     ],
   },
   {
@@ -1442,7 +1442,7 @@ const ko: RuleSection[] = [
       "각 미션은 8~10 웨이브입니다: 처음에는 작고 단순하게 차례로 오고, 끝으로 갈수록 커지고 촘촘해지며 서로 겹칩니다. 번호가 커질수록 모든 것이 커져, 첫 미션 120대에서 백 번째 1000대까지, 강화된 드론과 온갖 탄두가 섞입니다.",
       "미션 점수는 창고가 살아남은 비율입니다: 모두 지키면 100. 번호마다 최고 점수가 저장됩니다.",
       "창고가 조금이라도 남으면 다음 미션이 열립니다. 깬 미션은 다시 할 수 있습니다 — 같은 번호는 늘 같은 떼가 오므로 점수를 공정하게 비교할 수 있습니다. 패널에서 통과한 미션을 누르면 최고 기록의 리플레이를 볼 수 있습니다.",
-      "미션은 방어 보상을 지급합니다 — 깔끔히 막으면 드론당 {defendClean} cr — 번호가 뒤로 가고 떼가 클수록 보상도 큽니다. 미션에서 탄 것은 실제로 타지만, 다른 전투처럼 보험이 보상합니다. 보상은 해당 번호의 첫 도전이나 최고 점수를 넘었을 때만 지급됩니다. 같거나 낮은 점수에는 보상이 없습니다.",
+      "미션은 방어 보상 대신 자체 보상을 지급합니다: 처음 통과할 때(점수 0 초과) 미션 번호 × {missionStage} cr, 그리고 격추한 드론마다 {missionKill} cr — 단, 그 번호의 최고 점수를 경신할 때만입니다. 같거나 낮은 점수는 아무것도 지급하지 않습니다. 미션에서 불탄 것은 실제로 불타지만, 다른 전투처럼 보험이 보상합니다.",
     ],
   },
   {

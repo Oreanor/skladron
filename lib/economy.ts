@@ -87,6 +87,10 @@ export const DEFENSE_CLEAN_PER_DRONE = 15;
 export const DEFENSE_DIRTY_PER_DRONE = 6;
 /** Сколько снимает с грязной премии каждая сгоревшая клетка. */
 export const DEFENSE_BURN_PENALTY = 8;
+/** Миссия: за первое прохождение номера — номер × столько. */
+export const MISSION_STAGE_REWARD = 1000;
+/** Миссия: за каждого сбитого дрона, если побит рекорд номера. */
+export const MISSION_KILL_REWARD = 15;
 /** Прибавка к покрытию за каждый уровень страховки. */
 export const INSURANCE_PER_LEVEL = 0.25;
 /** Выше пятого уровня страховать нечего: покрытие и так полное. */

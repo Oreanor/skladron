@@ -137,6 +137,7 @@ const uk: Dict = {
   "replay.progress": "Перебіг повтору",
   "battle.insurance": "Страховка",
   "battle.defenseBounty": "Премія за оборону",
+  "battle.missionReward": "Нагорода місії",
   "battle.bountyNoRecord": "немає — рекорд не побито",
   "restart.menu": "Почати спочатку",
   "restart.title": "Почати гру спочатку?",

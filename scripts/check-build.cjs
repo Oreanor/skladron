@@ -18,7 +18,7 @@ const path = require('path');
 const OUT = path.join('.next', 'check-build');
 fs.rmSync(OUT, { recursive: true, force: true });
 execSync(
-  `npx tsc lib/build.ts lib/player.ts --outDir ${OUT} ` +
+  `npx tsc lib/build.ts lib/player.ts lib/competition.ts --outDir ${OUT} ` +
     `--module commonjs --target es2020 --moduleResolution node --skipLibCheck`,
   { stdio: 'inherit' }
 );
@@ -27,6 +27,7 @@ const B = require(path.resolve(OUT, 'build.js'));
 const P = require(path.resolve(OUT, 'player.js'));
 const BASE = require(path.resolve(OUT, 'base.js'));
 const E = require(path.resolve(OUT, 'economy.js'));
+const C = require(path.resolve(OUT, 'competition.js'));
 
 let fails = 0;
 const check = (name, ok, detail) => {
@@ -269,6 +270,18 @@ console.log('\n— занятая клетка занята —');
   const before = p.credits;
   B.placeDepot(p, d.x, d.y, 'basic');
   check('повторный ящик на ту же клетку ничего не стоит', p.credits === before);
+}
+
+// ---------- награда миссии ----------
+{
+  const r = C.missionReward;
+  // №7, склад 100 клеток, сгорело 10 (счёт 90), сбито 50
+  check('первое прохождение: номер × 1000 и 15 за сбитого', r(7, undefined, 100, 10, 50) === 7000 + 750);
+  check('рекорд без первого прохождения: только сбитые', r(7, { score: 40, pct: 40 }, 100, 10, 50) === 750);
+  check('рекорд не побит: ничего', r(7, { score: 90, pct: 90 }, 100, 10, 50) === 0);
+  check('сгорело всё: прохождения нет, за сбитых платим', r(7, undefined, 100, 100, 50) === 750);
+  check('после нуля прохождение засчитывается', r(7, { score: 0, pct: 0 }, 100, 99, 50) === 7750);
+  check('на пустом складе не платим', r(7, undefined, 0, 0, 50) === 0);
 }
 
 console.log(fails ? `\n${fails} FAILED` : '\nстройка сходится');

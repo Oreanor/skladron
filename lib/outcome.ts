@@ -10,7 +10,7 @@
 import type { AttackOrder } from "./attack";
 import type { BattleResult } from "./engine";
 import type { Depot, Gun } from "./base";
-import { COMPETITION_STAGES, competitionScore } from "./competition";
+import { COMPETITION_STAGES, competitionScore, missionReward } from "./competition";
 import { defenseBounty, goodsValue, insurance } from "./economy";
 import { intactCells, type Player } from "./player";
 
@@ -67,11 +67,12 @@ export function applyOutcome(p: Player, battle: AttackOrder, o: BattleOutcome): 
   // уцелел. Сервер считает то же у себя, и при следующем входе его
   // прогресс перекроет этот.
   let mission: OutcomeSummary["mission"];
-  // Премию за отбой миссия платит только за первую попытку номера или за
-  // новый рекорд (missionPays); страховка — всегда.
-  let paysBounty = true;
+  // Миссия вместо премии за отбой платит своей наградой (missionReward);
+  // страховка — всегда.
+  let reward = defenseBounty(battle.drones, o.result.burned);
   const stage = battle.competitionStage;
   if (stage) {
+    reward = missionReward(stage, p.competitionBest[stage], intactBefore, o.result.burned, killed);
     const attempt = competitionScore(intactBefore, intactCells(p));
     const record = attempt.score > (p.competitionBest[stage]?.score ?? -1);
     if (record) {
@@ -88,7 +89,6 @@ export function applyOutcome(p: Player, battle: AttackOrder, o: BattleOutcome): 
     if (o.won) {
       p.competitionAt = Math.max(p.competitionAt, Math.min(COMPETITION_STAGES, stage + 1));
     }
-    paysBounty = record && intactBefore > 0;
     mission = { stage, pct: attempt.pct, score: attempt.score, record };
   }
 
@@ -101,7 +101,7 @@ export function applyOutcome(p: Player, battle: AttackOrder, o: BattleOutcome): 
       o.result.spraysLost,
       o.result.trapsLost,
       o.result.rocketsLost
-    ) + (paysBounty ? defenseBounty(battle.drones, o.result.burned) : 0);
+    ) + reward;
 
   // Счёт вражды: сколько он у нас сжёг.
   const foe = findFoe(p, battle);

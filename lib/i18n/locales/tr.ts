@@ -137,6 +137,7 @@ const tr: Dict = {
   "replay.progress": "Tekrar ilerlemesi",
   "battle.insurance": "Sigorta",
   "battle.defenseBounty": "Savunma ödülü",
+  "battle.missionReward": "Görev ödülü",
   "battle.bountyNoRecord": "yok — rekor kırılmadı",
   "restart.menu": "Baştan başla",
   "restart.title": "Oyuna baştan başlansın mı?",

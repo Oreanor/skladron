@@ -137,6 +137,7 @@ const ru: Dict = {
   "replay.progress": "Ход повтора",
   "battle.insurance": "Страховка",
   "battle.defenseBounty": "Премия за отбой",
+  "battle.missionReward": "Награда миссии",
   "battle.bountyNoRecord": "нет — рекорд не побит",
   "restart.menu": "Начать сначала",
   "restart.title": "Начать игру сначала?",

@@ -137,6 +137,7 @@ const ja: Dict = {
   "replay.progress": "リプレイの進行",
   "battle.insurance": "保険",
   "battle.defenseBounty": "防衛報酬",
+  "battle.missionReward": "ミッション報酬",
   "battle.bountyNoRecord": "なし — 自己ベスト未更新",
   "restart.menu": "最初からやり直す",
   "restart.title": "ゲームを最初からやり直しますか？",

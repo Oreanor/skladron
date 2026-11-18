@@ -137,6 +137,7 @@ const ko: Dict = {
   "replay.progress": "리플레이 진행",
   "battle.insurance": "보험",
   "battle.defenseBounty": "방어 보상",
+  "battle.missionReward": "미션 보상",
   "battle.bountyNoRecord": "없음 — 기록 미경신",
   "restart.menu": "처음부터 다시",
   "restart.title": "게임을 처음부터 다시 할까요?",

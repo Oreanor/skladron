@@ -56,6 +56,8 @@ language sql immutable as $$
     when 'defend_clean' then 15 -- защитнику за дрона при чистом отбое (~2–3× меньше лута атаки)
     when 'defend_dirty' then 6  -- за дрона, если что-то сгорело
     when 'defend_burn'  then 8  -- штраф грязной премии за сгоревшую клетку
+    when 'mission_stage' then 1000 -- миссия: за первое прохождение номера, умножается на номер
+    when 'mission_kill'  then 15   -- миссия: за сбитого дрона при новом рекорде
     when 'queued'   then 3   -- столько своих налётов можно держать в чужой очереди разом
     -- Надбавка за начинку, процентов от цены дрона. Те же числа в PAYLOAD
     -- на клиенте: их обязаны считать одинаково, иначе окно налёта покажет
@@ -1619,6 +1621,8 @@ declare
   comp_pct int;
   comp_score int;
   pays boolean := true;
+  prev_score int;
+  mission_pay int := 0;
   new_map bytea;
   after_intact int;
   before_intact int;
@@ -1652,21 +1656,42 @@ begin
   -- переигрывали бы ради заработка. Счёт — как ниже и как competitionScore
   -- на клиенте: доля уцелевшего склада; сгоревшее apply_battle_for сверит
   -- с картой.
+  --
+  -- Премии за отбой у миссии нет — у неё своя награда, ниже: номер × 1000 за
+  -- первое прохождение и 15 за каждого сбитого при новом рекорде. Страховка
+  -- платится, как в любом бою.
   if order_row.competition_stage is not null then
     new_map := rle_decode(new_cells);
     after_intact := (select count(*) from generate_series(0, 9999) i
                       where get_byte(new_map, i) = 1);
     before_intact := after_intact + coalesce((result->>'burned')::int, 0);
-    pays := before_intact > 0
-      and (after_intact * 100) / before_intact > coalesce(
-            (select (p.competition_best -> order_row.competition_stage::text ->> 'score')::int
-               from profiles p where p.id = order_row.defender_id),
-            -1);
+    prev_score := coalesce(
+      (select (p.competition_best -> order_row.competition_stage::text ->> 'score')::int
+         from profiles p where p.id = order_row.defender_id),
+      -1);
+    pays := before_intact > 0 and (after_intact * 100) / before_intact > prev_score;
+    if pays then
+      -- пройден — значит счёт выше нуля; первый раз — значит раньше выше нуля не было
+      if prev_score <= 0 and after_intact * 100 >= before_intact then
+        mission_pay := order_row.competition_stage * price('mission_stage');
+      end if;
+      mission_pay := mission_pay + price('mission_kill') * greatest(0, least(100000,
+        coalesce((result->>'killedByGuns')::int, 0)
+        + coalesce((result->>'killedByMg')::int, 0)
+        + coalesce((result->>'killedByBalloons')::int, 0)));
+    end if;
   end if;
 
   select applied.credits, applied.intact
     into defender_credits, defender_intact
-    from apply_battle_for(order_row.defender_id, new_cells, new_guns, new_depots, result, pays) applied;
+    from apply_battle_for(order_row.defender_id, new_cells, new_guns, new_depots, result,
+                          order_row.competition_stage is null) applied;
+
+  if mission_pay > 0 then
+    update profiles set credits = profiles.credits + mission_pay
+     where id = order_row.defender_id
+     returning profiles.credits into defender_credits;
+  end if;
 
   -- Премия растёт не по клеткам, а по доле склада: половина даёт +25%,
   -- четыре пятых — вдвое, весь склад — втрое. Добить выгоднее, чем

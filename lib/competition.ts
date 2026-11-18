@@ -13,7 +13,7 @@
  */
 
 import { mulberry32, MAX_FLIGHT, type Pattern, type Payload, type WavePlan } from "./attack";
-import { MAX_LEVEL } from "./economy";
+import { MAX_LEVEL, MISSION_KILL_REWARD, MISSION_STAGE_REWARD } from "./economy";
 
 /** Сколько всего номеров. */
 export const COMPETITION_STAGES = 100;
@@ -65,9 +65,9 @@ export function competitionScore(intactBefore: number, intactAfter: number) {
 }
 
 /**
- * Платит ли эта попытка премию за отбой. Только первая попытка номера или
- * счёт выше прежнего лучшего: столько же или меньше — без денег, иначе один
- * номер переигрывали бы ради заработка. Сервер решает так же в resolve_attack.
+ * Платит ли эта попытка вообще. Только первая попытка номера или счёт выше
+ * прежнего лучшего: столько же или меньше — без денег, иначе один номер
+ * переигрывали бы ради заработка. Сервер решает так же в resolve_attack.
  */
 export function missionPays(
   best: CompetitionBest | undefined,
@@ -76,6 +76,25 @@ export function missionPays(
 ) {
   if (intactBefore <= 0) return false;
   return competitionScore(intactBefore, intactBefore - burned).score > (best?.score ?? -1);
+}
+
+/**
+ * Награда миссии вместо премии за отбой. За первое прохождение (счёт выше
+ * нуля, а раньше выше нуля не было) — номер × MISSION_STAGE_REWARD; за
+ * каждого сбитого — MISSION_KILL_REWARD, но только при новом рекорде.
+ * Слово в слово как в resolve_attack.
+ */
+export function missionReward(
+  stage: number,
+  best: CompetitionBest | undefined,
+  intactBefore: number,
+  burned: number,
+  killed: number
+) {
+  if (!missionPays(best, intactBefore, burned)) return 0;
+  const passed = competitionScore(intactBefore, intactBefore - burned).score > 0;
+  const first = passed && (best?.score ?? -1) <= 0;
+  return (first ? stage * MISSION_STAGE_REWARD : 0) + Math.max(0, killed) * MISSION_KILL_REWARD;
 }
 
 /** Лучшая попытка номера. */
