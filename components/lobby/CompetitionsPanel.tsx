@@ -9,7 +9,7 @@
  * запускается сразу, мимо очереди налётов: оно не чей-то рой, а тренировка.
  */
 
-import { Crosshair, RotateCcw } from "lucide-react";
+import { Crosshair, Play, RotateCcw } from "lucide-react";
 import {
   COMPETITION_STAGES,
   buildCompetition,
@@ -47,8 +47,8 @@ export default function CompetitionsPanel({
         const done = n < competitionAt || allDone;
         const b = done ? best[n] : undefined;
         const plan = buildCompetition(n);
-        // Пройденная с повтором — вся строка открывает повтор, отдельная
-        // кнопка «смотреть» ни к чему. «Переиграть» — рядом, как и было.
+        // Пройденная с повтором — повтор открывают и строка, и кнопка ▶,
+        // как в журнале боёв. «Переиграть» — рядом.
         const watchId = b?.id;
         const body = (
           <>
@@ -80,6 +80,17 @@ export default function CompetitionsPanel({
               <div className="min-w-0">{body}</div>
             )}
             <div className="flex shrink-0 gap-1">
+              {/* та же кнопка, что в журнале боёв: по строке повтор не угадать */}
+              {watchId && (
+                <IconButton
+                  label={t("replay.watch")}
+                  title={t("replay.watch")}
+                  className="h-8 w-8"
+                  onClick={() => onWatch(n, watchId)}
+                >
+                  <Play className="h-4 w-4" />
+                </IconButton>
+              )}
               {done ? (
                 <IconButton
                   label={t("competitions.retake")}

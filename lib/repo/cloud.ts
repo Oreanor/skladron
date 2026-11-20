@@ -45,11 +45,11 @@ export async function publicReplay(id: string): Promise<{
     resolved_at: string;
     competition_stage: number | null;
   }[] | null)?.[0];
+  // Версию не сверяем: бой прежней версии играет свой замороженный движок
+  // (lib/sims), а для версии без движка плеер сам скажет «слишком старый».
+  // Тут стоял отказ на любую чужую версию — он остался с времён до
+  // замороженных движков и после каждого подъёма версии хоронил все повторы.
   if (!row) return null;
-  // Повтор, снятый под прежнюю версию боя, проигрывать нечем: запись рук
-  // не подходит к нынешней геометрии волн. Лучше честно сказать «нет
-  // повтора», чем уронить страницу на попытке его построить.
-  if (row.simulation_version !== SIMULATION_VERSION) return null;
   return {
     defender: row.defender,
     competitionStage: row.competition_stage ?? undefined,
@@ -91,16 +91,18 @@ export async function sharePractice(replay: ReplayData): Promise<string> {
   return data as string;
 }
 
-/** Тест налёта по id; null — нет такого или он снят под прежнюю версию боя. */
+/** Тест налёта по id; null — нет такого. */
 export async function publicPractice(id: string): Promise<{ defender: string; replay: ReplayData } | null> {
   const db = supabase();
   if (!db) throw new Error("supabase not configured");
   const { data, error } = await db.rpc("public_practice", { replay_id: id });
   if (error) throw error;
   const row = (data as { owner: string; replay: ReplayData; simulation_version: number }[] | null)?.[0];
-  if (!row || row.simulation_version !== SIMULATION_VERSION) return null;
+  if (!row) return null;
   const r = row.replay;
   if (!r?.order || typeof r.cells !== "string" || typeof r.trace !== "string") return null;
+  // как у боя: старую версию проиграет её замороженный движок
+  r.order.simulationVersion = row.simulation_version;
   // Первые показанные тесты легли с клетками в RLE, а не в base64: такой
   // повтор не прочесть — лучше «повтора нет», чем упавшая страница.
   try {
