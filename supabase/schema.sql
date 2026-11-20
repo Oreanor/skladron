@@ -2337,6 +2337,38 @@ $$;
 
 grant execute on function public_replay to anon, authenticated;
 
+-- ---------- снять налёты без боя ----------
+-- Налёт, который снимают не боем, возвращает нападающему его цену: дроны по
+-- цене его уровня на момент запуска (записан в налёте) и доплату за начинку.
+-- Кредитами, а не дронами: ящики раскладывает клиент, и места на складе
+-- может не быть.
+
+create or replace function raid_price(a attacks) returns int
+language sql immutable as $$
+  select a.drones * price_at('drone', a.drone_level)
+       + waves_surcharge(a.waves, price_at('drone', a.drone_level));
+$$;
+
+-- Вернуть нападающим цену неотыгранных налётов на этого игрока и удалить их.
+-- Миссии (налёт на самого себя) бесплатны — их просто удаляем.
+create or replace function drop_pending_raids(uid uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare a attacks;
+begin
+  for a in
+    select * from attacks
+     where defender_id = uid and status = 'pending'
+     for update
+  loop
+    if a.competition_stage is null and a.attacker_id <> uid then
+      update profiles set credits = credits + raid_price(a) where id = a.attacker_id;
+    end if;
+    delete from attacks where id = a.id;
+  end loop;
+end;
+$$;
+revoke execute on function drop_pending_raids(uuid) from public, anon, authenticated;
+
 -- ---------- начать сначала ----------
 -- Полный сброс: пустой стартовый склад, стартовые деньги, обнулённые
 -- счётчики, уровни и пройденные миссии. Имя склада, список соперников,
@@ -2368,8 +2400,9 @@ begin
                    "wipes":0,"raids":0,"looted":0}'::jsonb
    where id = uid;
 
-  -- налёты, которые ждали старый склад, начинать сначала не должны
-  delete from attacks where defender_id = uid and status = 'pending';
+  -- Налёты, которые ждали старый склад, начинать сначала не должны. Но и
+  -- нападающий не должен терять их: цена возвращается ему.
+  perform drop_pending_raids(uid);
 end;
 $$;
 
