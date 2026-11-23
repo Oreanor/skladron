@@ -164,5 +164,16 @@ export function rivalActions(
     }
   };
 
-  return { add, remove, scout, raid };
+  /** «Показывать всех»: открыться всем открытым. Вернёт текст ошибки или null. */
+  const setListed = async (value: boolean): Promise<string | null> => {
+    try {
+      await repo.setListed(p, value);
+      core.rerender();
+      return null;
+    } catch (e) {
+      return explainAlone(e, t);
+    }
+  };
+
+  return { add, remove, scout, raid, setListed };
 }

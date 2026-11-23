@@ -91,6 +91,27 @@ export const DEFENSE_BURN_PENALTY = 8;
 export const MISSION_STAGE_REWARD = 1000;
 /** Миссия: за каждого сбитого дрона, если побит рекорд номера. */
 export const MISSION_KILL_REWARD = 15;
+
+/**
+ * Вдвое слабее — не противник для незнакомца. Сила склада — сколько боевых
+ * уровней прокачано сверх стартовых; из общего списка нельзя завести того, у
+ * кого её в POWER_GAP раз меньше (по почте — можно: друзья договорятся сами).
+ * POWER_SLACK прибавляется к обеим сторонам: в начале игры «вдвое» — это
+ * пара улучшений, и без прибавки новичков разводило бы по разным углам с
+ * первого же апгрейда.
+ */
+export const POWER_GAP = 2;
+export const POWER_SLACK = 10;
+/** Что идёт в силу: только то, что работает в бою. Тот же список — upgrade_power на сервере. */
+export const POWER_KINDS = ["drones", "guns", "rockets", "sprays", "traps", "nets", "balloons", "mg", "water"] as const;
+const START_LEVEL = 1;
+
+export const upgradePower = (levels: Partial<Record<(typeof POWER_KINDS)[number], number>>) =>
+  POWER_KINDS.reduce((sum, kind) => sum + Math.max(0, (levels[kind] ?? START_LEVEL) - START_LEVEL), 0);
+
+/** Слишком ли слаб target для attacker. */
+export const tooWeak = (attacker: number, target: number) =>
+  (target + POWER_SLACK) * POWER_GAP < attacker + POWER_SLACK;
 /** Прибавка к покрытию за каждый уровень страховки. */
 export const INSURANCE_PER_LEVEL = 0.25;
 /** Выше пятого уровня страховать нечего: покрытие и так полное. */

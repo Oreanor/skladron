@@ -4,12 +4,23 @@
 
 import type { Gun } from "../base";
 import type { Avatar } from "../avatar";
+import type { ListedPlayer } from "../enemy";
 import type { AttackOrder, AttackReport, Message, OutgoingRaid, RaidLog, WavePlan } from "../attack";
 import type { ReplayData } from "@/components/battle/Replay";
 import type { BattleResult } from "../engine";
 import type { UpgradeKind } from "../economy";
 import type { Player } from "../player";
 import type { Blueprint } from "../blueprint";
+
+/** Переигровка, поставленная сервером: её id и рой исходного налёта. */
+export interface RetakeOrder {
+  id: string;
+  /** Кто прислал исходный налёт. */
+  foe: string;
+  waves: WavePlan[];
+  seed: number;
+  droneLevel: number;
+}
 
 export interface Income {
   credits: number;
@@ -47,6 +58,15 @@ export interface Repo {
    * а не выдумкой клиента, поэтому имя всегда спрашиваем у сервера.
    */
   baseNames(emails: string[]): Promise<Map<string, { name: string; avatar: Avatar; level: number }>>;
+  /** «Показывать всех»: открыться всем открытым или закрыться. */
+  setListed(p: Player, value: boolean): Promise<void>;
+  /**
+   * Отклонить налёт знакомого через общий список: цена вернётся нападающему.
+   * true — это был первый же налёт, и знакомство отменено с обеих сторон.
+   */
+  declineRaid(id: string): Promise<boolean>;
+  /** Открытые игроки, ближайшие по силе — если открыт сам; иначе пусто. */
+  listedPlayers(): Promise<ListedPlayer[]>;
   /** Сменить своё лицо: номер готового, адрес своей картинки или null. */
   setAvatar(p: Player, value: Avatar): Promise<void>;
   /**
@@ -91,6 +111,11 @@ export interface Repo {
     seed: number,
     droneLevel: number
   ): Promise<string>;
+  /**
+   * Переигровка отбитого налёта: сервер ставит тот же рой налётом на самого
+   * себя, как миссию. Возвращает новый налёт и того, кто напал тогда.
+   */
+  queueRetake(raidId: string): Promise<RetakeOrder>;
   /**
    * Налёт волнами. Дронов снимает сервер со своей копии склада, надбавку за
    * начинку списывает кредитами, обратно приходит id и новый склад.

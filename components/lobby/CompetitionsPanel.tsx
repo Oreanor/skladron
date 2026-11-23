@@ -9,17 +9,24 @@
  * запускается сразу, мимо очереди налётов: оно не чей-то рой, а тренировка.
  */
 
-import { Crosshair, Play, RotateCcw } from "lucide-react";
+import { Crosshair } from "lucide-react";
 import {
   COMPETITION_STAGES,
   buildCompetition,
   type CompetitionBest,
 } from "@/lib/competition";
-import { IconButton } from "../ui";
 import { useT } from "@/lib/i18n";
-
-/** Сколько номеров видно без прокрутки — как в журнале боёв. */
-const VISIBLE = "max-h-[10.5rem]";
+import {
+  BestScore,
+  JournalList,
+  JournalRow,
+  RetakeButton,
+  ROW_ICON,
+  RowButton,
+  RowButtons,
+  RowText,
+  WatchButton,
+} from "./journalRow";
 
 export default function CompetitionsPanel({
   competitionAt,
@@ -37,85 +44,43 @@ export default function CompetitionsPanel({
   onWatch: (stage: number, attackId: string) => void;
 }) {
   const t = useT();
-  // Сотый пройден — непройденных не осталось, и строки «играть» нет.
+  // Последний пройден — непройденных не осталось, и строки «играть» нет.
   const allDone = competitionAt >= COMPETITION_STAGES && (best[COMPETITION_STAGES]?.score ?? 0) > 0;
   const stages = Array.from({ length: competitionAt }, (_, i) => competitionAt - i);
 
   return (
-    <ul className={`${VISIBLE} -mr-3 space-y-0.5 overflow-y-auto overscroll-contain pr-1.5`}>
+    <JournalList>
       {stages.map((n) => {
-        const done = n < competitionAt || allDone;
+        const done = allDone || n < competitionAt;
         const b = done ? best[n] : undefined;
         const plan = buildCompetition(n);
-        // Пройденная с повтором — повтор открывают и строка, и кнопка ▶,
-        // как в журнале боёв. «Переиграть» — рядом.
-        const watchId = b?.id;
-        const body = (
-          <>
-            <div className="truncate text-neutral-200">
-              {t("competition.title", { n })}
-              <span
-                className={`ml-3 font-mono font-bold ${done ? "text-emerald-300" : "text-neutral-500"}`}
-              >
-                {b?.score ?? 0}%
-              </span>
-            </div>
-            <div className="font-mono text-[11px] text-neutral-500">
-              {t("competitions.line", { drones: plan.drones, waves: plan.waves.length })}
-            </div>
-          </>
-        );
+        const replayId = b?.id;
+        const watch = replayId ? () => onWatch(n, replayId) : undefined;
+        const play = () => onPlay(n);
         return (
-          <li key={n} className="flex items-center justify-between gap-2 rounded-md px-3 py-1.5 transition-colors hover:bg-neutral-800/60">
-            {watchId ? (
-              <button
-                type="button"
-                title={t("replay.watch")}
-                className="min-w-0 flex-1 cursor-pointer text-left"
-                onClick={() => onWatch(n, watchId)}
-              >
-                {body}
-              </button>
-            ) : (
-              <div className="min-w-0">{body}</div>
-            )}
-            <div className="flex shrink-0 gap-1">
-              {/* та же кнопка, что в журнале боёв: по строке повтор не угадать */}
-              {watchId && (
-                <IconButton
-                  label={t("replay.watch")}
-                  title={t("replay.watch")}
-                  className="h-8 w-8"
-                  onClick={() => onWatch(n, watchId)}
-                >
-                  <Play className="h-4 w-4" />
-                </IconButton>
-              )}
+          <JournalRow key={n} open={watch} title={t("replay.watch")}>
+            <RowText
+              head={<>{t("competition.title", { n })}<BestScore pct={b?.score ?? 0} done={done} /></>}
+              line={t("competitions.line", { drones: plan.drones, waves: plan.waves.length })}
+            />
+            <RowButtons>
+              {watch && <WatchButton onPress={watch} />}
               {done ? (
-                <IconButton
-                  label={t("competitions.retake")}
-                  title={busy ? t("competitions.saving") : t("competitions.retake")}
-                  className="h-8 w-8 disabled:cursor-wait disabled:opacity-40"
-                  disabled={busy}
-                  onClick={() => onPlay(n)}
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </IconButton>
+                <RetakeButton busy={busy} onPress={play} />
               ) : (
-                <IconButton
+                <RowButton
                   label={t("competitions.play")}
-                  title={busy ? t("competitions.saving") : t("competitions.play")}
-                  className="h-8 w-8 border-red-500/60 text-red-400 disabled:cursor-wait disabled:opacity-40"
-                  disabled={busy}
-                  onClick={() => onPlay(n)}
+                  busy={busy}
+                  className="border-red-500/60 text-red-400"
+                  onPress={play}
                 >
-                  <Crosshair className="h-4 w-4" />
-                </IconButton>
+                  <Crosshair className={ROW_ICON} />
+                </RowButton>
               )}
-            </div>
-          </li>
+            </RowButtons>
+          </JournalRow>
         );
       })}
-    </ul>
+    </JournalList>
   );
 }

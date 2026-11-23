@@ -44,6 +44,19 @@ export interface Enemy {
   level?: number;
 }
 
+/**
+ * Игрок, открытый всем: его видят другие открытые, даже незнакомые.
+ * Добавленный из этого списка — обычный друг, как по почте.
+ */
+export interface ListedPlayer {
+  email: string;
+  name: string;
+  avatar: Avatar;
+  level: number;
+  /** Сила склада — прокачанные боевые уровни (upgradePower). */
+  power: number;
+}
+
 /** Склад врага: несколько сросшихся прямоугольников вокруг центра. */
 function genBase(rnd: () => number) {
   const cells = emptyCells();

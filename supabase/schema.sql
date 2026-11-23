@@ -385,10 +385,13 @@ create table if not exists profiles (
   -- увозит ящики из-под горящего склада. Ставит begin_battle при входе в
   -- бой, снимает запись исхода; брошенный бой отпускает отгрузку сам.
   battle_until timestamptz,
+  -- «Показывать всех»: такого видят все открытые, даже незнакомые, и он их.
+  listed boolean not null default false,
   created_at timestamptz not null default now()
 );
 
 alter table profiles add column if not exists battle_until timestamptz;
+alter table profiles add column if not exists listed boolean not null default false;
 
 create unique index if not exists profiles_tg_code on profiles (tg_code) where tg_code is not null;
 
@@ -420,7 +423,13 @@ create table if not exists attacks (
   -- Состязание — налёт на самого себя: нападающий и защитник один человек,
   -- а тут стоит номер. У настоящих налётов пусто.
   competition_stage int,
-  status text not null default 'pending' check (status in ('pending', 'resolved')),
+  -- Переигровка отбитого налёта — тоже налёт на самого себя: тот же рой на
+  -- нынешний склад. Тут id исходного боя, а у исходного — лучший счёт
+  -- переигровок: сколько процентов склада уцелело, как у миссии.
+  retake_of uuid references attacks(id) on delete cascade,
+  retake_best int,
+  -- declined — защитник отклонил налёт незнакомца, цена вернулась нападающему
+  status text not null default 'pending' check (status in ('pending', 'resolved', 'declined')),
   result jsonb,
   loot int not null default 0,
   destroyed boolean not null default false,
@@ -632,7 +641,6 @@ begin
   if not found then raise exception 'player with this email has not joined yet'; end if;
   if target.id = uid then raise exception 'cannot attack yourself'; end if;
   if not target.founded then raise exception 'target warehouse is not founded'; end if;
-
   -- Очередь у защитника одна и разбирается по одному налёту за раз, по
   -- получасу на каждый. Без потолка один нападающий запирал бы чужую игру
   -- на часы, просто поставив в очередь десяток роёв.
@@ -752,6 +760,43 @@ begin
 end;
 $$;
 
+-- Переиграть отбитый налёт: тот же рой — волны, зерно, уровень дронов — на
+-- нынешний склад. Идёт как миссия: налёт на самого себя, мимо очереди, с
+-- уроном и страховкой, но без премии за отбой; лучший счёт resolve_attack
+-- пишет в исходный бой. Отдаёт новый налёт и имя того, кто напал тогда.
+create or replace function queue_retake(raid_id uuid)
+returns table (id uuid, foe text, waves jsonb, seed int, drone_level int)
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  src attacks;
+  order_id uuid;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  select a.* into src
+    from attacks a
+   where a.id = raid_id and a.defender_id = uid and a.attacker_id <> uid
+     and a.status = 'resolved';
+  if not found then raise exception 'raid not found'; end if;
+  -- неотыгранная прежняя переигровка — брошенная, как у миссий
+  delete from attacks a
+   where a.defender_id = uid and a.retake_of is not null and a.status = 'pending';
+
+  insert into attacks (
+    attacker_id, defender_id, drones, pattern, direction, seed, waves,
+    drone_level, simulation_version, retake_of
+  )
+  values (uid, uid, src.drones, src.pattern, src.direction, src.seed, src.waves,
+          src.drone_level, sim_version(), src.id)
+  returning attacks.id into order_id;
+
+  return query
+    select order_id, coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
+           src.waves, src.seed, src.drone_level
+      from profiles p where p.id = src.attacker_id;
+end;
+$$;
+
 -- Как зовут склады по адресам. Отдаём только имя: список врагов и так
 -- строится по почте, а больше о чужом профиле знать незачем.
 -- Уровень игрока — номер последней пройденной миссии: самой дальней, где
@@ -763,6 +808,34 @@ language sql immutable as $$
    where coalesce((v->>'score')::int, 0) > 0;
 $$;
 
+-- Сила склада: сколько боевых уровней прокачано сверх стартовых. Страховка
+-- и кредит в бою не помогают и в силу не идут. Тот же список — POWER_KINDS
+-- на клиенте.
+create or replace function upgrade_power(levels jsonb) returns int
+language sql immutable as $$
+  select coalesce(sum(greatest(0, coalesce((levels ->> k)::int, 1) - 1)), 0)::int
+    from unnest(array['drones', 'guns', 'rockets', 'sprays', 'traps',
+                      'nets', 'balloons', 'mg', 'water']) as k;
+$$;
+
+-- Кто с кем познакомился, когда оба были открыты всем («показывать всех»):
+-- кто добавил — кого. Налёт от такого знакомого защитник вправе отклонить —
+-- незнакомец мог прийти просто за лёгкой добычей. Пишет add_rival.
+create table if not exists listed_met (
+  player uuid not null references profiles on delete cascade,
+  other uuid not null references profiles on delete cascade,
+  primary key (player, other)
+);
+alter table listed_met enable row level security;
+revoke all on table listed_met from anon, authenticated;
+
+-- Познакомились ли двое через общий список, кто бы кого ни добавил.
+create or replace function strangers(a uuid, b uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from listed_met m
+                  where (m.player = a and m.other = b) or (m.player = b and m.other = a));
+$$;
+
 create or replace function base_names(emails text[])
 returns table (email text, name text, avatar text, level int)
 language sql security definer set search_path = public as $$
@@ -772,6 +845,35 @@ language sql security definer set search_path = public as $$
          player_level(p.competition_best)
     from profiles p
    where lower(p.email) = any (select lower(e) from unnest(emails) e);
+$$;
+
+-- «Показывать всех»: открыться всем открытым или закрыться.
+create or replace function set_listed(value boolean)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'not authenticated'; end if;
+  update profiles set listed = coalesce(value, false) where id = auth.uid();
+end;
+$$;
+
+-- Открытые игроки — только тому, кто открыт сам: видят друг друга лишь те,
+-- кто согласился быть на виду. Ближайшие по силе — сверху; уже знакомых нет.
+-- Добавленный из списка — такой же друг, как по почте.
+create or replace function listed_players()
+returns table (email text, name text, avatar text, level int, power int)
+language sql security definer set search_path = public stable as $$
+  select p.email,
+         coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
+         p.avatar,
+         player_level(p.competition_best),
+         upgrade_power(p.levels)
+    from profiles p
+    join profiles me on me.id = auth.uid() and me.listed
+   where p.listed and p.founded and p.id <> me.id
+     and not exists (select 1 from jsonb_array_elements(me.enemies) e
+                      where lower(e->>'email') = lower(p.email))
+   order by abs(upgrade_power(p.levels) - upgrade_power(me.levels)), p.created_at
+   limit 50;
 $$;
 
 -- ---------- разведка ----------
@@ -862,7 +964,9 @@ returns table (
   from_email text,
   avatar text,
   opener text,
-  competition_stage int
+  competition_stage int,
+  retake_of uuid,
+  declinable boolean
 )
 language plpgsql security definer set search_path = public as $$
 declare
@@ -873,12 +977,12 @@ begin
 
   -- Часы идут только у первой атаки в очереди: пропускать нельзя, а у тех,
   -- что ждут позади, время ещё не начиналось. Отметку ставим при первой же
-  -- выдаче списка — это и есть «первый показ». Состязание в очередь налётов
-  -- не встаёт: его играют сразу, и часов ему не нужно.
+  -- выдаче списка — это и есть «первый показ». Налёт на самого себя (миссия,
+  -- переигровка) в очередь не встаёт: его играют сразу, и часов ему не нужно.
   select a.id into head
     from attacks a
    where a.defender_id = uid and a.status = 'pending'
-     and a.competition_stage is null
+     and a.attacker_id <> a.defender_id
    order by a.created_at
    limit 1;
 
@@ -897,9 +1001,14 @@ begin
              where c.attack_id = a.id and c.author_id = a.attacker_id
              order by c.created_at
              limit 1),
-           a.competition_stage
+           a.competition_stage,
+           a.retake_of,
+           -- от знакомого через общий список налёт можно отклонить
+           a.attacker_id <> uid and strangers(uid, a.attacker_id)
       from attacks a
-      join profiles p on p.id = a.attacker_id
+      -- у переигровки «напал» тот, кто прислал исходный налёт
+      left join attacks src on src.id = a.retake_of
+      join profiles p on p.id = coalesce(src.attacker_id, a.attacker_id)
      where a.defender_id = uid and a.status = 'pending'
      order by a.created_at;
 end;
@@ -925,8 +1034,8 @@ language sql security definer set search_path = public as $$
    where a.attacker_id = auth.uid()
      and a.status = 'resolved'
      and a.reported_at is null
-     -- в состязании нападающий сам себе защитник: итог он уже видел
-     and a.competition_stage is null
+     -- в налёте на себя нападающий сам себе защитник: итог он уже видел
+     and a.attacker_id <> a.defender_id
    order by a.resolved_at;
 $$;
 
@@ -1627,10 +1736,13 @@ declare
   new_map bytea;
   after_intact int;
   before_intact int;
+  -- миссия или переигровка: нападающий и защитник — один человек
+  self_battle boolean;
 begin
   select a.* into order_row from attacks a where a.id = attack_id for update;
   if not found then raise exception 'attack not found'; end if;
   if order_row.status <> 'pending' then raise exception 'attack already resolved'; end if;
+  self_battle := order_row.attacker_id = order_row.defender_id;
   if claim_token is null or order_row.resolving_token is distinct from claim_token then
     raise exception 'attack claim mismatch';
   end if;
@@ -1686,7 +1798,7 @@ begin
   select applied.credits, applied.intact
     into defender_credits, defender_intact
     from apply_battle_for(order_row.defender_id, new_cells, new_guns, new_depots, result,
-                          order_row.competition_stage is null) applied;
+                          not self_battle) applied;
 
   if mission_pay > 0 then
     update profiles set credits = profiles.credits + mission_pay
@@ -1710,11 +1822,19 @@ begin
   earned := (burned_now * price('loot')
              * (100 + (price('loot_curve') * share_pct * share_pct * share_pct) / 1000000))
             / 100;
-  -- Состязание: добычи нет — жечь самого себя ради неё нельзя. Вместо неё
+  -- Налёт на себя: добычи нет — жечь самого себя ради неё нельзя. Вместо неё
   -- счёт: сколько процентов склада уцелело, как competitionScore на
-  -- клиенте. Лучший по номеру храним; уцелел склад — открыт следующий.
-  if order_row.competition_stage is not null then
+  -- клиенте. У миссии лучший храним по номеру, и уцелел склад — открыт
+  -- следующий; у переигровки — в исходном бою.
+  if self_battle then
     earned := 0;
+  end if;
+  if order_row.retake_of is not null and was_intact > 0 then
+    update attacks
+       set retake_best = greatest(coalesce(retake_best, -1), (defender_intact * 100) / was_intact)
+     where id = order_row.retake_of;
+  end if;
+  if order_row.competition_stage is not null then
     if was_intact > 0 then
       comp_pct := (defender_intact * 100) / was_intact;
       comp_score := comp_pct;
@@ -2041,6 +2161,16 @@ begin
   if not found then raise exception 'player with this email has not joined yet'; end if;
   if target.id = uid then raise exception 'cannot add yourself'; end if;
 
+  -- Оба открыты всем и прежде знакомы не были — значит, нашли друг друга в
+  -- общем списке: запоминаем, налёт от такого можно отклонить.
+  if me.listed and target.listed
+     and not exists (select 1 from jsonb_array_elements(target.enemies) e
+                      where lower(e->>'email') = lower(me.email))
+     and not exists (select 1 from jsonb_array_elements(me.enemies) e
+                      where lower(e->>'email') = lower(target.email)) then
+    insert into listed_met (player, other) values (uid, target.id) on conflict do nothing;
+  end if;
+
   -- карточка знакомства: склад придёт с разведки, счёт вражды — с боёв
   card := jsonb_build_object(
     'id', gen_random_uuid()::text,
@@ -2259,7 +2389,8 @@ grant execute on function set_avatar to authenticated;
 create or replace function raid_log()
 returns table (
   id uuid, side text, foe text, foe_email text, at timestamptz, pending boolean,
-  drones int, loot int, destroyed boolean, burned int, burned_pct int, has_replay boolean
+  drones int, loot int, destroyed boolean, burned int, burned_pct int, has_replay boolean,
+  retake_best int, declined boolean
 )
 language sql security definer set search_path = public stable as $$
   -- Свои налёты видны и до боя: защитник ещё не отбивался, показывать
@@ -2280,15 +2411,17 @@ language sql security definer set search_path = public stable as $$
          -- какая доля склада сгорела: по ней видно, удачен ли налёт
          case when a.intact_before > 0
               then (coalesce((a.result->>'burned')::int, 0) * 100) / a.intact_before end,
-         a.snap_cells is not null
+         a.snap_cells is not null,
+         a.retake_best,
+         a.status = 'declined'
     from attacks a
     join profiles t on t.id = a.attacker_id
     join profiles d on d.id = a.defender_id
-   -- состязаний тут нет: у них свой журнал, по номерам
-   where a.competition_stage is null
+   -- налётов на себя тут нет: у миссий свой журнал, переигровка — счёт в исходном бою
+   where a.attacker_id <> a.defender_id
      and not (auth.uid() = any (a.hidden_by))
      and (
-       (a.attacker_id = auth.uid() and a.status in ('pending', 'resolved'))
+       (a.attacker_id = auth.uid() and a.status in ('pending', 'resolved', 'declined'))
        or (a.defender_id = auth.uid() and a.status = 'resolved')
      )
    order by coalesce(a.resolved_at, a.created_at) desc
@@ -2369,6 +2502,51 @@ begin
 end;
 $$;
 revoke execute on function drop_pending_raids(uuid) from public, anon, authenticated;
+
+-- Отклонить налёт знакомого через общий список. Нападающему — его цена, как
+-- у снятого без боя; в его журнале налёт остаётся отклонённым. Если это был
+-- первый же налёт между вами, знакомство не состоялось: оба пропадают из
+-- списков врагов друг друга. Отдаёт true, если знакомство отменено.
+create or replace function decline_raid(attack_id uuid)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  a attacks;
+  first_raid boolean;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  select * into a from attacks
+   where id = attack_id and defender_id = uid and status = 'pending'
+     and resolving_token is null
+   for update;
+  if not found then raise exception 'raid not found'; end if;
+  if a.attacker_id = uid or not strangers(uid, a.attacker_id) then
+    raise exception 'only raids from strangers can be declined';
+  end if;
+
+  first_raid := not exists (
+    select 1 from attacks b
+     where b.id <> a.id and b.status <> 'pending'
+       and ((b.attacker_id = uid and b.defender_id = a.attacker_id)
+         or (b.attacker_id = a.attacker_id and b.defender_id = uid)));
+
+  update profiles set credits = credits + raid_price(a) where id = a.attacker_id;
+  update attacks set status = 'declined', resolved_at = now() where id = a.id;
+
+  if first_raid then
+    update profiles me
+       set enemies = coalesce((select jsonb_agg(e) from jsonb_array_elements(me.enemies) e
+                                where lower(e->>'email') <> lower(other.email)), '[]'::jsonb)
+      from profiles other
+     where (me.id = uid and other.id = a.attacker_id)
+        or (me.id = a.attacker_id and other.id = uid);
+    delete from listed_met m
+     where (m.player = uid and m.other = a.attacker_id)
+        or (m.player = a.attacker_id and m.other = uid);
+  end if;
+  return first_raid;
+end;
+$$;
 
 -- ---------- начать сначала ----------
 -- Полный сброс: пустой стартовый склад, стартовые деньги, обнулённые
@@ -2661,7 +2839,8 @@ grant execute on function ensure_player, collect_income, save_base,
   base_names, stale_patches, launch_scout, upgrade, add_rival,
   send_message, message_thread, read_messages, unread_messages,
   take_loan, repay_loan, raid_log, hide_raid, begin_battle,
-  send_attack, queue_competition, pending_attacks, attack_reports, ack_attack_report, restart_game to authenticated;
+  send_attack, queue_competition, queue_retake, pending_attacks, set_listed, listed_players,
+  decline_raid, attack_reports, ack_attack_report, restart_game to authenticated;
 
 -- PostgREST держит список функций в кэше. Supabase обычно перечитывает его сам,
 -- но после смены сигнатур надёжнее попросить явно — иначе клиент ещё какое-то

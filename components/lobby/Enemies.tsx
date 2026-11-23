@@ -2,17 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { type WavePlan } from "@/lib/attack";
-import { shortEmail, type Enemy } from "@/lib/enemy";
+import { shortEmail, type Enemy, type ListedPlayer } from "@/lib/enemy";
+import { tooWeak } from "@/lib/economy";
 import { scoutCounts, seenGuns } from "@/lib/scout";
 import { decodeRle, fogPatches, type Gun } from "@/lib/base";
 import InstallCounts from "../scout/InstallCounts";
-import { Crosshair, MessageSquare, Plane } from "lucide-react";
+import { Crosshair, MessageSquare, Plane, UserPlus } from "lucide-react";
 import ScoutMap from "../scout/ScoutMap";
 import { Button, Card, ConfirmDialog, IconButton, Modal, inputClass } from "../ui";
 import Avatar from "../Avatar";
 import SummonRaidDialog from "./SummonRaidDialog";
 import type { Player } from "@/lib/player";
 import NeedDrones from "./NeedDrones";
+import ZonesToggle from "../ZonesToggle";
 import { useT } from "@/lib/i18n";
 
 
@@ -38,6 +40,16 @@ interface Props {
   onChanged: () => void;
   /** Дронов нет — перейти к их покупке. */
   onBuyDrones: () => void;
+  /** Своя сила склада: с ней сравнивается цель налёта. */
+  power: number;
+  /**
+   * «Показывать всех». Без сервера других игроков нет — тогда undefined, и
+   * галочки нет вовсе.
+   */
+  listed?: boolean;
+  onListed: (value: boolean) => Promise<string | null>;
+  /** Открытые игроки, ближайшие по силе. */
+  fetchListed: () => Promise<ListedPlayer[]>;
 }
 
 export default function Enemies({
@@ -55,6 +67,10 @@ export default function Enemies({
   onRemove,
   onChanged,
   onBuyDrones,
+  power,
+  listed,
+  onListed,
+  fetchListed,
 }: Props) {
   const t = useT();
   const [email, setEmail] = useState("");
@@ -65,18 +81,25 @@ export default function Enemies({
   const [needDrones, setNeedDrones] = useState<"raid" | "scout" | null>(null);
   const [profile, setProfile] = useState<Enemy | null>(null);
   const [adding, setAdding] = useState(false);
+  /** Вдвое слабее нас: вместо знакомства — совет поискать соперника по силам. */
+  const [weak, setWeak] = useState<ListedPlayer | null>(null);
 
-  const add = async () => {
-    if (adding) return;
+  /** Добавить врага по почте. Вернёт текст ошибки или null. */
+  const add = async (address: string) => {
+    if (adding) return null;
     setAdding(true);
-    const e = await onAdd(email.trim());
+    const e = await onAdd(address.trim());
     setAdding(false);
     setError(e);
-    if (!e) {
-      setEmail("");
-      onChanged();
-    }
+    if (!e) onChanged();
+    return e;
   };
+  const addByEmail = () => void add(email).then((err) => !err && setEmail(""));
+
+  /** Из общего списка — только по силам; по почте друзья договорятся сами. */
+  const addListed = (pl: ListedPlayer) => (tooWeak(power, pl.power) ? setWeak(pl) : void add(pl.email));
+
+  const attack = (e: Enemy) => (drones < 1 ? setNeedDrones("raid") : setTarget(e));
 
   return (
     <>
@@ -85,7 +108,7 @@ export default function Enemies({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") void add();
+            if (e.key === "Enter") addByEmail();
           }}
           placeholder={t("enemies.placeholder")}
           type="email"
@@ -94,11 +117,19 @@ export default function Enemies({
           autoCorrect="off"
           className={inputClass}
         />
-        <Button size="sm" onClick={() => void add()} disabled={adding}>
+        <Button size="sm" onClick={addByEmail} disabled={adding}>
           {adding ? t("enemies.adding") : t("enemies.add")}
         </Button>
       </div>
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      {listed !== undefined && (
+        <ZonesToggle
+          className="mt-2"
+          on={listed}
+          label={t("enemies.showAll")}
+          onChange={(value) => void onListed(value).then(setError)}
+        />
+      )}
 
       {enemies.length === 0 ? (
         <p className="mt-3 text-sm text-neutral-500">
@@ -156,7 +187,7 @@ export default function Enemies({
                     label={t("enemies.attack")}
                     title={t("enemies.attack")}
                     className="h-9 w-9 border-red-800 bg-red-950/40 text-red-300 hover:bg-red-900/50"
-                    onClick={() => (drones < 1 ? setNeedDrones("raid") : setTarget(e))}
+                    onClick={() => attack(e)}
                   >
                     <Crosshair className="h-4 w-4" />
                   </IconButton>
@@ -165,6 +196,26 @@ export default function Enemies({
             </Card>
           ))}
         </ul>
+      )}
+
+      {listed && (
+        <ListedPlayers
+          known={enemies}
+          power={power}
+          adding={adding}
+          fetchListed={fetchListed}
+          onAdd={addListed}
+        />
+      )}
+
+      {weak && (
+        <Modal
+          title={t("enemies.tooWeakTitle", { name: weak.name })}
+          onClose={() => setWeak(null)}
+          footer={<Button variant="build" onClick={() => setWeak(null)}>{t("common.ok")}</Button>}
+        >
+          <p className="text-sm text-neutral-400">{t("enemies.tooWeak")}</p>
+        </Modal>
       )}
 
       {profile && (
@@ -223,6 +274,71 @@ export default function Enemies({
         />
       )}
     </>
+  );
+}
+
+/**
+ * Открытые игроки, которых ещё нет в списке врагов (их отсекает сервер):
+ * ближайшие по силе — сверху, те, кто вдвое слабее, — бледнее: завести их
+ * отсюда нельзя. Список перечитывается, когда кого-то добавили.
+ */
+function ListedPlayers({
+  known,
+  power,
+  adding,
+  fetchListed,
+  onAdd,
+}: {
+  known: Enemy[];
+  power: number;
+  adding: boolean;
+  fetchListed: () => Promise<ListedPlayer[]>;
+  onAdd: (player: ListedPlayer) => void;
+}) {
+  const t = useT();
+  const [players, setPlayers] = useState<ListedPlayer[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetchListed()
+      .then((list) => alive && setPlayers(list))
+      .catch(() => alive && setPlayers([]));
+    return () => {
+      alive = false;
+    };
+  }, [fetchListed, known.length]);
+
+  return (
+    <section className="mt-4">
+      <h3 className="mb-2 text-xs uppercase tracking-widest text-neutral-500">{t("enemies.others")}</h3>
+      {players && !players.length ? (
+        <p className="text-sm text-neutral-500">{t("enemies.othersEmpty")}</p>
+      ) : (
+        <ul className="space-y-2">
+          {(players ?? []).map((pl) => (
+            <Card key={pl.email}>
+              <div className={`flex items-center gap-3 ${tooWeak(power, pl.power) ? "opacity-50" : ""}`}>
+                <Avatar avatar={pl.avatar} name={pl.name} />
+                <div className="flex min-w-0 flex-1 items-baseline justify-between gap-2">
+                  <span className="truncate font-medium text-neutral-200">{pl.name}</span>
+                  <span className="shrink-0 font-mono text-xs text-neutral-400">
+                    {t("enemies.levelShort", { n: pl.level })}
+                  </span>
+                </div>
+                <IconButton
+                  label={t("enemies.add")}
+                  title={t("enemies.add")}
+                  className="h-9 w-9"
+                  disabled={adding}
+                  onClick={() => onAdd(pl)}
+                >
+                  <UserPlus className="h-4 w-4" />
+                </IconButton>
+              </div>
+            </Card>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

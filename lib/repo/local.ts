@@ -5,9 +5,9 @@ import { LOAN_HOURS, maxLevel, STARTER_CELLS, loanDebt, upgradeCost, type Upgrad
 import { normalizeAvatarForStorage, type Avatar } from "../avatar";
 import type { RaidLog } from "../attack";
 import { collectIncome as localIncome, load as localLoad, newPlayer, save as localSave, wipe as localWipe, type Player } from "../player";
-import { takeDrones } from "../enemy";
+import { takeDrones, type ListedPlayer } from "../enemy";
 import { MAX_BLUEPRINTS, rebuildCost, type Blueprint } from "../blueprint";
-import type { Income, Repo } from "./types";
+import type { Income, Repo, RetakeOrder } from "./types";
 
 const BLUEPRINTS_KEY = "wb.blueprints";
 
@@ -49,6 +49,19 @@ export class LocalRepo implements Repo {
 
   async baseNames(_emails: string[]) {
     return new Map<string, { name: string; avatar: Avatar; level: number }>();
+  }
+
+  // без сервера других игроков нет: открываться некому
+  async setListed() {
+    throw new Error("offline");
+  }
+
+  async declineRaid(): Promise<boolean> {
+    throw new Error("offline");
+  }
+
+  async listedPlayers(): Promise<ListedPlayer[]> {
+    return [];
   }
 
   async setAvatar(p: Player, value: Avatar) {
@@ -112,6 +125,11 @@ export class LocalRepo implements Repo {
 
   async sendAttack(): Promise<string | null> {
     throw new Error("not authenticated");
+  }
+
+  async queueRetake(): Promise<RetakeOrder> {
+    // без сервера нет журнала боёв, а значит, и переигрывать нечего
+    throw new Error("offline");
   }
 
   async queueCompetition(): Promise<string> {

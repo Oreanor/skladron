@@ -155,11 +155,12 @@ export async function POST(request: Request) {
   if (!attack) return new Response("no such battle", { status: 404 });
 
   if (event === "resolved") {
-    // Об исходе просит только защитник, который бой отыграл.
+    // Об исходе просит только защитник, который бой отыграл или отклонил.
     if (uid !== attack.defender_id) {
       return new Response("not your side of this battle", { status: 403 });
     }
-    if (attack.status !== "resolved") return Response.json({ ok: true, sent: false });
+    // отбит или отклонён — нападающему есть что сказать
+    if (attack.status === "pending") return Response.json({ ok: true, sent: false });
     const { sent, error: notifyError } = await notifyResolvedRaid(db, attackId);
     if (notifyError) return Response.json({ ok: false, reason: notifyError });
     return Response.json({ ok: true, sent });

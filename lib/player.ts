@@ -23,6 +23,7 @@ import {
   starterGuns,
 } from "./base";
 import type { AttackOrder } from "./attack";
+import type { BattleLevels } from "./engine";
 import type { Enemy } from "./enemy";
 import type { CompetitionBest } from "./competition";
 import { randomPresetAvatar, type Avatar } from "./avatar";
@@ -107,6 +108,8 @@ export interface Player {
   competitionAt: number;
   /** Лучшая попытка по каждому пройденному номеру. */
   competitionBest: Record<number, CompetitionBest>;
+  /** «Показывать всех»: видим всех открытых, и они нас. Только с сервером. */
+  listed?: boolean;
 }
 
 /**
@@ -168,6 +171,27 @@ export function wipe(p: Player, now = Date.now()): Player {
 export const drones = (p: Player) => droneCount(p.depots);
 export const intactCells = (p: Player) => countCells(p.cells, G_BASE);
 export const burntCells = (p: Player) => countCells(p.cells, G_BURNT);
+
+/** Уровни обороны, с которыми склад встречает бой. Дронов тут нет: их уровень — у нападающего. */
+export const defenceLevels = ({ levels: l }: Player): BattleLevels => ({
+  guns: l.guns,
+  rockets: l.rockets,
+  sprays: l.sprays,
+  traps: l.traps,
+  nets: l.nets,
+  balloons: l.balloons,
+  mg: l.mg,
+  water: l.water,
+});
+
+const PERCENT = 100;
+
+/**
+ * Какая доля склада сгорела, %: целые проценты, с округлением вниз — так же
+ * считает сервер в журнале боёв, и цифры в бою и в журнале совпадают.
+ */
+export const burnedShare = (burned: number, intactBefore: number) =>
+  intactBefore > 0 ? Math.floor((burned * PERCENT) / intactBefore) : 0;
 /**
  * Что уйдёт с отгрузкой: сколько чего лежит и на какую сумму. Цена продажи
  * считается от закупочной с учётом уровня — иначе прокачка съедала бы всю

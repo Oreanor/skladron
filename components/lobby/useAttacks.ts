@@ -14,7 +14,7 @@
 
 import { useEffect, useRef } from "react";
 import { blankEnemy } from "@/lib/enemy";
-import type { AttackReport } from "@/lib/attack";
+import { isSelfBattle, type AttackReport } from "@/lib/attack";
 import type { Player } from "@/lib/player";
 import type { Repo } from "@/lib/repo";
 import type { Translate } from "@/lib/i18n";
@@ -127,7 +127,7 @@ export function useAttacks(o: AttacksOptions): Attacks {
         reportsSeen.current = new Set(state.reports.map((r) => r.id));
         if (fresh) opt.current.loadRaids();
         for (const a of state.incoming) {
-          if (a.remote && !a.competitionStage) notifyBattle(a.id, "sent");
+          if (a.remote && !isSelfBattle(a)) notifyBattle(a.id, "sent");
         }
         refresh();
       } catch {
@@ -167,10 +167,9 @@ export function useAttacks(o: AttacksOptions): Attacks {
         for (const e of cur.enemies) {
           const actual = names.get(e.email.toLowerCase());
           if (!actual) continue;
-          if (actual.name !== e.name || actual.avatar !== e.avatar || actual.level !== e.level) {
-            e.name = actual.name;
-            e.avatar = actual.avatar;
-            e.level = actual.level;
+          const stale = (Object.keys(actual) as (keyof typeof actual)[]).some((k) => actual[k] !== e[k]);
+          if (stale) {
+            Object.assign(e, actual);
             changed = true;
           }
         }

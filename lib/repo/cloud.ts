@@ -10,6 +10,7 @@ import type { ReplayData } from "@/components/battle/Replay";
 import type { BattleResult } from "../engine";
 import { newPlayer, startLevels, type Player } from "../player";
 import type { Blueprint } from "../blueprint";
+import type { ListedPlayer } from "../enemy";
 import { supabase } from "../supabase";
 import type { Income, Repo } from "./types";
 
@@ -127,6 +128,7 @@ interface ProfileRow {
   loan_due: string | null;
   competition_at: number;
   competition_best: Player["competitionBest"];
+  listed: boolean;
 }
 
 /** collect_income отдаёт именно credits_added — имя колонки, а не поля Income. */
@@ -167,6 +169,8 @@ interface IncomingAttackRow {
   avatar: string | null;
   opener: string | null;
   competition_stage: number | null;
+  retake_of: string | null;
+  declinable: boolean;
 }
 
 interface AttackReportRow {
@@ -261,6 +265,7 @@ export class CloudRepo implements Repo {
       // прогресс состязаний ведёт сервер: он же считает и счёт попытки
       competitionAt: row.competition_at,
       competitionBest: row.competition_best,
+      listed: row.listed,
     };
 
     // склад врага могли переименовать — подтягиваем актуальные имена
@@ -268,10 +273,7 @@ export class CloudRepo implements Repo {
       const names = await this.baseNames(player.enemies.map((e) => e.email));
       for (const e of player.enemies) {
         const actual = names.get(e.email.toLowerCase());
-        if (!actual) continue;
-        e.name = actual.name;
-        e.avatar = actual.avatar;
-        e.level = actual.level;
+        if (actual) Object.assign(e, actual);
       }
     } catch {
       // имена — украшение списка, из-за них вход в игру ломаться не должен
@@ -324,12 +326,15 @@ export class CloudRepo implements Repo {
       // дроны летят на том уровне, до какого их довёл нападающий
       droneLevel: row.drone_level,
       simulationVersion: row.simulation_version,
-      // У состязания нападающий — ты сам: почту не отдаём, иначе опрос
-      // записал бы тебя в собственные враги.
-      fromEmail: row.competition_stage ? undefined : row.from_email,
+      // В налёте на себя почту не отдаём: у миссии нападающий — ты сам, и
+      // опрос записал бы тебя в собственные враги; переигровка же — не новый
+      // налёт врага, и счёт вражды она трогать не должна.
+      fromEmail: row.competition_stage || row.retake_of ? undefined : row.from_email,
       avatar: row.avatar ?? null,
       opener: row.opener ?? undefined,
       competitionStage: row.competition_stage ?? undefined,
+      retakeOf: row.retake_of ?? undefined,
+      declinable: row.declinable,
       remote: true,
     }));
     const reports = ((reportResult.data ?? []) as AttackReportRow[]).map((row) => ({
@@ -403,14 +408,31 @@ export class CloudRepo implements Repo {
     if (!emails.length) return out;
     const { data, error } = await this.db().rpc("base_names", { emails });
     if (error) throw error;
-    const rows =
-      (data as { email: string; name: string; avatar: string | null; level: number | null }[] | null) ?? [];
-    for (const row of rows) {
+    type Row = { email: string; name: string; avatar: Avatar; level: number | null };
+    for (const row of (data as Row[] | null) ?? []) {
       if (row.email && row.name) {
         out.set(row.email.toLowerCase(), { name: row.name, avatar: row.avatar, level: row.level ?? 0 });
       }
     }
     return out;
+  }
+
+  async setListed(p: Player, value: boolean) {
+    const { error } = await this.db().rpc("set_listed", { value });
+    if (error) throw error;
+    p.listed = value;
+  }
+
+  async declineRaid(id: string) {
+    const { data, error } = await this.db().rpc("decline_raid", { attack_id: id });
+    if (error) throw error;
+    return Boolean(data);
+  }
+
+  async listedPlayers() {
+    const { data, error } = await this.db().rpc("listed_players");
+    if (error) throw error;
+    return (data as ListedPlayer[] | null) ?? [];
   }
 
   async setAvatar(p: Player, value: Avatar) {
@@ -633,6 +655,13 @@ export class CloudRepo implements Repo {
     return data as string;
   }
 
+  async queueRetake(raidId: string) {
+    const { data, error } = await this.db().rpc("queue_retake", { raid_id: raidId });
+    if (error) throw error;
+    const row = (data as { id: string; foe: string; waves: WavePlan[]; seed: number; drone_level: number }[])[0];
+    return { id: row.id, foe: row.foe, waves: row.waves, seed: row.seed, droneLevel: row.drone_level };
+  }
+
   async sendAttack(
     p: Player,
     targetEmail: string,
@@ -688,6 +717,8 @@ export class CloudRepo implements Repo {
       burned: number;
       burned_pct: number | null;
       has_replay: boolean;
+      retake_best: number | null;
+      declined: boolean;
     }[]).map((row) => ({
       id: row.id,
       side: row.side,
@@ -701,6 +732,8 @@ export class CloudRepo implements Repo {
       loot: row.loot,
       destroyed: row.destroyed,
       hasReplay: row.has_replay,
+      retakeBest: row.retake_best ?? undefined,
+      declined: row.declined,
     }));
   }
 

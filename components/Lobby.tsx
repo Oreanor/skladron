@@ -8,9 +8,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { countFreeCells, countKind, decodeRle, droneCount, fogPatches, normRect } from "@/lib/base";
-import { LOAN_MIN, STARTER_SIDE, dronePrice, fmt, loanMax } from "@/lib/economy";
-import type { AttackOrder, AttackReport, OutgoingRaid } from "@/lib/attack";
-import { MAX_BASE_NAME, burntCells, intactCells, isDoomed, type Player } from "@/lib/player";
+import { LOAN_MIN, STARTER_SIDE, dronePrice, fmt, loanMax, upgradePower } from "@/lib/economy";
+import { isSelfBattle, type AttackOrder, type AttackReport, type OutgoingRaid } from "@/lib/attack";
+import { MAX_BASE_NAME, burntCells, defenceLevels, intactCells, isDoomed, type Player } from "@/lib/player";
 import { titleCompetitions } from "@/lib/competition";
 import { getRepo } from "@/lib/repo";
 import { blankEnemy, type Enemy } from "@/lib/enemy";
@@ -136,6 +136,7 @@ export default function Lobby({
       enemy.scout ? repo.stalePatches(enemy.email, enemy.scout.cells) : Promise.resolve([]),
     [repo]
   );
+  const fetchListed = useCallback(() => repo.listedPlayers(), [repo]);
   const [showRules, setShowRules] = useState(false);
   const [showStats, setShowStats] = useState(false);
   /** Журнал боёв: и свои налёты, и те, где отбивался. */
@@ -296,16 +297,7 @@ export default function Lobby({
         guns={p.guns}
         depots={p.depots}
         order={battle}
-        levels={{
-          guns: p.levels.guns,
-          rockets: p.levels.rockets,
-          sprays: p.levels.sprays,
-          traps: p.levels.traps,
-          nets: p.levels.nets,
-          balloons: p.levels.balloons,
-          mg: p.levels.mg,
-          water: p.levels.water,
-        }}
+        levels={defenceLevels(p)}
         insuranceLevel={p.levels.insurance}
         missionBest={battle.competitionStage ? p.competitionBest[battle.competitionStage] : undefined}
         onFinish={(o) => flow.finishBattle(battle, o)}
@@ -439,11 +431,14 @@ export default function Lobby({
   // Состязания в журнал боёв не попадают: у них свой, по номерам.
   const raidsBody = (
     <RaidsPanel
-      incoming={p.incoming.filter((a) => !a.competitionStage)}
+      incoming={p.incoming.filter((a) => !isSelfBattle(a))}
       raids={raids}
       onDefend={(order) => void flow.defend(order)}
+      onDecline={(order) => void flow.decline(order)}
       onWatch={(r) => void openReplay(r.id, r.side === "attack" ? r.foe : p.name)}
       onHide={(id) => void hideRaid(id)}
+      busy={saving}
+      onRetake={(raid) => void flow.playRetake(raid)}
       onPlan={(raid) => {
         void repo.outgoingRaid(raid.id).then((plan) => {
           if (plan) { setSheet(null); setSentRaid(plan); }
@@ -509,6 +504,11 @@ export default function Lobby({
       unread={unread}
       onChanged={core.rerender}
       onBuyDrones={buyDrones}
+      power={upgradePower(p.levels)}
+      // без сервера открываться некому — галочки нет
+      listed={repo.mode === "cloud" ? Boolean(p.listed) : undefined}
+      onListed={rivals.setListed}
+      fetchListed={fetchListed}
     />
   );
 
@@ -523,9 +523,9 @@ export default function Lobby({
 
   // ---------- полоса сообщений ----------
   const draftOpen = drafting && draftRect && draftRect.w > 0 && draftRect.h > 0;
-  // Тревога — только о чужих налётах: миссию игрок запускает сам, а
-  // недоигранная висит в очереди до следующего «играть» в журнале миссий.
-  const raidsIn = p.incoming.filter((a) => !a.competitionStage);
+  // Тревога — только о чужих налётах: миссию и переигровку игрок запускает
+  // сам, а недоигранная висит в очереди до следующего «играть».
+  const raidsIn = p.incoming.filter((a) => !isSelfBattle(a));
   const { tone: barTone, body: barBody } = statusBar({
     t,
     tool,
@@ -576,7 +576,7 @@ export default function Lobby({
         <IncomeLine p={p} className="flex-1" />
         <IconButton
           label={t("panel.replays")}
-          badge={p.incoming.filter((a) => !a.competitionStage).length}
+          badge={raidsIn.length}
           onClick={() => toggleSheet("attacks")}
         >
           <IconTarget />

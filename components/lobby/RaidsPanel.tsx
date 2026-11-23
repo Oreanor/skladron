@@ -8,13 +8,24 @@
  * ниже прошедшие бои, из которых открывается повтор.
  */
 
-import { Play, Trash2 } from "lucide-react";
+import { X } from "lucide-react";
 import { fmt } from "@/lib/economy";
 import type { AttackOrder, RaidLog } from "@/lib/attack";
 import type { PlayerStats } from "@/lib/player";
-import { Button, IconButton } from "../ui";
-import { useT } from "@/lib/i18n";
+import { Button } from "../ui";
+import { useT, type Translate } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
+import {
+  BestScore,
+  JournalList,
+  JournalRow,
+  RetakeButton,
+  ROW_ICON,
+  RowButton,
+  RowButtons,
+  RowText,
+  WatchButton,
+} from "./journalRow";
 
 /** Дата боя коротко: 23.11.25. */
 const day = (at: number) => {
@@ -37,9 +48,6 @@ const Foe = ({ name, open }: { name: string; open?: () => void }) =>
     <b className="font-semibold text-neutral-100">{name}</b>
   );
 
-/** Сколько боёв видно без прокрутки: журнал не должен выдавливать соседей. */
-const VISIBLE = "max-h-[10.5rem]";
-
 export function StatsPanel({ stats }: { stats: PlayerStats }) {
   const t = useT();
   const rows = [
@@ -57,27 +65,35 @@ export function StatsPanel({ stats }: { stats: PlayerStats }) {
   );
 }
 
+/** Открыть карточку врага по почте; у кого её нет — undefined, ник не кликается. */
+type FoeOpener = (email: string | undefined) => (() => void) | undefined;
+
 export default function RaidsPanel({
   incoming,
   raids,
   onDefend,
+  onDecline,
   onWatch,
   onHide,
   onFoe,
   onPlan,
+  onRetake,
+  busy,
 }: {
   /** Что к нам летит. Первый в списке и есть тот, кого отбивают. */
   incoming: AttackOrder[];
   raids: RaidLog[];
   onDefend: (order: AttackOrder) => void;
+  /** Отклонить налёт знакомого через общий список. */
+  onDecline: (order: AttackOrder) => void;
   onWatch: (raid: RaidLog) => void;
   onHide: (id: string) => void;
   onPlan: (raid: RaidLog) => void;
-  /**
-   * Открыть карточку врага по почте. Возвращает undefined для тех, кого нет
-   * в списке соперников, — их ник не кликается.
-   */
-  onFoe: (email: string | undefined) => (() => void) | undefined;
+  /** Переиграть отбитый налёт на нынешнем складе — как миссию. */
+  onRetake: (raid: RaidLog) => void;
+  /** Прошлый бой ещё пишется — новый пока не начать. */
+  busy: boolean;
+  onFoe: FoeOpener;
 }) {
   const t = useT();
   if (!raids.length && !incoming.length) {
@@ -85,106 +101,146 @@ export default function RaidsPanel({
   }
 
   return (
-    <ul className={`${VISIBLE} -mr-3 space-y-0.5 overflow-y-auto overscroll-contain pr-1.5`}>
-      {incoming.map((a, i) => {
-        const first = i === 0;
-        const edge = a.pattern === "lines" ? ` ${t(`edge.${a.direction}` as Key)}` : "";
-        return (
-          <li
-            key={a.id}
-            className={`flex items-center justify-between gap-2 rounded-md px-3 py-1.5 transition-colors hover:bg-neutral-800/60 ${first ? "" : "opacity-60"}`}
-          >
-            <div className="min-w-0">
-              <div className="truncate text-neutral-200">
-                <span className="text-red-300">{t("replays.incoming")}</span>{" "}
-                <Foe name={a.from} open={onFoe(a.fromEmail)} />
-              </div>
-              <div className="font-mono text-[11px] text-neutral-500">
-                {day(a.createdAt)}
-                {", "}
-                {t("attacks.dronesPattern", {
-                  drones: a.drones,
-                  pattern: t(`pattern.${a.pattern}` as Key).toLowerCase(),
-                })}
-                {edge}
-                {" · "}
-                {first ? t("attacks.ready") : t("attacks.queued", { position: i + 1 })}
-              </div>
-            </div>
-            {first ? (
-              <Button
-                variant="danger"
-                size="sm"
-                className="shrink-0"
-                onClick={() => onDefend(a)}
-              >
-                {t("attacks.defend")}
-              </Button>
-            ) : (
-              <span className="shrink-0 text-[11px] text-neutral-600">
-                {t("attacks.defendFirst")}
-              </span>
-            )}
-          </li>
-        );
-      })}
-
-      {raids.map((r) => (
-        <li
-          key={r.id}
-          // свой налёт открывается щелчком по строке: отдельная кнопка «План налёта» не нужна
-          onClick={r.side === "attack" ? () => onPlan(r) : undefined}
-          onKeyDown={r.side === "attack" ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPlan(r); } } : undefined}
-          role={r.side === "attack" ? "button" : undefined}
-          tabIndex={r.side === "attack" ? 0 : undefined}
-          title={r.side === "attack" ? t("raid.planTitle") : undefined}
-          className={`flex items-center justify-between gap-2 rounded-md px-3 py-1.5 transition-colors hover:bg-neutral-800/60 ${r.side === "attack" ? "cursor-pointer" : ""}`}
-        >
-          <div className="min-w-0">
-            <div className={`truncate ${r.pending ? "text-neutral-400" : "text-neutral-200"}`}>
-              <span className={r.side === "attack" ? "text-red-300" : "text-sky-300"}>
-                {t(r.side === "attack" ? "replays.attack" : "replays.defence")}
-              </span>{" "}
-              <Foe name={r.foe} open={onFoe(r.foeEmail)} />
-            </div>
-            <div className="font-mono text-[11px] text-neutral-500">
-              {r.pending
-                ? `${day(r.at)}, ${t("replays.pending", { drones: r.drones })}`
-                : `${day(r.at)}, ${
-                    r.burnedPct !== undefined
-                      ? t("replays.linePct", { drones: r.drones, pct: r.burnedPct })
-                      : t("replays.line", { drones: r.drones, burned: fmt(r.burned) })
-                  }`}
-              {!r.pending && r.side === "attack" && r.loot > 0
-                ? `, +${fmt(r.loot)} ${t("battle.creditsSuffix")}`
-                : ""}
-            </div>
-          </div>
-          {/* пока бой не отыгран, смотреть и убирать нечего */}
-          {!r.pending && (
-            <div className="flex shrink-0 gap-1">
-              <IconButton
-                label={t("replays.hide")}
-                title={t("replays.hide")}
-                className="h-8 w-8"
-                onClick={(e) => { e.stopPropagation(); onHide(r.id); }}
-              >
-                <Trash2 className="h-4 w-4" />
-              </IconButton>
-              {r.hasReplay && (
-                <IconButton
-                  label={t("replay.watch")}
-                  title={t("replay.watch")}
-                  className="h-8 w-8"
-                  onClick={(e) => { e.stopPropagation(); onWatch(r); }}
-                >
-                  <Play className="h-4 w-4" />
-                </IconButton>
-              )}
-            </div>
-          )}
-        </li>
+    <JournalList>
+      {incoming.map((order, i) => (
+        <IncomingRow
+          key={order.id}
+          order={order}
+          position={i}
+          onDefend={onDefend}
+          onDecline={onDecline}
+          onFoe={onFoe}
+        />
       ))}
-    </ul>
+      {raids.map((raid) => (
+        <RaidRow
+          key={raid.id}
+          raid={raid}
+          busy={busy}
+          onFoe={onFoe}
+          onPlan={onPlan}
+          onWatch={onWatch}
+          onHide={onHide}
+          onRetake={onRetake}
+        />
+      ))}
+    </JournalList>
+  );
+}
+
+/**
+ * Налёт в очереди. Отбивают строго по порядку: «отбить» только у первого.
+ * Налёт знакомого через общий список можно отклонить на любом месте.
+ */
+function IncomingRow({
+  order,
+  position,
+  onDefend,
+  onDecline,
+  onFoe,
+}: {
+  order: AttackOrder;
+  position: number;
+  onDefend: (order: AttackOrder) => void;
+  onDecline: (order: AttackOrder) => void;
+  onFoe: FoeOpener;
+}) {
+  const t = useT();
+  const first = position === 0;
+  const pattern = t(`pattern.${order.pattern}` as Key).toLowerCase();
+  const edge = order.pattern === "lines" ? ` ${t(`edge.${order.direction}` as Key)}` : "";
+  const queue = first ? t("attacks.ready") : t("attacks.queued", { position: position + 1 });
+  return (
+    <JournalRow dim={!first}>
+      <RowText
+        head={<><span className="text-red-300">{t("replays.incoming")}</span>{" "}<Foe name={order.from} open={onFoe(order.fromEmail)} /></>}
+        line={`${day(order.createdAt)}, ${t("attacks.dronesPattern", { drones: order.drones, pattern })}${edge} · ${queue}`}
+      />
+      <RowButtons>
+        {order.declinable && (
+          <RowButton label={t("attacks.decline")} onPress={() => onDecline(order)}>
+            <X className={ROW_ICON} />
+          </RowButton>
+        )}
+        {first ? (
+          <Button variant="danger" size="sm" onClick={() => onDefend(order)}>
+            {t("attacks.defend")}
+          </Button>
+        ) : (
+          <span className="self-center text-[11px] text-neutral-600">{t("attacks.defendFirst")}</span>
+        )}
+      </RowButtons>
+    </JournalRow>
+  );
+}
+
+/** Строка про исход: доля сгоревшего, если есть слепок, иначе клетки; у своего налёта — добыча. */
+function raidLine(t: Translate, r: RaidLog) {
+  if (r.pending) return `${day(r.at)}, ${t("replays.pending", { drones: r.drones })}`;
+  if (r.declined) return `${day(r.at)}, ${t("replays.declined", { drones: r.drones })}`;
+  const burned = r.burnedPct === undefined
+    ? t("replays.line", { drones: r.drones, burned: fmt(r.burned) })
+    : t("replays.linePct", { drones: r.drones, pct: r.burnedPct });
+  const loot = r.side === "attack" && r.loot > 0 ? `, +${fmt(r.loot)} ${t("battle.creditsSuffix")}` : "";
+  return `${day(r.at)}, ${burned}${loot}`;
+}
+
+/**
+ * Прошедший бой. Устроен как строка миссии: щелчок открывает повтор (свой
+ * налёт — его план), отбитый можно переиграть, лучшая переигровка — рядом
+ * с ником, где у миссии её счёт.
+ */
+function RaidRow({
+  raid: r,
+  busy,
+  onFoe,
+  onPlan,
+  onWatch,
+  onHide,
+  onRetake,
+}: {
+  raid: RaidLog;
+  busy: boolean;
+  onFoe: FoeOpener;
+  onPlan: (raid: RaidLog) => void;
+  onWatch: (raid: RaidLog) => void;
+  onHide: (id: string) => void;
+  onRetake: (raid: RaidLog) => void;
+}) {
+  const t = useT();
+  const mine = r.side === "attack";
+  const replayable = r.hasReplay && !r.pending;
+  // переиграть можно только отбитый: в нём был наш склад
+  const retakable = replayable && !mine;
+  const watch = () => onWatch(r);
+  const open = mine ? () => onPlan(r) : replayable ? watch : undefined;
+  return (
+    <JournalRow open={open} title={t(mine ? "raid.planTitle" : "replay.watch")}>
+      <RowText
+        muted={r.pending}
+        head={
+          <>
+            <span className={mine ? "text-red-300" : "text-sky-300"}>
+              {t(mine ? "replays.attack" : "replays.defence")}
+            </span>{" "}
+            <Foe name={r.foe} open={onFoe(r.foeEmail)} />
+            {retakable && r.retakeBest !== undefined && (
+              <BestScore pct={r.retakeBest} title={t("replays.retakeBest")} />
+            )}
+          </>
+        }
+        line={raidLine(t, r)}
+      />
+      {/* пока бой не отыгран, смотреть и убирать нечего */}
+      {!r.pending && (
+        <RowButtons>
+          <RowButton label={t("replays.hide")} onPress={() => onHide(r.id)}>
+            <X className={ROW_ICON} />
+          </RowButton>
+          {replayable && <WatchButton onPress={watch} />}
+          {retakable && <RetakeButton busy={busy} onPress={() => onRetake(r)} />}
+        </RowButtons>
+      )}
+    </JournalRow>
   );
 }

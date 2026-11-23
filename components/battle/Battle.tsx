@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GRID, G_BASE, countCells, encodeCells, type Depot, type Gun } from "@/lib/base";
-import { missionPays, missionReward, type CompetitionBest } from "@/lib/competition";
+import { missionPays, type CompetitionBest } from "@/lib/competition";
 import { buildPlan, type AttackOrder } from "@/lib/attack";
 import {
   afterglow,
@@ -13,7 +13,7 @@ import {
   type GameState,
 } from "@/lib/engine";
 import { drawFrame, COLORS } from "@/lib/render";
-import { goodsValue, insurance, defenseBounty, fmt } from "@/lib/economy";
+import { goodsValue, insurance, fmt } from "@/lib/economy";
 import MapCanvas, { type Pt } from "../MapCanvas";
 import { useZones } from "../ZonesToggle";
 import { usePanelFold } from "./usePanelFold";
@@ -21,7 +21,8 @@ import { Button, Chip, ChipBar, IconButton, Panel, Row } from "../ui";
 import BattleFrame, { MAP_EVERY_MS } from "./BattleFrame";
 import { encodeTrace, type Frame } from "@/lib/replay";
 import { applyFrame, newHands, takeFrame } from "@/lib/resolve";
-import type { BattleOutcome } from "@/lib/outcome";
+import { battleReward, type BattleOutcome } from "@/lib/outcome";
+import { burnedShare } from "@/lib/player";
 import { SIM } from "@/lib/tuning";
 import { explain } from "@/lib/errors";
 import { sharePractice } from "@/lib/repo";
@@ -111,11 +112,9 @@ export default function Battle({
   /** Платит ли бой премию за отбой с таким числом сгоревших клеток. */
   const paysBounty = (burned: number) =>
     !order.competitionStage || missionPays(bestBefore, startIntact, burned);
-  /** Что заплатят сверх страховки: миссия — своей наградой, налёт — премией за отбой. */
+  /** Что заплатят сверх страховки — по тем же правилам, что применят исход. */
   const rewardFor = (burned: number, killed: number) =>
-    order.competitionStage
-      ? missionReward(order.competitionStage, bestBefore, startIntact, burned, killed)
-      : defenseBounty(order.drones, burned);
+    battleReward(order, bestBefore, startIntact, burned, killed);
   /** Кадры действий защитника — из них собирается повтор для нападавшего. */
   const trace = useRef<(Frame | null)[]>([]);
 
@@ -342,9 +341,7 @@ export default function Battle({
               <Row label={t("battle.leaked")} value={String(done.result.leaked)} />
               <Row
                 label={t("battle.destroyedShare")}
-                value={`${
-                  s.baseTotal ? Math.round((done.result.burned / s.baseTotal) * 100) : 0
-                }%`}
+                value={`${burnedShare(done.result.burned, s.baseTotal)}%`}
               />
               <Row label={t("battle.extinguished")} value={String(done.result.extinguished)} />
               <Row label={t("battle.dronesLost")} value={String(done.result.dronesLost)} />

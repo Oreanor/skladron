@@ -97,8 +97,9 @@ export async function notifySentRaid(
 function resolvedRaidMessage(
   l: TgLocale,
   defenderName: string,
-  attack: Pick<AttackRow, "id" | "result" | "loot" | "destroyed">
+  attack: Pick<AttackRow, "id" | "status" | "result" | "loot" | "destroyed">
 ): string {
+  if (attack.status === "declined") return tg(l, "declined", { defender: defenderName });
   const burned = (attack.result as { burned?: number } | null)?.burned ?? 0;
   const vars = {
     defender: defenderName,
@@ -110,6 +111,9 @@ function resolvedRaidMessage(
   if (burned === 0) return tg(l, "resolvedClean", vars);
   return tg(l, "resolvedBurned", vars);
 }
+
+/** Налёт закончился: отбит или отклонён защитником. */
+const FINISHED = ["resolved", "declined"];
 
 /**
  * Атомарно занимает resolved_notified_at и шлёт нападающему, если привязан Telegram.
@@ -127,7 +131,7 @@ export async function notifyResolvedRaid(
     .eq("id", attackId)
     .maybeSingle<AttackRow>();
   if (loadError) return { sent: false, error: loadError.message };
-  if (!attack || attack.status !== "resolved") return { sent: false };
+  if (!attack || !FINISHED.includes(attack.status)) return { sent: false };
   if (attack.attacker_id === attack.defender_id) return { sent: false };
   if (attack.resolved_notified_at) return { sent: false };
 
@@ -136,7 +140,7 @@ export async function notifyResolvedRaid(
     .from("attacks")
     .update({ resolved_notified_at: stamp })
     .eq("id", attackId)
-    .eq("status", "resolved")
+    .in("status", FINISHED)
     .is("resolved_notified_at", null)
     .select("id")
     .maybeSingle();

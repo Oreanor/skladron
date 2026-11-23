@@ -7,10 +7,10 @@
  * ответа.
  */
 
-import type { AttackOrder } from "./attack";
+import { isSelfBattle, type AttackOrder } from "./attack";
 import type { BattleResult } from "./engine";
 import type { Depot, Gun } from "./base";
-import { COMPETITION_STAGES, competitionScore, missionReward } from "./competition";
+import { COMPETITION_STAGES, competitionScore, missionReward, type CompetitionBest } from "./competition";
 import { defenseBounty, goodsValue, insurance } from "./economy";
 import { intactCells, type Player } from "./player";
 
@@ -37,14 +37,39 @@ export function findFoe(p: Player, order: AttackOrder) {
   return p.enemies.find((e) => e.name === order.from);
 }
 
+/** Счёт налёта на себя: сколько процентов склада уцелело и побит ли рекорд. */
+export interface SelfScore {
+  pct: number;
+  score: number;
+  record: boolean;
+}
+
 /** Что бой изменил — для сообщения игроку и записи на сервер. */
 export interface OutcomeSummary {
   /** Сколько дронов сбито всеми способами. */
   killed: number;
-  /** Попытка миссии: номер, счёт и побит ли рекорд. У налёта — нет. */
-  mission?: { stage: number; pct: number; score: number; record: boolean };
+  /** Счёт миссии или переигровки. У настоящего налёта — нет. */
+  score?: SelfScore;
   /** Поменялся счёт вражды — список соперников надо сохранить. */
   foeChanged: boolean;
+}
+
+/**
+ * Что бой платит сверх страховки. Миссия — своей наградой, переигровка —
+ * ничем (иначе один налёт переигрывали бы ради денег), налёт — премией за
+ * отбой. Сервер решает так же в resolve_attack.
+ */
+export function battleReward(
+  order: AttackOrder,
+  missionBest: CompetitionBest | undefined,
+  intactBefore: number,
+  burned: number,
+  killed: number
+) {
+  if (order.competitionStage) {
+    return missionReward(order.competitionStage, missionBest, intactBefore, burned, killed);
+  }
+  return order.retakeOf ? 0 : defenseBounty(order.drones, burned);
 }
 
 /** Применяет исход боя к игроку. Меняет p на месте. */
@@ -63,19 +88,22 @@ export function applyOutcome(p: Player, battle: AttackOrder, o: BattleOutcome): 
   p.stats.dronesKilled += killed;
   p.stats.cellsBurned += o.result.burned;
 
-  // Миссия: счёт попытки, лучший по номеру и следующий номер, если склад
-  // уцелел. Сервер считает то же у себя, и при следующем входе его
-  // прогресс перекроет этот.
-  let mission: OutcomeSummary["mission"];
-  // Миссия вместо премии за отбой платит своей наградой (missionReward);
-  // страховка — всегда.
-  let reward = defenseBounty(battle.drones, o.result.burned);
   const stage = battle.competitionStage;
+  const missionBest = stage ? p.competitionBest[stage] : undefined;
+  const reward = battleReward(battle, missionBest, intactBefore, o.result.burned, killed);
+
+  // Налёт на себя считается одинаково: доля уцелевшего склада против
+  // прежнего лучшего. У миссии лучший — по номеру, у переигровки — в
+  // исходном бою. Сервер считает то же у себя, и его счёт перекроет этот.
+  const attempt = competitionScore(intactBefore, intactCells(p));
+  const best = stage ? missionBest?.score : battle.retakeBest;
+  const score = isSelfBattle(battle)
+    ? { ...attempt, record: attempt.score > (best ?? -1) }
+    : undefined;
+
+  // Миссия: лучший по номеру и следующий номер, если склад уцелел.
   if (stage) {
-    reward = missionReward(stage, p.competitionBest[stage], intactBefore, o.result.burned, killed);
-    const attempt = competitionScore(intactBefore, intactCells(p));
-    const record = attempt.score > (p.competitionBest[stage]?.score ?? -1);
-    if (record) {
+    if (score?.record) {
       p.competitionBest = {
         ...p.competitionBest,
         [stage]: {
@@ -89,7 +117,6 @@ export function applyOutcome(p: Player, battle: AttackOrder, o: BattleOutcome): 
     if (o.won) {
       p.competitionAt = Math.max(p.competitionAt, Math.min(COMPETITION_STAGES, stage + 1));
     }
-    mission = { stage, pct: attempt.pct, score: attempt.score, record };
   }
 
   p.credits +=
@@ -103,9 +130,9 @@ export function applyOutcome(p: Player, battle: AttackOrder, o: BattleOutcome): 
       o.result.rocketsLost
     ) + reward;
 
-  // Счёт вражды: сколько он у нас сжёг.
-  const foe = findFoe(p, battle);
+  // Счёт вражды: сколько он у нас сжёг. Налёт на себя его не трогает.
+  const foe = isSelfBattle(battle) ? undefined : findFoe(p, battle);
   if (foe) foe.burnedByThem += o.result.burned;
 
-  return { killed, mission, foeChanged: Boolean(foe) };
+  return { killed, score, foeChanged: Boolean(foe) };
 }

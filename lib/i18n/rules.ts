@@ -20,6 +20,7 @@ const en: RuleSection[] = [
       "**Buy drones.** The «Drones» tool puts a container of {perCell} on a free cell for {droneBox} cr. Drones are both goods and weapons: every midnight, London time, everything stored is sold at double the purchase price — that is your income. You also send them on raids and on recon.",
       "**Play the missions.** The «Missions» panel is a hundred battles on your own warehouse against ever stronger waves: free, any time, with a bonus for every drone beaten off. In battle the guns fire by themselves, while you finish drones off with the mouse and put out fires with the hose. The number of your last mission passed is your level, and rivals see it.",
       "**Add rivals and raid them.** Enter a rival's e-mail in «Rivals», scout their warehouse with one drone, then build a raid from waves and warheads. Every cell you burn pays {loot} cr, and more the harder you hit. The rival defends on their side, and you get a report and a replay.",
+      "**Show everyone.** With this box ticked in Enemies you see every player who has ticked it too, strangers included, and they see you. From that list you can only add someone upgraded at least half as much as you; once added, they're a regular friend. But a raid from someone you met through the list can be declined with the cross: the attacker gets the price back. If the very first raid is declined, you never really met — you both vanish from each other's lists.",
     ],
   },
   {
@@ -77,6 +78,7 @@ const en: RuleSection[] = [
       "After a total wipe the warehouse resets, but the account is topped up to at least {credits} cr so you can rebuild.",
       "Nobody is paid for downed drones: money comes from goods, not from shooting.",
       "Every finished battle lands in the log: watch the replay or copy a link so others can see how it went.",
+      "A raid you fought off can be retaken: the same swarm hits your current warehouse. It's a real fight — the damage stays and insurance pays, but there is no defence bounty. The score is the same as in missions: the share of the warehouse left intact, and the best one is shown next to the battle. Rebuild and try again until you find the layout that holds.",
     ],
   },
   {
@@ -133,6 +135,7 @@ const ru: RuleSection[] = [
       "**Купи дронов.** Инструмент «Дроны» ставит на свободную клетку ящик на {perCell} штук за {droneBox} кр. Дроны — и товар, и оружие: каждую полночь по Лондону всё, что лежит на складе, продаётся вдвое дороже закупки — это твой доход. Их же ты шлёшь в налёты и на разведку.",
       "**Проходи миссии.** Панель «Журнал миссий» — сто боёв на своём складе против всё более сильных волн: бесплатно, в любое время, с премией за каждого отбитого дрона. В бою пушки стреляют сами, а ты добиваешь дронов мышью и тушишь пожары брандспойтом. Номер последней пройденной миссии — твой уровень, его видят соперники.",
       "**Добавь врагов и устраивай налёты.** Впиши почту соперника в «Врагах», разведай его склад одним дроном, потом собери налёт из волн и начинок. За каждую сожжённую клетку — премия {loot} кр, и тем щедрее, чем сильнее разгром. Соперник отбивается у себя, а ты получаешь отчёт и повтор боя.",
+      "**Показывать всех.** С этой галочкой в «Врагах» ты видишь всех, кто её тоже поставил, даже незнакомых, а они — тебя. Добавить отсюда можно только того, кто прокачан хотя бы вполовину твоего; добавленный — обычный друг. Но налёт от знакомого через этот список можно отклонить крестиком: цена вернётся нападающему. Если отклонён первый же налёт, знакомство не состоялось — вы пропадёте из списков друг друга.",
     ],
   },
   {
@@ -190,6 +193,7 @@ const ru: RuleSection[] = [
       "После полного сноса склад сбрасывается, но на счету будет не меньше {credits} кр — чтобы было на чем отстроиться.",
       "За сбитых дронов не платят никому: деньги приносит товар, а не стрельба.",
       "Каждый отгремевший бой попадает в журнал: там его можно пересмотреть или дать ссылку, чтобы посмотрели другие.",
+      "Отбитый налёт можно переиграть: тот же рой налетает на нынешний склад. Бой настоящий — урон остаётся, страховка платит, но премии за отбой нет. Счёт — как у миссий: сколько процентов склада уцелело, и лучший виден рядом с боем. Перестраивай и пробуй снова, пока не найдёшь раскладку, которая держит.",
     ],
   },
   {
@@ -246,6 +250,7 @@ const es: RuleSection[] = [
       "**Compra drones.** La herramienta «Drones» pone en una celda libre un contenedor de {perCell} por {droneBox} cr. Los drones son mercancía y arma a la vez: cada medianoche, hora de Londres, todo lo almacenado se vende al doble del precio de compra: ese es tu ingreso. También los envías a ataques y a explorar.",
       "**Juega las misiones.** El panel «Misiones» son cien combates en tu propio almacén contra oleadas cada vez más fuertes: gratis, cuando quieras, con premio por cada dron rechazado. En combate los cañones disparan solos, y tú rematas drones con el ratón y apagas incendios con la manguera. El número de tu última misión superada es tu nivel, y los rivales lo ven.",
       "**Añade rivales y atácalos.** Escribe el correo de un rival en «Rivales», explora su almacén con un dron y luego arma un ataque de oleadas y cargas. Cada celda quemada paga {loot} cr, y más cuanto mayor sea el destrozo. El rival se defiende en su lado y tú recibes un informe y la repetición.",
+      "**Mostrar a todos.** Con esta casilla marcada en «Enemigos» ves a todos los que también la marcaron, aunque no los conozcas, y ellos a ti. Desde esa lista solo puedes añadir a quien esté mejorado al menos la mitad que tú; una vez añadido, es un amigo normal. Pero el ataque de alguien conocido por la lista se puede rechazar con la cruz: el atacante recupera el precio. Si rechazas el primero, no llegasteis a conoceros: desaparecéis de la lista del otro.",
     ],
   },
   {
@@ -303,6 +308,7 @@ const es: RuleSection[] = [
       "Tras un derribo total el almacén se reinicia, pero la cuenta sube al menos a {credits} cr para poder reconstruir.",
       "Nadie cobra por drones derribados: el dinero lo trae la mercancía, no los disparos.",
       "Cada combate terminado va al registro: puedes volver a verlo o copiar un enlace para que lo vean otros.",
+      "Un ataque rechazado se puede repetir: el mismo enjambre golpea tu almacén actual. Es un combate real: el daño se queda y el seguro paga, pero no hay prima de defensa. La puntuación es la de las misiones: el porcentaje del almacén que queda intacto, y la mejor se muestra junto al combate. Reconstruye y vuelve a probar hasta dar con la disposición que aguante.",
     ],
   },
   {
@@ -359,6 +365,7 @@ const pt: RuleSection[] = [
       "**Compra drones.** A ferramenta «Drones» põe numa célula livre um contentor de {perCell} por {droneBox} cr. Os drones são mercadoria e arma: todas as meias-noites, hora de Londres, tudo o que está guardado vende-se ao dobro da compra — é esse o teu rendimento. Também os mandas em ataques e em reconhecimento.",
       "**Joga as missões.** O painel «Missões» são cem combates no teu próprio armazém contra vagas cada vez mais fortes: grátis, quando quiseres, com prémio por cada drone repelido. Em combate os canhões disparam sozinhos, e tu acabas com drones com o rato e apagas fogos com a mangueira. O número da última missão passada é o teu nível, e os rivais veem-no.",
       "**Adiciona rivais e ataca-os.** Escreve o e-mail de um rival em «Rivais», faz o reconhecimento do armazém dele com um drone e depois monta um ataque de vagas e cargas. Cada célula queimada paga {loot} cr, e mais quanto maior a destruição. O rival defende-se do lado dele e tu recebes um relatório e a repetição.",
+      "**Mostrar todos.** Com esta caixa marcada em «Inimigos» vês todos os que também a marcaram, mesmo desconhecidos, e eles a ti. Dessa lista só podes adicionar quem tenha pelo menos metade das tuas melhorias; depois de adicionado, é um amigo normal. Mas o ataque de alguém conhecido pela lista pode ser recusado com a cruz: o atacante recebe o preço de volta. Se recusares logo o primeiro, não chegaram a conhecer-se — desaparecem da lista um do outro.",
     ],
   },
   {
@@ -416,6 +423,7 @@ const pt: RuleSection[] = [
       "Depois de um derrube total o armazém reinicia, mas a conta sobe pelo menos a {credits} cr para poderes reconstruir.",
       "Ninguém é pago por drones abatidos: o dinheiro vem da mercadoria, não dos tiros.",
       "Cada combate terminado vai para o registo: podes revê-lo ou copiar uma ligação para outros verem.",
+      "Um ataque repelido pode ser repetido: o mesmo enxame ataca o teu armazém atual. É um combate a sério: o dano fica e o seguro paga, mas não há prémio de defesa. A pontuação é a das missões: a percentagem do armazém que fica intacta, e a melhor aparece junto ao combate. Reconstrói e tenta outra vez até encontrar a disposição que aguenta.",
     ],
   },
   {
@@ -472,6 +480,7 @@ const fr: RuleSection[] = [
       "**Achète des drones.** L’outil « Drones » pose sur une case libre un conteneur de {perCell} pour {droneBox} cr. Les drones sont à la fois marchandise et arme : chaque minuit, heure de Londres, tout ce qui est stocké se vend au double du prix d’achat — c’est ton revenu. Tu les envoies aussi en raid et en reconnaissance.",
       "**Joue les missions.** Le panneau « Missions », ce sont cent combats sur ton propre entrepôt contre des vagues toujours plus fortes : gratuit, quand tu veux, avec une prime par drone repoussé. En combat, les canons tirent seuls, et toi tu achèves les drones à la souris et éteins les incendies à la lance. Le numéro de ta dernière mission réussie est ton niveau, et les rivaux le voient.",
       "**Ajoute des rivaux et lance des raids.** Saisis l’e-mail d’un rival dans « Rivaux », repère son entrepôt avec un drone, puis compose un raid de vagues et de charges. Chaque case brûlée rapporte {loot} cr, et davantage plus le saccage est grand. Le rival se défend de son côté, et tu reçois un rapport et la rediffusion.",
+      "**Montrer tout le monde.** Avec cette case cochée dans « Ennemis », vous voyez tous ceux qui l'ont cochée aussi, même inconnus, et eux vous voient. Depuis cette liste, on ne peut ajouter que quelqu'un amélioré au moins moitié autant que vous ; une fois ajouté, c'est un ami ordinaire. Mais un raid d'une connaissance de la liste peut être refusé avec la croix : l'attaquant récupère le prix. Si vous refusez le tout premier, la rencontre n'a pas eu lieu — vous disparaissez de la liste l'un de l'autre.",
     ],
   },
   {
@@ -529,6 +538,7 @@ const fr: RuleSection[] = [
       "Après un wipe total l’entrepôt repart, mais le compte est remis au moins à {credits} cr pour reconstruire.",
       "Personne n’est payé pour les drones abattus : l’argent vient de la marchandise, pas des tirs.",
       "Chaque combat terminé va au journal : on peut le revoir ou copier un lien pour le montrer.",
+      "Un raid repoussé peut être rejoué : le même essaim frappe votre entrepôt actuel. C'est un vrai combat — les dégâts restent et l'assurance paie, mais sans prime de défense. Le score est celui des missions : la part de l'entrepôt restée intacte, et le meilleur s'affiche à côté du combat. Reconstruisez et réessayez jusqu'à trouver la disposition qui tient.",
     ],
   },
   {
@@ -585,6 +595,7 @@ const de: RuleSection[] = [
       "**Kauf Drohnen.** Das Werkzeug „Drohnen“ stellt einen Container mit {perCell} Stück für {droneBox} Cr auf ein freies Feld. Drohnen sind Ware und Waffe zugleich: jede Mitternacht Londoner Zeit wird alles Eingelagerte zum doppelten Einkaufspreis verkauft — das ist dein Einkommen. Du schickst sie auch auf Angriffe und zur Aufklärung.",
       "**Spiel die Missionen.** Das Panel „Missionen“ sind hundert Kämpfe auf deinem eigenen Lager gegen immer stärkere Wellen: kostenlos, jederzeit, mit Prämie für jede abgewehrte Drohne. Im Kampf schießen die Geschütze selbst, du erledigst Drohnen mit der Maus und löschst Brände mit dem Wasserwerfer. Die Nummer deiner letzten bestandenen Mission ist deine Stufe, und Gegner sehen sie.",
       "**Füg Gegner hinzu und greif an.** Trag die E-Mail eines Gegners unter „Gegner“ ein, klär sein Lager mit einer Drohne auf und stell dann einen Angriff aus Wellen und Ladungen zusammen. Jedes verbrannte Feld bringt {loot} Cr, und mehr, je härter der Schlag. Der Gegner verteidigt sich bei sich, du bekommst einen Bericht und die Wiederholung.",
+      "**Alle zeigen.** Mit diesem Häkchen unter „Feinde“ siehst du alle, die es auch gesetzt haben, auch Fremde, und sie dich. Hinzufügen kannst du von dort nur, wer mindestens halb so stark ausgebaut ist wie du; danach ist er ein ganz normaler Freund. Einen Angriff von jemandem aus dieser Liste kannst du aber mit dem Kreuz ablehnen: der Angreifer bekommt den Preis zurück. Lehnst du gleich den ersten ab, kam die Bekanntschaft nicht zustande — ihr verschwindet aus den Listen des anderen.",
     ],
   },
   {
@@ -642,6 +653,7 @@ const de: RuleSection[] = [
       "Nach einem Totalverlust startet das Lager neu, das Konto wird aber auf mindestens {credits} Cr aufgefüllt, damit du wieder bauen kannst.",
       "Für abgeschossene Drohnen zahlt niemand: Geld bringt die Ware, nicht das Schießen.",
       "Jedes beendete Gefecht landet im Buch: dort lässt es sich noch einmal ansehen oder als Link weitergeben.",
+      "Ein abgewehrter Angriff lässt sich wiederholen: derselbe Schwarm trifft dein jetziges Lager. Es ist ein echter Kampf — der Schaden bleibt, die Versicherung zahlt, aber eine Abwehrprämie gibt es nicht. Gewertet wird wie bei Missionen: der erhaltene Anteil des Lagers, und der beste steht beim Gefecht. Bau um und versuch es erneut, bis die Aufstellung hält.",
     ],
   },
   {
@@ -698,6 +710,7 @@ const it: RuleSection[] = [
       "**Compra droni.** Lo strumento «Droni» mette su una cella libera un container da {perCell} per {droneBox} cr. I droni sono merce e arma insieme: ogni mezzanotte, ora di Londra, tutto ciò che è stoccato si vende al doppio dell’acquisto — è il tuo reddito. Li mandi anche negli attacchi e in ricognizione.",
       "**Gioca le missioni.** Il pannello «Missioni» sono cento combattimenti sul tuo magazzino contro ondate sempre più forti: gratis, quando vuoi, con un premio per ogni drone respinto. In battaglia i cannoni sparano da soli, e tu finisci i droni col mouse e spegni gli incendi con la lancia. Il numero dell’ultima missione superata è il tuo livello, e i rivali lo vedono.",
       "**Aggiungi rivali e attaccali.** Scrivi l’e-mail di un rivale in «Rivali», esplora il suo magazzino con un drone, poi componi un attacco di ondate e cariche. Ogni cella bruciata paga {loot} cr, e di più quanto più forte è la distruzione. Il rivale si difende dalla sua parte, e tu ricevi un resoconto e il replay.",
+      "**Mostra tutti.** Con questa casella spuntata in «Nemici» vedi tutti quelli che l'hanno spuntata, anche sconosciuti, e loro vedono te. Da quella lista puoi aggiungere solo chi è potenziato almeno la metà di te; una volta aggiunto, è un amico normale. Ma l'attacco di un conoscente della lista si può rifiutare con la croce: l'attaccante riavrà il prezzo. Se rifiuti il primissimo, la conoscenza non c'è stata: sparite l'uno dalla lista dell'altro.",
     ],
   },
   {
@@ -755,6 +768,7 @@ const it: RuleSection[] = [
       "Dopo un wipe totale il magazzino riparte, ma il conto viene portato almeno a {credits} cr per ricostruire.",
       "Nessuno viene pagato per i droni abbattuti: i soldi li porta la merce, non gli spari.",
       "Ogni combattimento finito finisce nel diario: lo si può rivedere o copiarne il link per mostrarlo.",
+      "Un attacco respinto si può rigiocare: lo stesso sciame colpisce il tuo magazzino attuale. È una battaglia vera: i danni restano e l'assicurazione paga, ma il premio di difesa non c'è. Il punteggio è come nelle missioni: la quota di magazzino rimasta intatta, e il migliore compare accanto al combattimento. Ricostruisci e riprova finché non trovi la disposizione che regge.",
     ],
   },
   {
@@ -811,6 +825,7 @@ const uk: RuleSection[] = [
       "**Купи дронів.** Інструмент «Дрони» ставить на вільну клітинку ящик на {perCell} штук за {droneBox} кр. Дрони — і товар, і зброя: щоночі опівночі за Лондоном усе, що лежить на складі, продається вдвічі дорожче за закупівлю — це твій дохід. Їх же ти шлеш у нальоти й на розвідку.",
       "**Проходь місії.** Панель «Місії» — сто боїв на власному складі проти дедалі сильніших хвиль: безкоштовно, будь-коли, з премією за кожного відбитого дрона. У бою гармати стріляють самі, а ти добиваєш дронів мишею й гасиш пожежі брандспойтом. Номер останньої пройденої місії — твій рівень, його бачать суперники.",
       "**Додай ворогів і влаштовуй нальоти.** Впиши пошту суперника у «Ворогах», розвідай його склад одним дроном, потім збери наліт із хвиль і начинок. За кожну спалену клітинку — премія {loot} кр, і тим щедріша, що сильніший розгром. Суперник відбивається в себе, а ти отримуєш звіт і повтор бою.",
+      "**Показувати всіх.** З цією позначкою у «Ворогах» ти бачиш усіх, хто її теж поставив, навіть незнайомих, а вони — тебе. Додати звідси можна лише того, хто прокачаний хоча б наполовину від тебе; доданий — звичайний друг. Але наліт від знайомого через цей список можна відхилити хрестиком: ціна повернеться нападнику. Якщо відхилено перший же наліт, знайомство не відбулося — ви зникнете зі списків одне одного.",
     ],
   },
   {
@@ -868,6 +883,7 @@ const uk: RuleSection[] = [
       "Після повного знесення склад скидається, але на рахунку буде не менше {credits} кр — щоб було на що відбудуватися.",
       "За збитих дронів не платять нікому: гроші приносить товар, а не стрілянина.",
       "Кожен бій потрапляє в журнал: там його можна переглянути або дати посилання, щоб подивилися інші.",
+      "Відбитий наліт можна переграти: той самий рій налітає на нинішній склад. Бій справжній — шкода лишається, страховка платить, але премії за відбій немає. Рахунок — як у місій: скільки відсотків складу вціліло, і найкращий видно поруч із боєм. Перебудовуй і пробуй знову, доки не знайдеш розкладку, що тримає.",
     ],
   },
   {
@@ -924,6 +940,7 @@ const pl: RuleSection[] = [
       "**Kup drony.** Narzędzie «Drony» stawia na wolnym polu skrzynię na {perCell} sztuk za {droneBox} kr. Drony to i towar, i broń: co noc o północy czasu londyńskiego wszystko, co leży w magazynie, sprzedaje się za dwukrotność ceny zakupu — to twój dochód. Wysyłasz je też na naloty i na zwiad.",
       "**Przechodź misje.** Panel «Misje» to sto bitew na własnym magazynie przeciw coraz silniejszym falom: za darmo, kiedy chcesz, z premią za każdego odpartego drona. W bitwie działa strzelają same, a ty dobijasz drony myszą i gasisz pożary działkiem wodnym. Numer ostatniej przebytej misji to twój poziom, widzą go rywale.",
       "**Dodaj wrogów i rób naloty.** Wpisz e-mail rywala we «Wrogach», zbadaj jego magazyn jednym dronem, potem złóż nalot z fal i ładunków. Za każde spalone pole — premia {loot} kr, tym hojniejsza, im większe zniszczenia. Rywal broni się u siebie, a ty dostajesz raport i powtórkę bitwy.",
+      "**Pokazuj wszystkich.** Z tym znacznikiem we „Wrogach” widzisz wszystkich, którzy też go zaznaczyli, nawet nieznajomych, a oni ciebie. Z tej listy dodasz tylko kogoś ulepszonego co najmniej w połowie tak jak ty; po dodaniu to zwykły znajomy. Ale nalot od kogoś poznanego przez listę można odrzucić krzyżykiem: napastnik dostanie cenę z powrotem. Jeśli odrzucisz już pierwszy, znajomość nie doszła do skutku — znikacie sobie nawzajem z list.",
     ],
   },
   {
@@ -981,6 +998,7 @@ const pl: RuleSection[] = [
       "Po całkowitym zniszczeniu magazyn się resetuje, ale na koncie będzie co najmniej {credits} kr — żeby było za co się odbudować.",
       "Nikt nie dostaje pieniędzy za strącone drony: pieniądze przynosi towar, a nie strzelanie.",
       "Każda zakończona bitwa trafia do dziennika: można ją obejrzeć albo dać link, by zobaczyli inni.",
+      "Odparty nalot można powtórzyć: ten sam rój uderza w twój obecny magazyn. To prawdziwa walka — straty zostają, ubezpieczenie płaci, ale premii za obronę nie ma. Wynik liczy się jak w misjach: jaki odsetek magazynu ocalał, a najlepszy widać przy bitwie. Przebudowuj i próbuj znowu, aż znajdziesz układ, który wytrzyma.",
     ],
   },
   {
@@ -1037,6 +1055,7 @@ const tr: RuleSection[] = [
       "**Dron al.** «Dronlar» aracı boş bir hücreye {droneBox} kr'ye {perCell} adetlik bir kasa koyar. Dronlar hem mal hem silahtır: her gece Londra saatiyle gece yarısı depodaki her şey alış fiyatının iki katına satılır — gelirin budur. Onları baskına ve keşfe de gönderirsin.",
       "**Görevleri oyna.** «Görevler» paneli, kendi deponda gittikçe güçlenen dalgalara karşı yüz savaştır: ücretsiz, istediğin zaman, püskürtülen her dron için ödüllü. Savaşta toplar kendiliğinden ateş eder; sen dronları fareyle bitirir ve yangınları hortumla söndürürsün. Son geçtiğin görevin numarası senin seviyendir ve rakipler bunu görür.",
       "**Düşman ekle ve baskın yap.** «Düşmanlar»a rakibin e-postasını yaz, deposunu bir dronla keşfet, sonra dalgalardan ve yüklerden bir baskın kur. Yaktığın her hücre {loot} kr kazandırır, yıkım büyüdükçe daha cömertçe. Rakip kendi tarafında savunur, sen rapor ve tekrar alırsın.",
+      "**Herkesi göster.** «Düşmanlar»da bu kutu işaretliyse, onu işaretleyen herkesi, tanımadıklarını bile görürsün, onlar da seni. Bu listeden yalnızca en az senin yarın kadar gelişmiş birini ekleyebilirsin; eklenince sıradan bir arkadaş olur. Ama listeden tanıştığın birinin baskınını çarpıyla reddedebilirsin: saldıran bedeli geri alır. İlk baskını reddedersen tanışma hiç olmamış sayılır — birbirinizin listesinden çıkarsınız.",
     ],
   },
   {
@@ -1094,6 +1113,7 @@ const tr: RuleSection[] = [
       "Tamamen yok olduktan sonra depo sıfırlanır ama hesapta en az {credits} kr olur — yeniden kurmaya yetsin diye.",
       "Düşürülen dronlar için kimseye ödeme yapılmaz: para malla gelir, atışla değil.",
       "Biten her savaş günlüğe düşer: orada tekrarını izleyebilir ya da başkaları görsün diye bağlantı verebilirsin.",
+      "Püskürttüğün bir baskını tekrar oynayabilirsin: aynı sürü bugünkü depona saldırır. Savaş gerçektir — hasar kalır, sigorta öder, ama savunma primi yoktur. Puan görevlerdeki gibidir: deponun sağlam kalan yüzdesi, en iyisi savaşın yanında görünür. Yeniden kur ve dayanan dizilimi bulana kadar dene.",
     ],
   },
   {
@@ -1150,6 +1170,7 @@ const zh: RuleSection[] = [
       "**购买无人机。** 「无人机」工具会在空格上放一个装 {perCell} 架的箱子，价格 {droneBox} 币。无人机既是货物也是武器：每晚伦敦时间午夜，仓库里的所有东西以两倍进价卖出——这就是你的收入。你也用它们发动空袭和侦察。",
       "**完成任务。** 「任务」面板是在你自己的仓库上对抗越来越强波次的一百场战斗：免费、随时可玩，每击退一架无人机都有奖金。战斗中炮台自动开火，你用鼠标补刀无人机，用水枪灭火。你通过的最后一个任务编号就是你的等级，对手能看到。",
       "**添加敌人并发动空袭。** 在「敌人」中输入对手的邮箱，用一架无人机侦察他的仓库，然后用波次和弹头组成一次空袭。每烧掉一格奖励 {loot} 币，破坏越彻底给得越多。对手在自己那边防守，你会收到报告和战斗回放。",
+      "**显示所有人。** 在「敌人」里勾选后，你能看到所有同样勾选的玩家，即使不认识，他们也能看到你。从这个列表只能添加强化程度至少是你一半的人；添加后就是普通朋友。但通过这个列表认识的人发来的袭击，可以用叉号拒绝：费用退还给进攻方。如果拒绝的是第一次袭击，就当你们没认识过——双方从彼此的列表中消失。",
     ],
   },
   {
@@ -1207,6 +1228,7 @@ const zh: RuleSection[] = [
       "仓库被彻底摧毁后会重置，但账户至少有 {credits} 币——够你重建。",
       "击落无人机谁都不付钱：钱来自货物，而不是射击。",
       "每场结束的战斗都会记入记录：可以在那里观看回放，或分享链接给别人看。",
+      "击退的袭击可以重玩：同一批蜂群攻击你现在的仓库。这是真正的战斗——损失会保留，保险照赔，但没有防守奖金。计分与任务相同：仓库完好的百分比，最好成绩显示在战斗旁。改建后再试，直到找到守得住的布局。",
     ],
   },
   {
@@ -1263,6 +1285,7 @@ const ja: RuleSection[] = [
       "**ドローンを買う。** 「ドローン」ツールは空きマスに {perCell} 機入りの箱を {droneBox} cr で置きます。ドローンは商品でもあり武器でもあります：毎晩ロンドン時間の午前0時に、倉庫にあるものすべてが購入価格の2倍で売れます — これがあなたの収入です。空襲や偵察にも送り出します。",
       "**ミッションを進める。** 「ミッション」パネルは、自分の倉庫でだんだん強くなるウェーブと戦う100の戦闘です：無料、いつでも、撃退したドローン1機ごとに報酬あり。戦闘中は砲台が自動で撃ち、あなたはマウスでドローンにとどめを刺し、放水で火を消します。最後にクリアしたミッションの番号があなたのレベルで、ライバルにも見えます。",
       "**ライバルを追加して空襲する。** 「ライバル」に相手のメールを入れ、ドローン1機で倉庫を偵察し、ウェーブと弾頭を組み合わせて空襲を作ります。焼いたマス1つにつき {loot} cr の報酬、被害が大きいほど気前よく。相手は自分の画面で防衛し、あなたはレポートと戦闘リプレイを受け取ります。",
+      "**全員を表示。** 「敵」でこれにチェックを入れると、同じくチェックした全員が見えます。知らない相手でも、向こうからもあなたが見えます。このリストから追加できるのは、強化があなたの半分以上の相手だけ。追加すれば普通の友達です。ただし、リストで知り合った相手からの襲撃は×で断れます：代金は攻撃側に返されます。最初の襲撃を断った場合、知り合いにはならなかったことになり、互いのリストから消えます。",
     ],
   },
   {
@@ -1320,6 +1343,7 @@ const ja: RuleSection[] = [
       "全焼すると倉庫はリセットされますが、口座には最低 {credits} cr が入ります — 建て直せるように。",
       "撃墜したドローンには誰もお金をもらえません：お金を生むのは商品で、撃つことではありません。",
       "終わった戦闘はすべて記録に残ります：そこでリプレイを見たり、リンクを共有して他の人に見せたりできます。",
+      "撃退した襲撃は再挑戦できます：同じ群れが今の倉庫を襲います。本物の戦闘です——損害は残り、保険は支払われますが、防衛報酬はありません。得点はミッションと同じく倉庫の残存率で、最高記録が戦闘の横に表示されます。建て直して、持ちこたえる配置が見つかるまで試しましょう。",
     ],
   },
   {
@@ -1376,6 +1400,7 @@ const ko: RuleSection[] = [
       "**드론을 사세요.** «드론» 도구는 빈 칸에 {perCell}대짜리 상자를 {droneBox} cr에 놓습니다. 드론은 상품이자 무기입니다: 매일 밤 런던 시간 자정에 창고에 있는 모든 것이 구입가의 두 배에 팔립니다 — 이것이 수입입니다. 공습과 정찰에도 드론을 보냅니다.",
       "**미션을 진행하세요.** «미션» 패널은 내 창고에서 점점 강해지는 웨이브와 싸우는 백 번의 전투입니다: 무료, 언제든, 격퇴한 드론마다 보상. 전투 중에는 포대가 알아서 쏘고, 당신은 마우스로 드론을 마무리하고 호스로 불을 끕니다. 마지막으로 깬 미션 번호가 당신의 레벨이며 라이벌도 볼 수 있습니다.",
       "**라이벌을 추가하고 공습하세요.** «라이벌»에 상대 이메일을 넣고, 드론 한 대로 창고를 정찰한 뒤 웨이브와 탄두로 공습을 짜세요. 태운 칸마다 {loot} cr 보상, 피해가 클수록 더 후합니다. 상대는 자기 화면에서 방어하고, 당신은 보고서와 전투 리플레이를 받습니다.",
+      "**모두 보기.** 「적」에서 이것을 체크하면 똑같이 체크한 모든 플레이어가 보이고, 모르는 사이라도 상대도 당신을 봅니다. 이 목록에서는 강화가 당신의 절반 이상인 상대만 추가할 수 있으며, 추가하면 평범한 친구가 됩니다. 다만 목록으로 알게 된 상대의 습격은 X로 거절할 수 있고, 공격자는 비용을 돌려받습니다. 첫 습격을 거절하면 아는 사이가 되지 않은 것으로 보고 서로의 목록에서 사라집니다.",
     ],
   },
   {
@@ -1433,6 +1458,7 @@ const ko: RuleSection[] = [
       "완전히 무너지면 창고는 초기화되지만 계좌에는 최소 {credits} cr가 남습니다 — 다시 지을 수 있도록.",
       "격추한 드론에는 누구도 돈을 받지 않습니다: 돈은 상품에서 나오지, 사격에서 나오지 않습니다.",
       "끝난 전투는 모두 기록에 남습니다: 거기서 리플레이를 보거나 링크를 공유해 다른 사람에게 보여 줄 수 있습니다.",
+      "막아낸 습격은 다시 할 수 있습니다: 같은 무리가 지금의 창고를 덮칩니다. 진짜 전투입니다 — 피해는 남고 보험은 지급되지만 방어 보상은 없습니다. 점수는 임무와 같이 창고가 보존된 비율이며, 최고 기록이 전투 옆에 표시됩니다. 다시 짓고 버티는 배치를 찾을 때까지 시도하세요.",
     ],
   },
   {
