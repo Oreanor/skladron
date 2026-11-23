@@ -9,7 +9,7 @@
 -- Версия боевого движка. Должна совпадать с SIMULATION_VERSION в
 -- lib/tuning.ts: по ней отсекаются бои, посчитанные прежней геометрией волн.
 create or replace function sim_version() returns int
-language sql immutable as $$ select 31 $$;
+language sql immutable as $$ select 32 $$;
 
 -- держим в одном месте, чтобы клиент и сервер не разъезжались
 create or replace function price(kind text) returns int
@@ -618,8 +618,9 @@ begin
   if uid is null then raise exception 'not authenticated'; end if;
   perform check_waves(attack_waves);
   drone_count := waves_drones(attack_waves);
-  -- Потолка на рой нет: больше, чем лежит на складе, не даст take_from_depots.
-  if drone_count < 1 then
+  -- Потолок налёта — тысяча, тот же RAID.max на клиенте: рой в 2000 сносил
+  -- любую оборону. Больше, чем лежит на складе, не даст take_from_depots.
+  if drone_count < 1 or drone_count > 1000 then
     raise exception 'bad drone count';
   end if;
   head := attack_waves -> 0;

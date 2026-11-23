@@ -162,7 +162,7 @@ const it: Dict = {
   "upgrade.sprays": "Estintori",
   "upgrade.spraysEffect": "+25% di raggio di spegnimento per livello",
   "upgrade.traps": "Trappole",
-  "upgrade.trapsEffect": "+25% di raggio di cattura per livello",
+  "upgrade.trapsEffect": "+25% di raggio di cattura e +5 posti per livello",
   "upgrade.balloons": "Palloni",
   "upgrade.balloonsEffect": "+25% di raggio e +2 palloni per livello",
   "upgrade.level": "lv. {level}",
@@ -304,6 +304,12 @@ const it: Dict = {
   "base.nameNotSaved": "Il nome non è stato salvato: {error}",
 
   "draft.summary": "{w}×{h} · +{cells} celle · {cost} cr",
+
+  "fill.summary": "{w}×{h} · {cells} su {free} celle libere · {cost} cr",
+
+  "fill.nothing": "Nessuna cella intatta libera nella cornice",
+
+  "fill.done": "Piazzati {n} per {cost} cr",
   "draft.gap": "stacco dall’edificio",
   "draft.tooExpensive": "crediti insufficienti",
   "draft.confirm": "Conferma",
@@ -401,6 +407,7 @@ const it: Dict = {
   "raid.total": "Droni nell’incursione",
   "raid.surcharge": "Sovrapprezzo carica",
   "raid.tooMany": "Non ci sono tanti droni nel magazzino",
+  "raid.overCap": "Al massimo {n} droni per attacco",
   "raid.noCredits": "Crediti insufficienti per queste cariche",
   "raid.empty": "Metti almeno un drone nell’incursione",
   "raid.droneLevel": "Livello dei droni",

@@ -163,7 +163,7 @@ const en = {
   "upgrade.sprays": "Sprinklers",
   "upgrade.spraysEffect": "+25% extinguishing radius per level",
   "upgrade.traps": "Traps",
-  "upgrade.trapsEffect": "+25% capture radius per level",
+  "upgrade.trapsEffect": "+25% capture radius and +5 slots per level",
   "upgrade.balloons": "Balloons",
   "upgrade.balloonsEffect": "+25% radius and +2 balloons per level",
   "upgrade.level": "lv. {level}",
@@ -305,6 +305,12 @@ const en = {
   "base.nameNotSaved": "Name was not saved: {error}",
 
   "draft.summary": "{w}×{h} · +{cells} cells · {cost} cr",
+
+  "fill.summary": "{w}×{h} · {cells} of {free} free cells · {cost} cr",
+
+  "fill.nothing": "No free intact cells in the frame",
+
+  "fill.done": "Placed {n} for {cost} cr",
   "draft.gap": "gap in the building",
   "draft.tooExpensive": "not enough credits",
   "draft.confirm": "Confirm",
@@ -402,6 +408,7 @@ const en = {
   "raid.total": "Drones in raid",
   "raid.surcharge": "Warhead surcharge",
   "raid.tooMany": "Not that many drones in the warehouse",
+  "raid.overCap": "At most {n} drones per raid",
   "raid.noCredits": "Not enough credits for these warheads",
   "raid.empty": "Put at least one drone in the raid",
   "raid.droneLevel": "Drone level",

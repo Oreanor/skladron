@@ -366,6 +366,9 @@ export const sprayRange = (s: { sprayLevel: number }) =>
 /** Радиус захвата ловушки с учётом уровня. */
 export const trapRange = (s: { trapLevel: number }) =>
   TRAP.range * levelBonus(s.trapLevel, TRAP.perLevel);
+/** Сколько дронов разом держит одна ловушка на этом уровне. */
+export const trapCapacity = (s: { trapLevel: number }) =>
+  TRAP.capacity + TRAP.capacityPerLevel * (Math.max(1, s.trapLevel) - 1);
 
 /** Дальность ракетницы с учётом уровня: вдвое против зенитки. */
 export const rocketRange = (s: { rocketLevel: number }) =>
@@ -1225,6 +1228,7 @@ function captureTraps(s: GameState, dt: number) {
   if (!s.traps.length) return;
   const reach = trapRange(s);
   const r2 = reach * reach;
+  const cap = trapCapacity(s);
   const held = new Map<number, number>();
   for (const d of s.drones) {
     if (d.heldBy > 0) held.set(d.heldBy, (held.get(d.heldBy) ?? 0) + 1);
@@ -1246,7 +1250,7 @@ function captureTraps(s: GameState, dt: number) {
           // Размагниченная ловушка не хватает: её собственный радиус на это
           // время как будто исчез.
           if (!g.alive || g.jammed > 0) continue;
-          if ((held.get(g.id) ?? 0) >= TRAP.capacity) continue;
+          if ((held.get(g.id) ?? 0) >= cap) continue;
           const dx = g.cx + 0.5 - d.x;
           const dy = g.cy + 0.5 - d.y;
           const dd = dx * dx + dy * dy;

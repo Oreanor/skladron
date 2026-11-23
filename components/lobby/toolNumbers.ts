@@ -8,6 +8,7 @@ import {
   rocketRange,
   rocketTempo,
   sprayRange,
+  trapCapacity,
   trapRange,
 } from "@/lib/engine";
 import type { Player } from "@/lib/player";
@@ -44,7 +45,11 @@ export const toolVars = (levels: Player["levels"], item: ToolItem) => {
   if (item.id === "spray")
     return { ...item.vars, range: Math.round(sprayRange({ sprayLevel: levels.sprays })) };
   if (item.id === "trap")
-    return { ...item.vars, range: Math.round(trapRange({ trapLevel: levels.traps })) };
+    return {
+      ...item.vars,
+      range: Math.round(trapRange({ trapLevel: levels.traps })),
+      cap: trapCapacity({ trapLevel: levels.traps }),
+    };
   if (item.id === "balloon")
     return {
       ...item.vars,

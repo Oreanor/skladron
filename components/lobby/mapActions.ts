@@ -6,6 +6,7 @@
 import { DRONES_PER_CELL, type GunKind, type Rect } from "@/lib/base";
 import {
   applyDraft,
+  applyFill,
   buildOne as buildCell,
   moveDepot as shiftDepot,
   moveGun as shiftGun,
@@ -20,7 +21,7 @@ import { SCRAP_REWARD, fmt } from "@/lib/economy";
 import { explain } from "@/lib/errors";
 import type { Player } from "@/lib/player";
 import { pushPriceTag, type MapRefs } from "./mapInput";
-import type { Tool } from "./tools";
+import { isFillTool, type Tool } from "./tools";
 import type { LobbyCore } from "./useBaseSync";
 
 export function mapActions(
@@ -63,7 +64,50 @@ export function mapActions(
     return true;
   };
 
+  /**
+   * Заливка рамки установками или ящиками: ставим, на сколько хватает
+   * денег. Установки уходят обычным сохранением склада, ящики — одной
+   * покупкой на все сразу, а откажет сервер — откатываем всё разом.
+   */
+  const commitFill = async () => {
+    if (!draftRect || draftRect.w <= 0 || draftRect.h <= 0 || !isFillTool(tool)) return;
+    const previousDepots = p.depots;
+    const previousCredits = p.credits;
+    const r = applyFill(p, tool, draftRect);
+    if (!r.ok) {
+      say(t(r.why, r.vars ? { cost: fmt(Number(r.vars.cost)) } : undefined));
+      return;
+    }
+    map.draft.current = null;
+    map.drag.current = null;
+    const placed = r.placed ?? 0;
+    if (placed === 0) {
+      core.rerender();
+      return;
+    }
+    say(t("fill.done", { n: placed, cost: fmt(r.spent) }));
+    if (tool !== "drones") {
+      core.touch();
+      return;
+    }
+    core.redraw();
+    try {
+      const patch = await repo.buyDepot(p, placed * DRONES_PER_CELL);
+      if (patch.credits !== undefined) p.credits = patch.credits;
+      core.rerender();
+    } catch (e) {
+      p.depots = previousDepots;
+      p.credits = previousCredits;
+      core.redraw();
+      say(t("arsenal.buyFailed", { error: explain(e, t) }));
+    }
+  };
+
   const commitDraft = () => {
+    if (isFillTool(tool)) {
+      void commitFill();
+      return;
+    }
     if (!draftRect || draftRect.w <= 0 || draftRect.h <= 0) return;
     const before = draftCells;
     const r = applyDraft(p, draftTool, draftRect, hasBuilding);

@@ -284,5 +284,40 @@ console.log('\n— занятая клетка занята —');
   check('на пустом складе не платим', r(7, undefined, 0, 0, 50) === 0);
 }
 
+console.log('\n— заливка рамкой ставит, на сколько хватает —');
+{
+  // Стартовый склад 5×5 в середине; рамка на всю карту — берёт весь склад.
+  const all = { x: 0, y: 0, w: BASE.GRID, h: BASE.GRID };
+  const cost = B.gunCost(player().levels, 'gun');
+  const p = player(cost * 3 + cost / 2);
+  const free = BASE.freeCells(p.cells, p.guns, p.depots).length;
+  const plan = B.fillPlan(p, 'gun', all);
+  check('план видит все свободные клетки', plan.free === free, `${plan.free} из ${free}`);
+  check('и ставит, на сколько хватает', plan.at.length === 3 && plan.cost === cost * 3,
+    `${plan.at.length} шт за ${plan.cost}`);
+  const before = p.credits;
+  const gunsBefore = p.guns.length;
+  const r = B.applyFill(p, 'gun', all);
+  check('заливка списывает ровно план', r.ok && r.spent === plan.cost && before - p.credits === plan.cost,
+    `списано ${before - p.credits}`);
+  check('и ставит ровно столько', p.guns.length - gunsBefore === 3 && r.placed === 3);
+
+  const poor = player(0);
+  const snapPoor = snap(poor);
+  const no = B.applyFill(poor, 'gun', all);
+  check('без денег — отказ и склад не тронут', !no.ok && snap(poor) === snapPoor);
+
+  const d = player(B.depotCost(player().levels) * 2);
+  const depotsBefore = d.depots.length;
+  const rd = B.applyFill(d, 'drones', all);
+  check('ящики дронов тоже заливаются', rd.ok && rd.placed === 2 && d.depots.length - depotsBefore === 2 && d.credits === 0,
+    `ящиков +${d.depots.length - depotsBefore}, осталось ${d.credits}`);
+
+  const full = player();
+  B.applyFill(full, 'trap', all);
+  const again = B.fillPlan(full, 'spray', all);
+  check('занятые клетки не берутся', again.free === 0, `свободно ${again.free}`);
+}
+
 console.log(fails ? `\n${fails} FAILED` : '\nстройка сходится');
 process.exit(fails ? 1 : 0);

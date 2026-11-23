@@ -84,7 +84,7 @@ function cornerNear(r: Rect, pt: Pt) {
 export interface MapActions {
   p: Player;
   tool: Tool;
-  /** Инструмент работает рамкой: площадь, ремонт, снос. */
+  /** Инструмент работает рамкой: площадь, ремонт, снос, сетка, установки и ящики. */
   drafting: boolean;
   /** Перерисовать лобби: что-то видимое поменялось вне карты. */
   rerender: () => void;
@@ -137,14 +137,8 @@ export function mapHandlers(m: MapRefs, a: MapActions) {
       return;
     }
 
-    if (tool === "drones") {
-      void a.buyDepotAt(c.x, c.y);
-      return;
-    }
-    if (isBuildKind(tool)) {
-      a.gunAt(c.x, c.y, tool);
-      return;
-    }
+    // Установки и ящики тоже ставятся рамкой: протянул — заливка свободных
+    // клеток, просто ткнул — одна штука на отпускании (см. onUp).
     if (!drafting) return;
 
     const cur = m.draft.current ? normRect(m.draft.current) : null;
@@ -265,7 +259,9 @@ export function mapHandlers(m: MapRefs, a: MapActions) {
       // одиночный тап: достраиваем или чиним ровно одну клетку
       m.draft.current = null;
       const c = cellOf(pt);
-      if (tool === "net") a.netAt(c.x, c.y);
+      if (tool === "drones") void a.buyDepotAt(c.x, c.y);
+      else if (isBuildKind(tool)) a.gunAt(c.x, c.y, tool);
+      else if (tool === "net") a.netAt(c.x, c.y);
       else if (tool === "repair") a.repairAt(c.x, c.y);
       else if (tool === "scrap") a.scrapAt(c.x, c.y);
       else a.buildOne(c.x, c.y);

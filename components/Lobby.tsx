@@ -14,7 +14,7 @@ import { MAX_BASE_NAME, burntCells, intactCells, isDoomed, type Player } from "@
 import { titleCompetitions } from "@/lib/competition";
 import { getRepo } from "@/lib/repo";
 import { blankEnemy, type Enemy } from "@/lib/enemy";
-import { draftPlan } from "@/lib/build";
+import { draftPlan, fillPlan } from "@/lib/build";
 import { MAX_BLUEPRINT_NAME, blueprintOf, freeBlueprintName, rebuildCost } from "@/lib/blueprint";
 import { postRaidComment } from "@/lib/comments";
 import { type View } from "@/lib/render";
@@ -44,7 +44,7 @@ import { useAttacks } from "./lobby/useAttacks";
 import { InsuranceDialog, LoanDialog, UpgradeDialog } from "./lobby/MoneyDialogs";
 import RaidsPanel, { StatsPanel } from "./lobby/RaidsPanel";
 import AvatarPicker from "./lobby/AvatarPicker";
-import { TOOLS, type ModalId, type SheetId, type ToolId } from "./lobby/tools";
+import { TOOLS, isFillTool, type ModalId, type SheetId, type ToolId } from "./lobby/tools";
 import { toolHint, toolPrice, toolVars } from "./lobby/toolNumbers";
 import { useBaseSync } from "./lobby/useBaseSync";
 import { usePanels } from "./lobby/usePanels";
@@ -336,13 +336,21 @@ export default function Lobby({
 
   // Рамкой работают и «Площадь», и «Ремонт»: выделил, подправил, утвердил.
   // Разница только в том, что считается внутри рамки и почём.
-  const drafting = tool === "area" || tool === "repair" || tool === "scrap" || tool === "net";
+  // Установки и ящики дронов рамкой заливают свободные клетки — на
+  // сколько хватит денег.
+  const filling = isFillTool(tool);
+  const areaTool = tool === "area" || tool === "repair" || tool === "scrap" || tool === "net" ? tool : null;
+  const drafting = areaTool !== null || filling;
   const draft = map.draft.current;
   const draftRect = draft ? normRect(draft) : null;
   // Сколько клеток, почём и можно ли — считает стройка; лобби только
   // рисует по этому ценник и решает, красить ли рамку красным.
-  const plan = draftPlan(p, drafting ? tool : "area", draftRect, hasBuilding);
-  const draftAfford = plan.cost <= p.credits;
+  const fill = filling ? fillPlan(p, tool, draftRect) : null;
+  const plan = fill
+    ? { cells: fill.at.length, cost: fill.cost, connects: true, busy: false, small: false }
+    : draftPlan(p, areaTool ?? "area", draftRect, hasBuilding);
+  // Заливке нехватка денег не помеха, пока встаёт хоть одна штука.
+  const draftAfford = fill ? fill.at.length > 0 || fill.free === 0 : plan.cost <= p.credits;
 
   const build = mapActions(core, p, map, {
     tool,
@@ -529,6 +537,7 @@ export default function Lobby({
         ? {
             rect: draftRect,
             cells: plan.cells,
+            free: fill?.free,
             cost: plan.cost,
             connects: plan.connects,
             afford: draftAfford,

@@ -13,4 +13,5 @@ export const FROZEN: Record<number, () => Promise<Sim>> = {
   28: () => import("./v28") as unknown as Promise<Sim>,
   29: () => import("./v29") as unknown as Promise<Sim>,
   30: () => import("./v30") as unknown as Promise<Sim>,
+  31: () => import("./v31") as unknown as Promise<Sim>,
 };

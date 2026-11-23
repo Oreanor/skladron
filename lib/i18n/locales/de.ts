@@ -162,7 +162,7 @@ const de: Dict = {
   "upgrade.sprays": "Löschanlagen",
   "upgrade.spraysEffect": "+25 % Löschradius je Stufe",
   "upgrade.traps": "Fallen",
-  "upgrade.trapsEffect": "+25 % Fangradius je Stufe",
+  "upgrade.trapsEffect": "+25 % Fangradius und +5 Plätze je Stufe",
   "upgrade.balloons": "Ballons",
   "upgrade.balloonsEffect": "+25 % Radius und +2 Ballons je Stufe",
   "upgrade.level": "St. {level}",
@@ -304,6 +304,12 @@ const de: Dict = {
   "base.nameNotSaved": "Der Name wurde nicht gespeichert: {error}",
 
   "draft.summary": "{w}×{h} · +{cells} Felder · {cost} Cr",
+
+  "fill.summary": "{w}×{h} · {cells} von {free} freien Feldern · {cost} Cr",
+
+  "fill.nothing": "Im Rahmen sind keine freien intakten Felder",
+
+  "fill.done": "{n} gesetzt für {cost} Cr",
   "draft.gap": "Lücke zum Gebäude",
   "draft.tooExpensive": "zu wenig Kredite",
   "draft.confirm": "Bestätigen",
@@ -401,6 +407,7 @@ const de: Dict = {
   "raid.total": "Drohnen im Angriff",
   "raid.surcharge": "Aufpreis für Gefechtsköpfe",
   "raid.tooMany": "So viele Drohnen liegen nicht im Lager",
+  "raid.overCap": "Höchstens {n} Drohnen pro Angriff",
   "raid.noCredits": "Nicht genug Credits für diese Gefechtsköpfe",
   "raid.empty": "Nimm mindestens eine Drohne in den Angriff",
   "raid.droneLevel": "Drohnenstufe",

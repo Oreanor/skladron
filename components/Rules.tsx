@@ -43,7 +43,7 @@ import {
 } from "@/lib/economy";
 
 import { DRONES_PER_CELL } from "@/lib/base";
-import { FIRE, GUN, ROCKET, TRAP } from "@/lib/tuning";
+import { FIRE, GUN, RAID, ROCKET } from "@/lib/tuning";
 import { RULES } from "@/lib/i18n/rules";
 import { useSettings } from "@/lib/i18n";
 import { Button, Modal, SectionTitle } from "./ui";
@@ -57,6 +57,7 @@ import {
   rocketRange,
   rocketTempo,
   sprayRange,
+  trapCapacity,
   trapRange,
 } from "@/lib/engine";
 import { PAYLOAD } from "@/lib/tuning";
@@ -82,12 +83,12 @@ const values: Record<string, string> = {
   netTop: String(NET_COST_TOP),
   netFirst: String(NET_UPGRADE_FIRST),
   netSecond: String(NET_UPGRADE_SECOND),
-  trapCap: String(TRAP.capacity),
   perCell: String(DRONES_PER_CELL),
   droneBox: String(DRONE_UNIT_COST * DRONES_PER_CELL),
   balloon: String(BALLOON_COST),
   shooterRange: String(GUN.range),
   spread: String(FIRE.spread),
+  maxRaid: String(RAID.max),
   loot: String(CELL_LOOT_REWARD),
   // Потолок премии: столько дают за клетку, когда сожжён весь склад.
   lootMax: String(attackLoot(1, 1)),
@@ -159,6 +160,7 @@ export default function Rules({ onClose }: { onClose: () => void }) {
     rocketReload: grow((lv) => ROCKET.cooldown / rocketTempo({ rocketLevel: lv })),
     sprayRange: grow((lv) => sprayRange({ sprayLevel: lv })),
     trapRange: grow((lv) => trapRange({ trapLevel: lv })),
+    trapCap: grow((lv) => trapCapacity({ trapLevel: lv })),
     balloonRange: grow((lv) => balloonRange({ balloonLevel: lv })),
     balloonCount: grow((lv) => balloonCount(lv)),
   };

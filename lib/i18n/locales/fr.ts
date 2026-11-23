@@ -162,7 +162,7 @@ const fr: Dict = {
   "upgrade.sprays": "Extincteurs",
   "upgrade.spraysEffect": "+25 % de rayon d’extinction par niveau",
   "upgrade.traps": "Pièges",
-  "upgrade.trapsEffect": "+25 % de rayon de capture par niveau",
+  "upgrade.trapsEffect": "+25 % de rayon de capture et +5 places par niveau",
   "upgrade.balloons": "Ballons",
   "upgrade.balloonsEffect": "+25 % de rayon et +2 ballons par niveau",
   "upgrade.level": "nv. {level}",
@@ -304,6 +304,12 @@ const fr: Dict = {
   "base.nameNotSaved": "Le nom n’a pas été enregistré : {error}",
 
   "draft.summary": "{w}×{h} · +{cells} cases · {cost} cr",
+
+  "fill.summary": "{w}×{h} · {cells} sur {free} cases libres · {cost} cr",
+
+  "fill.nothing": "Aucune case intacte libre dans le cadre",
+
+  "fill.done": "{n} posés pour {cost} cr",
   "draft.gap": "rupture avec le bâtiment",
   "draft.tooExpensive": "crédits insuffisants",
   "draft.confirm": "Valider",
@@ -401,6 +407,7 @@ const fr: Dict = {
   "raid.total": "Drones dans le raid",
   "raid.surcharge": "Supplément de charge",
   "raid.tooMany": "Il n’y a pas tant de drones dans l’entrepôt",
+  "raid.overCap": "Au plus {n} drones par raid",
   "raid.noCredits": "Pas assez de crédits pour ces charges",
   "raid.empty": "Mets au moins un drone dans le raid",
   "raid.droneLevel": "Niveau des drones",

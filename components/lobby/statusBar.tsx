@@ -24,7 +24,15 @@ export interface StatusBarInput {
   /** Подсказка к выбранному инструменту — уже с числами. */
   hint: string;
   /** Рамка площади, если её тянут, — и что по ней насчитала стройка. */
-  draft: { rect: Rect; cells: number; cost: number; connects: boolean; afford: boolean } | null;
+  draft: {
+    rect: Rect;
+    cells: number;
+    cost: number;
+    connects: boolean;
+    afford: boolean;
+    /** Заливка установками или ящиками: свободных клеток в рамке. */
+    free?: number;
+  } | null;
   message: string | null;
   founded: boolean;
   /** Целых клеток склада. */
@@ -49,11 +57,18 @@ export function statusBar(s: StatusBarInput): { tone: string; body: ReactNode } 
         <>
           <span className="font-mono">
             {t(
-              tool === "scrap" ? "scrap.summary" : tool === "repair" ? "repair.summary" : "draft.summary",
+              draft.free !== undefined
+                ? "fill.summary"
+                : tool === "scrap"
+                  ? "scrap.summary"
+                  : tool === "repair"
+                    ? "repair.summary"
+                    : "draft.summary",
               {
                 w: draft.rect.w,
                 h: draft.rect.h,
                 cells: draft.cells,
+                free: draft.free ?? 0,
                 cost: fmt(Math.abs(draft.cost)),
               }
             )}
@@ -64,6 +79,7 @@ export function statusBar(s: StatusBarInput): { tone: string; body: ReactNode } 
           {draft.connects && !draft.afford && (
             <span className="text-red-400">{t("draft.tooExpensive")}</span>
           )}
+          {draft.free === 0 && <span className="text-neutral-400">{t("fill.nothing")}</span>}
           {(tool === "repair" || tool === "scrap") && draft.cells === 0 && (
             <span className="text-neutral-400">{t("repair.nothing")}</span>
           )}

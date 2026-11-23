@@ -162,7 +162,7 @@ const ru: Dict = {
   "upgrade.sprays": "Огнетушители",
   "upgrade.spraysEffect": "+25% к радиусу тушения за уровень",
   "upgrade.traps": "Ловушки",
-  "upgrade.trapsEffect": "+25% к радиусу захвата за уровень",
+  "upgrade.trapsEffect": "+25% к радиусу захвата и +5 мест за уровень",
   "upgrade.balloons": "Шары",
   "upgrade.balloonsEffect": "+25% к радиусу и +2 шара за уровень",
   "upgrade.level": "ур. {level}",
@@ -304,6 +304,12 @@ const ru: Dict = {
   "base.nameNotSaved": "Имя не сохранилось: {error}",
 
   "draft.summary": "{w}×{h} · +{cells} клеток · {cost} кр",
+
+  "fill.summary": "{w}×{h} · встанет {cells} из {free} свободных · {cost} кр",
+
+  "fill.nothing": "В рамке нет свободных целых клеток",
+
+  "fill.done": "Поставлено {n} за {cost} кр",
   "draft.gap": "разрыв со зданием",
   "draft.tooExpensive": "не хватает кредитов",
   "draft.confirm": "Утвердить",
@@ -401,6 +407,7 @@ const ru: Dict = {
   "raid.total": "Дронов в налёте",
   "raid.surcharge": "Надбавка за начинку",
   "raid.tooMany": "Столько дронов на складе нет",
+  "raid.overCap": "Не больше {n} дронов за налёт",
   "raid.noCredits": "На такую начинку не хватает кредитов",
   "raid.empty": "Положи в налёт хотя бы одного дрона",
   "raid.droneLevel": "Уровень дронов",

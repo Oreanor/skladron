@@ -42,7 +42,7 @@ import {
 } from "./overlay";
 import { CELL } from "../MapCanvas";
 import { DOUBLE_TAP, type MapRefs } from "./mapInput";
-import { isBuildKind, type Tool } from "./tools";
+import { isBuildKind, isFillTool, type Tool } from "./tools";
 
 export interface LobbyScene {
   p: Player;
@@ -155,8 +155,16 @@ export function drawLobbyOverlay(
   if (d) {
     drawDraft(ctx, CELL, d, {
       cells: p.cells,
-      onlyIntact: tool === "net",
-      blocked: tool === "net" ? new Set(p.guns.filter((g) => g.kind !== "net").map((g) => idx(g.cx, g.cy))) : undefined,
+      // Сетка и заливка берут только целые клетки без установок; заливке
+      // мешают ещё и ящики.
+      onlyIntact: tool === "net" || isFillTool(tool),
+      blocked:
+        tool === "net" || isFillTool(tool)
+          ? new Set([
+              ...p.guns.filter((g) => g.kind !== "net").map((g) => idx(g.cx, g.cy)),
+              ...(isFillTool(tool) ? p.depots.map((d) => idx(d.cx, d.cy)) : []),
+            ])
+          : undefined,
       burntOnly: tool === "repair" || tool === "scrap" ? tool : undefined,
       // У сноса «соединяет» и значит «не разорвёт склад» — одна и та же
       // проверка, второй флаг ей не нужен.

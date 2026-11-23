@@ -388,19 +388,20 @@ console.log("\n— ракетницы, невидимка и размагнич�
       const s = E.createBattle(base(), traps, [],
         A.buildPlan(ord(waves)), { seed: 7171, traps: 2 });
       const cap = Math.ceil(T.SIM.unattendedSeconds / T.SIM.step);
-      let peak = 0;
+      // Считаем удержание за весь бой, в дроно-секундах, а не пик: пик
+      // набирается на подлёте, раньше, чем глушилка дойдёт до магнита, и с
+      // прокачанной ловушкой выходил одинаковым с ней и без неё.
+      let held = 0;
       for (let step = 0; step < cap && s.phase === "playing"; step++) {
         E.update(s, T.SIM.step);
-        let n = 0;
-        for (const d of s.drones) if (d.heldBy > 0) n++;
-        if (n > peak) peak = n;
+        for (const d of s.drones) if (d.heldBy > 0) held += T.SIM.step;
       }
-      return peak;
+      return Math.round(held);
     };
     const withDemag = hold([wave("swarm", [g("plain", 40), g("demag", 10)])]);
     const without = hold([wave("swarm", [g("plain", 50)])]);
     check("размагничивание срывает захват", withDemag < without,
-      `без него держало до ${without}, с ним до ${withDemag}`);
+      `без него держало ${without} дроно-с, с ним ${withDemag}`);
   }
 
   // Круг у размагничивания вдвое короче ловушечного — на том и держится

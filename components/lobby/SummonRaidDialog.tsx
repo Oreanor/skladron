@@ -16,6 +16,7 @@ import { RAID_COMMENT_MAX } from "@/lib/comments";
 import RaidPlanner, { newWave } from "./RaidPlanner";
 import { Button, Modal, inputClass } from "../ui";
 import { useT } from "@/lib/i18n";
+import { RAID } from "@/lib/tuning";
 
 export default function SummonRaidDialog({
   initial,
@@ -65,13 +66,17 @@ export default function SummonRaidDialog({
   const total = raidTotal(waves);
   const unitCost = existing?.unitCost ?? droneCost;
   const stock = drones + (existing ? raidTotal(existing.waves) : 0);
+  // Больше потолка налёта не отправить, сколько бы ни лежало на складе.
+  const limit = Math.min(stock, RAID.max);
   const budget = credits + (existing?.surcharge ?? 0);
   const surcharge = payloadCost(unitCost, waves);
 
   const problem =
     total < 1
       ? t("raid.empty")
-      : total > stock
+      : total > RAID.max
+        ? t("raid.overCap", { n: RAID.max })
+        : total > stock
         ? t("raid.tooMany")
         : surcharge > budget
           ? t("raid.noCredits")
@@ -164,7 +169,7 @@ export default function SummonRaidDialog({
       <RaidPlanner
         waves={waves}
         onChange={setWaves}
-        stock={stock}
+        stock={limit}
         unitCost={unitCost}
         credits={budget}
         free={false}

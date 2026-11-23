@@ -319,6 +319,64 @@ export function placeDepot(p: Player, x: number, y: number): BuildResult {
   return done(cost);
 }
 
+// ---------- заливка рамкой ----------
+
+/** Чем заливают рамку: любая установка, кроме сетки, или ящики дронов. */
+export type FillKind = Exclude<GunKind, "net"> | "drones";
+
+/** План заливки: куда встанет и почём. Свободных может быть больше, чем по карману. */
+export interface FillPlan {
+  /** Клетки, куда встанет, по порядку — сверху вниз, слева направо. */
+  at: { x: number; y: number }[];
+  /** Сколько всё это стоит. */
+  cost: number;
+  /** Сколько в рамке свободных целых клеток вообще. */
+  free: number;
+}
+
+/**
+ * Что поставится в рамку на нынешние деньги. Клетки идут по строкам, и
+ * каждую берём, пока на неё хватает: на клетке с сеткой установка дешевле,
+ * так что после первой «не по карману» дальше ещё могут найтись по карману.
+ */
+export function fillPlan(p: Player, kind: FillKind, rect: Rect | null): FillPlan {
+  const plan: FillPlan = { at: [], cost: 0, free: 0 };
+  if (!rect) return plan;
+  const full = kind === "drones" ? depotCost(p.levels) : gunCost(p.levels, kind);
+  const netPrice = gunCost(p.levels, "net");
+  for (let y = Math.max(0, rect.y); y < Math.min(GRID, rect.y + rect.h); y++) {
+    for (let x = Math.max(0, rect.x); x < Math.min(GRID, rect.x + rect.w); x++) {
+      if (p.cells[idx(x, y)] !== G_BASE) continue;
+      if (depotOn(p.depots, x, y) || gunOn(p.guns, x, y)) continue;
+      plan.free++;
+      // Ящик ложится под сетку и её не трогает; установка сетку вытесняет
+      // с возвратом — как в placeGun.
+      const cost = kind !== "drones" && netOn(p.guns, x, y) ? full - netPrice : full;
+      if (plan.cost + cost > p.credits) continue;
+      plan.cost += cost;
+      plan.at.push({ x, y });
+    }
+  }
+  return plan;
+}
+
+/**
+ * Заливка рамки: ставит по плану, сколько влезает в кошелёк. В отличие от
+ * площади, нехватка денег не отказ — встаёт, на сколько хватило. Отказ —
+ * только если не встало ничего.
+ */
+export function applyFill(p: Player, kind: FillKind, rect: Rect | null): BuildResult & { placed?: number } {
+  const plan = fillPlan(p, kind, rect);
+  if (plan.free === 0) return skip;
+  if (plan.at.length === 0) return no(kind === "drones" ? "depot.noCredits" : "gun.noCredits", { cost: depotCost(p.levels) });
+  let spent = 0;
+  for (const { x, y } of plan.at) {
+    const r = kind === "drones" ? placeDepot(p, x, y) : placeGun(p, x, y, kind);
+    if (r.ok) spent += r.spent;
+  }
+  return { ok: true, spent, placed: plan.at.length };
+}
+
 /**
  * Что стоит на клетке, куда роняют, переезжает туда, откуда взяли: перенос
  * на занятую клетку — это обмен местами. Свободная — просто перенос.

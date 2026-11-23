@@ -27,6 +27,7 @@ import {
 import { DRONES_PER_CELL, type GunKind } from "@/lib/base";
 import { BALLOON, ROCKET, SPRAY, TRAP } from "@/lib/tuning";
 import type { Key } from "@/lib/i18n/dict";
+import type { FillKind } from "@/lib/build";
 import { COLORS } from "@/lib/render";
 import PieceIcon from "../PieceIcon";
 
@@ -49,6 +50,9 @@ export type Tool =
  */
 export const isBuildKind = (t: ToolId | null): t is Exclude<GunKind, "net"> =>
   t === "gun" || t === "rocket" || t === "spray" || t === "trap" || t === "balloon";
+
+/** Эти инструменты рамкой заливают свободные клетки: установки и ящики дронов. */
+export const isFillTool = (t: ToolId | null): t is FillKind => isBuildKind(t) || t === "drones";
 
 /** Кнопка «Апгрейд» карты не касается: она только открывает модалку. */
 export type ToolId = Tool | "upgrade" | "insurance" | "loan";
