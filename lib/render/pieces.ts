@@ -162,10 +162,38 @@ export function drawDrone(
   ctx.fill();
 }
 
+/** Готовые дроны: ключ — цвета и размер в точках экрана. */
+const droneSprites = new Map<string, HTMLCanvasElement | null>();
+/** Зум меняется плавно, и под каждый шаг заводится своя картинка — держим немного. */
+const DRONE_SPRITES_MAX = 96;
+
 /**
- * Вся стая разом, тем же рисунком, что drawDrone, но пачкой: все рамы — одним
- * штрихом, все винты — одной заливкой, боеголовки — по заливке на цвет.
- * Дронов в бою бывает под тысячу, и по три команды на каждого съедали кадр.
+ * Дрон, нарисованный drawDrone в картинку точка в точку с экраном: r и
+ * толщина линии — уже в точках. Дрон — ровно в середине картинки.
+ */
+function droneSprite(accent: string, frame: string, r: number, line: number) {
+  const key = `${accent}|${frame}|${r}|${line}`;
+  if (droneSprites.has(key)) return droneSprites.get(key)!;
+  if (droneSprites.size >= DRONE_SPRITES_MAX) droneSprites.clear();
+  let c: HTMLCanvasElement | null = document.createElement("canvas");
+  // рама до r, винт ещё на 0.4r за ней, плюс полоса сглаживания
+  const half = Math.ceil(r * 1.4 + line / 2 + 1);
+  c.width = c.height = half * 2;
+  const g = c.getContext("2d");
+  if (g) {
+    g.lineWidth = line;
+    drawDrone(g, half, half, r, accent, frame);
+  } else c = null;
+  droneSprites.set(key, c);
+  return c;
+}
+
+/**
+ * Вся стая разом, тем же рисунком, что drawDrone. Дронов в бою бывает под
+ * тысячу, и даже пачкой путей (рамы одним штрихом, винты одной заливкой) их
+ * сглаженные круги растеризовались заново каждый кадр — на слабой машине это
+ * треть кадра. Поэтому дрон рисуется раз в картинку размером ровно в его
+ * точки на экране, а в кадре — по drawImage на дрона.
  * Толщину линии ставит вызывающий.
  */
 export function drawDroneSwarm<T extends { x: number; y: number }>(
@@ -177,6 +205,24 @@ export function drawDroneSwarm<T extends { x: number; y: number }>(
   frame: string = COLORS.drone
 ) {
   if (!drones.length) return;
+  if (typeof document !== "undefined") {
+    const m = ctx.getTransform();
+    const scale = Math.hypot(m.a, m.b);
+    // размер — с шагом в четверть точки: на плавном зуме картинок не плодим
+    const rPx = Math.max(0.5, Math.round(r * scale * 4) / 4);
+    const linePx = Math.max(0.25, Math.round(ctx.lineWidth * scale * 4) / 4);
+    const k = 1 / scale;
+    // без холста для картинок (getContext отказал) — рисуем путями, как раньше
+    if (scale > 0 && droneSprite(accentOf(drones[0]), frame, rPx, linePx)) {
+      for (const d of drones) {
+        const img = droneSprite(accentOf(d), frame, rPx, linePx);
+        if (!img) continue;
+        const side = img.width * k;
+        ctx.drawImage(img, d.x * cell - side / 2, d.y * cell - side / 2, side, side);
+      }
+      return;
+    }
+  }
   const frames = new Path2D();
   const rotors = new Path2D();
   const heads = new Map<string, Path2D>();

@@ -14,6 +14,7 @@ import { charFill } from "./char";
 import { COLORS } from "./colors";
 import { drawBattleDepots } from "./depots";
 import { drawBoom, drawSoft } from "./fx";
+import { hash } from "./hash";
 import { slabBevel, slabShadow } from "./light";
 import { drawBalloons, drawDroneSwarm, drawPiece, drawNet } from "./pieces";
 
@@ -398,18 +399,33 @@ export function drawFrame(
     ctx.stroke();
   }
 
-  // огонь
-  for (const i of s.fire.keys()) {
-    const x = i % GRID;
-    const y = (i / GRID) | 0;
-    // мерцает от тёмно-оранжевого к жёлтому, у каждой клетки своя фаза
-    const f = 0.5 + 0.5 * Math.sin(now * 0.012 + (x * 7 + y * 13));
-    ctx.fillStyle = `rgb(${230 + f * 25}, ${70 + f * 90}, 20)`;
-    ctx.fillRect(x * cell, y * cell, cell, cell);
-    ctx.globalAlpha = 0.25 + f * 0.45;
-    ctx.fillStyle = COLORS.fireCore;
-    ctx.fillRect(x * cell + cell * 0.3, y * cell + cell * 0.3, cell * 0.4, cell * 0.4);
-    ctx.globalAlpha = 1;
+  // Огонь мерцает от тёмно-оранжевого к жёлтому, у каждой клетки своя фаза.
+  // Яркость — ступенями, и клетки одной ступени заливаются одним путём: по
+  // две заливки на клетку при тысяче горящих стоили кадру столько же, сколько
+  // вся стая. Сердцевина лежит внутри своей клетки и чужих не перекрывает,
+  // так что порядок заливок картинку не меняет.
+  if (s.fire.size) {
+    const flames: Path2D[] = [];
+    const cores: Path2D[] = [];
+    for (const i of s.fire.keys()) {
+      const x = i % GRID;
+      const y = (i / GRID) | 0;
+      const f = 0.5 + 0.5 * Math.sin(now * 0.012 + (x * 7 + y * 13));
+      const level = Math.round(f * (FIRE_STEPS - 1));
+      (flames[level] ??= new Path2D()).rect(x * cell, y * cell, cell, cell);
+      (cores[level] ??= new Path2D()).rect(x * cell + cell * 0.3, y * cell + cell * 0.3, cell * 0.4, cell * 0.4);
+    }
+    for (let level = 0; level < FIRE_STEPS; level++) {
+      const flame = flames[level];
+      if (!flame) continue;
+      const f = level / (FIRE_STEPS - 1);
+      ctx.fillStyle = FIRE_SHADES[level];
+      ctx.fill(flame);
+      ctx.globalAlpha = 0.25 + f * 0.45;
+      ctx.fillStyle = COLORS.fireCore;
+      ctx.fill(cores[level]);
+      ctx.globalAlpha = 1;
+    }
   }
 
   drawFireSmoke(ctx, s.fire.keys(), s.fire.size, cell, now);
@@ -660,6 +676,13 @@ export function drawFrame(
 }
 
 
+/** Ступеней яркости у мерцания огня: на глаз переход между ними не виден. */
+const FIRE_STEPS = 16;
+const FIRE_SHADES = Array.from({ length: FIRE_STEPS }, (_, level) => {
+  const f = level / (FIRE_STEPS - 1);
+  return `rgb(${230 + f * 25}, ${70 + f * 90}, 20)`;
+});
+
 /** Сколько секунд живёт клуб дыма над пожаром — от клетки до растворения. */
 const SMOKE_LIFE = 3.2;
 
@@ -668,7 +691,8 @@ const SMOKE_LIFE = 3.2;
  * ветром и тают. Каждый клуб — функция времени и номера клетки, в бою его
  * нет вовсе: бой у защитника и на сервере обязан совпадать, а отрисовка в
  * него не лезет. Над большим пожаром клубов на клетку меньше, иначе на
- * сотнях горящих клеток дым съел бы кадр.
+ * сотнях горящих клеток дым съел бы кадр, а над огромным клуб идёт не от
+ * каждой клетки: они всё равно сливаются в сплошную пелену.
  */
 function drawFireSmoke(
   ctx: CanvasRenderingContext2D,
@@ -679,11 +703,23 @@ function drawFireSmoke(
 ) {
   if (!count) return;
   const per = count > 300 ? 1 : count > 150 ? 2 : 3;
+  // Клубов не больше SMOKE_MAX: клуб — отдельный drawImage, и тысяча их
+  // съедала полкадра на слабой машине. Дымят клетки по своему жребию, так
+  // что набор не прыгает от кадра к кадру; редкие клубы чуть крупнее.
+  const thin = Math.max(1, Math.ceil(count / SMOKE_MAX));
+  const grow = Math.min(1.5, 1 + (thin - 1) * 0.25);
   const t = now / 1000;
-  ctx.save();
+  // Над большим пожаром клубы — сотни крупных полупрозрачных картинок, и
+  // смешивать их в полном разрешении дороже всего кадра. Дым мягкий, без
+  // краёв, поэтому рисуем его в слой вдвое мельче и растягиваем: пикселей
+  // вчетверо меньше, а на глаз то же.
+  const target = (count * per) / thin >= SMOKE_LAYER_FROM ? smokeLayer(ctx) : null;
+  const g = target ?? ctx;
+  g.save();
   for (const i of cells) {
     const x = i % GRID;
     const y = (i / GRID) | 0;
+    if (thin > 1 && hash(x, y, 5) * thin >= 1) continue;
     // у каждой клетки свой сдвиг по фазе — иначе весь пожар дышал бы разом
     const shift = ((x * 92821 + y * 68917) % 1000) / 1000;
     for (let j = 0; j < per; j++) {
@@ -693,16 +729,56 @@ function drawFireSmoke(
       // Мягкий клуб, как у взрыва: проявляется и тает. Края у него
       // прозрачные, поэтому радиус больше прежнего плоского круга.
       drawSoft(
-        ctx,
+        g,
         "smoke",
         (x + 0.5 + drift) * cell,
         (y + 0.4 - rise) * cell,
-        cell * (0.85 + 2.6 * k),
+        cell * (0.85 + 2.6 * k) * grow,
         0.7 * Math.sin(k * Math.PI)
       );
     }
   }
-  ctx.restore();
+  g.restore();
+  if (target) {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(target.canvas, 0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.restore();
+  }
+}
+
+/** Больше стольких клубов над пожаром не рисуем. */
+const SMOKE_MAX = 400;
+/** Во сколько раз слой дыма мельче холста. */
+const SMOKE_SHRINK = 2;
+/** С какого числа клубов дым идёт через слой: мелкому пожару слой дороже самих клубов. */
+const SMOKE_LAYER_FROM = 120;
+/** Слой дыма у каждого холста свой — у боя и повтора разные. */
+const smokeLayers = new WeakMap<HTMLCanvasElement | OffscreenCanvas, CanvasRenderingContext2D | null>();
+
+/**
+ * Пустой слой дыма под этот холст, уже с его преобразованием, только
+ * уменьшенным: рисовать в него можно теми же игровыми координатами.
+ */
+function smokeLayer(ctx: CanvasRenderingContext2D): CanvasRenderingContext2D | null {
+  if (typeof document === "undefined") return null;
+  let g = smokeLayers.get(ctx.canvas);
+  if (g === undefined) {
+    g = document.createElement("canvas").getContext("2d");
+    smokeLayers.set(ctx.canvas, g);
+  }
+  if (!g) return null;
+  const w = Math.ceil(ctx.canvas.width / SMOKE_SHRINK);
+  const h = Math.ceil(ctx.canvas.height / SMOKE_SHRINK);
+  if (g.canvas.width !== w) g.canvas.width = w;
+  if (g.canvas.height !== h) g.canvas.height = h;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, w, h);
+  // тот же вид, что у холста, только в SMOKE_SHRINK раз мельче
+  const m = ctx.getTransform();
+  const k = w / ctx.canvas.width;
+  g.setTransform(m.a * k, m.b * k, m.c * k, m.d * k, m.e * k, m.f * k);
+  return g;
 }
 
 
