@@ -97,11 +97,13 @@ export function battleFlow(
   const playSelf = async (
     ofKind: (a: AttackOrder) => boolean,
     same: (a: AttackOrder) => boolean,
-    queue: () => Promise<AttackOrder>
+    queue: () => Promise<AttackOrder>,
+    /** Что дописать к бою перед входом — копией, очередь не трогаем. */
+    prepare: (a: AttackOrder) => AttackOrder = (a) => a
   ) => {
     if (ui.saving) return;
     const queued = p.incoming.find(same);
-    if (queued) return defend(queued);
+    if (queued) return defend(prepare(queued));
     let order: AttackOrder;
     try {
       order = await queue();
@@ -111,7 +113,7 @@ export function battleFlow(
     }
     p.incoming = [...p.incoming.filter((a) => !ofKind(a)), order];
     core.touch();
-    await defend(order);
+    await defend(prepare(order));
   };
 
   /**
@@ -137,26 +139,20 @@ export function battleFlow(
       }
     );
 
-  /** Переигровка отбитого налёта: тот же рой на нынешний склад — как миссия. */
-  const playRetake = (raid: RaidLog) => {
-    // у прерванной, что вернул опрос, прежнего рекорда нет — он в журнале
-    const queued = p.incoming.find((a) => a.retakeOf === raid.id);
-    if (queued) queued.retakeBest = raid.retakeBest;
-    return playSelf(
+  /**
+   * Переигровка отбитого налёта: тот же рой на нынешний склад — как миссия.
+   * Прежний рекорд живёт в журнале, а не в очереди: дописываем его к бою.
+   */
+  const playRetake = (raid: RaidLog) =>
+    playSelf(
       (a) => Boolean(a.retakeOf),
       (a) => a.retakeOf === raid.id,
       async () => {
         const r = await repo.queueRetake(raid.id);
-        return {
-          ...makeOrder(r.foe, r.waves, r.droneLevel, r.seed),
-          id: r.id,
-          remote: true,
-          retakeOf: raid.id,
-          retakeBest: raid.retakeBest,
-        };
-      }
+        return { ...makeOrder(r.foe, r.waves, r.droneLevel, r.seed), id: r.id, remote: true, retakeOf: raid.id };
+      },
+      (a) => ({ ...a, retakeBest: raid.retakeBest })
     );
-  };
 
   /** Что сказать после боя. */
   const resultText = (battle: AttackOrder, won: boolean, killed: number, score?: SelfScore) => {

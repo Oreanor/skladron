@@ -14,6 +14,7 @@ import type { AttackOrder, RaidLog } from "@/lib/attack";
 import type { PlayerStats } from "@/lib/player";
 import { Button } from "../ui";
 import { useT, type Translate } from "@/lib/i18n";
+import { dayShort as day } from "@/lib/dates";
 import type { Key } from "@/lib/i18n/dict";
 import {
   BestScore,
@@ -26,13 +27,6 @@ import {
   RowText,
   WatchButton,
 } from "./journalRow";
-
-/** Дата боя коротко: 23.11.25. */
-const day = (at: number) => {
-  const d = new Date(at);
-  const two = (n: number) => String(n).padStart(2, "0");
-  return `${two(d.getDate())}.${two(d.getMonth() + 1)}.${two(d.getFullYear() % 100)}`;
-};
 
 /** Ник второй стороны: жирный и белый; если соперник в списке — кликается. */
 const Foe = ({ name, open }: { name: string; open?: () => void }) =>

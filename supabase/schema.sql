@@ -746,6 +746,13 @@ begin
   delete from attacks a
    where a.defender_id = uid and a.competition_stage is not null
      and a.status = 'pending';
+  -- Отыгранные попытки этого номера, кроме лучшей: у каждой слепок склада и
+  -- запись рук, а смотрят только повтор лучшей.
+  delete from attacks a
+   where a.defender_id = uid and a.attacker_id = uid
+     and a.competition_stage = stage and a.status = 'resolved'
+     and a.id::text is distinct from (
+       select p.competition_best -> stage::text ->> 'id' from profiles p where p.id = uid);
 
   head := attack_waves -> 0;
   insert into attacks (
@@ -778,9 +785,10 @@ begin
    where a.id = raid_id and a.defender_id = uid and a.attacker_id <> uid
      and a.status = 'resolved';
   if not found then raise exception 'raid not found'; end if;
-  -- неотыгранная прежняя переигровка — брошенная, как у миссий
+  -- Прежние переигровки — и брошенная, и отыгранные: счёт уже записан в
+  -- исходный бой, а слепок склада и запись рук никто больше не откроет.
   delete from attacks a
-   where a.defender_id = uid and a.retake_of is not null and a.status = 'pending';
+   where a.defender_id = uid and a.retake_of is not null;
 
   insert into attacks (
     attacker_id, defender_id, drones, pattern, direction, seed, waves,
@@ -829,6 +837,18 @@ create table if not exists listed_met (
 alter table listed_met enable row level security;
 revoke all on table listed_met from anon, authenticated;
 
+-- Знакомство, отменённое отказом от первого налёта: кого у игрока в списке
+-- врагов быть не должно. Открытая вкладка нападающего помнит прежний список и
+-- при следующем сохранении вернула бы туда цель — save_enemies такое отбросит,
+-- пока они не познакомятся заново (add_rival).
+create table if not exists unmet (
+  player uuid not null references profiles on delete cascade,
+  email text not null,
+  primary key (player, email)
+);
+alter table unmet enable row level security;
+revoke all on table unmet from anon, authenticated;
+
 -- Познакомились ли двое через общий список, кто бы кого ни добавил.
 create or replace function strangers(a uuid, b uuid) returns boolean
 language sql stable security definer set search_path = public as $$
@@ -862,19 +882,28 @@ $$;
 create or replace function listed_players()
 returns table (email text, name text, avatar text, level int, power int)
 language sql security definer set search_path = public stable as $$
-  select p.email,
-         coalesce(p.base_name, p.display_name, split_part(p.email, '@', 1)),
-         p.avatar,
-         player_level(p.competition_best),
-         upgrade_power(p.levels)
-    from profiles p
-    join profiles me on me.id = auth.uid() and me.listed
-   where p.listed and p.founded and p.id <> me.id
-     and not exists (select 1 from jsonb_array_elements(me.enemies) e
-                      where lower(e->>'email') = lower(p.email))
-   order by abs(upgrade_power(p.levels) - upgrade_power(me.levels)), p.created_at
+  with me as (
+    select p.id, upgrade_power(p.levels) as power,
+           array(select lower(e->>'email') from jsonb_array_elements(p.enemies) e) as known
+      from profiles p where p.id = auth.uid() and p.listed
+  ), open as (
+    select p.*, upgrade_power(p.levels) as power
+      from profiles p, me
+     where p.listed and p.founded and p.id <> me.id
+       and lower(p.email) <> all (me.known)
+  )
+  select o.email,
+         coalesce(o.base_name, o.display_name, split_part(o.email, '@', 1)),
+         o.avatar,
+         player_level(o.competition_best),
+         o.power
+    from open o, me
+   order by abs(o.power - me.power), o.created_at
    limit 50;
 $$;
+
+-- открытых мало, всех игроков много: список не должен листать каждый профиль
+create index if not exists profiles_listed on profiles (id) where listed;
 
 -- ---------- разведка ----------
 -- Списывает обычных дронов со склада и отдаёт карту врага одной операцией:
@@ -1072,7 +1101,14 @@ begin
     seen := seen || clean_email;
   end loop;
 
-  update profiles set enemies = new_enemies where id = uid;
+  -- отменённые знакомства назад не пускаем, даже если старая вкладка их помнит
+  update profiles
+     set enemies = coalesce((select jsonb_agg(e) from jsonb_array_elements(new_enemies) e
+                              where not exists (select 1 from unmet u
+                                                 where u.player = uid
+                                                   and u.email = lower(btrim(e->>'email')))),
+                            '[]'::jsonb)
+   where id = uid;
 end;
 $$;
 
@@ -1733,7 +1769,6 @@ declare
   pays boolean := true;
   prev_score int;
   mission_pay int := 0;
-  new_map bytea;
   after_intact int;
   before_intact int;
   -- миссия или переигровка: нападающий и защитник — один человек
@@ -1764,6 +1799,12 @@ begin
     raise exception 'base changed during battle';
   end if;
 
+  select applied.credits, applied.intact
+    into defender_credits, defender_intact
+    from apply_battle_for(order_row.defender_id, new_cells, new_guns, new_depots, result,
+                          not self_battle) applied;
+
+
   -- Миссия платит премию только за первую попытку номера или за счёт выше
   -- прежнего лучшего: столько же или меньше — денег нет, иначе один номер
   -- переигрывали бы ради заработка. Счёт — как ниже и как competitionScore
@@ -1773,10 +1814,9 @@ begin
   -- Премии за отбой у миссии нет — у неё своя награда, ниже: номер × 1000 за
   -- первое прохождение и 15 за каждого сбитого при новом рекорде. Страховка
   -- платится, как в любом бою.
+  -- Уцелевшее после боя уже посчитал apply_battle_for — по нему и судим.
   if order_row.competition_stage is not null then
-    new_map := rle_decode(new_cells);
-    after_intact := (select count(*) from generate_series(0, 9999) i
-                      where get_byte(new_map, i) = 1);
+    after_intact := defender_intact;
     before_intact := after_intact + coalesce((result->>'burned')::int, 0);
     prev_score := coalesce(
       (select (p.competition_best -> order_row.competition_stage::text ->> 'score')::int
@@ -1794,11 +1834,6 @@ begin
         + coalesce((result->>'killedByBalloons')::int, 0)));
     end if;
   end if;
-
-  select applied.credits, applied.intact
-    into defender_credits, defender_intact
-    from apply_battle_for(order_row.defender_id, new_cells, new_guns, new_depots, result,
-                          not self_battle) applied;
 
   if mission_pay > 0 then
     update profiles set credits = profiles.credits + mission_pay
@@ -2161,13 +2196,18 @@ begin
   if not found then raise exception 'player with this email has not joined yet'; end if;
   if target.id = uid then raise exception 'cannot add yourself'; end if;
 
+  -- знакомятся заново — прежняя отмена больше не действует
+  delete from unmet u
+   where (u.player = uid and u.email = lower(target.email))
+      or (u.player = target.id and u.email = lower(me.email));
+
   -- Оба открыты всем и прежде знакомы не были — значит, нашли друг друга в
-  -- общем списке: запоминаем, налёт от такого можно отклонить.
+  -- общем списке: запоминаем, налёт от такого можно отклонить. Смотрим только
+  -- в список цели: свой список клиент пишет сам (save_enemies), и вписать туда
+  -- цель заранее, чтобы отказ стал невозможен, ничего не стоило бы.
   if me.listed and target.listed
      and not exists (select 1 from jsonb_array_elements(target.enemies) e
-                      where lower(e->>'email') = lower(me.email))
-     and not exists (select 1 from jsonb_array_elements(me.enemies) e
-                      where lower(e->>'email') = lower(target.email)) then
+                      where lower(e->>'email') = lower(me.email)) then
     insert into listed_met (player, other) values (uid, target.id) on conflict do nothing;
   end if;
 
@@ -2543,6 +2583,12 @@ begin
     delete from listed_met m
      where (m.player = uid and m.other = a.attacker_id)
         or (m.player = a.attacker_id and m.other = uid);
+    insert into unmet (player, email)
+    select me.id, lower(other.email)
+      from profiles me, profiles other
+     where (me.id = uid and other.id = a.attacker_id)
+        or (me.id = a.attacker_id and other.id = uid)
+    on conflict do nothing;
   end if;
   return first_raid;
 end;
@@ -2826,7 +2872,9 @@ begin
     -- виден обеим сторонам боя.
     'settle_loan(uuid)',
     -- отгрузка чужого склада: только ежедневная ручка сервера
-    'collect_income_for(uuid)'
+    'collect_income_for(uuid)',
+    -- кто с кем знаком через общий список: чужая история знакомств
+    'strangers(uuid, uuid)'
   ] loop
     execute format('revoke all on function %s from public, anon, authenticated', fn);
     execute format('grant execute on function %s to service_role', fn);

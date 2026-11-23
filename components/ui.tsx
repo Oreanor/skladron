@@ -219,6 +219,33 @@ export function Card({ children, className = "" }: { children: ReactNode; classN
  * шириной по умолчанию, клеточек на двадцать. Флексу w-full не мешает:
  * там ширину задаёт flex-basis.
  */
+/** Галочка с подписью — одна на всю игру. */
+export function Checkbox({
+  on,
+  onChange,
+  label,
+  className = "",
+}: {
+  on: boolean;
+  onChange: (on: boolean) => void;
+  label: string;
+  className?: string;
+}) {
+  return (
+    <label
+      className={`flex cursor-pointer select-none items-center gap-2 text-xs text-neutral-300 ${className}`}
+    >
+      <input
+        type="checkbox"
+        checked={on}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-3.5 w-3.5 cursor-pointer accent-emerald-400"
+      />
+      {label}
+    </label>
+  );
+}
+
 export const inputClass =
   "w-full min-w-0 flex-1 rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2.5 text-base " +
   "text-neutral-200 placeholder:text-neutral-600 focus-visible:outline-none " +

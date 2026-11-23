@@ -178,57 +178,31 @@ export function drawCoverage(
   show: readonly CoverageKind[] = ["gun", "rocket", "spray", "trap", "balloon"]
 ) {
   if (!show.length) return;
-  const live = guns.filter((g) => (g as { alive?: boolean }).alive !== false);
-  if (!live.length) return;
-  const kindOf = (g: {
-    kind?: string;
-    spray?: boolean;
-    trap?: boolean;
-    rocket?: boolean;
-    balloon?: boolean;
-  }): CoverageKind =>
-    g.kind === "net" ? "net" : g.kind === "balloon" || g.balloon === true
-      ? "balloon"
-      : g.kind === "trap" || g.trap === true
-      ? "trap"
-      : g.kind === "spray" || g.spray === true
-        ? "spray"
-        : g.kind === "rocket" || g.rocket === true
-          ? "rocket"
-          : "gun";
-  const styles = {
-    gun: { r: range, fill: COLORS.range, stroke: COLORS.rangeLine },
-    rocket: {
-      r: rocketsRange,
-      fill: COLORS.rocketRange,
-      stroke: COLORS.rocketRangeLine,
-    },
-    spray: {
-      r: spraysRange,
-      fill: COLORS.sprayRange,
-      stroke: COLORS.sprayRangeLine,
-    },
-    trap: {
-      r: trapsRange,
-      fill: COLORS.trapRange,
-      stroke: COLORS.trapRangeLine,
-    },
-    net: { r: 0, fill: "transparent", stroke: "transparent" },
-    balloon: {
-      r: balloonsRange,
-      fill: COLORS.balloonRange,
-      stroke: COLORS.balloonRangeLine,
-    },
-  } as const;
 
   // Слой пересобираем, только когда поменялся набор живых установок или их
   // дальность: в бою это гибель установки, в лобби — постройка и
-  // перестановка. В остальные кадры — одна готовая картинка.
-  const key =
-    `${cell}|${show.join()}|${range}|${rocketsRange}|${spraysRange}|${trapsRange}|${balloonsRange}|` +
-    live.map((g) => `${g.cx},${g.cy},${kindOf(g)}`).join(";");
+  // перестановка. В остальные кадры — одна готовая картинка. Отпечаток
+  // набора считаем числом, без строк и копий массива: он нужен каждый кадр.
+  let print = 0;
+  let count = 0;
+  for (const g of guns) {
+    if ((g as { alive?: boolean }).alive === false) continue;
+    count++;
+    print = (Math.imul(print, 31) + (g.cx * GRID + g.cy) * KIND_CODES + KIND_CODE[kindOf(g)]) | 0;
+  }
+  if (!count) return;
+  const key = `${cell}|${show.join()}|${range}|${rocketsRange}|${spraysRange}|${trapsRange}|${balloonsRange}|${count}|${print}`;
   let cached = coverageLayers.get(ctx.canvas);
   if (!cached || cached.key !== key) {
+    const live = guns.filter((g) => (g as { alive?: boolean }).alive !== false);
+    const styles: Record<CoverageKind, { r: number; fill: string; stroke: string }> = {
+      gun: { r: range, fill: COLORS.range, stroke: COLORS.rangeLine },
+      rocket: { r: rocketsRange, fill: COLORS.rocketRange, stroke: COLORS.rocketRangeLine },
+      spray: { r: spraysRange, fill: COLORS.sprayRange, stroke: COLORS.sprayRangeLine },
+      trap: { r: trapsRange, fill: COLORS.trapRange, stroke: COLORS.trapRangeLine },
+      net: { r: 0, fill: "transparent", stroke: "transparent" },
+      balloon: { r: balloonsRange, fill: COLORS.balloonRange, stroke: COLORS.balloonRangeLine },
+    };
     const side = GRID * cell * COVER_SCALE;
     const layer = cached?.layer ?? document.createElement("canvas");
     layer.width = side;
@@ -265,6 +239,26 @@ export function drawCoverage(
   }
   ctx.drawImage(cached.layer, 0, 0, GRID * cell, GRID * cell);
 }
+
+/** Чей это круг покрытия: в бою вид — флагами, в лобби — полем kind. */
+function kindOf(g: {
+  kind?: string;
+  spray?: boolean;
+  trap?: boolean;
+  rocket?: boolean;
+  balloon?: boolean;
+}): CoverageKind {
+  if (g.kind === "net") return "net";
+  if (g.kind === "balloon" || g.balloon) return "balloon";
+  if (g.kind === "trap" || g.trap) return "trap";
+  if (g.kind === "spray" || g.spray) return "spray";
+  if (g.kind === "rocket" || g.rocket) return "rocket";
+  return "gun";
+}
+
+/** Номер вида для отпечатка набора установок. */
+const KIND_CODE: Record<CoverageKind, number> = { gun: 0, rocket: 1, spray: 2, trap: 3, balloon: 4, net: 5 };
+const KIND_CODES = 6;
 
 /** Слой зон рисуется вдвое крупнее карты: при приближении края не мылятся. */
 const COVER_SCALE = 2;

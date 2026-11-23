@@ -15,6 +15,7 @@ import { Send } from "lucide-react";
 import { shortEmail, type Enemy } from "@/lib/enemy";
 import type { Message } from "@/lib/attack";
 import { useT } from "@/lib/i18n";
+import { whenShort as when } from "@/lib/dates";
 import { explainAlone } from "@/lib/errors";
 import Avatar from "../Avatar";
 import { Button, IconButton, Modal, inputClass } from "../ui";
@@ -106,14 +107,6 @@ export default function MessageDialog({
       { id: `local-${Date.now()}`, mine: true, body, at: Date.now(), seen: false },
     ]);
   };
-
-  const when = (at: number) =>
-    new Date(at).toLocaleString(undefined, {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
 
   return (
     <Modal

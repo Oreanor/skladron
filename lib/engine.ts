@@ -570,14 +570,15 @@ const GOLDEN = Math.PI * (3 - Math.sqrt(5));
 function stepLaunchers(s: GameState) {
   const r = balloonRange(s);
   const r2 = r * r;
+  // сетку собираем, только когда есть кому пускать: пусковых бывают
+  // десятки, и перебирать всю стаю для каждой незачем
+  let grid: DroneGrid | null = null;
   for (const g of s.guns) {
     if (!g.balloon || !g.alive || g.spent) continue;
     const gx = g.cx + 0.5;
     const gy = g.cy + 0.5;
-    const near = s.drones.some(
-      (d) => !d.hit && (d.x - gx) * (d.x - gx) + (d.y - gy) * (d.y - gy) <= r2
-    );
-    if (!near) continue;
+    grid ??= gridDrones(s.drones, (d) => !d.hit);
+    if (!droneWithin(grid, gx, gy, r, r2)) continue;
 
     g.spent = true;
     g.alive = false;
@@ -1573,6 +1574,18 @@ function gridDrones(list: Drone[], keep: (d: Drone) => boolean): DroneGrid {
   return { list, start, items };
 }
 
+/**
+ * Убрать сбитых из стаи разом, в конце шага. Порядок оставшихся тот же:
+ * от него зависит, кого и в какой очередности дальше перебирает бой, а
+ * поштучный splice с indexOf внутри цикла на тысяче дронов квадратичен.
+ */
+function dropDrones(s: GameState, dead: Set<Drone>) {
+  if (!dead.size) return;
+  let keep = 0;
+  for (const d of s.drones) if (!dead.has(d)) s.drones[keep++] = d;
+  s.drones.length = keep;
+}
+
 /** Кого видит автоматика: невидимку — никто, сбитого — уже незачем. */
 const visible = (d: Drone) => !d.hit && d.payload !== "stealth";
 
@@ -1615,6 +1628,23 @@ function nearestDrone(
     }
   }
   return best >= 0 ? list[best] : null;
+}
+
+/** Есть ли в сетке дрон не дальше r от точки (r2 = r², граница включена). */
+function droneWithin(grid: DroneGrid, x: number, y: number, r: number, r2: number) {
+  const { list, start, items } = grid;
+  const bx1 = blockOf(x + r);
+  const by1 = blockOf(y + r);
+  for (let by = blockOf(y - r); by <= by1; by++) {
+    for (let bx = blockOf(x - r); bx <= bx1; bx++) {
+      const k = by * BLOCKS + bx;
+      for (let j = start[k]; j < start[k + 1]; j++) {
+        const d = list[items[j]];
+        if ((d.x - x) * (d.x - x) + (d.y - y) * (d.y - y) <= r2) return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
@@ -1780,9 +1810,10 @@ function stepMissiles(s: GameState, dt: number) {
   for (const r of s.foeRockets) byId.set(r.id, r);
   // Попадания ищем по сетке: снарядов в воздухе бывают сотни, дронов — до
   // пятисот. Сбитые в этом же такте помечаются в gone.
-  // снимок: из s.drones по ходу вырезают сбитых, а номера в сетке — по нему
-  const grid = gridDrones(s.drones.slice(), (d) => !d.hit);
+  // сбитых убираем из стаи в конце шага, так что сетка строится по ней самой
+  const grid = gridDrones(s.drones, (d) => !d.hit);
   const gone = new Uint8Array(grid.list.length);
+  const dead = new Set<Drone>();
   const speed = missileSpeed(s);
   for (let i = s.missiles.length - 1; i >= 0; i--) {
     const m = s.missiles[i];
@@ -1835,7 +1866,7 @@ function stepMissiles(s: GameState, dt: number) {
         continue;
       }
       s.booms.push({ x: t.x, y: t.y, t: 0, r: 2 * PAYLOAD[t.payload].blast });
-      s.drones.splice(s.drones.indexOf(t), 1);
+      dead.add(t);
       gone[at] = 1;
       s.result.killedByGuns++;
       continue;
@@ -1844,6 +1875,7 @@ function stepMissiles(s: GameState, dt: number) {
       s.missiles.splice(i, 1);
     }
   }
+  dropDrones(s, dead);
 }
 
 /**
@@ -1900,6 +1932,8 @@ function stepRockets(s: GameState, dt: number, dronesById: Map<number, Drone>) {
 
   const speed = ROCKET.speed * levelBonus(s.rocketLevel, ROCKET.perLevel);
   const hit = ROCKET.hitRadius * ROCKET.hitRadius;
+  // сбитые ракетами — из стаи в конце шага (dropDrones)
+  const dead = new Set<Drone>();
   for (let i = s.rockets.length - 1; i >= 0; i--) {
     const m = s.rockets[i];
     m.life -= dt;
@@ -1910,7 +1944,7 @@ function stepRockets(s: GameState, dt: number, dronesById: Map<number, Drone>) {
 
     // Роя не стало — ракете не за кем гнаться, и держать ею конец боя
     // незачем: догорает на месте.
-    if (!s.drones.length) {
+    if (s.drones.length === dead.size) {
       s.rockets.splice(i, 1);
       continue;
     }
@@ -1956,8 +1990,7 @@ function stepRockets(s: GameState, dt: number, dronesById: Map<number, Drone>) {
 
     if (t && (t.x - m.x) * (t.x - m.x) + (t.y - m.y) * (t.y - m.y) < hit) {
       s.booms.push({ x: t.x, y: t.y, t: 0, r: 2 * PAYLOAD[t.payload].blast });
-      const at = s.drones.indexOf(t);
-      if (at >= 0) s.drones.splice(at, 1);
+      dead.add(t);
       s.rockets.splice(i, 1);
       s.result.killedByGuns++;
       continue;
@@ -1966,6 +1999,7 @@ function stepRockets(s: GameState, dt: number, dronesById: Map<number, Drone>) {
       s.rockets.splice(i, 1);
     }
   }
+  dropDrones(s, dead);
 }
 
 /**
@@ -2144,15 +2178,16 @@ function stepFire(s: GameState, dt: number) {
         s.fire.set(i, nt);
         continue;
       }
+      // Соседи — слева, справа, сверху, снизу; в этом порядке они и
+      // загораются. Без временных массивов: горящих клеток бывают тысячи.
       const x = i % GRID;
       const y = (i / GRID) | 0;
-      const near: number[] = [];
-      if (x > 0) near.push(i - 1);
-      if (x < GRID - 1) near.push(i + 1);
-      if (y > 0) near.push(i - GRID);
-      if (y < GRID - 1) near.push(i + GRID);
-      const fuel = near.filter((n) => s.cells[n] === G_BASE && !(s.netLevel >= 3 && s.nets.has(n)));
-      if (fuel.length === 0) {
+      const start = toIgnite.length;
+      if (x > 0) addFuel(s, i - 1, toIgnite);
+      if (x < GRID - 1) addFuel(s, i + 1, toIgnite);
+      if (y > 0) addFuel(s, i - GRID, toIgnite);
+      if (y < GRID - 1) addFuel(s, i + GRID, toIgnite);
+      if (toIgnite.length === start) {
         // гореть больше нечему — очаг догорает сам, иначе бой не кончится
         s.cells[i] = G_BURNT;
         s.fire.delete(i);
@@ -2161,10 +2196,14 @@ function stepFire(s: GameState, dt: number) {
         continue;
       }
       s.fire.set(i, FIRE.spread);
-      toIgnite.push(...fuel);
     }
     for (const i of toIgnite) ignite(s, i);
   }
+}
+
+/** Клетка займётся от соседа, если цела и не под сетью третьего уровня. */
+function addFuel(s: GameState, n: number, out: number[]) {
+  if (s.cells[n] === G_BASE && !(s.netLevel >= 3 && s.nets.has(n))) out.push(n);
 }
 
 /**

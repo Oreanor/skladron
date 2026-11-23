@@ -10,7 +10,7 @@ import {
   type Scene,
   type View,
 } from "@/lib/render";
-import { Button } from "./ui";
+import { Button, Checkbox } from "./ui";
 import { useT } from "@/lib/i18n";
 import ZonesToggle, { useZones } from "./ZonesToggle";
 
@@ -483,7 +483,7 @@ export default function MapCanvas({
           onChange={zones.onChange}
           className="text-white"
         />
-        <ZonesToggle on={showNets} onChange={setShowNets} label={t("map.showNets")} className="text-white" />
+        <Checkbox on={showNets} onChange={setShowNets} label={t("map.showNets")} className="text-white" />
         </div>
       )}
       {children}

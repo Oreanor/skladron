@@ -9,13 +9,13 @@ import { decodeRle, fogPatches, type Gun } from "@/lib/base";
 import InstallCounts from "../scout/InstallCounts";
 import { Crosshair, MessageSquare, Plane, UserPlus } from "lucide-react";
 import ScoutMap from "../scout/ScoutMap";
-import { Button, Card, ConfirmDialog, IconButton, Modal, inputClass } from "../ui";
+import { Button, Card, Checkbox, ConfirmDialog, IconButton, Modal, inputClass } from "../ui";
 import Avatar from "../Avatar";
 import SummonRaidDialog from "./SummonRaidDialog";
 import type { Player } from "@/lib/player";
 import NeedDrones from "./NeedDrones";
-import ZonesToggle from "../ZonesToggle";
 import { useT } from "@/lib/i18n";
+import { whenLong } from "@/lib/dates";
 
 
 interface Props {
@@ -123,7 +123,7 @@ export default function Enemies({
       </div>
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
       {listed !== undefined && (
-        <ZonesToggle
+        <Checkbox
           className="mt-2"
           on={listed}
           label={t("enemies.showAll")}
@@ -297,6 +297,12 @@ function ListedPlayers({
 }) {
   const t = useT();
   const [players, setPlayers] = useState<ListedPlayer[] | null>(null);
+  // Список зависит от того, кто уже во врагах: сервер их не отдаёт. Ключ —
+  // сами почты, а не их число: замена одного врага другим тоже считается.
+  const knownKey = useMemo(
+    () => known.map((e) => e.email.toLowerCase()).sort().join(),
+    [known]
+  );
   useEffect(() => {
     let alive = true;
     fetchListed()
@@ -305,7 +311,7 @@ function ListedPlayers({
     return () => {
       alive = false;
     };
-  }, [fetchListed, known.length]);
+  }, [fetchListed, knownKey]);
 
   return (
     <section className="mt-4">
@@ -370,15 +376,7 @@ export function EnemyProfile({
       alive = false;
     };
   }, [enemy, fetchStale]);
-  const last =
-    enemy.lastRaidAt > 0
-      ? new Date(enemy.lastRaidAt).toLocaleString(undefined, {
-          day: "numeric",
-          month: "short",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : null;
+  const last = enemy.lastRaidAt > 0 ? whenLong(enemy.lastRaidAt) : null;
   // Считаем только снятое и не устаревшее — ровно то, что видно на карте.
   // Раньше шли все установки снимка, вместе с теми, что под туманом.
   const counts = useMemo(() => {
@@ -504,14 +502,7 @@ function ScoutConfirm({
   const t = useT();
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const last = enemy.scout
-    ? new Date(enemy.scout.at).toLocaleString(undefined, {
-        day: "numeric",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : null;
+  const last = enemy.scout ? whenLong(enemy.scout.at) : null;
 
   const send = async () => {
     if (sending) return;

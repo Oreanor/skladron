@@ -9,6 +9,7 @@
 
 import { useState } from "react";
 import { useT } from "@/lib/i18n";
+import { Checkbox } from "./ui";
 
 const KEY = "wb.battleZones";
 
@@ -33,29 +34,16 @@ export function useZones(key = KEY, fallback = true): [boolean, (on: boolean) =>
   return [zones, set];
 }
 
+/** Галочка «Зоны действия». */
 export default function ZonesToggle({
   on,
   onChange,
   className = "",
-  label,
 }: {
   on: boolean;
   onChange: (on: boolean) => void;
   className?: string;
-  label?: string;
 }) {
   const t = useT();
-  return (
-    <label
-      className={`flex cursor-pointer select-none items-center gap-2 text-xs text-neutral-300 ${className}`}
-    >
-      <input
-        type="checkbox"
-        checked={on}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-3.5 w-3.5 cursor-pointer accent-emerald-400"
-      />
-      {label ?? t("battle.zones")}
-    </label>
-  );
+  return <Checkbox on={on} onChange={onChange} className={className} label={t("battle.zones")} />;
 }

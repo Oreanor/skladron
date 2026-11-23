@@ -5,7 +5,7 @@
 // mapActions, кошелёк — baseActions, соперники — rivalActions, бой —
 // battleFlow, чертежи — useBlueprints.
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { countFreeCells, countKind, decodeRle, droneCount, fogPatches, normRect } from "@/lib/base";
 import { LOAN_MIN, STARTER_SIDE, dronePrice, fmt, loanMax, upgradePower } from "@/lib/economy";
@@ -21,7 +21,6 @@ import { type View } from "@/lib/render";
 import { useSettings, useT } from "@/lib/i18n";
 import { explain } from "@/lib/errors";
 import type { Key } from "@/lib/i18n/dict";
-import { DraftingCompass, Trophy } from "lucide-react";
 import type { Account } from "./AuthGate";
 import Enemies, { EnemyProfile } from "./lobby/Enemies";
 import Battle from "./battle/Battle";
@@ -45,7 +44,9 @@ import { InsuranceDialog, LoanDialog, UpgradeDialog } from "./lobby/MoneyDialogs
 import RaidsPanel, { StatsPanel } from "./lobby/RaidsPanel";
 import AvatarPicker from "./lobby/AvatarPicker";
 import { TOOLS, isFillTool, type ModalId, type SheetId, type ToolId } from "./lobby/tools";
-import { toolHint, toolPrice, toolVars } from "./lobby/toolNumbers";
+import { toolHint, toolVars } from "./lobby/toolNumbers";
+import ToolRow from "./lobby/ToolRow";
+import MobileHeader from "./lobby/MobileHeader";
 import { useBaseSync } from "./lobby/useBaseSync";
 import { usePanels } from "./lobby/usePanels";
 import { useBlueprints } from "./lobby/useBlueprints";
@@ -64,16 +65,11 @@ import AccountMenu from "./AccountMenu";
 import {
   Button,
   ConfirmDialog,
-  IconButton,
-  IconMenu,
-  IconTarget,
-  IconUsers,
   MESSAGE_MS,
   Modal,
   NameDialog,
   Panel,
   Sheet,
-  ToolButton,
 } from "./ui";
 
 // Правила — на тринадцати языках разом и открываются редко: качаем их,
@@ -571,32 +567,7 @@ export default function Lobby({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 lg:gap-3">
-      {/* шапка телефона: наличные и доход в две строки плюс кнопки панелей */}
-      <div className="order-1 flex shrink-0 items-center gap-2 lg:hidden">
-        <IncomeLine p={p} className="flex-1" />
-        <IconButton
-          label={t("panel.replays")}
-          badge={raidsIn.length}
-          onClick={() => toggleSheet("attacks")}
-        >
-          <IconTarget />
-        </IconButton>
-        <IconButton
-          label={t("panel.competitions")}
-          onClick={() => toggleSheet("competitions")}
-        >
-          <Trophy className="h-5 w-5" />
-        </IconButton>
-        <IconButton label={t("panel.blueprints")} onClick={() => toggleSheet("blueprints")}>
-          <DraftingCompass className="h-5 w-5" />
-        </IconButton>
-        <IconButton label={t("panel.enemies")} onClick={() => toggleSheet("enemies")}>
-          <IconUsers />
-        </IconButton>
-        <IconButton label={t("panel.base")} onClick={() => toggleSheet("menu")}>
-          <IconMenu />
-        </IconButton>
-      </div>
+      <MobileHeader p={p} raidsIn={raidsIn.length} onSheet={toggleSheet} />
 
       {/* шапка десктопа: логотип, счётчики и аккаунт одной строкой */}
       <div className="order-1 hidden items-center gap-3 lg:flex">
@@ -617,47 +588,7 @@ export default function Lobby({
         {accountLine}
       </div>
 
-      {/*
-        Инструменты — отдельная строка во всю ширину, кнопки прижаты влево.
-        На телефоне она уезжает под карту, под большой палец, и складывается
-        в два ряда по пять.
-      */}
-      {/*
-        Ширина кнопки плывёт: на узком десктопе она ужимается до трёх
-        четвертей, и ряд инструментов не съедает высоту, отведённую карте.
-      */}
-      {/*
-        На десктопе ряд занимает строку целиком: колонок ровно столько,
-        сколько инструментов, и каждая тянется на равную долю. Число берём
-        из самого списка — добавится инструмент, ряд пересчитается сам, а
-        классом это не задать: Tailwind собирает их чтением исходника и
-        вычисленного имени не найдёт.
-
-        На телефоне четыре в ряд и не шире 384 точек: двенадцать кнопок
-        ложатся ровно в три ряда, без огрызка в последнем.
-      */}
-      <div
-        style={{ "--tools": TOOLS.length } as CSSProperties}
-        className="order-3 mx-auto grid w-full max-w-96 shrink-0 grid-cols-4 gap-1.5 lg:order-2 lg:mx-0 lg:max-w-none lg:gap-2 lg:[grid-template-columns:repeat(var(--tools),minmax(0,1fr))]"
-      >
-        {TOOLS.map((item) => (
-          <ToolButton
-            key={item.id}
-            icon={item.icon}
-            label={t(item.label)}
-            price={t(item.priceKey ?? "tool.price", {
-              ...item.vars,
-              cost: toolPrice(p.levels, item),
-            })}
-            hint={t(toolHint(p.levels, item), toolVars(p.levels, item))}
-            level={item.levelKind ? p.levels[item.levelKind] : undefined}
-            count={item.countKind ? counters[item.countKind] : undefined}
-            active={tool === item.id}
-            disabled={!p.founded && item.id !== "area"}
-            onClick={() => pickTool(item.id)}
-          />
-        ))}
-      </div>
+      <ToolRow levels={p.levels} counters={counters} tool={tool} founded={p.founded} onPick={pickTool} />
 
       {/*
         Правая колонка не фиксированная, а сжимается вместе с окном: на
