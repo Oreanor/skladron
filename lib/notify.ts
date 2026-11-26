@@ -5,6 +5,7 @@
 // нему открывается повтор, и без подписи ручкой мог бы дёргать кто угодно.
 
 import { supabase } from "./supabase";
+import { withBase } from "@/lib/basePath";
 
 type BattleEvent = "sent" | "resolved" | "comment";
 
@@ -14,7 +15,7 @@ async function post(body: Record<string, unknown>) {
   const { data } = await db.auth.getSession();
   const token = data.session?.access_token;
   if (!token) return; // без входа извещать не от чьего имени
-  await fetch("/api/telegram/notify", {
+  await fetch(withBase("/api/telegram/notify"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

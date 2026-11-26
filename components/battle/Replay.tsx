@@ -28,6 +28,7 @@ import {
   signedIn,
   type BattleComment,
 } from "@/lib/comments";
+import { withBase } from "@/lib/basePath";
 
 /** Во сколько раз крутим бой. Живьём он идёт минуты — смотреть столько незачем. */
 const SPEEDS = [1, 2, 4] as const;
@@ -435,7 +436,7 @@ function ReplayView({
               size="sm"
               onClick={() => {
                 void navigator.clipboard
-                  ?.writeText(`${location.origin}/replay/${shareId}`)
+                  ?.writeText(`${location.origin}${withBase(`/replay/${shareId}`)}`)
                   .then(() => setShared(true))
                   .catch(() => setShared(false));
               }}

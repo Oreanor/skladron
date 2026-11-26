@@ -1,9 +1,11 @@
 node_modules
 .next
+.next-deploy
 out
 next-env.d.ts
 *.tsbuildinfo
 .env.local
+.env.deploy
 
 # временные скрипты правок
 .tmp/

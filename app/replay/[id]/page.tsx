@@ -9,6 +9,7 @@ import { Button } from "@/components/ui";
 import { SettingsProvider, useT } from "@/lib/i18n";
 import { explainAlone } from "@/lib/errors";
 import { publicPractice, publicReplay } from "@/lib/repo";
+import { withBase } from "@/lib/basePath";
 
 function Screen({ id }: { id: string }) {
   const t = useT();
@@ -57,7 +58,7 @@ function Screen({ id }: { id: string }) {
       <div className="m-auto max-w-sm space-y-4 p-6 text-center">
         <p className="text-neutral-400">{t("replay.gone")}</p>
         {failed && <p className="font-mono text-xs text-neutral-600">{failed}</p>}
-        <Button variant="neutral" onClick={() => (location.href = "/")}>
+        <Button variant="neutral" onClick={() => (location.href = withBase("/"))}>
           {t("replay.open")}
         </Button>
       </div>

@@ -22,7 +22,21 @@ const svgLoader = {
   },
 };
 
+/*
+ * Выкладка на домашний сервер (scripts/deploy.mjs) собирает с BASE_PATH=/skladron:
+ * игра живёт не в корне сайта, а рядом с другими играми. И с NEXT_STANDALONE —
+ * сервер получает готовую папку с server.js и нужными пакетами, без npm install.
+ * Без них (Vercel, npm run dev) всё как раньше: корень сайта.
+ */
+const basePath = (process.env.BASE_PATH ?? "").replace(/\/+$/, "");
+
 const nextConfig: NextConfig = {
+  basePath: basePath || undefined,
+  output: process.env.NEXT_STANDALONE ? "standalone" : undefined,
+  // Выкладка собирает в свою папку, чтобы не мешать .next от npm run dev.
+  distDir: process.env.NEXT_DIST_DIR || undefined,
+  // Префикс нужен и коду в браузере: fetch и <img> Next сам не переписывает (lib/basePath.ts).
+  env: { NEXT_PUBLIC_BASE_PATH: basePath },
   turbopack: {
     rules: {
       "*.svg": { loaders: [svgLoader], as: "*.js" },

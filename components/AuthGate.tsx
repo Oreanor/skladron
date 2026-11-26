@@ -7,6 +7,7 @@ import { Button } from "./ui";
 import { useT } from "@/lib/i18n";
 import { explainAlone } from "@/lib/errors";
 import { googleAvatar } from "@/lib/avatar";
+import { withBase } from "@/lib/basePath";
 
 export interface Account {
   email: string | null;
@@ -66,7 +67,7 @@ export default function AuthGate() {
     if (!db) return;
     const { error: e } = await db.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: window.location.origin + withBase("/") },
     });
     if (e) setError(explainAlone(e, t));
   };
@@ -91,11 +92,11 @@ export default function AuthGate() {
           в портрете и телефон в альбоме — это разные картинки при одной ширине.
         */}
         <picture>
-          <source media="(min-aspect-ratio: 3/2)" srcSet="/hero-wide.webp" />
-          <source media="(min-aspect-ratio: 7/8)" srcSet="/hero-box.webp" />
-          <source media="(min-aspect-ratio: 1/2)" srcSet="/hero-portrait.webp" />
+          <source media="(min-aspect-ratio: 3/2)" srcSet={withBase("/hero-wide.webp")} />
+          <source media="(min-aspect-ratio: 7/8)" srcSet={withBase("/hero-box.webp")} />
+          <source media="(min-aspect-ratio: 1/2)" srcSet={withBase("/hero-portrait.webp")} />
           <img
-            src="/hero-tall.webp"
+            src={withBase("/hero-tall.webp")}
             alt="Skladron"
             // Логотип врисован в арт у нижнего края, поэтому кроп якорим по
             // низу. В альбомных вариантах он ещё и справа — там якорь правый,

@@ -13,6 +13,7 @@ import type { Blueprint } from "../blueprint";
 import type { ListedPlayer } from "../enemy";
 import { supabase } from "../supabase";
 import type { Income, Repo } from "./types";
+import { withBase } from "@/lib/basePath";
 
 /**
  * Повтор боя по id — и для журнала в игре, и для страницы по ссылке, куда
@@ -778,7 +779,7 @@ export class CloudRepo implements Repo {
     const token = session.session?.access_token;
     if (!token) throw new Error("not authenticated");
 
-    const res = await fetch("/api/battle/resolve", {
+    const res = await fetch(withBase("/api/battle/resolve"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

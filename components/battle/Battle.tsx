@@ -30,6 +30,7 @@ import type { ReplayData } from "./Replay";
 import { useT } from "@/lib/i18n";
 import type { Key } from "@/lib/i18n/dict";
 import { PAYLOADS, type Payload } from "@/lib/attack";
+import { withBase } from "@/lib/basePath";
 
 
 interface Props {
@@ -479,7 +480,7 @@ function ShareTest({ replay }: { replay: ReplayData }) {
     setState("busy");
     try {
       const id = await sharePractice(replay);
-      const url = `${location.origin}/replay/${id}`;
+      const url = `${location.origin}${withBase(`/replay/${id}`)}`;
       try {
         await navigator.clipboard.writeText(url);
         setState("copied");
